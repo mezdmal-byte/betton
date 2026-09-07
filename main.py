@@ -11,9 +11,10 @@ from bot.main import bot, dp
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # При старте сервера автоматически создаем таблицы в базе
     Base.metadata.create_all(bind=engine)
     
-    # Автоматическая привязка вебхука к нашему серверу
+    # Автоматически привязываем Вебхук к нашему серверу в интернетах
     server_url = "https://onrender.com"
     webhook_url = f"{server_url}/webhook"
     await bot.set_webhook(url=webhook_url)
@@ -21,6 +22,7 @@ async def lifespan(app: FastAPI):
     
     yield
     
+    # При выключении сервера удаляем вебхук
     await bot.delete_webhook()
     await bot.session.close()
 
@@ -30,6 +32,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Сюда Дуров будет мгновенно пересылать сообщения пользователей из ТГ чата
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     update = types.Update.model_validate(await request.json(), context={"bot": bot})
