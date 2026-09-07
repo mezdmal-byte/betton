@@ -1,112 +1,47 @@
-"""Telegram-бот BetTON. Запуск рядом с API: python -m bot.main"""
-
-from __future__ import annotations
-
-import asyncio
+import os
 import logging
-import sys
-from pathlib import Path
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-from aiogram import Bot, Dispatcher
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
-from aiogram.filters import Command, CommandStart
-from aiogram.types import (
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    Message,
-    WebAppInfo,
-)
-
-from app.config import settings
-
+# Настройка логов
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("betton.bot")
+logger = logging.getLogger(__name__)
+
+# Берем токен и ссылку из файла .env
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+MINI_APP_URL = os.getenv("MINI_APP_URL", "https://onrender.com")
+
+if not BOT_TOKEN:
+    raise ValueError("Переменная BOT_TOKEN не найдена в окружении!")
+
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
 
 START_TEXT = (
-    "<b>BetTON</b> — P2P-ставки без комиссии\n"
-    "Рынки предсказаний с маркетмейкером <b>LMSR</b>\n"
-    "\n"
-    "Покупайте акции исходов <b>Да / Нет</b>. Цена всегда есть, "
-    "комиссии за вход и ставки — <b>0%</b>. Платформа живёт на чаевых "
-    "победителей — до 1% от чистой прибыли.\n"
-    "\n"
-    "<b>Как начать</b>\n"
-    "1. Откройте Mini App кнопкой ниже\n"
-    "2. Создайте событие и задайте ликвидность <code>b</code>\n"
-    "3. Ставьте на исход — LMSR сам посчитает акции и цену\n"
-    "\n"
-    "Команда /help — как устроена экономика платформы."
+    "🚀 **Добро пожаловать в BetTON Platform!**\n\n"
+    "Это первая децентрализованная P2P-платформа предсказаний в Telegram "
+    "на базе автоматического маркетмейкера LMSR (как в Polymarket).\n\n"
+    "🔹 **0% комиссий** на создание рынков и ставки\n"
+    "🔹 **До 1% чаевых** от чистой прибыли победителей\n\n"
+    "Нажми кнопку ниже, чтобы запустить Mini App и сделать свою 'бетонную' ставку!"
 )
 
-HELP_TEXT = (
-    "<b>Как устроен BetTON</b>\n"
-    "\n"
-    "Это не букмекерская контора: вы торгуете с автоматическим "
-    "маркетмейкером по формуле LMSR (Logarithmic Market Scoring Rule). "
-    "Чем больше параметр ликвидности <code>b</code>, тем спокойнее двигается цена.\n"
-    "\n"
-    "<b>Комиссии</b>\n"
-    "• Ставки и вход — <b>0%</b>\n"
-    "• Монетизация — чаевые победителя до <b>1%</b> от чистой прибыли "
-    "(выплата минус то, что потратили на победивший исход)\n"
-    "\n"
-    "<b>Резолюция</b>\n"
-    "Акция верного исхода = 1, неверного = 0. Дальше можно забрать выигрыш "
-    "и по желанию оставить чаевые.\n"
-    "\n"
-    "/start — приветствие и Mini App"
-)
+def mini_app_keyboard():
+    # Создаем кнопку запуска Mini App
+    button = InlineKeyboardButton(text="📊 Запустить BetTON", web_app=types.WebAppInfo(url=MINI_APP_URL))
+    return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer(START_TEXT, reply_markup=mini_app_keyboard(), parse_mode="Markdown")
 
-def mini_app_keyboard() -> InlineKeyboardMarkup:
-    url = settings.mini_app_url
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Открыть Mini App",
-                    web_app=WebAppInfo(url=url),
-                )
-            ]
-        ]
+@dp.message(Command("help"))
+async def cmd_help(message: types.Message):
+    help_text = (
+        "⚙️ **Как устроена платформа BetTON:**\n\n"
+        "1. Коэффициенты меняются динамически по формуле логарифмического маркетмейкера LMSR.\n"
+        "2. Вы можете ставить в любой момент, ликвидность гарантирована алгоритмом.\n"
+        "3. Комиссия за ставки отсутствует. Платформа удерживает лишь до 1% в качестве чаевых от ЧИСТОЙ прибыли в момент закрытия рынка."
     )
-
-
-async def cmd_start(message: Message) -> None:
-    await message.answer(START_TEXT, reply_markup=mini_app_keyboard())
-
-
-async def cmd_help(message: Message) -> None:
-    await message.answer(HELP_TEXT, reply_markup=mini_app_keyboard())
-
-
-def build_dispatcher() -> Dispatcher:
-    dp = Dispatcher()
-    dp.message.register(cmd_start, CommandStart())
-    dp.message.register(cmd_help, Command("help"))
-    return dp
-
-
-async def run_bot() -> None:
-    token = (settings.bot_token or "").strip()
-    if not token:
-        raise RuntimeError(
-            "Нет BOT_TOKEN. Создайте бота в @BotFather и впишите токен в .env"
-        )
-    bot = Bot(token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = build_dispatcher()
-    logger.info("BetTON bot polling, Mini App: %s", settings.mini_app_url)
-    await dp.start_polling(bot, handle_signals=True)
-
-
-def main() -> None:
-    asyncio.run(run_bot())
-
-
-if __name__ == "__main__":
-    main()
+    await message.answer(help_text, parse_mode="Markdown")
