@@ -39,17 +39,22 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
-uvicorn main:app --reload
-# SQLite: файл betton.db в корне проекта (PostgreSQL не нужен)
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+# SQLite: файл betton.db в корне проекта
+# Бот стартует вместе с API (lifespan), если задан BOT_TOKEN
 ```
 
 Документация API: http://127.0.0.1:8000/docs
 
-Бот (второй терминал, после `BOT_TOKEN` в `.env`):
+### Render (Web Service)
+
+Start Command — только uvicorn, без `&` и без отдельного процесса бота:
 
 ```bash
-python -m bot.main
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
+
+В Environment добавьте `BOT_TOKEN` (и при необходимости `MINI_APP_URL` на https-адрес сервиса). Не используйте `--reload` на Render: два воркера дадут конфликт polling.
 
 ```bash
 pytest tests/test_lmsr.py

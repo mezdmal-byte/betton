@@ -101,7 +101,7 @@ async def run_bot() -> None:
     bot = Bot(token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = build_dispatcher()
     logger.info("BetTON bot polling, Mini App: %s", settings.mini_app_url)
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, handle_signals=True)
 
 
 def main() -> None:

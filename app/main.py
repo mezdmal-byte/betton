@@ -1,12 +1,21 @@
-from contextlib import asynccontextmanager
+from __future__ import annotations
 
+import asyncio
+import logging
+from contextlib import asynccontextmanager, suppress
+
+from aiogram import Bot
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from fastapi import Depends, FastAPI
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import Base, engine, get_db
 from app.lmsr import prices
 from app.models import Outcome
+from bot.main import build_dispatcher
 from app.schemas import (
     BuySharesRequest,
     BuySharesResponse,
@@ -20,11 +29,37 @@ from app.schemas import (
 )
 from app.services import market_service
 
+logger = logging.getLogger("betton")
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
+
+    bot: Bot | None = None
+    dp = None
+    polling_task: asyncio.Task | None = None
+    token = (settings.bot_token or "").strip()
+    if token:
+        bot = Bot(token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        dp = build_dispatcher()
+        polling_task = asyncio.create_task(
+            dp.start_polling(bot, handle_signals=False),
+            name="betton-telegram-polling",
+        )
+        logger.info("Telegram polling started, Mini App: %s", settings.mini_app_url)
+    else:
+        logger.warning("BOT_TOKEN пустой — polling бота не запущен")
+
     yield
+
+    if dp is not None and polling_task is not None:
+        await dp.stop_polling()
+        with suppress(asyncio.CancelledError):
+            await polling_task
+    if bot is not None:
+        await bot.session.close()
+        logger.info("Telegram polling stopped")
 
 
 app = FastAPI(
