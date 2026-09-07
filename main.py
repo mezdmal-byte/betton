@@ -1,16 +1,19 @@
+import sys
+import os
+# Принудительно добавляем корень проекта в пути поиска Python
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from aiogram import types
 from app.database import engine, Base
 from bot.main import bot, dp
-import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # При старте создаем таблицы
     Base.metadata.create_all(bind=engine)
     
-    # Регистрируем вебхук в Телеграме автоматически
+    # Автоматическая привязка вебхука к нашему серверу
     server_url = "https://onrender.com"
     webhook_url = f"{server_url}/webhook"
     await bot.set_webhook(url=webhook_url)
@@ -18,7 +21,6 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    # При выключении удаляем вебхук
     await bot.delete_webhook()
     await bot.session.close()
 
@@ -28,7 +30,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Эндпоинт, куда Телеграм будет присылать сообщения пользователей
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     update = types.Update.model_validate(await request.json(), context={"bot": bot})

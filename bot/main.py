@@ -1,14 +1,16 @@
+import sys
 import os
+# Добавляем корень проекта в пути поиска
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# Настройка логов
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Берем токен и ссылку из файла .env
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 MINI_APP_URL = os.getenv("MINI_APP_URL", "https://onrender.com")
 
@@ -28,7 +30,6 @@ START_TEXT = (
 )
 
 def mini_app_keyboard():
-    # Создаем кнопку запуска Mini App
     button = InlineKeyboardButton(text="📊 Запустить BetTON", web_app=types.WebAppInfo(url=MINI_APP_URL))
     return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
@@ -42,6 +43,6 @@ async def cmd_help(message: types.Message):
         "⚙️ **Как устроена платформа BetTON:**\n\n"
         "1. Коэффициенты меняются динамически по формуле логарифмического маркетмейкера LMSR.\n"
         "2. Вы можете ставить в любой момент, ликвидность гарантирована алгоритмом.\n"
-        "3. Комиссия за ставки отсутствует. Платформа удерживает лишь до 1% в качестве чаевых от ЧИСТОЙ прибыли в момент закрытия рынка."
+        "3. Платформа удерживает лишь до 1% в качестве чаевых от ЧИСТОЙ прибыли в момент закрытия рынка."
     )
     await message.answer(help_text, parse_mode="Markdown")
