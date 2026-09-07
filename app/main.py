@@ -27,12 +27,13 @@ def get_db():
 async def setup_webhook_task():
     try:
         await asyncio.sleep(2) # Даем серверу uvicorn 2 секунды, чтобы спокойно открыть порт
-        server_url = "https://onrender.com"
-        webhook_url = f"{server_url}/webhook"
+        # Прописываем жесткий и точный URL твоего задеплоенного проекта
+        webhook_url = "https://betton-630y.onrender.com/webhook"
         await bot.set_webhook(url=webhook_url)
         print(f"Вебхук Telegram бота успешно установлен на адрес: {webhook_url}")
     except Exception as e:
         print(f"Ошибка при установке вебхука: {e}")
+
 
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
