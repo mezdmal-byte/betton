@@ -1,10 +1,11 @@
 import sys
 import os
+import asyncio
 # Принудительно добавляем корень проекта в пути поиска Python
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi import FastAPI, Request, Depends
 from sqlalchemy.orm import Session
 from aiogram import types
 
@@ -14,9 +15,7 @@ from bot.main import bot, dp
 # Импортируем наши рабочие функции из сервиса
 from app.services import market_service
 from app.schemas import UserCreate, MarketCreate, BuySharesRequest, ClaimWinningsRequest
-from app.models import Outcome
 
-# Функция получения сессии базы данных
 def get_db():
     db = SessionLocal()
     try:
@@ -24,30 +23,40 @@ def get_db():
     finally:
         db.close()
 
+# Выносим установку вебхука в отдельную фоновую функцию
+async def setup_webhook_task():
+    try:
+        await asyncio.sleep(2) # Даем серверу uvicorn 2 секунды, чтобы спокойно открыть порт
+        server_url = "https://onrender.com"
+        webhook_url = f"{server_url}/webhook"
+        await bot.set_webhook(url=webhook_url)
+        print(f"Вебхук Telegram бота успешно установлен на адрес: {webhook_url}")
+    except Exception as e:
+        print(f"Ошибка при установке вебхука: {e}")
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    # При старте сервера автоматически создаем таблицы в базе SQLite
+async def async_lifespan(app: FastAPI):
+    # При старте создаем таблицы
     Base.metadata.create_all(bind=engine)
     
-    # Автоматически привязываем Вебхук к нашему серверу в интернетах
-    server_url = "https://betton-630y.onrender.com"
-    webhook_url = f"{server_url}/webhook"
-    await bot.set_webhook(url=webhook_url)
-    print(f"Вебхук Telegram бота успешно установлен на адрес: {webhook_url}")
+    # Запускаем привязку вебхука асинхронно в фоне, чтобы НЕ БЛОКИРОВАТЬ запуск портов Render
+    asyncio.create_task(setup_webhook_task())
     
     yield
     
-    # При выключении сервера удаляем вебхук
-    await bot.delete_webhook()
+    # При выключении удаляем вебхук
+    try:
+        await bot.delete_webhook()
+    except:
+        pass
     await bot.session.close()
 
 app = FastAPI(
     title="BetTON API",
-    description="P2P-платформа предсказаний на базе LMSR маркетмейкера. Комиссия 0%, чаевые платформе до 1%.",
-    lifespan=lifespan
+    description="P2P-платформа предсказаний на базе LMSR маркетмейкера",
+    lifespan=async_lifespan
 )
 
-# Эндпоинт Вебхука для Telegram
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     update = types.Update.model_validate(await request.json(), context={"bot": bot})
@@ -108,4 +117,4 @@ def claim_winnings_endpoint(market_id: int, req: ClaimWinningsRequest, db: Sessi
 
 @app.get("/")
 def read_root():
-    return {"status": "BetTON API работает", "info": "Перейдите на /docs для тестов Mini App"}
+    return {"status": "BetTON API работает"}
