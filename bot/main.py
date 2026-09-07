@@ -1,6 +1,6 @@
 import sys
 import os
-# Добавляем корень проекта в пути поиска, чтобы не было ошибок модулей
+# Добавляем корень проекта в пути поиска
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
