@@ -40,21 +40,22 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-# SQLite: файл betton.db в корне проекта
-# Бот стартует вместе с API (lifespan), если задан BOT_TOKEN
+# Mini App: http://127.0.0.1:8000/  (в Telegram нужен HTTPS-адрес этого же бэкенда)
+# На Render webhook и кнопка WebApp берут RENDER_EXTERNAL_URL автоматически
 ```
 
-Документация API: http://127.0.0.1:8000/docs
+Документация API: https://betton-630y.onrender.com/docs  
+Mini App (корень сайта): https://betton-630y.onrender.com/
 
 ### Render (Web Service)
 
-Start Command — только uvicorn, без `&` и без отдельного процесса бота:
+Start Command — только uvicorn:
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-В Environment добавьте `BOT_TOKEN` (и при необходимости `MINI_APP_URL` на https-адрес сервиса). Не используйте `--reload` на Render: два воркера дадут конфликт polling.
+В Environment: `BOT_TOKEN`, `MINI_APP_URL=https://betton-630y.onrender.com` (без `/docs`). Не используйте `--reload` на Render.
 
 ```bash
 pytest tests/test_lmsr.py

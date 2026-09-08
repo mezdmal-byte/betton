@@ -52,6 +52,26 @@ def create_user(db: Session, username: str, telegram_id: int | None = None) -> U
     return user
 
 
+def get_or_create_telegram_user(
+    db: Session,
+    telegram_id: int,
+    username: str | None = None,
+) -> User:
+    user = db.query(User).filter(User.telegram_id == telegram_id).one_or_none()
+    if user is not None:
+        return user
+    uname = f"tg{telegram_id}"
+    existing = db.query(User).filter(User.username == uname).one_or_none()
+    if existing is not None:
+        if existing.telegram_id is None:
+            existing.telegram_id = telegram_id
+            db.commit()
+            db.refresh(existing)
+        return existing
+    _ = username
+    return create_user(db, username=uname, telegram_id=telegram_id)
+
+
 def create_market(
     db: Session,
     creator_id: int,

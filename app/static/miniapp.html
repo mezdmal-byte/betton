@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>BetTON</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #151b30;
+      --text: #f4f1ea;
+      --muted: #9aa3b8;
+      --gold: #d4af37;
+      --yes: #3dd68c;
+      --no: #ff6b6b;
+      --line: #2a334d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 16px 16px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    h1 { margin: 0; font-size: 1.15rem; letter-spacing: .14em; }
+    .balance { color: var(--gold); font-weight: 700; }
+    main { padding: 0 16px 32px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 12px 0;
+    }
+    label { display: block; color: var(--muted); font-size: .8rem; margin: 8px 0 4px; }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #0b1020;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 1rem;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .row { display: flex; gap: 8px; margin-top: 10px; }
+    .row > * { flex: 1; }
+    .gold { background: var(--gold); color: #111; }
+    .yes { background: var(--yes); color: #062016; }
+    .no { background: var(--no); color: #2a0a0a; }
+    .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    .muted { color: var(--muted); font-size: .85rem; line-height: 1.4; }
+    .err { color: var(--no); font-size: .85rem; min-height: 1.2em; }
+    .prices { display: flex; justify-content: space-between; margin: 8px 0; font-size: .9rem; }
+    h2 { font-size: 1rem; margin: 18px 0 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BetTON</h1>
+    <div class="balance" id="balance">—</div>
+  </header>
+  <main>
+    <p class="muted" id="who">Подключение к бэкенду…</p>
+    <p class="err" id="error"></p>
+
+    <div class="card">
+      <strong>Новый рынок</strong>
+      <label>Вопрос</label>
+      <input id="question" placeholder="BTC выше $100k к концу года?"/>
+      <label>Ликвидность b</label>
+      <input id="liq" type="number" min="1" step="1" value="100"/>
+      <div class="row">
+        <button class="gold" id="create">Создать</button>
+      </div>
+    </div>
+
+    <h2>Рынки</h2>
+    <div id="markets"></div>
+  </main>
+
+  <script>
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      const tp = tg.themeParams || {};
+      if (tp.bg_color) document.documentElement.style.setProperty("--bg", tp.bg_color);
+      if (tp.secondary_bg_color) document.documentElement.style.setProperty("--card", tp.secondary_bg_color);
+      if (tp.text_color) document.documentElement.style.setProperty("--text", tp.text_color);
+      if (tp.hint_color) document.documentElement.style.setProperty("--muted", tp.hint_color);
+    }
+
+    const tgUser = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || { id: 1, username: "demo" };
+    let me = null;
+
+    function showError(e) {
+      document.getElementById("error").textContent = e || "";
+    }
+
+    async function api(path, options) {
+      const res = await fetch(path, Object.assign({
+        headers: { "Content-Type": "application/json" }
+      }, options));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = data.detail;
+        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail || res.status));
+      }
+      return data;
+    }
+
+    async function auth() {
+      me = await api("/auth/telegram", {
+        method: "POST",
+        body: JSON.stringify({
+          telegram_id: tgUser.id,
+          username: tgUser.username || tgUser.first_name || null
+        })
+      });
+      document.getElementById("who").textContent =
+        (tgUser.first_name || tgUser.username || ("id " + tgUser.id)) +
+        " · 0% комиссия · LMSR";
+      document.getElementById("balance").textContent = me.balance.toFixed(2);
+    }
+
+    async function refreshMe() {
+      me = await api("/users/" + me.id);
+      document.getElementById("balance").textContent = me.balance.toFixed(2);
+    }
+
+    function pct(x) { return (x * 100).toFixed(1) + "%"; }
+
+    async function loadMarkets() {
+      const markets = await api("/markets");
+      const root = document.getElementById("markets");
+      if (!markets.length) {
+        root.innerHTML = '<p class="muted">Пока пусто — создайте первый рынок.</p>';
+        return;
+      }
+      root.innerHTML = markets.map(m => `
+        <div class="card" data-id="${m.id}">
+          <strong>${escapeHtml(m.question)}</strong>
+          <div class="muted">#${m.id} · b=${m.b} · ${m.status}</div>
+          <div class="prices">
+            <span>Да ${pct(m.price_yes)}</span>
+            <span>Нет ${pct(m.price_no)}</span>
+          </div>
+          <label>Сумма ставки</label>
+          <input type="number" min="1" step="1" value="10" class="amount"/>
+          <div class="row">
+            <button class="yes" data-act="buy" data-outcome="yes">Купить Да</button>
+            <button class="no" data-act="buy" data-outcome="no">Купить Нет</button>
+          </div>
+          ${m.status === "open" ? `
+            <div class="row">
+              <button class="ghost" data-act="resolve" data-outcome="yes">Исход: Да</button>
+              <button class="ghost" data-act="resolve" data-outcome="no">Исход: Нет</button>
+            </div>` : `
+            <div class="row">
+              <button class="gold" data-act="claim">Забрать выигрыш</button>
+            </div>`}
+        </div>
+      `).join("");
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    document.getElementById("create").onclick = async () => {
+      showError("");
+      try {
+        const question = document.getElementById("question").value.trim();
+        const b = Number(document.getElementById("liq").value);
+        if (question.length < 8) throw new Error("Вопрос слишком короткий");
+        await api("/markets", {
+          method: "POST",
+          body: JSON.stringify({ creator_id: me.id, question, b, description: "" })
+        });
+        document.getElementById("question").value = "";
+        await loadMarkets();
+      } catch (e) { showError(e.message); }
+    };
+
+    document.getElementById("markets").onclick = async (ev) => {
+      const btn = ev.target.closest("button[data-act]");
+      if (!btn) return;
+      const card = btn.closest(".card");
+      const id = card.dataset.id;
+      const amount = Number(card.querySelector(".amount")?.value || 0);
+      showError("");
+      try {
+        if (btn.dataset.act === "buy") {
+          await api("/markets/" + id + "/buy", {
+            method: "POST",
+            body: JSON.stringify({ user_id: me.id, outcome: btn.dataset.outcome, money: amount })
+          });
+        } else if (btn.dataset.act === "resolve") {
+          await api("/markets/" + id + "/resolve", {
+            method: "POST",
+            body: JSON.stringify({ winning_outcome: btn.dataset.outcome })
+          });
+        } else if (btn.dataset.act === "claim") {
+          await api("/markets/" + id + "/claim", {
+            method: "POST",
+            body: JSON.stringify({ user_id: me.id, tip_rate: 0 })
+          });
+        }
+        await refreshMe();
+        await loadMarkets();
+      } catch (e) { showError(e.message); }
+    };
+
+    (async () => {
+      try {
+        await auth();
+        await loadMarkets();
+      } catch (e) { showError(e.message); }
+    })();
+  </script>
+</body>
+</html>
