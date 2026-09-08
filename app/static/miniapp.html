@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
   <title>BetTON</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
@@ -15,102 +15,284 @@
       --yes: #3dd68c;
       --no: #ff6b6b;
       --line: #2a334d;
+      --chip: #1c243f;
     }
     * { box-sizing: border-box; }
+    html, body { max-width: 100%; overflow-x: hidden; }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
     }
     header {
-      padding: 16px 16px 8px;
+      padding: 14px 16px 10px;
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
       gap: 12px;
     }
-    h1 { margin: 0; font-size: 1.15rem; letter-spacing: .14em; }
-    .balance { color: var(--gold); font-weight: 700; }
-    main { padding: 0 16px 32px; }
+    .brand { margin: 0; font-size: 1.05rem; letter-spacing: .16em; font-weight: 800; }
+    .who { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+    .balance-wrap { text-align: right; }
+    .balance-label { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; }
+    .balance { color: var(--gold); font-weight: 800; font-size: 1.2rem; }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 0 16px 8px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 2;
+    }
+    .tab {
+      flex: 1;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      background: var(--chip);
+      color: var(--muted);
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    .tab.active { background: var(--gold); color: #111; border-color: var(--gold); }
+    main { padding: 0 16px 80px; }
     .card {
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 14px;
       margin: 12px 0;
     }
+    .question {
+      font-weight: 700;
+      font-size: 1.05rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .meta { color: var(--muted); font-size: .8rem; margin: 8px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      background: var(--chip);
+      border-radius: 999px;
+      padding: 2px 8px;
+    }
     label { display: block; color: var(--muted); font-size: .8rem; margin: 8px 0 4px; }
-    input {
+    input, select, textarea {
       width: 100%;
       border: 1px solid var(--line);
       background: #0b1020;
       color: var(--text);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 1rem;
+      border-radius: 12px;
+      padding: 12px 12px;
+      font-size: 16px;
+      min-height: 44px;
     }
     button {
       border: 0;
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-weight: 650;
+      border-radius: 12px;
+      padding: 12px 12px;
+      min-height: 44px;
+      font-weight: 700;
+      font-size: 1rem;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
+    button:disabled { opacity: .45; }
     .row { display: flex; gap: 8px; margin-top: 10px; }
-    .row > * { flex: 1; }
+    .row > * { flex: 1; min-width: 0; }
     .gold { background: var(--gold); color: #111; }
     .yes { background: var(--yes); color: #062016; }
     .no { background: var(--no); color: #2a0a0a; }
     .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
     .muted { color: var(--muted); font-size: .85rem; line-height: 1.4; }
     .err { color: var(--no); font-size: .85rem; min-height: 1.2em; }
-    .prices { display: flex; justify-content: space-between; margin: 8px 0; font-size: .9rem; }
-    h2 { font-size: 1rem; margin: 18px 0 0; }
+    .odds {
+      display: flex;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .odd {
+      flex: 1;
+      border-radius: 14px;
+      padding: 10px 8px;
+      text-align: center;
+      border: 1px solid var(--line);
+    }
+    .odd b { display: block; font-size: 1.55rem; letter-spacing: .02em; }
+    .odd .kname { font-size: .9rem; font-weight: 800; }
+    .odd .pct { color: var(--muted); font-size: .75rem; margin-top: 2px; }
+    .yes-odd .kname, .yes-odd b { color: var(--yes); }
+    .no-odd .kname, .no-odd b { color: var(--no); }
+    .preview { color: var(--muted); font-size: .8rem; min-height: 2.4em; margin-top: 8px; line-height: 1.35; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+    .chip {
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--chip);
+      color: var(--muted);
+      font-size: .9rem;
+    }
+    .chip.on { background: var(--gold); color: #111; border-color: var(--gold); }
+    .tips { display: flex; gap: 6px; }
+    .toast {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      background: #1f2a18;
+      color: var(--yes);
+      border: 1px solid #2f5a38;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 700;
+      display: none;
+      z-index: 5;
+    }
+    .toast.show { display: block; }
+    .toast.bad { background: #2a1414; color: var(--no); border-color: #5a2f2f; }
+    h2 { font-size: .95rem; margin: 18px 0 0; }
+    details.more { margin-top: 12px; color: var(--muted); }
+    summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
   <header>
-    <h1>BetTON</h1>
-    <div class="balance" id="balance">—</div>
+    <div>
+      <h1 class="brand">BetTON</h1>
+      <div class="who" id="who">Подключение…</div>
+    </div>
+    <div class="balance-wrap">
+      <div class="balance-label">Баланс</div>
+      <div class="balance" id="balance">—</div>
+    </div>
   </header>
+  <nav class="tabs">
+    <button class="tab active" data-tab="feed">Лента</button>
+    <button class="tab" data-tab="create">Создать</button>
+    <button class="tab" data-tab="mine">Мои</button>
+  </nav>
   <main>
-    <p class="muted" id="who">Подключение к бэкенду…</p>
     <p class="err" id="error"></p>
 
-    <div class="card">
-      <strong>Новый рынок</strong>
-      <label>Вопрос</label>
-      <input id="question" placeholder="BTC выше $100k к концу года?"/>
-      <label>Ликвидность b</label>
-      <input id="liq" type="number" min="1" step="1" value="100"/>
-      <div class="row">
-        <button class="gold" id="create">Создать</button>
+    <section data-panel="feed">
+      <div class="chips" id="cat-filters">
+        <button class="chip on" data-cat="">Все</button>
+        <button class="chip" data-cat="sport">Спорт</button>
+        <button class="chip" data-cat="politics">Политика</button>
+        <button class="chip" data-cat="unique">Уникальное</button>
       </div>
-    </div>
+      <div class="chips" id="status-filters">
+        <button class="chip on" data-status="">Все</button>
+        <button class="chip" data-status="open">Открытые</button>
+        <button class="chip" data-status="resolved">Завершённые</button>
+      </div>
+      <div id="markets"></div>
+    </section>
 
-    <h2>Рынки</h2>
-    <div id="markets"></div>
+    <section data-panel="create" hidden>
+      <div class="card">
+        <strong>Новый рынок</strong>
+        <label>Вопрос</label>
+        <input id="question" maxlength="512" placeholder="Победит ли команда в матче?"/>
+        <label>Категория</label>
+        <div class="chips" id="create-cats">
+          <button type="button" class="chip" data-cat="sport">Спорт</button>
+          <button type="button" class="chip" data-cat="politics">Политика</button>
+          <button type="button" class="chip on" data-cat="unique">Уникальное</button>
+        </div>
+        <details class="more">
+          <summary>Дополнительно</summary>
+          <label>Стабильность коэфов</label>
+          <input id="liq" type="number" min="1" step="1" value="100"/>
+          <p class="muted">Чем больше число, тем меньше коэф сдвигается от одной ставки. По умолчанию 100.</p>
+        </details>
+        <div class="row">
+          <button class="gold" id="create">Создать рынок</button>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel="mine" hidden>
+      <h2>Созданные</h2>
+      <div id="mine-created"></div>
+      <h2>Мои ставки</h2>
+      <div id="mine-bets"></div>
+    </section>
   </main>
+  <div class="toast" id="toast"></div>
 
   <script>
+    const CAT_LABEL = { sport: "Спорт", politics: "Политика", unique: "Уникальное" };
     const tg = window.Telegram && window.Telegram.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      const tp = tg.themeParams || {};
-      if (tp.bg_color) document.documentElement.style.setProperty("--bg", tp.bg_color);
-      if (tp.secondary_bg_color) document.documentElement.style.setProperty("--card", tp.secondary_bg_color);
-      if (tp.text_color) document.documentElement.style.setProperty("--text", tp.text_color);
-      if (tp.hint_color) document.documentElement.style.setProperty("--muted", tp.hint_color);
-    }
+    try {
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        const tp = tg.themeParams || {};
+        if (tp.bg_color) document.documentElement.style.setProperty("--bg", tp.bg_color);
+        if (tp.secondary_bg_color) document.documentElement.style.setProperty("--card", tp.secondary_bg_color);
+        if (tp.text_color) document.documentElement.style.setProperty("--text", tp.text_color);
+        if (tp.hint_color) document.documentElement.style.setProperty("--muted", tp.hint_color);
+      }
+    } catch (e) { /* браузер без Telegram */ }
 
-    const tgUser = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || { id: 1, username: "demo" };
+    const rawUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const tgUser = (rawUser && rawUser.id)
+      ? rawUser
+      : { id: 1, username: "demo", first_name: "Demo" };
+    const isDemo = !(rawUser && rawUser.id);
+
     let me = null;
+    let filterCategory = "";
+    let filterStatus = "";
+    let createCategory = "unique";
+    const quoteTimers = {};
+    let myPositions = {};
 
     function showError(e) {
       document.getElementById("error").textContent = e || "";
+    }
+
+    function toast(msg, bad) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.toggle("bad", !!bad);
+      el.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove("show"), 2800);
+    }
+
+    function displayName() {
+      return tgUser.first_name || tgUser.username || ("id " + tgUser.id);
+    }
+
+    function odds(p) {
+      if (!p || p <= 0) return 0;
+      return 1 / p;
+    }
+
+    function fmtK(p) { return odds(p).toFixed(2); }
+    function fmtPct(p) { return (p * 100).toFixed(1) + "%"; }
+    function statusLabel(s) { return s === "open" ? "Открыт" : "Завершён"; }
+    function outcomeLabel(o) { return o === "yes" ? "Да" : "Нет"; }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    function apiError(data, status) {
+      const d = data && data.detail;
+      if (typeof d === "string") return d;
+      if (status === 403) return "Недостаточно прав";
+      if (status === 404) return "Не найдено";
+      return "Ошибка запроса";
     }
 
     async function api(path, options) {
@@ -118,10 +300,7 @@
         headers: { "Content-Type": "application/json" }
       }, options));
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const detail = data.detail;
-        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail || res.status));
-      }
+      if (!res.ok) throw new Error(apiError(data, res.status));
       return data;
     }
 
@@ -134,8 +313,7 @@
         })
       });
       document.getElementById("who").textContent =
-        (tgUser.first_name || tgUser.username || ("id " + tgUser.id)) +
-        " · 0% комиссия · LMSR";
+        displayName() + (isDemo ? " · демо" : "") + " · 0% комиссия";
       document.getElementById("balance").textContent = me.balance.toFixed(2);
     }
 
@@ -144,63 +322,239 @@
       document.getElementById("balance").textContent = me.balance.toFixed(2);
     }
 
-    function pct(x) { return (x * 100).toFixed(1) + "%"; }
+    function setBalance(v) {
+      me.balance = v;
+      document.getElementById("balance").textContent = Number(v).toFixed(2);
+    }
+
+    async function loadPositionsMap() {
+      try {
+        const rows = await api("/users/" + me.id + "/positions");
+        myPositions = {};
+        for (const p of rows) myPositions[p.market_id] = p;
+      } catch (e) {
+        myPositions = {};
+      }
+    }
+
+    function marketCard(m) {
+      const open = m.status === "open";
+      const resolved = m.status === "resolved";
+      const isCreator = me && m.creator_id === me.id;
+      const pos = myPositions[m.id];
+      const canClaim = resolved && pos && !pos.claimed && (pos.shares_yes > 0 || pos.shares_no > 0);
+      return `
+        <div class="card" data-id="${m.id}" data-status="${m.status}">
+          <div class="question">${escapeHtml(m.question)}</div>
+          <div class="meta">
+            <span class="pill">${statusLabel(m.status)}</span>
+            <span class="pill">${escapeHtml(CAT_LABEL[m.category] || "Уникальное")}</span>
+            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${outcomeLabel(m.winning_outcome)}</span>` : ""}
+          </div>
+          <div class="odds">
+            <div class="odd yes-odd">
+              <div class="kname">Да <b>${fmtK(m.price_yes)}</b></div>
+              <div class="pct">${fmtPct(m.price_yes)}</div>
+            </div>
+            <div class="odd no-odd">
+              <div class="kname">Нет <b>${fmtK(m.price_no)}</b></div>
+              <div class="pct">${fmtPct(m.price_no)}</div>
+            </div>
+          </div>
+          ${open ? `
+            <label>Сумма ставки</label>
+            <input type="number" min="1" step="1" value="10" class="amount" inputmode="decimal"/>
+            <div class="preview" data-preview>Введите сумму — покажем доли и средний коэф</div>
+            <div class="row">
+              <button class="yes" data-act="buy" data-outcome="yes">Поставить Да</button>
+              <button class="no" data-act="buy" data-outcome="no">Поставить Нет</button>
+            </div>` : ""}
+          ${open && isCreator ? `
+            <div class="row">
+              <button class="ghost" data-act="resolve" data-outcome="yes">Да победило</button>
+              <button class="ghost" data-act="resolve" data-outcome="no">Нет победило</button>
+            </div>` : ""}
+          ${canClaim ? `
+            <div class="muted" style="margin-top:8px">Чаевые с чистой прибыли (по желанию)</div>
+            <div class="tips" data-tip="0">
+              <button type="button" class="chip on" data-tip="0">0%</button>
+              <button type="button" class="chip" data-tip="0.005">0.5%</button>
+              <button type="button" class="chip" data-tip="0.01">1%</button>
+            </div>
+            <div class="row">
+              <button class="gold" data-act="claim">Забрать выигрыш</button>
+            </div>` : ""}
+          ${resolved && pos && pos.claimed ? `<p class="muted">Выигрыш уже получен</p>` : ""}
+        </div>`;
+    }
+
+    function positionCard(pos) {
+      const m = pos.market;
+      const resolved = m.status === "resolved";
+      return `
+        <div class="card" data-id="${m.id}" data-status="${m.status}">
+          <div class="question">${escapeHtml(m.question)}</div>
+          <div class="meta">
+            <span class="pill">${statusLabel(m.status)}</span>
+            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${outcomeLabel(m.winning_outcome)}</span>` : ""}
+          </div>
+          <p class="muted">Да: ${pos.shares_yes.toFixed(2)} долей · Нет: ${pos.shares_no.toFixed(2)} долей</p>
+          ${resolved && !pos.claimed ? `
+            <div class="muted">Чаевые с чистой прибыли</div>
+            <div class="tips" data-tip="0">
+              <button type="button" class="chip on" data-tip="0">0%</button>
+              <button type="button" class="chip" data-tip="0.005">0.5%</button>
+              <button type="button" class="chip" data-tip="0.01">1%</button>
+            </div>
+            <div class="row">
+              <button class="gold" data-act="claim">Забрать выигрыш</button>
+            </div>` : ""}
+          ${pos.claimed ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · чаевые " + pos.tip_paid.toFixed(2) : ""}</p>` : ""}
+        </div>`;
+    }
 
     async function loadMarkets() {
-      const markets = await api("/markets");
+      await loadPositionsMap();
+      const qs = new URLSearchParams();
+      if (filterCategory) qs.set("category", filterCategory);
+      if (filterStatus) qs.set("status", filterStatus);
+      const q = qs.toString();
+      const markets = await api("/markets" + (q ? "?" + q : ""));
       const root = document.getElementById("markets");
       if (!markets.length) {
         root.innerHTML = '<p class="muted">Пока пусто — создайте первый рынок.</p>';
         return;
       }
-      root.innerHTML = markets.map(m => `
-        <div class="card" data-id="${m.id}">
-          <strong>${escapeHtml(m.question)}</strong>
-          <div class="muted">#${m.id} · b=${m.b} · ${m.status}</div>
-          <div class="prices">
-            <span>Да ${pct(m.price_yes)}</span>
-            <span>Нет ${pct(m.price_no)}</span>
-          </div>
-          <label>Сумма ставки</label>
-          <input type="number" min="1" step="1" value="10" class="amount"/>
-          <div class="row">
-            <button class="yes" data-act="buy" data-outcome="yes">Купить Да</button>
-            <button class="no" data-act="buy" data-outcome="no">Купить Нет</button>
-          </div>
-          ${m.status === "open" ? `
-            <div class="row">
-              <button class="ghost" data-act="resolve" data-outcome="yes">Исход: Да</button>
-              <button class="ghost" data-act="resolve" data-outcome="no">Исход: Нет</button>
-            </div>` : `
-            <div class="row">
-              <button class="gold" data-act="claim">Забрать выигрыш</button>
-            </div>`}
-        </div>
-      `).join("");
+      root.innerHTML = markets.map(m => marketCard(m)).join("");
+      await Promise.all(
+        [...root.querySelectorAll(".card[data-status='open']")].map(card => previewQuote(card))
+      );
     }
 
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, c => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-      }[c]));
+    async function loadMine() {
+      const [markets, positions] = await Promise.all([
+        api("/markets"),
+        api("/users/" + me.id + "/positions")
+      ]);
+      myPositions = {};
+      for (const p of positions) myPositions[p.market_id] = p;
+      const created = markets.filter(m => m.creator_id === me.id);
+      const createdRoot = document.getElementById("mine-created");
+      const betsRoot = document.getElementById("mine-bets");
+      createdRoot.innerHTML = created.length
+        ? created.map(m => marketCard(m)).join("")
+        : '<p class="muted">Вы ещё не создавали рынки.</p>';
+      await Promise.all(
+        [...createdRoot.querySelectorAll(".card[data-status='open']")].map(card => previewQuote(card))
+      );
+      betsRoot.innerHTML = positions.length
+        ? positions.map(positionCard).join("")
+        : '<p class="muted">Ставок пока нет.</p>';
     }
+
+    async function previewQuote(card) {
+      const preview = card.querySelector("[data-preview]");
+      if (!preview || card.dataset.status !== "open") return;
+      const money = Number(card.querySelector(".amount")?.value || 0);
+      if (!money || money <= 0) {
+        preview.textContent = "Введите сумму — покажем доли и средний коэф";
+        return;
+      }
+      try {
+        const [yes, no] = await Promise.all([
+          api("/markets/" + card.dataset.id + "/quote", {
+            method: "POST",
+            body: JSON.stringify({ outcome: "yes", money })
+          }),
+          api("/markets/" + card.dataset.id + "/quote", {
+            method: "POST",
+            body: JSON.stringify({ outcome: "no", money })
+          })
+        ]);
+        preview.innerHTML =
+          "Да ≈ " + yes.shares.toFixed(2) + " долей · ср. коэф " + yes.odds.toFixed(2) +
+          "<br>Нет ≈ " + no.shares.toFixed(2) + " долей · ср. коэф " + no.odds.toFixed(2);
+      } catch (e) {
+        preview.textContent = e.message;
+      }
+    }
+
+    function scheduleQuote(card) {
+      const id = card.dataset.id;
+      clearTimeout(quoteTimers[id]);
+      quoteTimers[id] = setTimeout(() => previewQuote(card), 220);
+    }
+
+    function showTab(name) {
+      document.querySelectorAll("[data-panel]").forEach(p => {
+        p.hidden = p.dataset.panel !== name;
+      });
+      document.querySelectorAll(".tab").forEach(t => {
+        t.classList.toggle("active", t.dataset.tab === name);
+      });
+      showError("");
+      if (name === "feed") loadMarkets().catch(e => showError(e.message));
+      if (name === "mine") loadMine().catch(e => showError(e.message));
+    }
+
+    document.querySelector(".tabs").onclick = (ev) => {
+      const btn = ev.target.closest("[data-tab]");
+      if (btn) showTab(btn.dataset.tab);
+    };
+
+    document.getElementById("cat-filters").onclick = (ev) => {
+      const btn = ev.target.closest("[data-cat]");
+      if (!btn) return;
+      filterCategory = btn.dataset.cat;
+      document.querySelectorAll("#cat-filters .chip").forEach(c => c.classList.toggle("on", c === btn));
+      loadMarkets().catch(e => showError(e.message));
+    };
+
+    document.getElementById("status-filters").onclick = (ev) => {
+      const btn = ev.target.closest("[data-status]");
+      if (!btn) return;
+      filterStatus = btn.dataset.status;
+      document.querySelectorAll("#status-filters .chip").forEach(c => c.classList.toggle("on", c === btn));
+      loadMarkets().catch(e => showError(e.message));
+    };
+
+    document.getElementById("create-cats").onclick = (ev) => {
+      const btn = ev.target.closest("[data-cat]");
+      if (!btn) return;
+      createCategory = btn.dataset.cat;
+      document.querySelectorAll("#create-cats .chip").forEach(c => c.classList.toggle("on", c === btn));
+    };
 
     document.getElementById("create").onclick = async () => {
       showError("");
       try {
         const question = document.getElementById("question").value.trim();
-        const b = Number(document.getElementById("liq").value);
+        const b = Number(document.getElementById("liq").value) || 100;
         if (question.length < 8) throw new Error("Вопрос слишком короткий");
         await api("/markets", {
           method: "POST",
-          body: JSON.stringify({ creator_id: me.id, question, b, description: "" })
+          body: JSON.stringify({
+            creator_id: me.id,
+            question,
+            b,
+            category: createCategory,
+            description: ""
+          })
         });
         document.getElementById("question").value = "";
-        await loadMarkets();
+        toast("Рынок создан");
+        showTab("feed");
       } catch (e) { showError(e.message); }
     };
 
-    document.getElementById("markets").onclick = async (ev) => {
+    async function onCardClick(ev) {
+      const tipBtn = ev.target.closest("button[data-tip]");
+      if (tipBtn) {
+        const wrap = tipBtn.closest(".tips");
+        wrap.dataset.tip = tipBtn.dataset.tip;
+        wrap.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === tipBtn));
+        return;
+      }
       const btn = ev.target.closest("button[data-act]");
       if (!btn) return;
       const card = btn.closest(".card");
@@ -209,25 +563,57 @@
       showError("");
       try {
         if (btn.dataset.act === "buy") {
-          await api("/markets/" + id + "/buy", {
+          const res = await api("/markets/" + id + "/buy", {
             method: "POST",
             body: JSON.stringify({ user_id: me.id, outcome: btn.dataset.outcome, money: amount })
           });
+          setBalance(res.balance);
+          const avgK = res.paid > 0 ? (res.shares / res.paid) : 0;
+          toast("Поставлено " + Number(res.paid).toFixed(2) + ", коэф ~" + avgK.toFixed(2));
         } else if (btn.dataset.act === "resolve") {
+          const label = outcomeLabel(btn.dataset.outcome);
+          if (!confirm("Зафиксировать исход «" + label + "»? Это нельзя отменить.")) return;
           await api("/markets/" + id + "/resolve", {
             method: "POST",
-            body: JSON.stringify({ winning_outcome: btn.dataset.outcome })
+            body: JSON.stringify({ winning_outcome: btn.dataset.outcome, user_id: me.id })
           });
+          toast("Исход зафиксирован: " + label);
         } else if (btn.dataset.act === "claim") {
-          await api("/markets/" + id + "/claim", {
+          const tipWrap = card.querySelector(".tips");
+          const tipRate = Number(tipWrap ? tipWrap.dataset.tip : 0);
+          const res = await api("/markets/" + id + "/claim", {
             method: "POST",
-            body: JSON.stringify({ user_id: me.id, tip_rate: 0 })
+            body: JSON.stringify({ user_id: me.id, tip_rate: tipRate })
           });
+          setBalance(res.balance);
+          toast("Зачислено " + Number(res.credited).toFixed(2));
         }
+        const panel = document.querySelector("[data-panel]:not([hidden])");
+        if (panel && panel.dataset.panel === "mine") await loadMine();
+        else await loadMarkets();
         await refreshMe();
-        await loadMarkets();
-      } catch (e) { showError(e.message); }
-    };
+      } catch (e) {
+        showError(e.message);
+        toast(e.message, true);
+      }
+    }
+
+    document.getElementById("markets").onclick = onCardClick;
+    document.getElementById("mine-created").onclick = onCardClick;
+    document.getElementById("mine-bets").onclick = onCardClick;
+
+    document.getElementById("markets").addEventListener("input", (ev) => {
+      if (!ev.target.classList.contains("amount")) return;
+      scheduleQuote(ev.target.closest(".card"));
+    });
+    document.getElementById("markets").addEventListener("change", (ev) => {
+      if (!ev.target.classList.contains("amount")) return;
+      scheduleQuote(ev.target.closest(".card"));
+    });
+    document.getElementById("mine-created").addEventListener("input", (ev) => {
+      if (!ev.target.classList.contains("amount")) return;
+      scheduleQuote(ev.target.closest(".card"));
+    });
 
     (async () => {
       try {

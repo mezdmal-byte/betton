@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.lmsr import YES, apply_buy, cost, max_tip, outcome_index, prices
 from app.models import Market, MarketStatus, Outcome, Position, Trade, User
-from app.schemas import MarketOut
+from app.schemas import MarketOut, PositionOut, QuoteOut
+
+ALLOWED_CATEGORIES = ("sport", "politics", "unique")
 
 
 def _quantities(market: Market) -> list[float]:
@@ -21,6 +23,7 @@ def market_to_out(market: Market) -> MarketOut:
         question=market.question,
         description=market.description,
         creator_id=market.creator_id,
+        category=market.category or "unique",
         b=market.b,
         q_yes=market.q_yes,
         q_no=market.q_no,
@@ -72,20 +75,32 @@ def get_or_create_telegram_user(
     return create_user(db, username=uname, telegram_id=telegram_id)
 
 
+def _normalize_category(category: str | None) -> str:
+    cat = (category or "unique").strip().lower()
+    if cat not in ALLOWED_CATEGORIES:
+        raise HTTPException(
+            status_code=400,
+            detail="Категория должна быть sport, politics или unique",
+        )
+    return cat
+
+
 def create_market(
     db: Session,
     creator_id: int,
     question: str,
     b: float,
     description: str = "",
+    category: str = "unique",
 ) -> Market:
     creator = get_user(db, creator_id)
     if b <= 0:
-        raise HTTPException(status_code=400, detail="b должен быть > 0")
+        raise HTTPException(status_code=400, detail="Параметр глубины должен быть > 0")
     market = Market(
         question=question,
         description=description,
         creator_id=creator.id,
+        category=_normalize_category(category),
         b=b,
         q_yes=0.0,
         q_no=0.0,
@@ -97,8 +112,17 @@ def create_market(
     return market
 
 
-def list_markets(db: Session) -> list[Market]:
-    return db.query(Market).order_by(Market.id.desc()).all()
+def list_markets(
+    db: Session,
+    category: str | None = None,
+    status: MarketStatus | None = None,
+) -> list[Market]:
+    query = db.query(Market)
+    if category:
+        query = query.filter(Market.category == _normalize_category(category))
+    if status is not None:
+        query = query.filter(Market.status == status)
+    return query.order_by(Market.id.desc()).all()
 
 
 def get_market(db: Session, market_id: int) -> Market:
@@ -166,8 +190,54 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome: Outcome, mone
     }
 
 
-def resolve_market(db: Session, market_id: int, winning_outcome: Outcome) -> Market:
+def quote_buy(db: Session, market_id: int, outcome: Outcome, money: float) -> QuoteOut:
     market = get_market(db, market_id)
+    if market.status != MarketStatus.open:
+        raise HTTPException(status_code=400, detail="Рынок закрыт")
+    if money <= 0:
+        raise HTTPException(status_code=400, detail="Сумма ставки должна быть > 0")
+    idx = outcome_index(outcome.value)
+    _new_q, shares, paid = apply_buy(_quantities(market), market.b, idx, money)
+    avg_price = (paid / shares) if shares > 0 else 0.0
+    odds = (shares / paid) if paid > 0 and shares > 0 else 0.0
+    return QuoteOut(shares=shares, avg_price=avg_price, odds=odds)
+
+
+def list_positions_out(db: Session, user_id: int) -> list[PositionOut]:
+    get_user(db, user_id)
+    rows = (
+        db.query(Position)
+        .filter(Position.user_id == user_id)
+        .order_by(Position.id.desc())
+        .all()
+    )
+    result: list[PositionOut] = []
+    for pos in rows:
+        market = get_market(db, pos.market_id)
+        result.append(
+            PositionOut(
+                market_id=pos.market_id,
+                shares_yes=pos.shares_yes,
+                shares_no=pos.shares_no,
+                cost_yes=pos.cost_yes,
+                cost_no=pos.cost_no,
+                claimed=pos.claimed,
+                tip_paid=pos.tip_paid,
+                market=market_to_out(market),
+            )
+        )
+    return result
+
+
+def resolve_market(
+    db: Session,
+    market_id: int,
+    winning_outcome: Outcome,
+    user_id: int,
+) -> Market:
+    market = get_market(db, market_id)
+    if market.creator_id != user_id:
+        raise HTTPException(status_code=403, detail="Разрешить рынок может только создатель")
     if market.status != MarketStatus.open:
         raise HTTPException(status_code=400, detail="Рынок уже разрешён")
     market.status = MarketStatus.resolved

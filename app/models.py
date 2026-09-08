@@ -48,6 +48,7 @@ class Market(Base):
     question: Mapped[str] = mapped_column(String(512))
     description: Mapped[str] = mapped_column(Text, default="")
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    category: Mapped[str] = mapped_column(String(32), default="unique", server_default="unique")
     b: Mapped[float] = mapped_column(Float)  # параметр ликвидности LMSR
     q_yes: Mapped[float] = mapped_column(Float, default=0.0)
     q_no: Mapped[float] = mapped_column(Float, default=0.0)

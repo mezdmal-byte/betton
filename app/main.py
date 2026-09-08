@@ -3,17 +3,22 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import Base, engine, get_db
+from app.database import ensure_schema, get_db
+from app.models import MarketStatus
 from app.schemas import (
     BuySharesRequest,
     ClaimWinningsRequest,
     MarketCreate,
     MarketOut,
+    PositionOut,
+    QuoteOut,
+    QuoteRequest,
     ResolveRequest,
     TelegramAuth,
     UserCreate,
@@ -47,7 +52,7 @@ async def setup_webhook_task():
 
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    ensure_schema()
     task = asyncio.create_task(setup_webhook_task())
     yield
     task.cancel()
@@ -74,6 +79,47 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _validation_detail_ru(exc: RequestValidationError) -> str:
+    errors = exc.errors()
+    if not errors:
+        return "Некорректный запрос"
+    err = errors[0]
+    loc = [str(x) for x in err.get("loc", ()) if x not in {"body", "query", "path"}]
+    field = loc[-1] if loc else ""
+    labels = {
+        "money": "сумма",
+        "outcome": "исход",
+        "question": "вопрос",
+        "user_id": "пользователь",
+        "winning_outcome": "исход",
+        "tip_rate": "чаевые",
+        "category": "категория",
+        "b": "глубина рынка",
+        "creator_id": "создатель",
+        "status": "статус",
+    }
+    label = labels.get(field, field)
+    msg = str(err.get("msg", "")).lower()
+    if "required" in msg:
+        return f"Не указано: {label}" if label else "Не указано обязательное поле"
+    if "greater than" in msg:
+        return f"Значение «{label}» должно быть больше 0" if label else "Значение слишком маленькое"
+    if "less than" in msg:
+        return "Чаевые не больше 1%"
+    if field == "category":
+        return "Категория: sport, politics или unique"
+    if field in {"outcome", "winning_outcome"}:
+        return "Исход: yes или no"
+    if field == "status":
+        return "Статус: open или resolved"
+    return "Некорректный запрос"
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=400, content={"detail": _validation_detail_ru(exc)})
 
 
 @app.get("/", include_in_schema=False)
@@ -115,6 +161,11 @@ def get_user_endpoint(user_id: int, db: Session = Depends(get_db)):
     return market_service.get_user(db, user_id)
 
 
+@app.get("/users/{user_id}/positions", response_model=list[PositionOut])
+def list_user_positions_endpoint(user_id: int, db: Session = Depends(get_db)):
+    return market_service.list_positions_out(db, user_id)
+
+
 @app.post("/markets", response_model=MarketOut)
 def create_market_endpoint(market_in: MarketCreate, db: Session = Depends(get_db)):
     market = market_service.create_market(
@@ -123,18 +174,32 @@ def create_market_endpoint(market_in: MarketCreate, db: Session = Depends(get_db
         question=market_in.question,
         b=market_in.b,
         description=market_in.description or "",
+        category=market_in.category,
     )
     return market_service.market_to_out(market)
 
 
 @app.get("/markets", response_model=list[MarketOut])
-def list_markets_endpoint(db: Session = Depends(get_db)):
-    return [market_service.market_to_out(m) for m in market_service.list_markets(db)]
+def list_markets_endpoint(
+    category: str | None = None,
+    status: MarketStatus | None = None,
+    db: Session = Depends(get_db),
+):
+    cat = (category or "").strip() or None
+    return [
+        market_service.market_to_out(m)
+        for m in market_service.list_markets(db, category=cat, status=status)
+    ]
 
 
 @app.get("/markets/{market_id}", response_model=MarketOut)
 def get_market_endpoint(market_id: int, db: Session = Depends(get_db)):
     return market_service.market_to_out(market_service.get_market(db, market_id))
+
+
+@app.post("/markets/{market_id}/quote", response_model=QuoteOut)
+def quote_endpoint(market_id: int, req: QuoteRequest, db: Session = Depends(get_db)):
+    return market_service.quote_buy(db, market_id, req.outcome, req.money)
 
 
 @app.post("/markets/{market_id}/buy")
@@ -157,7 +222,9 @@ def buy_shares_endpoint(market_id: int, req: BuySharesRequest, db: Session = Dep
 
 @app.post("/markets/{market_id}/resolve", response_model=MarketOut)
 def resolve_market_endpoint(market_id: int, req: ResolveRequest, db: Session = Depends(get_db)):
-    market = market_service.resolve_market(db, market_id, req.winning_outcome)
+    market = market_service.resolve_market(
+        db, market_id, req.winning_outcome, user_id=req.user_id
+    )
     return market_service.market_to_out(market)
 
 

@@ -1,9 +1,11 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
 from app.models import MarketStatus, Outcome
+
+MarketCategory = Literal["sport", "politics", "unique"]
 
 
 class UserCreate(BaseModel):
@@ -31,6 +33,12 @@ class MarketCreate(BaseModel):
     question: str
     b: float = Field(default=100.0, gt=0)
     description: Optional[str] = ""
+    category: MarketCategory = "unique"
+
+
+class QuoteRequest(BaseModel):
+    outcome: Outcome
+    money: float = Field(gt=0)
 
 
 class BuySharesRequest(BaseModel):
@@ -46,6 +54,13 @@ class ClaimWinningsRequest(BaseModel):
 
 class ResolveRequest(BaseModel):
     winning_outcome: Outcome
+    user_id: int
+
+
+class QuoteOut(BaseModel):
+    shares: float
+    avg_price: float
+    odds: float
 
 
 class MarketOut(BaseModel):
@@ -53,6 +68,7 @@ class MarketOut(BaseModel):
     question: str
     description: str
     creator_id: int
+    category: str
     b: float
     q_yes: float
     q_no: float
@@ -65,3 +81,14 @@ class MarketOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PositionOut(BaseModel):
+    market_id: int
+    shares_yes: float
+    shares_no: float
+    cost_yes: float
+    cost_no: float
+    claimed: bool
+    tip_paid: float
+    market: MarketOut
