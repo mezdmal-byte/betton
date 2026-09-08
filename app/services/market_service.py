@@ -164,13 +164,6 @@ def find_admin_user(db: Session) -> User | None:
     return db.query(User).filter(User.telegram_id == admin_id).one_or_none()
 
 
-def ensure_admin_bankroll(user: User) -> bool:
-    if user.is_admin and user.balance < ADMIN_BANKROLL:
-        user.balance = ADMIN_BANKROLL
-        return True
-    return False
-
-
 def q_from_target_probs(probs: list[float], b: float) -> list[float]:
     cleaned = [max(1e-12, float(p)) for p in probs]
     total = sum(cleaned)
@@ -277,19 +270,14 @@ def get_or_create_telegram_user(
 ) -> User:
     user = db.query(User).filter(User.telegram_id == telegram_id).one_or_none()
     if user is not None:
-        if ensure_admin_bankroll(user):
-            db.commit()
-            db.refresh(user)
         return user
     uname = f"tg{telegram_id}"
     existing = db.query(User).filter(User.username == uname).one_or_none()
     if existing is not None:
         if existing.telegram_id is None:
             existing.telegram_id = telegram_id
-        if ensure_admin_bankroll(existing):
-            pass
-        db.commit()
-        db.refresh(existing)
+            db.commit()
+            db.refresh(existing)
         return existing
     _ = username
     return create_user(db, username=uname, telegram_id=telegram_id)

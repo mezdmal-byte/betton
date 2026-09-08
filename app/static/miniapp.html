@@ -80,7 +80,10 @@
       padding: 14px;
       margin: 12px 0;
     }
+    .card { color: var(--text); }
     .question {
+      color: var(--text);
+      -webkit-text-fill-color: var(--text);
       font-weight: 700;
       font-size: 1.05rem;
       line-height: 1.35;
@@ -275,11 +278,8 @@
       if (tg) {
         tg.ready();
         tg.expand();
-        const tp = tg.themeParams || {};
-        if (tp.bg_color) document.documentElement.style.setProperty("--bg", tp.bg_color);
-        if (tp.secondary_bg_color) document.documentElement.style.setProperty("--card", tp.secondary_bg_color);
-        if (tp.hint_color) document.documentElement.style.setProperty("--muted", tp.hint_color);
-        // Не красить input/textarea в themeParams.text_color — поля всегда тёмные, текст светлый.
+        // Не перекрашивать фон/карточки из themeParams: светлая тема Telegram
+        // делает название пари того же цвета, что и карточка.
       }
     } catch (e) { /* браузер без Telegram */ }
 
