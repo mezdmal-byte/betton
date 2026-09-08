@@ -2,6 +2,8 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
+    Boolean,
     DateTime,
     Enum,
     Float,
@@ -14,11 +16,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.config import settings
 from app.database import Base
 
 
 class MarketStatus(str, enum.Enum):
     open = "open"
+    closed = "closed"
     resolved = "resolved"
 
 
@@ -40,6 +44,10 @@ class User(Base):
     positions: Mapped[list["Position"]] = relationship(back_populates="user")
     trades: Mapped[list["Trade"]] = relationship(back_populates="user")
 
+    @property
+    def is_admin(self) -> bool:
+        return settings.is_admin_telegram(self.telegram_id)
+
 
 class Market(Base):
     __tablename__ = "markets"
@@ -49,13 +57,20 @@ class Market(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     category: Mapped[str] = mapped_column(String(32), default="unique", server_default="unique")
-    b: Mapped[float] = mapped_column(Float)  # параметр ликвидности LMSR
+    b: Mapped[float] = mapped_column(Float)
     q_yes: Mapped[float] = mapped_column(Float, default=0.0)
     q_no: Mapped[float] = mapped_column(Float, default=0.0)
+    outcomes: Mapped[list] = mapped_column(JSON, default=list)
+    q: Mapped[list] = mapped_column(JSON, default=list)
+    lock_ton: Mapped[float] = mapped_column(Float, default=0.0)
+    pot: Mapped[float] = mapped_column(Float, default=0.0)
+    close_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    lock_returned: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[MarketStatus] = mapped_column(
-        Enum(MarketStatus), default=MarketStatus.open
+        Enum(MarketStatus, native_enum=False, values_callable=lambda xs: [e.value for e in xs]),
+        default=MarketStatus.open,
     )
-    winning_outcome: Mapped[Outcome | None] = mapped_column(Enum(Outcome), nullable=True)
+    winning_outcome: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
@@ -75,6 +90,8 @@ class Position(Base):
     shares_no: Mapped[float] = mapped_column(Float, default=0.0)
     cost_yes: Mapped[float] = mapped_column(Float, default=0.0)
     cost_no: Mapped[float] = mapped_column(Float, default=0.0)
+    shares: Mapped[list] = mapped_column(JSON, default=list)
+    costs: Mapped[list] = mapped_column(JSON, default=list)
     claimed: Mapped[bool] = mapped_column(default=False)
     tip_paid: Mapped[float] = mapped_column(Float, default=0.0)
 
@@ -88,7 +105,7 @@ class Trade(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     market_id: Mapped[int] = mapped_column(ForeignKey("markets.id"))
-    outcome: Mapped[Outcome] = mapped_column(Enum(Outcome))
+    outcome: Mapped[str] = mapped_column(String(128))
     money: Mapped[float] = mapped_column(Float)
     shares: Mapped[float] = mapped_column(Float)
     price_after: Mapped[float] = mapped_column(Float)

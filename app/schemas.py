@@ -1,11 +1,12 @@
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from app.models import MarketStatus, Outcome
+from app.models import MarketStatus
 
 MarketCategory = Literal["sport", "politics", "unique"]
+OutcomeRef = Union[str, int]
 
 
 class UserCreate(BaseModel):
@@ -23,6 +24,7 @@ class UserOut(BaseModel):
     username: str
     telegram_id: Optional[int]
     balance: float
+    is_admin: bool = False
 
     class Config:
         from_attributes = True
@@ -31,29 +33,41 @@ class UserOut(BaseModel):
 class MarketCreate(BaseModel):
     creator_id: int
     question: str
-    b: float = Field(default=100.0, gt=0)
     description: Optional[str] = ""
     category: MarketCategory = "unique"
+    outcomes: list[str] = Field(default_factory=lambda: ["Да", "Нет"])
+    lock_ton: float = Field(default=50.0, ge=10)
+    close_at: datetime
+    target_odds: Optional[list[float]] = None
+    target_probs: Optional[list[float]] = None
 
 
 class QuoteRequest(BaseModel):
-    outcome: Outcome
+    outcome: OutcomeRef
     money: float = Field(gt=0)
 
 
 class BuySharesRequest(BaseModel):
     user_id: int
-    outcome: Outcome
+    outcome: OutcomeRef
     money: float = Field(gt=0)
 
 
 class ClaimWinningsRequest(BaseModel):
     user_id: int
-    tip_rate: float = Field(default=0.0, ge=0.0, le=0.01)
+    tip_rate: float = Field(default=0.01, ge=0.0, le=0.01)
 
 
 class ResolveRequest(BaseModel):
-    winning_outcome: Outcome
+    winning_outcome: OutcomeRef
+    user_id: int
+
+
+class CloseMarketRequest(BaseModel):
+    user_id: int
+
+
+class CollectResidualRequest(BaseModel):
     user_id: int
 
 
@@ -61,6 +75,8 @@ class QuoteOut(BaseModel):
     shares: float
     avg_price: float
     odds: float
+    outcome: str
+    outcome_index: int
 
 
 class MarketOut(BaseModel):
@@ -70,14 +86,22 @@ class MarketOut(BaseModel):
     creator_id: int
     category: str
     b: float
-    q_yes: float
-    q_no: float
-    price_yes: float
-    price_no: float
+    q: list[float]
+    outcomes: list[str]
+    prices: list[float]
+    odds: list[float]
+    lock_ton: float
+    pot: float
+    close_at: Optional[datetime] = None
+    q_yes: float = 0.0
+    q_no: float = 0.0
+    price_yes: float = 0.0
+    price_no: float = 0.0
     cost_c: float
     status: MarketStatus
-    winning_outcome: Optional[Outcome]
+    winning_outcome: Optional[str] = None
     created_at: Optional[datetime] = None
+    accepting_bets: bool = False
 
     class Config:
         from_attributes = True
@@ -85,10 +109,12 @@ class MarketOut(BaseModel):
 
 class PositionOut(BaseModel):
     market_id: int
-    shares_yes: float
-    shares_no: float
-    cost_yes: float
-    cost_no: float
+    shares: list[float]
+    costs: list[float]
+    shares_yes: float = 0.0
+    shares_no: float = 0.0
+    cost_yes: float = 0.0
+    cost_no: float = 0.0
     claimed: bool
     tip_paid: float
     market: MarketOut

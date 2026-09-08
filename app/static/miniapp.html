@@ -16,6 +16,9 @@
       --no: #ff6b6b;
       --line: #2a334d;
       --chip: #1c243f;
+      --input-bg: #12182a;
+      --input-fg: #f4f1ea;
+      --input-ph: #c5cddc;
     }
     * { box-sizing: border-box; }
     html, body { max-width: 100%; overflow-x: hidden; }
@@ -36,6 +39,17 @@
     }
     .brand { margin: 0; font-size: 1.05rem; letter-spacing: .16em; font-weight: 800; }
     .who { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+    .admin-mark {
+      display: inline-block;
+      margin-left: 6px;
+      background: var(--gold);
+      color: #111;
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
     .balance-wrap { text-align: right; }
     .balance-label { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; }
     .balance { color: var(--gold); font-weight: 800; font-size: 1.2rem; }
@@ -82,12 +96,20 @@
     input, select, textarea {
       width: 100%;
       border: 1px solid var(--line);
-      background: #0b1020;
-      color: var(--text);
+      background: var(--input-bg);
+      color: var(--input-fg);
+      -webkit-text-fill-color: var(--input-fg);
+      caret-color: var(--input-fg);
       border-radius: 12px;
       padding: 12px 12px;
       font-size: 16px;
       min-height: 44px;
+      color-scheme: dark;
+    }
+    input::placeholder, textarea::placeholder {
+      color: var(--input-ph);
+      -webkit-text-fill-color: var(--input-ph);
+      opacity: 1;
     }
     button {
       border: 0;
@@ -112,19 +134,22 @@
       display: flex;
       gap: 8px;
       margin: 10px 0;
+      flex-wrap: wrap;
     }
     .odd {
-      flex: 1;
+      flex: 1 1 28%;
+      min-width: 92px;
       border-radius: 14px;
       padding: 10px 8px;
       text-align: center;
       border: 1px solid var(--line);
     }
-    .odd b { display: block; font-size: 1.55rem; letter-spacing: .02em; }
-    .odd .kname { font-size: .9rem; font-weight: 800; }
+    .odd b { display: block; font-size: 1.45rem; letter-spacing: .02em; }
+    .odd .kname { font-size: .85rem; font-weight: 800; overflow-wrap: anywhere; }
     .odd .pct { color: var(--muted); font-size: .75rem; margin-top: 2px; }
-    .yes-odd .kname, .yes-odd b { color: var(--yes); }
-    .no-odd .kname, .no-odd b { color: var(--no); }
+    .c0 .kname, .c0 b { color: var(--yes); }
+    .c1 .kname, .c1 b { color: var(--no); }
+    .c2 .kname, .c2 b { color: var(--gold); }
     .preview { color: var(--muted); font-size: .8rem; min-height: 2.4em; margin-top: 8px; line-height: 1.35; }
     .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
     .chip {
@@ -137,7 +162,6 @@
       font-size: .9rem;
     }
     .chip.on { background: var(--gold); color: #111; border-color: var(--gold); }
-    .tips { display: flex; gap: 6px; }
     .toast {
       position: fixed;
       left: 16px;
@@ -155,8 +179,21 @@
     .toast.show { display: block; }
     .toast.bad { background: #2a1414; color: var(--no); border-color: #5a2f2f; }
     h2 { font-size: .95rem; margin: 18px 0 0; }
-    details.more { margin-top: 12px; color: var(--muted); }
-    summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+    .outcome-row {
+      display: grid;
+      grid-template-columns: 1fr 88px 64px 40px;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .outcome-row .pct { color: var(--muted); font-size: .8rem; text-align: right; }
+    .rm {
+      min-height: 40px;
+      padding: 0;
+      background: transparent;
+      color: var(--no);
+      border: 1px solid var(--line);
+    }
     [hidden] { display: none !important; }
   </style>
 </head>
@@ -189,7 +226,8 @@
       <div class="chips" id="status-filters">
         <button class="chip on" data-status="">Все</button>
         <button class="chip" data-status="open">Открытые</button>
-        <button class="chip" data-status="resolved">Завершённые</button>
+        <button class="chip" data-status="closed">Стоп</button>
+        <button class="chip" data-status="resolved">Рассчитаны</button>
       </div>
       <div id="markets"></div>
     </section>
@@ -198,19 +236,23 @@
       <div class="card">
         <strong>Новый рынок</strong>
         <label>Вопрос</label>
-        <input id="question" maxlength="512" placeholder="Победит ли команда в матче?"/>
+        <input id="question" maxlength="512" placeholder="Кто победит в матче?"/>
         <label>Категория</label>
         <div class="chips" id="create-cats">
           <button type="button" class="chip" data-cat="sport">Спорт</button>
           <button type="button" class="chip" data-cat="politics">Политика</button>
           <button type="button" class="chip on" data-cat="unique">Уникальное</button>
         </div>
-        <details class="more">
-          <summary>Дополнительно</summary>
-          <label>Стабильность коэфов</label>
-          <input id="liq" type="number" min="1" step="1" value="100"/>
-          <p class="muted">Чем больше число, тем меньше коэф сдвигается от одной ставки. По умолчанию 100.</p>
-        </details>
+        <label>Исходы</label>
+        <div id="outcomes-editor"></div>
+        <div class="row">
+          <button type="button" class="ghost" id="add-outcome">Добавить исход</button>
+        </div>
+        <label>Залог TON</label>
+        <input id="lock" type="number" min="10" step="1" value="50" inputmode="decimal"/>
+        <p class="muted">Заморозка. Чем больше — тем спокойнее коэф. Потеря не больше залога.</p>
+        <label>Конец приёма ставок</label>
+        <input id="close-at" type="datetime-local" required/>
         <div class="row">
           <button class="gold" id="create">Создать рынок</button>
         </div>
@@ -236,8 +278,8 @@
         const tp = tg.themeParams || {};
         if (tp.bg_color) document.documentElement.style.setProperty("--bg", tp.bg_color);
         if (tp.secondary_bg_color) document.documentElement.style.setProperty("--card", tp.secondary_bg_color);
-        if (tp.text_color) document.documentElement.style.setProperty("--text", tp.text_color);
         if (tp.hint_color) document.documentElement.style.setProperty("--muted", tp.hint_color);
+        // Не красить input/textarea в themeParams.text_color — поля всегда тёмные, текст светлый.
       }
     } catch (e) { /* браузер без Telegram */ }
 
@@ -253,6 +295,10 @@
     let createCategory = "unique";
     const quoteTimers = {};
     let myPositions = {};
+    let createOutcomes = [
+      { name: "Да", k: 2 },
+      { name: "Нет", k: 2 }
+    ];
 
     function showError(e) {
       document.getElementById("error").textContent = e || "";
@@ -278,8 +324,35 @@
 
     function fmtK(p) { return odds(p).toFixed(2); }
     function fmtPct(p) { return (p * 100).toFixed(1) + "%"; }
-    function statusLabel(s) { return s === "open" ? "Открыт" : "Завершён"; }
-    function outcomeLabel(o) { return o === "yes" ? "Да" : "Нет"; }
+    function fmtTon(v) { return Number(v).toFixed(2) + " TON"; }
+
+    function statusLabel(s) {
+      if (s === "open") return "Открыт";
+      if (s === "closed") return "Приём закрыт";
+      return "Рассчитан";
+    }
+
+    function marketOutcomes(m) {
+      if (m.outcomes && m.outcomes.length) return m.outcomes;
+      return ["Да", "Нет"];
+    }
+
+    function marketPrices(m) {
+      if (m.prices && m.prices.length) return m.prices;
+      return [m.price_yes || 0.5, m.price_no || 0.5];
+    }
+
+    function pad(n) { return String(n).padStart(2, "0"); }
+
+    function toLocalInput(d) {
+      return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+        "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+    }
+
+    function defaultCloseAt() {
+      const d = new Date(Date.now() + 24 * 3600 * 1000);
+      return toLocalInput(d);
+    }
 
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, c => ({
@@ -304,6 +377,17 @@
       return data;
     }
 
+    function paintUser() {
+      const admin = me && me.is_admin;
+      document.getElementById("who").innerHTML =
+        escapeHtml(displayName()) +
+        (admin ? '<span class="admin-mark">админ</span>' : "") +
+        (isDemo ? " · демо" : "");
+      document.getElementById("balance").textContent = me ? fmtTon(me.balance) : "—";
+      const lock = document.getElementById("lock");
+      if (lock && me) lock.max = String(me.balance);
+    }
+
     async function auth() {
       me = await api("/auth/telegram", {
         method: "POST",
@@ -312,19 +396,17 @@
           username: tgUser.username || tgUser.first_name || null
         })
       });
-      document.getElementById("who").textContent =
-        displayName() + (isDemo ? " · демо" : "") + " · 0% комиссия";
-      document.getElementById("balance").textContent = me.balance.toFixed(2);
+      paintUser();
     }
 
     async function refreshMe() {
       me = await api("/users/" + me.id);
-      document.getElementById("balance").textContent = me.balance.toFixed(2);
+      paintUser();
     }
 
     function setBalance(v) {
       me.balance = v;
-      document.getElementById("balance").textContent = Number(v).toFixed(2);
+      paintUser();
     }
 
     async function loadPositionsMap() {
@@ -337,79 +419,120 @@
       }
     }
 
+    function outcomeProbs() {
+      const inv = createOutcomes.map(o => 1 / Math.max(1.0001, Number(o.k) || 2));
+      const s = inv.reduce((a, b) => a + b, 0);
+      return inv.map(x => x / s);
+    }
+
+    function equalizeOdds() {
+      const n = createOutcomes.length;
+      const k = n;
+      createOutcomes.forEach(o => { o.k = k; });
+    }
+
+    function renderOutcomesEditor() {
+      const root = document.getElementById("outcomes-editor");
+      const probs = outcomeProbs();
+      root.innerHTML = createOutcomes.map((o, i) => `
+        <div class="outcome-row" data-i="${i}">
+          <input class="oname" value="${escapeHtml(o.name)}" placeholder="Исход ${i + 1}"/>
+          <input class="ok" type="number" min="1.01" step="0.01" value="${Number(o.k).toFixed(2)}"/>
+          <div class="pct">${fmtPct(probs[i])}</div>
+          <button type="button" class="rm" data-rm="${i}" ${createOutcomes.length <= 2 ? "disabled" : ""}>×</button>
+        </div>`).join("");
+    }
+
+    function syncOutcomesFromDom() {
+      document.querySelectorAll("#outcomes-editor .outcome-row").forEach(row => {
+        const i = Number(row.dataset.i);
+        const name = row.querySelector(".oname").value;
+        const k = Number(row.querySelector(".ok").value);
+        if (createOutcomes[i]) {
+          createOutcomes[i].name = name;
+          createOutcomes[i].k = k > 1 ? k : createOutcomes.length;
+        }
+      });
+    }
+
     function marketCard(m) {
-      const open = m.status === "open";
+      const names = marketOutcomes(m);
+      const prices = marketPrices(m);
+      const accepting = !!m.accepting_bets;
       const resolved = m.status === "resolved";
-      const isCreator = me && m.creator_id === me.id;
+      const canAdminAct = me && me.is_admin && !resolved;
+      const canStop = canAdminAct && m.status === "open" && accepting;
+      const canResolve = canAdminAct && (m.status === "closed" || (m.status === "open" && !accepting));
       const pos = myPositions[m.id];
-      const canClaim = resolved && pos && !pos.claimed && (pos.shares_yes > 0 || pos.shares_no > 0);
+      const shares = pos && (pos.shares && pos.shares.length ? pos.shares : [pos.shares_yes || 0, pos.shares_no || 0]);
+      const canClaim = resolved && pos && !pos.claimed && shares && shares.some(x => x > 0);
+      const oddsHtml = names.map((name, i) => `
+        <div class="odd c${i % 3}">
+          <div class="kname">${escapeHtml(name)}</div>
+          <b>${fmtK(prices[i] || 0)}</b>
+          <div class="pct">${fmtPct(prices[i] || 0)}</div>
+        </div>`).join("");
+      const buyBtns = names.map((name, i) =>
+        `<button class="${i === 1 ? "no" : "yes"}" data-act="buy" data-outcome="${i}">Поставить «${escapeHtml(name)}»</button>`
+      ).join("");
+      const resolveBtns = names.map((name, i) =>
+        `<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(name)}">Рассчитать: ${escapeHtml(name)}</button>`
+      ).join("");
       return `
         <div class="card" data-id="${m.id}" data-status="${m.status}">
           <div class="question">${escapeHtml(m.question)}</div>
           <div class="meta">
             <span class="pill">${statusLabel(m.status)}</span>
             <span class="pill">${escapeHtml(CAT_LABEL[m.category] || "Уникальное")}</span>
-            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${outcomeLabel(m.winning_outcome)}</span>` : ""}
+            <span class="pill">банк ${fmtTon(m.pot || 0)}</span>
+            ${m.close_at ? `<span class="pill">до ${escapeHtml(String(m.close_at).replace("T", " ").slice(0, 16))} UTC</span>` : ""}
+            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${escapeHtml(m.winning_outcome)}</span>` : ""}
           </div>
-          <div class="odds">
-            <div class="odd yes-odd">
-              <div class="kname">Да <b>${fmtK(m.price_yes)}</b></div>
-              <div class="pct">${fmtPct(m.price_yes)}</div>
-            </div>
-            <div class="odd no-odd">
-              <div class="kname">Нет <b>${fmtK(m.price_no)}</b></div>
-              <div class="pct">${fmtPct(m.price_no)}</div>
-            </div>
-          </div>
-          ${open ? `
-            <label>Сумма ставки</label>
+          <div class="odds">${oddsHtml}</div>
+          ${accepting ? `
+            <label>Сумма ставки TON</label>
             <input type="number" min="1" step="1" value="10" class="amount" inputmode="decimal"/>
             <div class="preview" data-preview>Введите сумму — покажем доли и средний коэф</div>
+            <div class="row" style="flex-wrap:wrap">${buyBtns}</div>` : ""}
+          ${canStop ? `
             <div class="row">
-              <button class="yes" data-act="buy" data-outcome="yes">Поставить Да</button>
-              <button class="no" data-act="buy" data-outcome="no">Поставить Нет</button>
+              <button class="ghost" data-act="close">Стоп ставки</button>
             </div>` : ""}
-          ${open && isCreator ? `
-            <div class="row">
-              <button class="ghost" data-act="resolve" data-outcome="yes">Да победило</button>
-              <button class="ghost" data-act="resolve" data-outcome="no">Нет победило</button>
-            </div>` : ""}
+          ${canResolve ? `<div class="row" style="flex-wrap:wrap">${resolveBtns}</div>` : ""}
           ${canClaim ? `
-            <div class="muted" style="margin-top:8px">Чаевые с чистой прибыли (по желанию)</div>
-            <div class="tips" data-tip="0">
-              <button type="button" class="chip on" data-tip="0">0%</button>
-              <button type="button" class="chip" data-tip="0.005">0.5%</button>
-              <button type="button" class="chip" data-tip="0.01">1%</button>
-            </div>
+            <p class="muted" style="margin-top:8px">комиссия 1% с прибыли: 75% создателю, 25% платформе</p>
             <div class="row">
               <button class="gold" data-act="claim">Забрать выигрыш</button>
             </div>` : ""}
-          ${resolved && pos && pos.claimed ? `<p class="muted">Выигрыш уже получен</p>` : ""}
+          ${resolved && me && me.is_admin && (m.pot || 0) > 0.0001 ? `
+            <div class="row">
+              <button class="ghost" data-act="residual">Забрать остаток залога</button>
+            </div>` : ""}
+          ${resolved && pos && pos.claimed ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
         </div>`;
     }
 
     function positionCard(pos) {
       const m = pos.market;
       const resolved = m.status === "resolved";
+      const names = marketOutcomes(m);
+      const shares = pos.shares && pos.shares.length ? pos.shares : [pos.shares_yes || 0, pos.shares_no || 0];
+      const lines = names.map((n, i) => escapeHtml(n) + ": " + Number(shares[i] || 0).toFixed(2) + " долей").join(" · ");
+      const canClaim = resolved && !pos.claimed && shares.some(x => x > 0);
       return `
         <div class="card" data-id="${m.id}" data-status="${m.status}">
           <div class="question">${escapeHtml(m.question)}</div>
           <div class="meta">
             <span class="pill">${statusLabel(m.status)}</span>
-            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${outcomeLabel(m.winning_outcome)}</span>` : ""}
+            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${escapeHtml(m.winning_outcome)}</span>` : ""}
           </div>
-          <p class="muted">Да: ${pos.shares_yes.toFixed(2)} долей · Нет: ${pos.shares_no.toFixed(2)} долей</p>
-          ${resolved && !pos.claimed ? `
-            <div class="muted">Чаевые с чистой прибыли</div>
-            <div class="tips" data-tip="0">
-              <button type="button" class="chip on" data-tip="0">0%</button>
-              <button type="button" class="chip" data-tip="0.005">0.5%</button>
-              <button type="button" class="chip" data-tip="0.01">1%</button>
-            </div>
+          <p class="muted">${lines}</p>
+          ${canClaim ? `
+            <p class="muted">комиссия 1% с прибыли: 75% создателю, 25% платформе</p>
             <div class="row">
               <button class="gold" data-act="claim">Забрать выигрыш</button>
             </div>` : ""}
-          ${pos.claimed ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · чаевые " + pos.tip_paid.toFixed(2) : ""}</p>` : ""}
+          ${pos.claimed ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
         </div>`;
     }
 
@@ -427,7 +550,7 @@
       }
       root.innerHTML = markets.map(m => marketCard(m)).join("");
       await Promise.all(
-        [...root.querySelectorAll(".card[data-status='open']")].map(card => previewQuote(card))
+        [...root.querySelectorAll(".card")].map(card => previewQuote(card))
       );
     }
 
@@ -445,7 +568,7 @@
         ? created.map(m => marketCard(m)).join("")
         : '<p class="muted">Вы ещё не создавали рынки.</p>';
       await Promise.all(
-        [...createdRoot.querySelectorAll(".card[data-status='open']")].map(card => previewQuote(card))
+        [...createdRoot.querySelectorAll(".card")].map(card => previewQuote(card))
       );
       betsRoot.innerHTML = positions.length
         ? positions.map(positionCard).join("")
@@ -454,26 +577,23 @@
 
     async function previewQuote(card) {
       const preview = card.querySelector("[data-preview]");
-      if (!preview || card.dataset.status !== "open") return;
+      if (!preview) return;
       const money = Number(card.querySelector(".amount")?.value || 0);
       if (!money || money <= 0) {
         preview.textContent = "Введите сумму — покажем доли и средний коэф";
         return;
       }
+      const buttons = [...card.querySelectorAll("button[data-act='buy']")];
       try {
-        const [yes, no] = await Promise.all([
+        const quotes = await Promise.all(buttons.map(btn =>
           api("/markets/" + card.dataset.id + "/quote", {
             method: "POST",
-            body: JSON.stringify({ outcome: "yes", money })
-          }),
-          api("/markets/" + card.dataset.id + "/quote", {
-            method: "POST",
-            body: JSON.stringify({ outcome: "no", money })
+            body: JSON.stringify({ outcome: Number(btn.dataset.outcome), money })
           })
-        ]);
-        preview.innerHTML =
-          "Да ≈ " + yes.shares.toFixed(2) + " долей · ср. коэф " + yes.odds.toFixed(2) +
-          "<br>Нет ≈ " + no.shares.toFixed(2) + " долей · ср. коэф " + no.odds.toFixed(2);
+        ));
+        preview.innerHTML = quotes.map(q =>
+          escapeHtml(q.outcome) + " ≈ " + q.shares.toFixed(2) + " долей · ср. коэф " + q.odds.toFixed(2)
+        ).join("<br>");
       } catch (e) {
         preview.textContent = e.message;
       }
@@ -525,36 +645,79 @@
       document.querySelectorAll("#create-cats .chip").forEach(c => c.classList.toggle("on", c === btn));
     };
 
+    document.getElementById("add-outcome").onclick = () => {
+      syncOutcomesFromDom();
+      if (createOutcomes.length >= 8) return toast("Максимум 8 исходов", true);
+      createOutcomes.push({ name: "Исход " + (createOutcomes.length + 1), k: createOutcomes.length + 1 });
+      equalizeOdds();
+      renderOutcomesEditor();
+    };
+
+    document.getElementById("outcomes-editor").onclick = (ev) => {
+      const rm = ev.target.closest("[data-rm]");
+      if (!rm || createOutcomes.length <= 2) return;
+      syncOutcomesFromDom();
+      createOutcomes.splice(Number(rm.dataset.rm), 1);
+      equalizeOdds();
+      renderOutcomesEditor();
+    };
+
+    document.getElementById("outcomes-editor").addEventListener("input", () => {
+      syncOutcomesFromDom();
+      const probs = outcomeProbs();
+      document.querySelectorAll("#outcomes-editor .outcome-row").forEach((row, i) => {
+        const pct = row.querySelector(".pct");
+        if (pct) pct.textContent = fmtPct(probs[i] || 0);
+      });
+    });
+
     document.getElementById("create").onclick = async () => {
       showError("");
       try {
+        syncOutcomesFromDom();
         const question = document.getElementById("question").value.trim();
-        const b = Number(document.getElementById("liq").value) || 100;
+        const lock = Number(document.getElementById("lock").value);
+        const closeLocal = document.getElementById("close-at").value;
         if (question.length < 8) throw new Error("Вопрос слишком короткий");
+        if (!closeLocal) throw new Error("Укажите время конца приёма");
+        const closeDate = new Date(closeLocal);
+        if (Number.isNaN(closeDate.getTime()) || closeDate.getTime() <= Date.now()) {
+          throw new Error("Конец приёма не может быть в прошлом");
+        }
+        if (!(lock >= 10)) throw new Error("Залог от 10 TON");
+        if (me && lock > me.balance) throw new Error("Недостаточно TON на залог");
+        const names = createOutcomes.map(o => o.name.trim());
+        if (names.some(n => !n)) throw new Error("Заполните названия исходов");
+        const uniq = new Set(names.map(n => n.toLowerCase()));
+        if (uniq.size !== names.length) throw new Error("Имена исходов должны быть уникальными");
+        const ks = createOutcomes.map(o => Number(o.k));
+        if (ks.some(k => !(k > 1))) throw new Error("Коэффициент каждого исхода должен быть больше 1");
+        const probs = outcomeProbs();
+        const sumP = probs.reduce((a, b) => a + b, 0);
+        if (Math.abs(sumP - 1) > 1e-6) throw new Error("Сумма вероятностей должна быть 100%");
         await api("/markets", {
           method: "POST",
           body: JSON.stringify({
             creator_id: me.id,
             question,
-            b,
             category: createCategory,
-            description: ""
+            description: "",
+            outcomes: names,
+            lock_ton: lock,
+            close_at: closeDate.toISOString(),
+            target_odds: ks
           })
         });
         document.getElementById("question").value = "";
-        toast("Рынок создан");
+        createOutcomes = [{ name: "Да", k: 2 }, { name: "Нет", k: 2 }];
+        renderOutcomesEditor();
+        toast("Рынок создан · залог списан");
+        await refreshMe();
         showTab("feed");
       } catch (e) { showError(e.message); }
     };
 
     async function onCardClick(ev) {
-      const tipBtn = ev.target.closest("button[data-tip]");
-      if (tipBtn) {
-        const wrap = tipBtn.closest(".tips");
-        wrap.dataset.tip = tipBtn.dataset.tip;
-        wrap.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === tipBtn));
-        return;
-      }
       const btn = ev.target.closest("button[data-act]");
       if (!btn) return;
       const card = btn.closest(".card");
@@ -565,28 +728,43 @@
         if (btn.dataset.act === "buy") {
           const res = await api("/markets/" + id + "/buy", {
             method: "POST",
-            body: JSON.stringify({ user_id: me.id, outcome: btn.dataset.outcome, money: amount })
+            body: JSON.stringify({
+              user_id: me.id,
+              outcome: Number(btn.dataset.outcome),
+              money: amount
+            })
           });
           setBalance(res.balance);
           const avgK = res.paid > 0 ? (res.shares / res.paid) : 0;
-          toast("Поставлено " + Number(res.paid).toFixed(2) + ", коэф ~" + avgK.toFixed(2));
+          toast("Поставлено " + Number(res.paid).toFixed(2) + " TON, коэф ~" + avgK.toFixed(2));
+        } else if (btn.dataset.act === "close") {
+          if (!confirm("Остановить приём ставок?")) return;
+          await api("/markets/" + id + "/close", {
+            method: "POST",
+            body: JSON.stringify({ user_id: me.id })
+          });
+          toast("Приём ставок остановлен");
         } else if (btn.dataset.act === "resolve") {
-          const label = outcomeLabel(btn.dataset.outcome);
-          if (!confirm("Зафиксировать исход «" + label + "»? Это нельзя отменить.")) return;
+          const label = btn.dataset.label || ("исход " + btn.dataset.outcome);
+          if (!confirm("Рассчитать исход «" + label + "»? Это нельзя отменить.")) return;
           await api("/markets/" + id + "/resolve", {
             method: "POST",
-            body: JSON.stringify({ winning_outcome: btn.dataset.outcome, user_id: me.id })
+            body: JSON.stringify({ winning_outcome: Number(btn.dataset.outcome), user_id: me.id })
           });
-          toast("Исход зафиксирован: " + label);
+          toast("Рассчитано: " + label);
+        } else if (btn.dataset.act === "residual") {
+          const res = await api("/markets/" + id + "/collect-residual", {
+            method: "POST",
+            body: JSON.stringify({ user_id: me.id })
+          });
+          toast("Создателю вернулось " + Number(res.returned).toFixed(2) + " TON");
         } else if (btn.dataset.act === "claim") {
-          const tipWrap = card.querySelector(".tips");
-          const tipRate = Number(tipWrap ? tipWrap.dataset.tip : 0);
           const res = await api("/markets/" + id + "/claim", {
             method: "POST",
-            body: JSON.stringify({ user_id: me.id, tip_rate: tipRate })
+            body: JSON.stringify({ user_id: me.id })
           });
           setBalance(res.balance);
-          toast("Зачислено " + Number(res.credited).toFixed(2));
+          toast("Зачислено " + Number(res.credited).toFixed(2) + " TON · комиссия " + Number(res.tip).toFixed(2));
         }
         const panel = document.querySelector("[data-panel]:not([hidden])");
         if (panel && panel.dataset.panel === "mine") await loadMine();
@@ -617,6 +795,8 @@
 
     (async () => {
       try {
+        document.getElementById("close-at").value = defaultCloseAt();
+        renderOutcomesEditor();
         await auth();
         await loadMarkets();
       } catch (e) { showError(e.message); }

@@ -14,6 +14,8 @@ from app.models import MarketStatus
 from app.schemas import (
     BuySharesRequest,
     ClaimWinningsRequest,
+    CloseMarketRequest,
+    CollectResidualRequest,
     MarketCreate,
     MarketOut,
     PositionOut,
@@ -96,24 +98,28 @@ def _validation_detail_ru(exc: RequestValidationError) -> str:
         "winning_outcome": "исход",
         "tip_rate": "чаевые",
         "category": "категория",
-        "b": "глубина рынка",
         "creator_id": "создатель",
         "status": "статус",
+        "lock_ton": "залог",
+        "close_at": "конец приёма",
+        "outcomes": "исходы",
     }
     label = labels.get(field, field)
     msg = str(err.get("msg", "")).lower()
     if "required" in msg:
         return f"Не указано: {label}" if label else "Не указано обязательное поле"
-    if "greater than" in msg:
-        return f"Значение «{label}» должно быть больше 0" if label else "Значение слишком маленькое"
+    if "greater than" in msg or "greater_than" in msg:
+        return f"Значение «{label}» должно быть больше минимума" if label else "Значение слишком маленькое"
     if "less than" in msg:
         return "Чаевые не больше 1%"
     if field == "category":
         return "Категория: sport, politics или unique"
     if field in {"outcome", "winning_outcome"}:
-        return "Исход: yes или no"
+        return "Укажите исход по имени или индексу"
     if field == "status":
-        return "Статус: open или resolved"
+        return "Статус: open, closed или resolved"
+    if field == "close_at":
+        return "Укажите дату и время конца приёма"
     return "Некорректный запрос"
 
 
@@ -172,9 +178,13 @@ def create_market_endpoint(market_in: MarketCreate, db: Session = Depends(get_db
         db,
         creator_id=market_in.creator_id,
         question=market_in.question,
-        b=market_in.b,
         description=market_in.description or "",
         category=market_in.category,
+        outcomes=market_in.outcomes,
+        lock_ton=market_in.lock_ton,
+        close_at=market_in.close_at,
+        target_odds=market_in.target_odds,
+        target_probs=market_in.target_probs,
     )
     return market_service.market_to_out(market)
 
@@ -217,7 +227,14 @@ def buy_shares_endpoint(market_id: int, req: BuySharesRequest, db: Session = Dep
         "paid": res["paid"],
         "prices": res["prices"],
         "balance": res["user"].balance,
+        "outcome": res["outcome"],
     }
+
+
+@app.post("/markets/{market_id}/close", response_model=MarketOut)
+def close_market_endpoint(market_id: int, req: CloseMarketRequest, db: Session = Depends(get_db)):
+    market = market_service.close_market(db, market_id, user_id=req.user_id)
+    return market_service.market_to_out(market)
 
 
 @app.post("/markets/{market_id}/resolve", response_model=MarketOut)
@@ -226,6 +243,13 @@ def resolve_market_endpoint(market_id: int, req: ResolveRequest, db: Session = D
         db, market_id, req.winning_outcome, user_id=req.user_id
     )
     return market_service.market_to_out(market)
+
+
+@app.post("/markets/{market_id}/collect-residual")
+def collect_residual_endpoint(
+    market_id: int, req: CollectResidualRequest, db: Session = Depends(get_db)
+):
+    return market_service.collect_residual(db, market_id, user_id=req.user_id)
 
 
 @app.post("/markets/{market_id}/claim")
