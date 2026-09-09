@@ -3,17 +3,20 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import ADMIN_BANKROLL, TIP_CREATOR_SHARE, TIP_PLATFORM_SHARE, settings
 from app.lmsr import apply_buy, cost, max_tip, prices
-from app.models import Market, MarketStatus, Position, Trade, User
-from app.schemas import MarketOut, PositionOut, QuoteOut
+from app.models import Market, MarketStatus, Position, SettlementRecord, Trade, User
+from app.schemas import MarketOut, PositionOut, QuoteOut, SettlementOut
 
 ALLOWED_CATEGORIES = ("sport", "politics", "unique")
 MIN_LOCK_TON = 10.0
 MIN_OUTCOMES = 2
 MAX_OUTCOMES = 8
+SETTLEMENT_EPS = 1e-9
+SETTLEMENT_AUTO = "auto"
 
 
 def utcnow() -> datetime:
@@ -101,12 +104,12 @@ def parse_outcome(outcomes: list[str], ref) -> int:
             return ref
         raise HTTPException(status_code=400, detail="Неизвестный исход")
     text = str(ref).strip()
-    if text.isdigit() or (text.startswith("-") and text[1:].isdigit()):
-        return parse_outcome(outcomes, int(text))
     low = text.lower()
     for i, name in enumerate(outcomes):
         if name.strip().lower() == low:
             return i
+    if text.isdigit() or (text.startswith("-") and text[1:].isdigit()):
+        return parse_outcome(outcomes, int(text))
     aliases = {"yes": 0, "да": 0, "true": 0, "no": 1, "нет": 1, "false": 1}
     if low in aliases and aliases[low] < len(outcomes):
         return aliases[low]
@@ -163,6 +166,83 @@ def find_admin_user(db: Session) -> User | None:
     if admin_id is None:
         return None
     return db.query(User).filter(User.telegram_id == admin_id).one_or_none()
+
+
+def _is_sqlite(db: Session) -> bool:
+    return db.get_bind().dialect.name == "sqlite"
+
+
+def _lock_market(db: Session, market_id: int) -> Market:
+    if _is_sqlite(db):
+        db.execute(text("UPDATE markets SET question = question WHERE id = :id"), {"id": market_id})
+        market = db.get(Market, market_id)
+    else:
+        market = (
+            db.query(Market)
+            .filter(Market.id == market_id)
+            .with_for_update()
+            .one_or_none()
+        )
+    if market is None:
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    db.refresh(market)
+    return market
+
+
+def _lock_users(db: Session, user_ids: list[int]) -> None:
+    ids = sorted({int(uid) for uid in user_ids if uid is not None})
+    if not ids:
+        return
+    if _is_sqlite(db):
+        for uid in ids:
+            db.execute(text("UPDATE users SET balance = balance WHERE id = :id"), {"id": uid})
+        return
+    (
+        db.query(User)
+        .filter(User.id.in_(ids))
+        .order_by(User.id)
+        .with_for_update()
+        .all()
+    )
+
+
+def _adjust_balance(
+    db: Session,
+    user_id: int,
+    delta: float,
+    *,
+    require_funds: bool = False,
+    funds_detail: str = "Недостаточно средств",
+) -> None:
+    if not math.isfinite(delta) or abs(delta) <= SETTLEMENT_EPS:
+        return
+    if require_funds and delta < 0:
+        result = db.execute(
+            text(
+                "UPDATE users SET balance = balance + :delta "
+                "WHERE id = :id AND balance >= :need"
+            ),
+            {"delta": delta, "id": user_id, "need": -delta},
+        )
+        if result.rowcount != 1:
+            raise HTTPException(status_code=400, detail=funds_detail)
+        user = db.get(User, user_id)
+        if user is not None:
+            db.expire(user)
+        return
+    result = db.execute(
+        text("UPDATE users SET balance = balance + :delta WHERE id = :id"),
+        {"delta": delta, "id": user_id},
+    )
+    if result.rowcount != 1:
+        raise HTTPException(status_code=400, detail="Не удалось зачислить средства")
+    user = db.get(User, user_id)
+    if user is not None:
+        db.expire(user)
+
+
+def _near_zero(value: float) -> bool:
+    return abs(value) <= SETTLEMENT_EPS
 
 
 def q_from_target_probs(probs: list[float], b: float) -> list[float]:
@@ -245,6 +325,7 @@ def market_to_out(market: Market) -> MarketOut:
         winning_outcome=win,
         created_at=market.created_at,
         accepting_bets=is_accepting_bets(market),
+        settlement_kind=market.settlement_kind,
     )
 
 
@@ -307,8 +388,6 @@ def create_market(
     names = _normalize_outcomes(outcomes)
     if lock_ton < MIN_LOCK_TON:
         raise HTTPException(status_code=400, detail="Залог не меньше 10 TON")
-    if creator.balance < lock_ton:
-        raise HTTPException(status_code=400, detail="Недостаточно TON на залог")
     if close_at is None:
         raise HTTPException(status_code=400, detail="Укажите время конца приёма ставок")
     close_utc = as_utc(close_at)
@@ -325,7 +404,14 @@ def create_market(
     probs = _probs_from_create(n, target_odds, target_probs)
     q = q_from_target_probs(probs, liquidity)
 
-    creator.balance -= float(lock_ton)
+    _lock_users(db, [creator.id])
+    _adjust_balance(
+        db,
+        creator.id,
+        -float(lock_ton),
+        require_funds=True,
+        funds_detail="Недостаточно TON на залог",
+    )
     market = Market(
         question=question,
         description=description,
@@ -391,22 +477,23 @@ def _get_or_create_position(db: Session, user_id: int, market_id: int, n: int) -
 
 
 def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float):
-    market = get_market(db, market_id)
+    market = _lock_market(db, market_id)
+    if _maybe_auto_close(market):
+        db.flush()
     require_accepting(market)
-    user = get_user(db, user_id)
+    get_user(db, user_id)
     if money <= 0:
         raise HTTPException(status_code=400, detail="Сумма ставки должна быть > 0")
-    if user.balance < money:
-        raise HTTPException(status_code=400, detail="Недостаточно средств")
 
     names = market_outcomes(market)
     idx = parse_outcome(names, outcome)
     new_q, shares, paid = apply_buy(_quantities(market), market.b, idx, money)
 
-    user.balance -= paid
+    _lock_users(db, [user_id])
+    _adjust_balance(db, user_id, -paid, require_funds=True)
     market.pot = float(market.pot or 0.0) + paid
     _set_quantities(market, new_q)
-    position = _get_or_create_position(db, user.id, market.id, len(names))
+    position = _get_or_create_position(db, user_id, market.id, len(names))
     pos_shares, pos_costs = _pos_vectors(position, len(names))
     pos_shares[idx] += shares
     pos_costs[idx] += paid
@@ -414,7 +501,7 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
 
     p = prices(new_q, market.b)
     trade = Trade(
-        user_id=user.id,
+        user_id=user_id,
         market_id=market.id,
         outcome=names[idx],
         money=paid,
@@ -423,7 +510,7 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
     )
     db.add(trade)
     db.commit()
-    db.refresh(user)
+    user = get_user(db, user_id)
     db.refresh(market)
     return {
         "market": market,
@@ -488,7 +575,8 @@ def list_positions_out(db: Session, user_id: int) -> list[PositionOut]:
 def close_market(db: Session, market_id: int, user_id: int) -> Market:
     actor = get_user(db, user_id)
     require_admin(actor, "Только админ может остановить приём ставок")
-    market = get_market(db, market_id)
+    market = _lock_market(db, market_id)
+    _maybe_auto_close(market)
     if market.status == MarketStatus.resolved:
         raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
     market.status = MarketStatus.closed
@@ -497,82 +585,252 @@ def close_market(db: Session, market_id: int, user_id: int) -> Market:
     return market
 
 
+def _player_payout(shares: list[float], costs: list[float], names: list[str], win_idx: int) -> dict:
+    payout = float(shares[win_idx] if win_idx < len(shares) else 0.0)
+    stakes_total = float(sum(costs))
+    profit = max(0.0, payout - stakes_total)
+    tip = max_tip(profit, settings.tip_cap)
+    credited = payout - tip
+    chosen = [names[i] for i, qty in enumerate(shares) if i < len(names) and qty > SETTLEMENT_EPS]
+    return {
+        "payout": payout,
+        "stakes_total": stakes_total,
+        "tip": tip,
+        "credited": credited,
+        "result": credited - stakes_total,
+        "chosen_outcomes": chosen,
+    }
+
+
+def _plan_auto_settlement(db: Session, market: Market, win_idx: int, names: list[str]) -> dict:
+    positions = (
+        db.query(Position)
+        .filter(Position.market_id == market.id)
+        .order_by(Position.id)
+        .all()
+    )
+    unpaid = [pos for pos in positions if not pos.claimed]
+    payouts_total = 0.0
+    player_rows: list[dict] = []
+    credits: dict[int, float] = {}
+    platform_tips = 0.0
+    creator_id = market.creator_id
+    creator = get_user(db, creator_id)
+
+    for pos in unpaid:
+        shares, costs = _pos_vectors(pos, len(names))
+        row = _player_payout(shares, costs, names, win_idx)
+        payouts_total += row["payout"]
+        player_rows.append({"position": pos, "user_id": pos.user_id, **row})
+        if row["credited"] > SETTLEMENT_EPS:
+            credits[pos.user_id] = credits.get(pos.user_id, 0.0) + row["credited"]
+        tip = row["tip"]
+        if tip <= SETTLEMENT_EPS:
+            continue
+        winner_id = pos.user_id
+        if winner_id == creator_id:
+            platform_tips += tip
+        elif creator.is_admin:
+            credits[creator_id] = credits.get(creator_id, 0.0) + tip
+        else:
+            credits[creator_id] = credits.get(creator_id, 0.0) + tip * TIP_CREATOR_SHARE
+            platform_tips += tip * TIP_PLATFORM_SHARE
+
+    pot = float(market.pot or 0.0)
+    if payouts_total > pot + SETTLEMENT_EPS:
+        raise HTTPException(
+            status_code=409,
+            detail="Недостаточно средств в банке для выплаты всех выигрышей",
+        )
+
+    leftover = pot - payouts_total
+    if leftover < -SETTLEMENT_EPS:
+        raise HTTPException(
+            status_code=409,
+            detail="Недостаточно средств в банке для выплаты всех выигрышей",
+        )
+    if leftover < 0:
+        leftover = 0.0
+
+    admin = find_admin_user(db)
+    if platform_tips > SETTLEMENT_EPS:
+        if admin is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Нет аккаунта платформы для зачисления чаевых",
+            )
+        credits[admin.id] = credits.get(admin.id, 0.0) + platform_tips
+
+    if leftover > SETTLEMENT_EPS:
+        credits[creator_id] = credits.get(creator_id, 0.0) + leftover
+    else:
+        leftover = 0.0
+
+    return {
+        "player_rows": player_rows,
+        "credits": credits,
+        "leftover": leftover,
+        "payouts_total": payouts_total,
+        "claimed_ids": {pos.id for pos in unpaid},
+        "all_positions": positions,
+    }
+
+
 def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -> Market:
     actor = get_user(db, user_id)
     require_admin(actor)
-    market = get_market(db, market_id)
-    if market.status == MarketStatus.resolved:
-        raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
-    names = market_outcomes(market)
-    idx = parse_outcome(names, winning_outcome)
-    positions = db.query(Position).filter(Position.market_id == market.id).all()
-    liability = 0.0
-    for pos in positions:
-        shares, _costs = _pos_vectors(pos, len(names))
-        liability += shares[idx]
-    pot = float(market.pot or 0.0)
-    reserve = min(pot, liability)
-    refund = max(0.0, pot - reserve)
-    if refund > 0 and not market.lock_returned:
-        creator = get_user(db, market.creator_id)
-        creator.balance += refund
+    try:
+        market = _lock_market(db, market_id)
+        _maybe_auto_close(market)
+        if market.status == MarketStatus.resolved:
+            raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
+        if market.status != MarketStatus.closed:
+            raise HTTPException(status_code=400, detail="Сначала остановите приём ставок")
+
+        names = market_outcomes(market)
+        idx = parse_outcome(names, winning_outcome)
+        plan = _plan_auto_settlement(db, market, idx, names)
+
+        user_ids = sorted(set(plan["credits"]) | {market.creator_id} | {pos.user_id for pos in plan["all_positions"]})
+        _lock_users(db, user_ids)
+        for uid in sorted(plan["credits"]):
+            _adjust_balance(db, uid, plan["credits"][uid])
+
+        resolved_at = _naive_utc(utcnow())
+        win_name = names[idx]
+        seen_users: set[int] = set()
+        for row in plan["player_rows"]:
+            pos: Position = row["position"]
+            pos.claimed = True
+            pos.tip_paid = row["tip"]
+            record = SettlementRecord(
+                market_id=market.id,
+                user_id=pos.user_id,
+                question=market.question,
+                winning_outcome=win_name,
+                chosen_outcomes=row["chosen_outcomes"],
+                stakes_total=row["stakes_total"],
+                payout=row["payout"],
+                tip=row["tip"],
+                credited=row["credited"],
+                result=row["result"],
+                lock_ton=float(market.lock_ton or 0.0) if pos.user_id == market.creator_id else 0.0,
+                residual_returned=plan["leftover"] if pos.user_id == market.creator_id else 0.0,
+                resolved_at=resolved_at,
+            )
+            db.add(record)
+            seen_users.add(pos.user_id)
+
+        if market.creator_id not in seen_users:
+            db.add(
+                SettlementRecord(
+                    market_id=market.id,
+                    user_id=market.creator_id,
+                    question=market.question,
+                    winning_outcome=win_name,
+                    chosen_outcomes=[],
+                    stakes_total=0.0,
+                    payout=0.0,
+                    tip=0.0,
+                    credited=0.0,
+                    result=0.0,
+                    lock_ton=float(market.lock_ton or 0.0),
+                    residual_returned=plan["leftover"],
+                    resolved_at=resolved_at,
+                )
+            )
+
+        market.status = MarketStatus.resolved
+        market.winning_outcome = win_name
+        market.resolved_at = resolved_at
+        market.settlement_kind = SETTLEMENT_AUTO
+        market.pot = 0.0
         market.lock_returned = True
-    market.pot = reserve
-    market.status = MarketStatus.resolved
-    market.winning_outcome = names[idx]
-    market.resolved_at = _naive_utc(utcnow())
-    db.commit()
-    db.refresh(market)
-    return market
+        db.commit()
+        db.refresh(market)
+        return market
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
 
 
 def collect_residual(db: Session, market_id: int, user_id: int) -> dict:
     actor = get_user(db, user_id)
     require_admin(actor, "Только админ может забрать остаток залога")
-    market = get_market(db, market_id)
+    market = _lock_market(db, market_id)
     if market.status != MarketStatus.resolved:
         raise HTTPException(status_code=400, detail="Сначала рассчитайте событие")
-    leftover = max(0.0, float(market.pot or 0.0))
-    if leftover <= 1e-12:
-        return {"returned": 0.0, "pot": 0.0, "balance": get_user(db, market.creator_id).balance}
-    creator = get_user(db, market.creator_id)
-    creator.balance += leftover
-    market.pot = 0.0
-    market.lock_returned = True
-    db.commit()
-    db.refresh(creator)
-    return {"returned": leftover, "pot": 0.0, "balance": creator.balance}
+    if market.settlement_kind == SETTLEMENT_AUTO:
+        raise HTTPException(status_code=400, detail="Остаток уже возвращён при расчёте")
+
+    names = market_outcomes(market)
+    win = winning_name(market)
+    idx = parse_outcome(names, win) if win else 0
+    unpaid = 0.0
+    for pos in db.query(Position).filter(Position.market_id == market.id).all():
+        if pos.claimed:
+            continue
+        shares, _costs = _pos_vectors(pos, len(names))
+        unpaid += float(shares[idx] if win else 0.0)
+    leftover = float(market.pot or 0.0) - unpaid
+    if leftover <= SETTLEMENT_EPS:
+        return {"returned": 0.0, "pot": float(market.pot or 0.0), "balance": get_user(db, market.creator_id).balance}
+
+    try:
+        _lock_users(db, [market.creator_id])
+        _adjust_balance(db, market.creator_id, leftover)
+        market.pot = float(market.pot or 0.0) - leftover
+        if _near_zero(market.pot):
+            market.pot = 0.0
+        market.lock_returned = True
+        db.commit()
+        creator = get_user(db, market.creator_id)
+        return {"returned": leftover, "pot": float(market.pot or 0.0), "balance": creator.balance}
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
 
 
-def _distribute_tip(db: Session, market: Market, winner: User, tip: float) -> None:
-    if tip <= 0:
+def _distribute_tip_legacy(db: Session, market: Market, winner: User, tip: float) -> None:
+    if tip <= SETTLEMENT_EPS:
         return
+    credits: dict[int, float] = {}
     creator = get_user(db, market.creator_id)
     admin = find_admin_user(db)
-    creator_is_admin = creator.is_admin
-    winner_is_creator = winner.id == creator.id
-    if creator_is_admin:
-        creator.balance += tip
-        return
-    if winner_is_creator:
-        if admin is not None:
-            admin.balance += tip
-        else:
-            creator.balance += tip
-        return
-    creator.balance += tip * TIP_CREATOR_SHARE
-    platform = tip * TIP_PLATFORM_SHARE
-    if admin is not None:
-        admin.balance += platform
+    if winner.id == creator.id:
+        if admin is None:
+            raise HTTPException(status_code=409, detail="Нет аккаунта платформы для зачисления чаевых")
+        credits[admin.id] = credits.get(admin.id, 0.0) + tip
+    elif creator.is_admin:
+        credits[creator.id] = credits.get(creator.id, 0.0) + tip
     else:
-        creator.balance += platform
+        credits[creator.id] = credits.get(creator.id, 0.0) + tip * TIP_CREATOR_SHARE
+        platform = tip * TIP_PLATFORM_SHARE
+        if platform > SETTLEMENT_EPS:
+            if admin is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Нет аккаунта платформы для зачисления чаевых",
+                )
+            credits[admin.id] = credits.get(admin.id, 0.0) + platform
+    _lock_users(db, list(credits))
+    for uid in sorted(credits):
+        _adjust_balance(db, uid, credits[uid])
 
 
 def claim_winnings(db: Session, market_id: int, user_id: int, tip_rate: float = 0.01):
     _ = tip_rate
-    market = get_market(db, market_id)
+    market = _lock_market(db, market_id)
     if market.status != MarketStatus.resolved or not winning_name(market):
         raise HTTPException(status_code=400, detail="Рынок ещё не рассчитан")
+    if market.settlement_kind == SETTLEMENT_AUTO:
+        raise HTTPException(status_code=400, detail="Выигрыш уже зачислен")
 
     user = get_user(db, user_id)
     position = (
@@ -595,22 +853,75 @@ def claim_winnings(db: Session, market_id: int, user_id: int, tip_rate: float = 
     available = max(0.0, float(market.pot or 0.0))
     if payout > available:
         payout = available
-    market.pot = max(0.0, available - payout)
-
     net_profit = payout - cost_basis
     tip = max_tip(net_profit, settings.tip_cap)
     credited = payout - tip
-    user.balance += credited
-    _distribute_tip(db, market, user, tip)
+    admin = find_admin_user(db)
+    if tip > SETTLEMENT_EPS:
+        creator = get_user(db, market.creator_id)
+        needs_platform = user.id == creator.id or (
+            not creator.is_admin and tip * TIP_PLATFORM_SHARE > SETTLEMENT_EPS
+        )
+        if needs_platform and admin is None:
+            raise HTTPException(status_code=409, detail="Нет аккаунта платформы для зачисления чаевых")
+    lock_ids = [user.id, market.creator_id]
+    if admin is not None:
+        lock_ids.append(admin.id)
+    try:
+        _lock_users(db, lock_ids)
+        _adjust_balance(db, user.id, credited)
+        _distribute_tip_legacy(db, market, user, tip)
+        market.pot = max(0.0, available - payout)
+        position.claimed = True
+        position.tip_paid = tip
+        db.commit()
+        db.refresh(user)
+        return {
+            "payout": payout,
+            "net_profit": net_profit,
+            "tip": tip,
+            "credited": credited,
+            "balance": get_user(db, user.id).balance,
+        }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
 
-    position.claimed = True
-    position.tip_paid = tip
-    db.commit()
-    db.refresh(user)
-    return {
-        "payout": payout,
-        "net_profit": net_profit,
-        "tip": tip,
-        "credited": credited,
-        "balance": user.balance,
-    }
+
+def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
+    get_user(db, user_id)
+    rows = (
+        db.query(SettlementRecord)
+        .filter(SettlementRecord.user_id == user_id)
+        .order_by(SettlementRecord.id.desc())
+        .all()
+    )
+    out: list[SettlementOut] = []
+    for row in rows:
+        market = db.get(Market, row.market_id)
+        kind = market.settlement_kind if market is not None else SETTLEMENT_AUTO
+        out.append(
+            SettlementOut(
+                market_id=row.market_id,
+                question=row.question,
+                winning_outcome=row.winning_outcome,
+                chosen_outcomes=list(row.chosen_outcomes or []),
+                stakes_total=float(row.stakes_total or 0.0),
+                payout=float(row.payout or 0.0),
+                tip=float(row.tip or 0.0),
+                credited=float(row.credited or 0.0),
+                result=float(row.result or 0.0),
+                lock_ton=float(row.lock_ton or 0.0),
+                residual_returned=float(row.residual_returned or 0.0),
+                resolved_at=as_utc(row.resolved_at),
+                is_loss=float(row.result or 0.0) < -SETTLEMENT_EPS or (
+                    float(row.payout or 0.0) <= SETTLEMENT_EPS and float(row.stakes_total or 0.0) > SETTLEMENT_EPS
+                ),
+                settlement_kind=kind,
+            )
+        )
+    return out
+

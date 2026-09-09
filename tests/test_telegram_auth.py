@@ -353,7 +353,7 @@ def test_regular_user_cannot_admin_even_with_admin_id_in_body(client: TestClient
     assert ok_resolve.json()["status"] == "resolved"
 
     leftover = client.post(f"/markets/{mid}/collect-residual", headers=admin_headers, json={})
-    assert leftover.status_code == 200
+    assert leftover.status_code == 400
 
 
 def test_auth_failure_does_not_change_state(client: TestClient):

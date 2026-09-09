@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
 def _engine_kwargs(url: str) -> dict:
     kwargs: dict = {"pool_pre_ping": True}
     if url.startswith("sqlite"):
-        kwargs["connect_args"] = {"check_same_thread": False}
+        kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
     return kwargs
 
 
@@ -56,6 +56,7 @@ def ensure_schema() -> None:
         _add_column_if_missing(conn, "markets", "pot", "FLOAT DEFAULT 0", market_cols)
         _add_column_if_missing(conn, "markets", "close_at", "DATETIME", market_cols)
         _add_column_if_missing(conn, "markets", "lock_returned", "BOOLEAN DEFAULT 0", market_cols)
+        _add_column_if_missing(conn, "markets", "settlement_kind", "VARCHAR(16)", market_cols)
         conn.execute(text("UPDATE markets SET category = 'unique' WHERE category IS NULL"))
 
         if "positions" in tables:
