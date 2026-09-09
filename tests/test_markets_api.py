@@ -109,8 +109,13 @@ def test_quote_and_resolve_only_admin(client: TestClient, monkeypatch):
         json={"winning_outcome": "Да", "user_id": admin["id"]},
     )
     assert forbidden_creator.status_code == 403
-    assert forbidden_creator.json()["detail"] == "Только админ может рассчитать событие"
+    assert     forbidden_creator.json()["detail"] == "Только админ может рассчитать событие"
 
+    closed = client.post(f"/markets/{mid}/close", headers=admin_headers, json={})
+    assert closed.status_code == 200, closed.text
+
+    before_yes = client.get(f"/users/{creator['id']}", headers=creator_headers).json()["balance"]
+    before_no = client.get(f"/users/{other['id']}", headers=other_headers).json()["balance"]
     ok = client.post(
         f"/markets/{mid}/resolve",
         headers=admin_headers,
@@ -119,15 +124,21 @@ def test_quote_and_resolve_only_admin(client: TestClient, monkeypatch):
     assert ok.status_code == 200, ok.text
     assert ok.json()["status"] == "resolved"
     assert ok.json()["winning_outcome"] == "Да"
+    assert ok.json()["settlement_kind"] == "auto"
+    assert ok.json()["pot"] == pytest.approx(0.0, abs=1e-8)
+
+    after_yes = client.get(f"/users/{creator['id']}", headers=creator_headers).json()["balance"]
+    after_no = client.get(f"/users/{other['id']}", headers=other_headers).json()["balance"]
+    assert after_yes > before_yes
+    assert after_no == pytest.approx(before_no)
 
     claim = client.post(
         f"/markets/{mid}/claim",
         headers=creator_headers,
         json={"user_id": other["id"]},
     )
-    assert claim.status_code == 200, claim.text
-    assert claim.json()["tip"] >= 0
-    assert claim.json()["credited"] > 0
+    assert claim.status_code == 400
+    assert client.get(f"/users/{creator['id']}", headers=creator_headers).json()["balance"] == pytest.approx(after_yes)
 
 
 def test_demo_admin_three_outcomes_tips(client: TestClient, monkeypatch):
@@ -192,14 +203,22 @@ def test_demo_admin_three_outcomes_tips(client: TestClient, monkeypatch):
     )
     assert resolved.status_code == 200
     assert resolved.json()["status"] == "resolved"
+    assert resolved.json()["settlement_kind"] == "auto"
 
-    admin_before_claim = client.get(f"/users/{admin['id']}", headers=admin_headers).json()["balance"]
+    user_after_resolve = client.get(f"/users/{user['id']}", headers=user_headers).json()
+    assert user_after_resolve["balance"] > user_after_bet["balance"]
+    admin_after_resolve = client.get(f"/users/{admin['id']}", headers=admin_headers).json()["balance"]
+    settlements = client.get(f"/users/{user['id']}/settlements", headers=user_headers).json()
+    assert settlements
+    tip = settlements[0]["tip"]
+    assert tip == pytest.approx(max(0.0, settlements[0]["payout"] - settlements[0]["stakes_total"]) * 0.01, rel=1e-6)
+    admin_hist = client.get(f"/users/{admin['id']}/settlements", headers=admin_headers).json()
+    residual = admin_hist[0]["residual_returned"] if admin_hist else 0.0
+    assert admin_after_resolve == pytest.approx(admin_after_bet["balance"] + tip + residual, abs=1e-6)
+
     claim = client.post(f"/markets/{market['id']}/claim", headers=user_headers, json={"user_id": admin["id"]})
-    assert claim.status_code == 200, claim.text
-    tip = claim.json()["tip"]
-    assert tip == pytest.approx(max(0.0, claim.json()["net_profit"]) * 0.01, rel=1e-6)
-    admin_after_claim = client.get(f"/users/{admin['id']}", headers=admin_headers).json()["balance"]
-    assert admin_after_claim == pytest.approx(admin_before_claim + tip, abs=1e-6)
+    assert claim.status_code == 400
+    assert client.get(f"/users/{user['id']}", headers=user_headers).json()["balance"] == pytest.approx(user_after_resolve["balance"])
 
 
 def test_tip_split_when_creator_is_not_admin(client: TestClient, monkeypatch):
@@ -223,23 +242,30 @@ def test_tip_split_when_creator_is_not_admin(client: TestClient, monkeypatch):
         headers=winner_headers,
         json={"user_id": creator["id"], "outcome": 0, "money": 30},
     )
-    client.post(
+    closed = client.post(f"/markets/{mid}/close", headers=admin_headers, json={})
+    assert closed.status_code == 200
+    creator_before = client.get(f"/users/{creator['id']}", headers=creator_headers).json()["balance"]
+    admin_before = client.get(f"/users/{admin['id']}", headers=admin_headers).json()["balance"]
+    resolved = client.post(
         f"/markets/{mid}/resolve",
         headers=admin_headers,
         json={"winning_outcome": 0, "user_id": creator["id"]},
     )
-    creator_before = client.get(f"/users/{creator['id']}", headers=creator_headers).json()["balance"]
-    admin_before = client.get(f"/users/{admin['id']}", headers=admin_headers).json()["balance"]
+    assert resolved.status_code == 200, resolved.text
+    history = client.get(f"/users/{winner['id']}/settlements", headers=winner_headers).json()
+    tip = history[0]["tip"]
+    creator_hist = client.get(f"/users/{creator['id']}/settlements", headers=creator_headers).json()
+    residual = creator_hist[0]["residual_returned"] if creator_hist else 0.0
+    creator_after = client.get(f"/users/{creator['id']}", headers=creator_headers).json()["balance"]
+    admin_after = client.get(f"/users/{admin['id']}", headers=admin_headers).json()["balance"]
+    assert creator_after == pytest.approx(creator_before + tip * 0.75 + residual, abs=1e-6)
+    assert admin_after == pytest.approx(admin_before + tip * 0.25, abs=1e-6)
     claim = client.post(
         f"/markets/{mid}/claim",
         headers=winner_headers,
         json={"user_id": creator["id"]},
-    ).json()
-    tip = claim["tip"]
-    creator_after = client.get(f"/users/{creator['id']}", headers=creator_headers).json()["balance"]
-    admin_after = client.get(f"/users/{admin['id']}", headers=admin_headers).json()["balance"]
-    assert creator_after == pytest.approx(creator_before + tip * 0.75, abs=1e-6)
-    assert admin_after == pytest.approx(admin_before + tip * 0.25, abs=1e-6)
+    )
+    assert claim.status_code == 400
 
 
 def test_liquidity_lock_survives_reauth(client: TestClient, monkeypatch):

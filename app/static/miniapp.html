@@ -267,6 +267,8 @@
       <div id="mine-created"></div>
       <h2>Мои ставки</h2>
       <div id="mine-bets"></div>
+      <h2>Результаты</h2>
+      <div id="mine-results"></div>
     </section>
   </main>
   <div class="toast" id="toast"></div>
@@ -500,7 +502,9 @@
       const canResolve = canAdminAct && (m.status === "closed" || (m.status === "open" && !accepting));
       const pos = myPositions[m.id];
       const shares = pos && (pos.shares && pos.shares.length ? pos.shares : [pos.shares_yes || 0, pos.shares_no || 0]);
-      const canClaim = resolved && pos && !pos.claimed && shares && shares.some(x => x > 0);
+      const isAuto = m.settlement_kind === "auto";
+      const canClaim = resolved && !isAuto && pos && !pos.claimed && shares && shares.some(x => x > 0);
+      const canResidual = resolved && !isAuto && me && me.is_admin && (m.pot || 0) > 0.0001;
       const oddsHtml = names.map((name, i) => `
         <div class="odd c${i % 3}">
           <div class="kname">${escapeHtml(name)}</div>
@@ -539,11 +543,11 @@
             <div class="row">
               <button class="gold" data-act="claim">Забрать выигрыш</button>
             </div>` : ""}
-          ${resolved && me && me.is_admin && (m.pot || 0) > 0.0001 ? `
+          ${canResidual ? `
             <div class="row">
               <button class="ghost" data-act="residual">Забрать остаток залога</button>
             </div>` : ""}
-          ${resolved && pos && pos.claimed ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+          ${resolved && pos && pos.claimed && !isAuto ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
         </div>`;
     }
 
@@ -553,7 +557,7 @@
       const names = marketOutcomes(m);
       const shares = pos.shares && pos.shares.length ? pos.shares : [pos.shares_yes || 0, pos.shares_no || 0];
       const lines = names.map((n, i) => escapeHtml(n) + ": " + Number(shares[i] || 0).toFixed(2) + " долей").join(" · ");
-      const canClaim = resolved && !pos.claimed && shares.some(x => x > 0);
+      const canClaim = resolved && m.settlement_kind !== "auto" && !pos.claimed && shares.some(x => x > 0);
       return `
         <div class="card" data-id="${m.id}" data-status="${m.status}">
           <div class="question">${escapeHtml(m.question)}</div>
@@ -567,7 +571,31 @@
             <div class="row">
               <button class="gold" data-act="claim">Забрать выигрыш</button>
             </div>` : ""}
-          ${pos.claimed ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+          ${resolved && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+        </div>`;
+    }
+
+    function settlementCard(s) {
+      const loss = !!s.is_loss;
+      const when = s.resolved_at ? escapeHtml(String(s.resolved_at).replace("T", " ").slice(0, 16)) + " UTC" : "";
+      const chosen = (s.chosen_outcomes && s.chosen_outcomes.length)
+        ? s.chosen_outcomes.map(escapeHtml).join(", ")
+        : "нет ставок";
+      const creatorBits = (s.lock_ton > 0 || s.residual_returned > 0)
+        ? `<p class="muted">залог ${fmtTon(s.lock_ton)} · возврат остатка ${fmtTon(s.residual_returned)}</p>`
+        : "";
+      return `
+        <div class="card" data-id="${s.market_id}">
+          <div class="question">${escapeHtml(s.question)}</div>
+          <div class="meta">
+            <span class="pill">${loss ? "Проигрыш" : "Расчёт"}</span>
+            <span class="pill">Исход: ${escapeHtml(s.winning_outcome || "")}</span>
+            ${when ? `<span class="pill">${when}</span>` : ""}
+          </div>
+          <p class="muted">ставки: ${escapeHtml(chosen)}</p>
+          <p class="muted">сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)} · чаевые ${fmtTon(s.tip)}</p>
+          <p class="muted">зачислено ${fmtTon(s.credited)} · результат ${fmtTon(s.result)}</p>
+          ${creatorBits}
         </div>`;
     }
 
@@ -591,24 +619,30 @@
 
     async function loadMine() {
       requireLogin();
-      const [markets, positions] = await Promise.all([
+      const [markets, positions, settlements] = await Promise.all([
         api("/markets"),
-        api("/users/" + me.id + "/positions")
+        api("/users/" + me.id + "/positions"),
+        api("/users/" + me.id + "/settlements")
       ]);
       myPositions = {};
       for (const p of positions) myPositions[p.market_id] = p;
       const created = markets.filter(m => m.creator_id === me.id);
       const createdRoot = document.getElementById("mine-created");
       const betsRoot = document.getElementById("mine-bets");
+      const resultsRoot = document.getElementById("mine-results");
       createdRoot.innerHTML = created.length
         ? created.map(m => marketCard(m)).join("")
         : '<p class="muted">Вы ещё не создавали рынки.</p>';
       await Promise.all(
         [...createdRoot.querySelectorAll(".card")].map(card => previewQuote(card))
       );
-      betsRoot.innerHTML = positions.length
-        ? positions.map(positionCard).join("")
+      const active = positions.filter(p => p.market && p.market.status !== "resolved");
+      betsRoot.innerHTML = active.length
+        ? active.map(positionCard).join("")
         : '<p class="muted">Ставок пока нет.</p>';
+      resultsRoot.innerHTML = settlements.length
+        ? settlements.map(settlementCard).join("")
+        : '<p class="muted">Рассчитанных событий пока нет.</p>';
     }
 
     async function previewQuote(card) {
@@ -793,7 +827,7 @@
             method: "POST",
             body: JSON.stringify({ winning_outcome: Number(btn.dataset.outcome) })
           });
-          toast("Рассчитано: " + label);
+          toast("Рассчитано: " + label + " · выплаты зачислены");
         } else if (btn.dataset.act === "residual") {
           const res = await api("/markets/" + id + "/collect-residual", {
             method: "POST",
@@ -833,6 +867,14 @@
     document.getElementById("mine-created").addEventListener("input", (ev) => {
       if (!ev.target.classList.contains("amount")) return;
       scheduleQuote(ev.target.closest(".card"));
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden || !me || authBlocked) return;
+      refreshMe().catch(() => {});
+      const panel = document.querySelector("[data-panel]:not([hidden])");
+      if (panel && panel.dataset.panel === "mine") loadMine().catch(e => showError(e.message));
+      else loadMarkets().catch(e => showError(e.message));
     });
 
     (async () => {

@@ -23,6 +23,7 @@ from app.schemas import (
     QuoteOut,
     QuoteRequest,
     ResolveRequest,
+    SettlementOut,
     UserOut,
 )
 from app.services import market_service
@@ -173,6 +174,15 @@ def list_user_positions_endpoint(
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
     return market_service.list_positions_out(db, current_user.id)
+
+
+@app.get("/users/{user_id}/settlements", response_model=list[SettlementOut])
+def list_user_settlements_endpoint(
+    user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return market_service.list_settlements_out(db, current_user.id)
 
 
 @app.post("/markets", response_model=MarketOut)

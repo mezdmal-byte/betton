@@ -104,6 +104,7 @@ class MarketOut(BaseModel):
     winning_outcome: Optional[str] = None
     created_at: Optional[datetime] = None
     accepting_bets: bool = False
+    settlement_kind: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -120,3 +121,20 @@ class PositionOut(BaseModel):
     claimed: bool
     tip_paid: float
     market: MarketOut
+
+
+class SettlementOut(BaseModel):
+    market_id: int
+    question: str
+    winning_outcome: str
+    chosen_outcomes: list[str]
+    stakes_total: float
+    payout: float
+    tip: float
+    credited: float
+    result: float
+    lock_ton: float = 0.0
+    residual_returned: float = 0.0
+    resolved_at: Optional[datetime] = None
+    is_loss: bool = False
+    settlement_kind: Optional[str] = None

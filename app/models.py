@@ -43,6 +43,7 @@ class User(Base):
     markets: Mapped[list["Market"]] = relationship(back_populates="creator")
     positions: Mapped[list["Position"]] = relationship(back_populates="user")
     trades: Mapped[list["Trade"]] = relationship(back_populates="user")
+    settlements: Mapped[list["SettlementRecord"]] = relationship(back_populates="user")
 
     @property
     def is_admin(self) -> bool:
@@ -73,10 +74,12 @@ class Market(Base):
     winning_outcome: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    settlement_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     creator: Mapped[User] = relationship(back_populates="markets")
     positions: Mapped[list["Position"]] = relationship(back_populates="market")
     trades: Mapped[list["Trade"]] = relationship(back_populates="market")
+    settlements: Mapped[list["SettlementRecord"]] = relationship(back_populates="market")
 
 
 class Position(Base):
@@ -113,3 +116,26 @@ class Trade(Base):
 
     user: Mapped[User] = relationship(back_populates="trades")
     market: Mapped[Market] = relationship(back_populates="trades")
+
+
+class SettlementRecord(Base):
+    __tablename__ = "settlement_records"
+    __table_args__ = (UniqueConstraint("market_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey("markets.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    question: Mapped[str] = mapped_column(String(512), default="")
+    winning_outcome: Mapped[str] = mapped_column(String(128), default="")
+    chosen_outcomes: Mapped[list] = mapped_column(JSON, default=list)
+    stakes_total: Mapped[float] = mapped_column(Float, default=0.0)
+    payout: Mapped[float] = mapped_column(Float, default=0.0)
+    tip: Mapped[float] = mapped_column(Float, default=0.0)
+    credited: Mapped[float] = mapped_column(Float, default=0.0)
+    result: Mapped[float] = mapped_column(Float, default=0.0)
+    lock_ton: Mapped[float] = mapped_column(Float, default=0.0)
+    residual_returned: Mapped[float] = mapped_column(Float, default=0.0)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    user: Mapped[User] = relationship(back_populates="settlements")
+    market: Mapped[Market] = relationship(back_populates="settlements")
