@@ -273,6 +273,8 @@
 
   <script>
     const CAT_LABEL = { sport: "Спорт", politics: "Политика", unique: "Уникальное" };
+    const OPEN_IN_TG = "Откройте BetTON через Telegram";
+    const AUTH_REOPEN = "Сессия недействительна. Закройте Mini App и откройте его заново";
     const tg = window.Telegram && window.Telegram.WebApp;
     try {
       if (tg) {
@@ -283,13 +285,14 @@
       }
     } catch (e) { /* браузер без Telegram */ }
 
-    const rawUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
-    const tgUser = (rawUser && rawUser.id)
-      ? rawUser
-      : { id: 1, username: "demo", first_name: "Demo" };
-    const isDemo = !(rawUser && rawUser.id);
+    function getInitData() {
+      return (tg && typeof tg.initData === "string" && tg.initData) ? tg.initData : "";
+    }
+
+    const inTelegram = !!getInitData();
 
     let me = null;
+    let authBlocked = false;
     let filterCategory = "";
     let filterStatus = "";
     let createCategory = "unique";
@@ -314,7 +317,11 @@
     }
 
     function displayName() {
-      return tgUser.first_name || tgUser.username || ("id " + tgUser.id);
+      const unsafe = inTelegram && tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+      if (unsafe && (unsafe.first_name || unsafe.username)) {
+        return unsafe.first_name || unsafe.username;
+      }
+      return (me && me.username) || "игрок";
     }
 
     function odds(p) {
@@ -362,16 +369,35 @@
 
     function apiError(data, status) {
       const d = data && data.detail;
+      if (status === 401) return AUTH_REOPEN;
       if (typeof d === "string") return d;
       if (status === 403) return "Недостаточно прав";
       if (status === 404) return "Не найдено";
       return "Ошибка запроса";
     }
 
+    function isAuthReopenError(e) {
+      return !!(e && e.message === AUTH_REOPEN);
+    }
+
+    function applyUnauthorized() {
+      authBlocked = true;
+      me = null;
+      myPositions = {};
+      paintUser();
+      showError(AUTH_REOPEN);
+    }
+
     async function api(path, options) {
-      const res = await fetch(path, Object.assign({
-        headers: { "Content-Type": "application/json" }
-      }, options));
+      options = options || {};
+      const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+      const initData = getInitData();
+      if (initData) headers["Authorization"] = "tma " + initData;
+      const res = await fetch(path, Object.assign({}, options, { headers }));
+      if (res.status === 401) {
+        applyUnauthorized();
+        throw new Error(AUTH_REOPEN);
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(apiError(data, res.status));
       return data;
@@ -381,25 +407,29 @@
       const admin = me && me.is_admin;
       document.getElementById("who").innerHTML =
         escapeHtml(displayName()) +
-        (admin ? '<span class="admin-mark">админ</span>' : "") +
-        (isDemo ? " · демо" : "");
+        (admin ? '<span class="admin-mark">админ</span>' : "");
       document.getElementById("balance").textContent = me ? fmtTon(me.balance) : "—";
       const lock = document.getElementById("lock");
       if (lock && me) lock.max = String(me.balance);
+      const createBtn = document.getElementById("create");
+      if (createBtn) createBtn.disabled = !me;
+    }
+
+    function requireLogin() {
+      if (!inTelegram) throw new Error(OPEN_IN_TG);
+      if (!me || authBlocked) throw new Error(AUTH_REOPEN);
     }
 
     async function auth() {
-      me = await api("/auth/telegram", {
-        method: "POST",
-        body: JSON.stringify({
-          telegram_id: tgUser.id,
-          username: tgUser.username || tgUser.first_name || null
-        })
-      });
+      if (!inTelegram || authBlocked) {
+        throw new Error(inTelegram ? AUTH_REOPEN : OPEN_IN_TG);
+      }
+      me = await api("/auth/telegram", { method: "POST", body: "{}" });
       paintUser();
     }
 
     async function refreshMe() {
+      if (!me || authBlocked) return;
       me = await api("/users/" + me.id);
       paintUser();
     }
@@ -410,12 +440,17 @@
     }
 
     async function loadPositionsMap() {
+      if (!me) {
+        myPositions = {};
+        return;
+      }
       try {
         const rows = await api("/users/" + me.id + "/positions");
         myPositions = {};
         for (const p of rows) myPositions[p.market_id] = p;
       } catch (e) {
         myPositions = {};
+        if (isAuthReopenError(e)) throw e;
       }
     }
 
@@ -555,6 +590,7 @@
     }
 
     async function loadMine() {
+      requireLogin();
       const [markets, positions] = await Promise.all([
         api("/markets"),
         api("/users/" + me.id + "/positions")
@@ -614,7 +650,13 @@
       });
       showError("");
       if (name === "feed") loadMarkets().catch(e => showError(e.message));
-      if (name === "mine") loadMine().catch(e => showError(e.message));
+      if (name === "mine") {
+        if (!me) {
+          showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG);
+          return;
+        }
+        loadMine().catch(e => showError(e.message));
+      }
     }
 
     document.querySelector(".tabs").onclick = (ev) => {
@@ -674,6 +716,7 @@
     document.getElementById("create").onclick = async () => {
       showError("");
       try {
+        requireLogin();
         syncOutcomesFromDom();
         const question = document.getElementById("question").value.trim();
         const lock = Number(document.getElementById("lock").value);
@@ -698,7 +741,6 @@
         await api("/markets", {
           method: "POST",
           body: JSON.stringify({
-            creator_id: me.id,
             question,
             category: createCategory,
             description: "",
@@ -725,11 +767,11 @@
       const amount = Number(card.querySelector(".amount")?.value || 0);
       showError("");
       try {
+        requireLogin();
         if (btn.dataset.act === "buy") {
           const res = await api("/markets/" + id + "/buy", {
             method: "POST",
             body: JSON.stringify({
-              user_id: me.id,
               outcome: Number(btn.dataset.outcome),
               money: amount
             })
@@ -741,7 +783,7 @@
           if (!confirm("Остановить приём ставок?")) return;
           await api("/markets/" + id + "/close", {
             method: "POST",
-            body: JSON.stringify({ user_id: me.id })
+            body: JSON.stringify({})
           });
           toast("Приём ставок остановлен");
         } else if (btn.dataset.act === "resolve") {
@@ -749,19 +791,19 @@
           if (!confirm("Рассчитать исход «" + label + "»? Это нельзя отменить.")) return;
           await api("/markets/" + id + "/resolve", {
             method: "POST",
-            body: JSON.stringify({ winning_outcome: Number(btn.dataset.outcome), user_id: me.id })
+            body: JSON.stringify({ winning_outcome: Number(btn.dataset.outcome) })
           });
           toast("Рассчитано: " + label);
         } else if (btn.dataset.act === "residual") {
           const res = await api("/markets/" + id + "/collect-residual", {
             method: "POST",
-            body: JSON.stringify({ user_id: me.id })
+            body: JSON.stringify({})
           });
           toast("Создателю вернулось " + Number(res.returned).toFixed(2) + " TON");
         } else if (btn.dataset.act === "claim") {
           const res = await api("/markets/" + id + "/claim", {
             method: "POST",
-            body: JSON.stringify({ user_id: me.id })
+            body: JSON.stringify({})
           });
           setBalance(res.balance);
           toast("Зачислено " + Number(res.credited).toFixed(2) + " TON · комиссия " + Number(res.tip).toFixed(2));
@@ -797,6 +839,13 @@
       try {
         document.getElementById("close-at").value = defaultCloseAt();
         renderOutcomesEditor();
+        if (!inTelegram) {
+          document.getElementById("who").textContent = OPEN_IN_TG;
+          document.getElementById("create").disabled = true;
+          showError(OPEN_IN_TG);
+          await loadMarkets();
+          return;
+        }
         await auth();
         await loadMarkets();
       } catch (e) { showError(e.message); }

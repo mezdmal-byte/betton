@@ -2,7 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import ensure_schema, get_db
-from app.models import MarketStatus
+from app.models import MarketStatus, User
+from app.telegram_auth import get_current_user
 from app.schemas import (
     BuySharesRequest,
     ClaimWinningsRequest,
@@ -22,8 +23,6 @@ from app.schemas import (
     QuoteOut,
     QuoteRequest,
     ResolveRequest,
-    TelegramAuth,
-    UserCreate,
     UserOut,
 )
 from app.services import market_service
@@ -151,32 +150,40 @@ async def telegram_webhook(request: Request):
 
 
 @app.post("/auth/telegram", response_model=UserOut)
-def auth_telegram(payload: TelegramAuth, db: Session = Depends(get_db)):
-    return market_service.get_or_create_telegram_user(
-        db, telegram_id=payload.telegram_id, username=payload.username
-    )
+def auth_telegram(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
-@app.post("/users", response_model=UserOut, status_code=201)
-def create_user_endpoint(user_in: UserCreate, db: Session = Depends(get_db)):
-    return market_service.create_user(db, username=user_in.username, telegram_id=user_in.telegram_id)
+@app.post("/users", response_model=UserOut)
+def create_user_endpoint(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
 @app.get("/users/{user_id}", response_model=UserOut)
-def get_user_endpoint(user_id: int, db: Session = Depends(get_db)):
-    return market_service.get_user(db, user_id)
+def get_user_endpoint(user_id: int, current_user: User = Depends(get_current_user)):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return current_user
 
 
 @app.get("/users/{user_id}/positions", response_model=list[PositionOut])
-def list_user_positions_endpoint(user_id: int, db: Session = Depends(get_db)):
-    return market_service.list_positions_out(db, user_id)
+def list_user_positions_endpoint(
+    user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return market_service.list_positions_out(db, current_user.id)
 
 
 @app.post("/markets", response_model=MarketOut)
-def create_market_endpoint(market_in: MarketCreate, db: Session = Depends(get_db)):
+def create_market_endpoint(
+    market_in: MarketCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     market = market_service.create_market(
         db,
-        creator_id=market_in.creator_id,
+        creator_id=current_user.id,
         question=market_in.question,
         description=market_in.description or "",
         category=market_in.category,
@@ -213,11 +220,16 @@ def quote_endpoint(market_id: int, req: QuoteRequest, db: Session = Depends(get_
 
 
 @app.post("/markets/{market_id}/buy")
-def buy_shares_endpoint(market_id: int, req: BuySharesRequest, db: Session = Depends(get_db)):
+def buy_shares_endpoint(
+    market_id: int,
+    req: BuySharesRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     res = market_service.buy_shares(
         db,
         market_id=market_id,
-        user_id=req.user_id,
+        user_id=current_user.id,
         outcome=req.outcome,
         money=req.money,
     )
@@ -232,31 +244,54 @@ def buy_shares_endpoint(market_id: int, req: BuySharesRequest, db: Session = Dep
 
 
 @app.post("/markets/{market_id}/close", response_model=MarketOut)
-def close_market_endpoint(market_id: int, req: CloseMarketRequest, db: Session = Depends(get_db)):
-    market = market_service.close_market(db, market_id, user_id=req.user_id)
+def close_market_endpoint(
+    market_id: int,
+    req: CloseMarketRequest | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = req
+    market_service.require_admin(current_user, "Только админ может остановить приём ставок")
+    market = market_service.close_market(db, market_id, user_id=current_user.id)
     return market_service.market_to_out(market)
 
 
 @app.post("/markets/{market_id}/resolve", response_model=MarketOut)
-def resolve_market_endpoint(market_id: int, req: ResolveRequest, db: Session = Depends(get_db)):
+def resolve_market_endpoint(
+    market_id: int,
+    req: ResolveRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market_service.require_admin(current_user)
     market = market_service.resolve_market(
-        db, market_id, req.winning_outcome, user_id=req.user_id
+        db, market_id, req.winning_outcome, user_id=current_user.id
     )
     return market_service.market_to_out(market)
 
 
 @app.post("/markets/{market_id}/collect-residual")
 def collect_residual_endpoint(
-    market_id: int, req: CollectResidualRequest, db: Session = Depends(get_db)
+    market_id: int,
+    req: CollectResidualRequest | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    return market_service.collect_residual(db, market_id, user_id=req.user_id)
+    _ = req
+    market_service.require_admin(current_user, "Только админ может забрать остаток залога")
+    return market_service.collect_residual(db, market_id, user_id=current_user.id)
 
 
 @app.post("/markets/{market_id}/claim")
-def claim_winnings_endpoint(market_id: int, req: ClaimWinningsRequest, db: Session = Depends(get_db)):
+def claim_winnings_endpoint(
+    market_id: int,
+    req: ClaimWinningsRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     return market_service.claim_winnings(
         db,
         market_id=market_id,
-        user_id=req.user_id,
+        user_id=current_user.id,
         tip_rate=req.tip_rate,
     )
