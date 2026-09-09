@@ -35,6 +35,18 @@ def parse_tma_authorization(header_value: str | None) -> str:
     return init_data
 
 
+_HEX_SHA256 = frozenset("0123456789abcdefABCDEF")
+
+
+def _is_hex_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and value.isascii()
+        and _HEX_SHA256.issuperset(value)
+    )
+
+
 def _require_positive_int(value: Any) -> int:
     if isinstance(value, bool) or type(value) is not int:
         raise TelegramAuthError()
@@ -66,14 +78,12 @@ def validate_init_data(
 
     data = dict(pairs)
     received_hash = data.pop("hash", None)
-    if not received_hash or not isinstance(received_hash, str):
+    if not _is_hex_sha256(received_hash):
         raise TelegramAuthError()
 
     data_check_string = "\n".join(f"{key}={value}" for key, value in sorted(data.items()))
     secret_key = hmac.new(b"WebAppData", token.encode("utf-8"), hashlib.sha256).digest()
     computed = hmac.new(secret_key, data_check_string.encode("utf-8"), hashlib.sha256).hexdigest()
-    if len(received_hash) != len(computed):
-        raise TelegramAuthError()
     if not hmac.compare_digest(computed, received_hash):
         raise TelegramAuthError()
 

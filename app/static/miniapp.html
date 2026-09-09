@@ -376,6 +376,18 @@
       return "Ошибка запроса";
     }
 
+    function isAuthReopenError(e) {
+      return !!(e && e.message === AUTH_REOPEN);
+    }
+
+    function applyUnauthorized() {
+      authBlocked = true;
+      me = null;
+      myPositions = {};
+      paintUser();
+      showError(AUTH_REOPEN);
+    }
+
     async function api(path, options) {
       options = options || {};
       const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
@@ -383,8 +395,7 @@
       if (initData) headers["Authorization"] = "tma " + initData;
       const res = await fetch(path, Object.assign({}, options, { headers }));
       if (res.status === 401) {
-        authBlocked = true;
-        me = null;
+        applyUnauthorized();
         throw new Error(AUTH_REOPEN);
       }
       const data = await res.json().catch(() => ({}));
@@ -439,6 +450,7 @@
         for (const p of rows) myPositions[p.market_id] = p;
       } catch (e) {
         myPositions = {};
+        if (isAuthReopenError(e)) throw e;
       }
     }
 

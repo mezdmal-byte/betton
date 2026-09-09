@@ -17,6 +17,7 @@ def make_init_data(
     omit: set[str] | None = None,
     extra: dict[str, str] | None = None,
     include_hash: bool = True,
+    hash_override: str | None = None,
     first_name: str = "Test",
 ) -> str:
     token = TEST_BOT_TOKEN if token is None else token
@@ -35,7 +36,9 @@ def make_init_data(
     if omit:
         for key in omit:
             fields.pop(key, None)
-    if include_hash:
+    if hash_override is not None:
+        fields["hash"] = hash_override
+    elif include_hash:
         data_check = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
         secret = hmac.new(b"WebAppData", token.encode("utf-8"), hashlib.sha256).digest()
         fields["hash"] = hmac.new(secret, data_check.encode("utf-8"), hashlib.sha256).hexdigest()

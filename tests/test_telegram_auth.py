@@ -177,6 +177,27 @@ def test_duplicate_params_and_bool_id_are_rejected(client: TestClient):
     _assert_unauthorized(res, string_id)
 
 
+def test_non_ascii_and_non_hex_hash_returns_401(client: TestClient):
+    from urllib.parse import unquote
+
+    cyrillic_hash = "абвгдежзийклмнопрстуфхцчшщъыьэюя" * 2
+    assert len(cyrillic_hash) == 64
+    encoded = make_init_data(96001, hash_override=cyrillic_hash)
+    assert "%D0%" in encoded.upper()
+    assert len(unquote(encoded.split("hash=")[-1].split("&")[0])) == 64
+    before = _counts()
+    res = client.post("/auth/telegram", headers={"Authorization": f"tma {encoded}"})
+    _assert_unauthorized(res, encoded)
+    assert "TypeError" not in res.text
+    assert "Internal Server Error" not in res.text
+    assert _counts() == before
+
+    ascii_not_hex = make_init_data(96002, hash_override="z" * 64)
+    res = client.post("/auth/telegram", headers={"Authorization": f"tma {ascii_not_hex}"})
+    _assert_unauthorized(res, ascii_not_hex)
+    assert res.status_code == 401
+
+
 def test_missing_bot_token_keeps_access_closed(client: TestClient, monkeypatch):
     monkeypatch.setattr(settings, "bot_token", "")
     init_data = make_init_data(95001)
