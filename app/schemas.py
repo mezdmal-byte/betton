@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import MarketStatus
 
@@ -10,12 +10,14 @@ OutcomeRef = Union[str, int]
 
 
 class UserCreate(BaseModel):
-    username: str
+    model_config = ConfigDict(extra="ignore")
+    username: Optional[str] = None
     telegram_id: Optional[int] = None
 
 
 class TelegramAuth(BaseModel):
-    telegram_id: int
+    model_config = ConfigDict(extra="ignore")
+    telegram_id: Optional[int] = None
     username: Optional[str] = None
 
 
@@ -31,7 +33,7 @@ class UserOut(BaseModel):
 
 
 class MarketCreate(BaseModel):
-    creator_id: int
+    model_config = ConfigDict(extra="ignore")
     question: str
     description: Optional[str] = ""
     category: MarketCategory = "unique"
@@ -48,27 +50,27 @@ class QuoteRequest(BaseModel):
 
 
 class BuySharesRequest(BaseModel):
-    user_id: int
+    model_config = ConfigDict(extra="ignore")
     outcome: OutcomeRef
     money: float = Field(gt=0)
 
 
 class ClaimWinningsRequest(BaseModel):
-    user_id: int
+    model_config = ConfigDict(extra="ignore")
     tip_rate: float = Field(default=0.01, ge=0.0, le=0.01)
 
 
 class ResolveRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     winning_outcome: OutcomeRef
-    user_id: int
 
 
 class CloseMarketRequest(BaseModel):
-    user_id: int
+    model_config = ConfigDict(extra="ignore")
 
 
 class CollectResidualRequest(BaseModel):
-    user_id: int
+    model_config = ConfigDict(extra="ignore")
 
 
 class QuoteOut(BaseModel):

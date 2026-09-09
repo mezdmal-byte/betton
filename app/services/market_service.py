@@ -1,4 +1,5 @@
 import math
+import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
@@ -271,15 +272,11 @@ def get_or_create_telegram_user(
     user = db.query(User).filter(User.telegram_id == telegram_id).one_or_none()
     if user is not None:
         return user
-    uname = f"tg{telegram_id}"
-    existing = db.query(User).filter(User.username == uname).one_or_none()
-    if existing is not None:
-        if existing.telegram_id is None:
-            existing.telegram_id = telegram_id
-            db.commit()
-            db.refresh(existing)
-        return existing
     _ = username
+    uname = f"tg{telegram_id}"
+    # Never attach Telegram to an existing account by username match alone.
+    while db.query(User).filter(User.username == uname).one_or_none() is not None:
+        uname = f"tg{telegram_id}_{uuid.uuid4().hex[:8]}"
     return create_user(db, username=uname, telegram_id=telegram_id)
 
 
