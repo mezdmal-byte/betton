@@ -89,6 +89,13 @@ Refund `reason` values: `cancel`, `ioc`, `remainder`, `close`, `void`.
 Amounts are integer nanoTON. Journal insert and the matching debit/credit share one
 transaction; a journal error rolls the money movement back. Repeating the same
 request or settlement hits the semantic unique key and does not add a second movement.
+Tip rows are keyed by actual recipient: if creator and platform are the same account,
+shares of one winner are aggregated before insert. A retry with the same key but a
+different source or recipient is a conflict.
+
+Reconciliation rebuilds expected movements from orders, fills and saved settlement
+rows, then checks journal parties and directions against that picture. It does not
+treat the journal as the only source of truth.
 
 Markets that already existed when the journal shipped are marked `incomplete`.
 Their past reserves, fills and payouts are not invented. Later operations may appear
@@ -107,9 +114,9 @@ Authorization: tma <admin initData>
 ```
 
 It reports coverage, order identity (`amount = filled + remaining + refunded`),
-fill vs order filled, reserve↔pot transitions, expected vs actual pot, and concrete
-gaps. Do not compare a user's total `balance` to this journal: starting grants and
-LMSR activity also change it.
+fill vs order filled, reserve↔pot transitions, expected vs actual pot, recipients
+of payouts/tips/refunds, and concrete gaps. Do not compare a user's total `balance`
+to this journal: starting grants and LMSR activity also change it.
 
 ## Resolution and expiration
 
@@ -139,7 +146,7 @@ There is no five-minute opening auction, resale/shorting, multi-outcome P2P or T
 
 ## Verification
 
-`python -m pytest -q tests`: 105 passed, 4 skipped on isolated SQLite with fake credentials.
+`python -m pytest -q tests`: 109 passed, 4 skipped on isolated SQLite with fake credentials.
 Legacy scenarios explicitly create and approve LMSR fixtures. New tests cover
 moderation/privacy, no collateral, partial fills, IOC, self-trade exclusion,
 price/time priority, idempotency, concurrent fills/cancellation, refunds, 75/25 tips,

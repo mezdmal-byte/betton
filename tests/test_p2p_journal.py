@@ -8,8 +8,10 @@ from app.database import SessionLocal
 from app.models import Market, P2PMoneyEntry, P2POrder
 from app.services import p2p_ledger as ledger
 from app.services import p2p_service as p2p
+from fastapi import HTTPException
+
 from tests.test_markets_api import _login
-from tests.test_p2p import balance, ready, submit, total
+from tests.test_p2p import balance, market, ready, submit, total
 
 
 def audit(client, mid, headers):
@@ -191,7 +193,6 @@ def test_repeat_requests_do_not_duplicate_journal(client, monkeypatch):
 
 
 def market_ready_second(client, ah, ha):
-    from tests.test_p2p import market
     m = market(client, ha)
     assert client.post(f"/markets/{m['id']}/approve", headers=ah).status_code == 200
     return m['id']
@@ -318,3 +319,105 @@ def test_lmsr_reconciliation_rejected(client, monkeypatch):
     assert created.status_code == 200
     assert audit(client, created.json()['id'], ah).status_code == 409
     assert audit(client, created.json()['id'], ha).status_code == 403
+
+
+def test_resolve_when_admin_is_creator(client, monkeypatch):
+    admin, ah, a, ha, b, hb, _ = ready(client, monkeypatch)
+    mid = market_ready_second(client, ah, ah)
+    with SessionLocal() as db:
+        assert db.get(Market, mid).creator_id == admin['id']
+    admin_before = balance(client, admin, ah)
+    submit(client, mid, ha, 0, 100, 2)
+    submit(client, mid, hb, 1, 100, 2)
+    assert client.post(f'/markets/{mid}/close', headers=ah).status_code == 200
+    resolved = client.post(f'/markets/{mid}/resolve', headers=ah, json={'winning_outcome': 0})
+    assert resolved.status_code == 200, resolved.text
+    assert balance(client, a, ha) == pytest.approx(1099)
+    assert balance(client, b, hb) == pytest.approx(900)
+    assert balance(client, admin, ah) == pytest.approx(admin_before + 1)
+    body = audit(client, mid, ah).json()
+    assert body['fully_verified'] is True
+    assert body['discrepancies'] == []
+    tips = [e for e in body['entries'] if e['op_type'] == 'tip']
+    assert len(tips) == 1
+    assert tips[0]['to_user_id'] == admin['id']
+    assert tips[0]['amount_nano'] == 1 * p2p.ATOM
+    n = len(entries(mid))
+    assert client.post(f'/markets/{mid}/resolve', headers=ah, json={'winning_outcome': 0}).status_code == 400
+    assert len(entries(mid)) == n
+
+
+def test_resolve_when_admin_creates_and_wins(client, monkeypatch):
+    admin, ah, a, ha, b, hb, _ = ready(client, monkeypatch)
+    mid = market_ready_second(client, ah, ah)
+    submit(client, mid, ah, 0, 100, 2)
+    submit(client, mid, hb, 1, 100, 2)
+    client.post(f'/markets/{mid}/close', headers=ah)
+    assert client.post(f'/markets/{mid}/resolve', headers=ah, json={'winning_outcome': 0}).status_code == 200
+    body = audit(client, mid, ah).json()
+    assert body['fully_verified'] is True
+    tips = [e for e in body['entries'] if e['op_type'] == 'tip']
+    assert len(tips) == 1
+    assert tips[0]['to_user_id'] == admin['id']
+    assert tips[0]['from_user_id'] == admin['id']
+
+
+def test_wrong_payout_recipient_is_reported(client, monkeypatch):
+    admin, ah, a, ha, b, hb, mid = ready(client, monkeypatch)
+    submit(client, mid, ha, 0, 100, 2)
+    submit(client, mid, hb, 1, 100, 2)
+    client.post(f'/markets/{mid}/close', headers=ah)
+    assert client.post(f'/markets/{mid}/resolve', headers=ah, json={'winning_outcome': 0}).status_code == 200
+    assert audit(client, mid, ah).json()['fully_verified'] is True
+    with SessionLocal() as db:
+        payout = db.query(P2PMoneyEntry).filter_by(market_id=mid, op_type='payout').one()
+        assert payout.to_user_id == a['id']
+        payout.to_user_id = b['id']
+        db.commit()
+    body = audit(client, mid, ah).json()
+    assert body['fully_verified'] is False
+    kinds = {d['kind'] for d in body['discrepancies']}
+    assert 'payout_recipient' in kinds or 'missing_journal_payout' in kinds
+
+
+def test_record_rejects_same_key_different_party(client, monkeypatch):
+    admin, ah, a, ha, b, hb, mid = ready(client, monkeypatch)
+    submit(client, mid, ha, 0, 100, 2)
+    with SessionLocal() as db:
+        row = db.query(P2PMoneyEntry).filter_by(market_id=mid, op_type='reserve').one()
+        with pytest.raises(HTTPException) as err:
+            ledger.record(
+                db,
+                entry_key=row.entry_key,
+                op_type=row.op_type,
+                market_id=row.market_id,
+                amount=int(row.amount),
+                from_kind=row.from_kind,
+                to_kind=row.to_kind,
+                from_user_id=b['id'],
+                to_user_id=b['id'],
+                to_order_id=row.to_order_id,
+                order_id=row.order_id,
+                origin_key=row.origin_key,
+                reason=row.reason,
+            )
+        assert err.value.status_code == 409
+        db.rollback()
+        again = db.query(P2PMoneyEntry).filter_by(entry_key=row.entry_key).one()
+        assert again.to_user_id == a['id']
+        same = ledger.record(
+            db,
+            entry_key=row.entry_key,
+            op_type=row.op_type,
+            market_id=row.market_id,
+            amount=int(row.amount),
+            from_kind=row.from_kind,
+            to_kind=row.to_kind,
+            from_user_id=row.from_user_id,
+            to_user_id=row.to_user_id,
+            to_order_id=row.to_order_id,
+            order_id=row.order_id,
+            origin_key=row.origin_key,
+            reason=row.reason,
+        )
+        assert same.id == row.id

@@ -380,11 +380,10 @@ def settle(db, market, winning_outcome):
             creator_tip = 0 if uid == market.creator_id else tip*75//100
             credits[market.creator_id] += creator_tip
             credits[admin.id] += tip-creator_tip
-            if creator_tip:
-                ledger.record_tip(db, market.id, uid, market.creator_id, creator_tip)
-            admin_tip = tip-creator_tip
-            if admin_tip:
-                ledger.record_tip(db, market.id, uid, admin.id, admin_tip)
+            for recipient, share in ledger.tip_shares_by_recipient(
+                uid, market.creator_id, admin.id, tip
+            ).items():
+                ledger.record_tip(db, market.id, uid, recipient, share)
         net = row['payout']-tip
         credits[uid] += net
         if net:
