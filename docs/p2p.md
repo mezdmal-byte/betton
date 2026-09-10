@@ -1,0 +1,122 @@
+# BetTON: binary P2P orders
+
+## Preserving LMSR
+
+The pre-P2P source is archived on `archive/lmsr-before-p2p` at
+`19ac1768f70aea23b8368c7719e557e5b50f423f`.
+This is a source snapshot, not a production database backup.
+
+The new application still handles existing LMSR markets via `mechanism=lmsr`.
+No conversion of their balances, positions, b, prices or settlement history occurs.
+Explicit API requests with `mechanism=lmsr` remain supported and enter moderation.
+The Mini App creates P2P markets by default and offers no initial odds or collateral fields.
+The archived application cannot safely read new P2P/pending records; run that source
+against a separate compatible database, not as a blind rollback on a mixed database.
+
+## Creation and moderation
+
+New P2P events have exactly two mutually exclusive, exhaustive outcomes and a future
+close_at. Creation needs no collateral and debits no account. Events enter `pending`.
+Only the authenticated admin can approve or reject; rejection requires a reason.
+Public listing/detail/book hide pending/rejected events. Authors see their events
+in Mine; admins have a moderation queue. Expired pending events cannot be approved.
+Rejecting an LMSR pending event returns its collateral once. P2P has none to return.
+Existing published events are not sent back for moderation.
+
+## Orders and matching
+
+- A request specifies outcome, stake, minimum odds, kind and a user-scoped request_id.
+- `limit` reserves the stake, executes compatible offers and leaves the unfilled part open.
+- `ioc` executes compatible offers immediately and refunds everything unfilled.
+  The UI derives its minimum odds from the worst visible executable level, displays
+  that floor, and never sends an unrestricted market order.
+- A first order is already an offer to the opposite outcome. No deal and no last
+  trade price exist until another account accepts compatible terms.
+- Compatibility is `maker_price + taker_limit_price >= 1`.
+- Execution uses the resting maker price. Higher opposing price is better for the
+  taker; order id breaks ties (price/time priority).
+- Same-user matching is excluded. A user can hold both outcomes through actual
+  trades with other users; tips use aggregate event cost, not only winning-side cost.
+- Cancelling returns only the remaining reservation. Executed stakes stay in the
+  market pot. Repeated cancellation never refunds again.
+- Requests repeated with the same id and terms return the original order. Reusing
+  an id with different terms returns 409. The UI keeps the id after network failure.
+
+## Units, rounding and conservation
+
+Stakes and matched stake amounts are integer nanoTON (1 TON = 1,000,000,000 units).
+Price ticks are 1/1,000,000. `price = floor(1,000,000 / requested_odds)` means the
+actual accepted minimum odds are equal or better than the requested value.
+The API returns effective odds; the UI rounds odds for display only.
+
+For a resting price tick p, let g=gcd(p,1,000,000). One executable lot requires:
+
+- maker stake: p/g nanoTON;
+- opposite stake: (1,000,000-p)/g nanoTON;
+- payout to the winner: 1,000,000/g nanoTON.
+
+A fill takes an integer number of lots fitting both remaining reservations. The
+sum of the two stakes is exactly the winner's entitlement. No platform subsidy
+is involved. A remaining reservation smaller than its executable lot is refunded.
+The smallest payout lot is at most 0.001 TON, depending on the price.
+
+The 100 TON @2.20 / opposing 50 TON example is therefore approximately 41.6667 TON
+of maker stake plus 50 TON of taker stake, subject to tick/lot rounding. The UI shows
+actual executed, reserved and refunded amounts, including small remainders.
+
+Existing User.balance and Market.pot columns remain floating point demo accounting.
+Order/fill arithmetic is integer; balance/pot updates still pass through the existing
+float storage. Tests check conservation to 1e-7 TON. A real-money launch requires a
+separate migration of shared balances to fixed-point accounting; this PR does not
+claim on-chain custody or exact integer storage for the whole legacy application.
+
+## Resolution and expiration
+
+One admin resolution automatically pays every matched winner from the matched pot.
+Tips are 1% of positive net profit across the event, rounded down to nanoTON:
+75% creator / 25% admin; creator winning their own event sends all their tip to admin.
+No unmatched reservation enters profit or the matched pot. History uses existing
+SettlementRecord; winning positions cannot subsequently claim again.
+
+Placement, cancellation and resolution serialize on the market row. User balances
+are adjusted with SQL increments under sorted user locks. PostgreSQL uses row locks;
+SQLite uses the existing write-lock technique. Exceptions roll back the transaction.
+
+Close refunds remaining orders. An in-process worker checks due P2P markets every
+15 seconds while the service runs. Reads and new order attempts also process due
+expiration, so a sleeping service catches up on wake. There is no guaranteed wall-clock
+refund while the process is suspended. The deadline always prevents new execution.
+
+## UI and boundaries
+
+The simple view shows opposite offers, their capacity, amount/minimum-odds inputs,
+requested-price execution and the best currently available weighted odds. Book
+levels are under a collapsible Market view. Offers are refreshed on view entry,
+input changes and the Refresh Offers button. There is no WebSocket feed in this MVP.
+"Market forming" means no trades yet; compatible orders execute immediately.
+There is no five-minute opening auction, resale/shorting, multi-outcome P2P or TON Connect.
+
+## Verification
+
+`python -m pytest -q tests`: 83 passed on isolated SQLite with fake credentials.
+Legacy scenarios explicitly create and approve LMSR fixtures. New tests cover
+moderation/privacy, no collateral, partial fills, IOC, self-trade exclusion,
+price/time priority, idempotency, concurrent fills/cancellation, refunds, 75/25 tips,
+resolution rollback and additive migration preserving existing LMSR data.
+
+Actual Mini App JavaScript + DOM flow test (Node + jsdom):
+
+```
+npm install --prefix /tmp/betton-ui-test jsdom
+NODE_PATH=/tmp/betton-ui-test/node_modules node tests/p2p_ui.cjs
+```
+
+It covers full initialization, offers, a network retry preserving request_id, IOC
+floor, order cancellation, event creation, rejection and clearing private UI on 401.
+It is a simulated DOM with mocked HTTP, not a live Telegram or visual-browser test.
+PostgreSQL behavior and live Telegram have not been tested.
+
+Manual check on a test deployment: create event → admin approve → account A places
+100 @2.20 → account B previews/accepts 50 at available odds → A sees partial execution
+and cancels remainder → admin closes/resolves → both see automatic results/balances.
+Repeat with the other winning outcome; verify an old LMSR event still works.

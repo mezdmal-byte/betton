@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -6,6 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -23,10 +25,13 @@ from app.schemas import (
     QuoteOut,
     QuoteRequest,
     ResolveRequest,
+    RejectMarketRequest,
+    OrderRequest,
+    OrderPreviewRequest,
     SettlementOut,
     UserOut,
 )
-from app.services import market_service
+from app.services import market_service, p2p_service
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -52,12 +57,24 @@ async def setup_webhook_task():
     print(f"Mini App: {settings.webapp_base()}/")
 
 
+async def expire_orders_task():
+    while True:
+        try:
+            await asyncio.to_thread(p2p_service.expire_due_orders)
+        except Exception:
+            logging.getLogger(__name__).exception("P2P expiration failed")
+        await asyncio.sleep(15)
+
+
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
     ensure_schema()
     task = asyncio.create_task(setup_webhook_task())
+    expiry = asyncio.create_task(expire_orders_task())
     yield
     task.cancel()
+    expiry.cancel()
+    await asyncio.gather(expiry, return_exceptions=True)
     bot, _dp = _maybe_bot()
     if bot is not None:
         try:
@@ -70,9 +87,11 @@ async def async_lifespan(app: FastAPI):
 
 app = FastAPI(
     title="BetTON API",
-    description="P2P-платформа предсказаний на базе LMSR. Mini App открывается с корня /",
+    description="P2P-заявки для новых событий, LMSR для прежних рынков. Mini App открывается с корня /",
     lifespan=async_lifespan,
 )
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -185,12 +204,38 @@ def list_user_settlements_endpoint(
     return market_service.list_settlements_out(db, current_user.id)
 
 
+@app.get("/users/{user_id}/markets", response_model=list[MarketOut])
+def list_created_markets_endpoint(
+    user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return [market_service.market_to_out(m) for m in market_service.list_created_markets(db, user_id)]
+
+
+@app.get("/moderation/markets", response_model=list[MarketOut])
+def moderation_queue_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return [market_service.market_to_out(m) for m in market_service.list_pending_markets(db, current_user)]
+
+
+@app.post("/markets/{market_id}/approve", response_model=MarketOut)
+def approve_market_endpoint(market_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return market_service.market_to_out(market_service.moderate_market(db, market_id, current_user.id))
+
+
+@app.post("/markets/{market_id}/reject", response_model=MarketOut)
+def reject_market_endpoint(market_id: int, req: RejectMarketRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return market_service.market_to_out(market_service.moderate_market(db, market_id, current_user.id, reason=req.reason))
+
+
 @app.post("/markets", response_model=MarketOut)
 def create_market_endpoint(
     market_in: MarketCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if market_in.mechanism == "p2p":
+        return market_service.market_to_out(p2p_service.create_market(db, current_user.id, market_in))
     market = market_service.create_market(
         db,
         creator_id=current_user.id,
@@ -221,7 +266,10 @@ def list_markets_endpoint(
 
 @app.get("/markets/{market_id}", response_model=MarketOut)
 def get_market_endpoint(market_id: int, db: Session = Depends(get_db)):
-    return market_service.market_to_out(market_service.get_market(db, market_id))
+    market = market_service.get_market(db, market_id)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    return market_service.market_to_out(market)
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)
@@ -305,3 +353,32 @@ def claim_winnings_endpoint(
         user_id=current_user.id,
         tip_rate=req.tip_rate,
     )
+
+
+@app.get("/markets/{market_id}/orderbook")
+def orderbook_endpoint(market_id: int, db: Session = Depends(get_db)):
+    return p2p_service.book(db, market_id)
+
+
+@app.post("/markets/{market_id}/orders/quote")
+def order_quote_endpoint(market_id: int, req: OrderPreviewRequest,
+                         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return p2p_service.preview(db, market_id, current_user.id, req.outcome, req.money, req.odds)
+
+
+@app.post("/markets/{market_id}/orders")
+def place_order_endpoint(market_id: int, req: OrderRequest,
+                         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return p2p_service.place(db, market_id, current_user.id, req.outcome, req.money, req.odds, req.kind, req.request_id)
+
+
+@app.post("/orders/{order_id}/cancel")
+def cancel_order_endpoint(order_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return p2p_service.cancel(db, order_id, current_user.id)
+
+
+@app.get("/users/{user_id}/orders")
+def list_orders_endpoint(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if user_id != current_user.id:
+        raise HTTPException(403, "Недостаточно прав")
+    return p2p_service.list_orders(db, user_id)

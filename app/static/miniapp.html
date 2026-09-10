@@ -215,6 +215,7 @@
     <button class="tab active" data-tab="feed">Лента</button>
     <button class="tab" data-tab="create">Создать</button>
     <button class="tab" data-tab="mine">Мои</button>
+    <button class="tab" id="moderation-tab" data-tab="moderation" hidden>Модерация</button>
   </nav>
   <main>
     <p class="err" id="error"></p>
@@ -246,14 +247,9 @@
           <button type="button" class="chip" data-cat="politics">Политика</button>
           <button type="button" class="chip on" data-cat="unique">Уникальное</button>
         </div>
-        <label>Исходы</label>
+        <label>Два исхода</label>
         <div id="outcomes-editor"></div>
-        <div class="row">
-          <button type="button" class="ghost" id="add-outcome">Добавить исход</button>
-        </div>
-        <label>Залог TON</label>
-        <input id="lock" type="number" min="10" step="1" value="50" inputmode="decimal"/>
-        <p class="muted">Заморозка. Чем больше — тем спокойнее коэф. Потеря не больше залога.</p>
+        <p class="muted">Событие появится после проверки админом. Залог не нужен. Условия ставок задают игроки.</p>
         <label>Конец приёма ставок</label>
         <input id="close-at" type="datetime-local" required/>
         <div class="row">
@@ -265,14 +261,18 @@
     <section data-panel="mine" hidden>
       <h2>Созданные</h2>
       <div id="mine-created"></div>
+      <h2>Мои заявки</h2>
+      <div id="mine-orders"></div>
       <h2>Мои ставки</h2>
       <div id="mine-bets"></div>
       <h2>Результаты</h2>
       <div id="mine-results"></div>
     </section>
+    <section data-panel="moderation" hidden><h2>На проверке</h2><div id="moderation-markets"></div></section>
   </main>
   <div class="toast" id="toast"></div>
 
+  <script src="/static/p2p.js"></script>
   <script>
     const CAT_LABEL = { sport: "Спорт", politics: "Политика", unique: "Уникальное" };
     const OPEN_IN_TG = "Откройте BetTON через Telegram";
@@ -336,6 +336,8 @@
     function fmtTon(v) { return Number(v).toFixed(2) + " TON"; }
 
     function statusLabel(s) {
+      if (s === "pending") return "На модерации";
+      if (s === "rejected") return "Отклонено";
       if (s === "open") return "Открыт";
       if (s === "closed") return "Приём закрыт";
       return "Рассчитан";
@@ -387,6 +389,7 @@
       me = null;
       myPositions = {};
       paintUser();
+      for (const id of ["mine-created", "mine-bets", "mine-results", "mine-orders", "moderation-markets"]) document.getElementById(id).innerHTML = "";
       showError(AUTH_REOPEN);
     }
 
@@ -407,6 +410,7 @@
 
     function paintUser() {
       const admin = me && me.is_admin;
+      document.getElementById("moderation-tab").hidden = !admin;
       document.getElementById("who").innerHTML =
         escapeHtml(displayName()) +
         (admin ? '<span class="admin-mark">админ</span>' : "");
@@ -432,7 +436,9 @@
 
     async function refreshMe() {
       if (!me || authBlocked) return;
-      me = await api("/users/" + me.id);
+      const updated = await api("/users/" + me.id);
+      if (authBlocked) return;
+      me = updated;
       paintUser();
     }
 
@@ -456,43 +462,18 @@
       }
     }
 
-    function outcomeProbs() {
-      const inv = createOutcomes.map(o => 1 / Math.max(1.0001, Number(o.k) || 2));
-      const s = inv.reduce((a, b) => a + b, 0);
-      return inv.map(x => x / s);
-    }
-
-    function equalizeOdds() {
-      const n = createOutcomes.length;
-      const k = n;
-      createOutcomes.forEach(o => { o.k = k; });
-    }
-
     function renderOutcomesEditor() {
-      const root = document.getElementById("outcomes-editor");
-      const probs = outcomeProbs();
-      root.innerHTML = createOutcomes.map((o, i) => `
-        <div class="outcome-row" data-i="${i}">
-          <input class="oname" value="${escapeHtml(o.name)}" placeholder="Исход ${i + 1}"/>
-          <input class="ok" type="number" min="1.01" step="0.01" value="${Number(o.k).toFixed(2)}"/>
-          <div class="pct">${fmtPct(probs[i])}</div>
-          <button type="button" class="rm" data-rm="${i}" ${createOutcomes.length <= 2 ? "disabled" : ""}>×</button>
-        </div>`).join("");
+      document.getElementById("outcomes-editor").innerHTML = createOutcomes.map((o,i) =>
+        `<input class="oname" data-i="${i}" value="${escapeHtml(o.name)}" placeholder="Исход ${i+1}"/>`).join("");
     }
-
     function syncOutcomesFromDom() {
-      document.querySelectorAll("#outcomes-editor .outcome-row").forEach(row => {
-        const i = Number(row.dataset.i);
-        const name = row.querySelector(".oname").value;
-        const k = Number(row.querySelector(".ok").value);
-        if (createOutcomes[i]) {
-          createOutcomes[i].name = name;
-          createOutcomes[i].k = k > 1 ? k : createOutcomes.length;
-        }
+      document.querySelectorAll("#outcomes-editor .oname").forEach(input => {
+        createOutcomes[Number(input.dataset.i)].name = input.value;
       });
     }
 
     function marketCard(m) {
+      if (m.mechanism === "p2p") return p2pCard(m);
       const names = marketOutcomes(m);
       const prices = marketPrices(m);
       const accepting = !!m.accepting_bets;
@@ -527,6 +508,8 @@
             ${m.close_at ? `<span class="pill">до ${escapeHtml(String(m.close_at).replace("T", " ").slice(0, 16))} UTC</span>` : ""}
             ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${escapeHtml(m.winning_outcome)}</span>` : ""}
           </div>
+          ${moderationActions(m)}
+          ${m.status === "rejected" ? `<p class="muted">Отклонено: ${escapeHtml(m.rejection_reason || "")} · залог возвращён</p>` : ""}
           <div class="odds">${oddsHtml}</div>
           ${accepting ? `
             <label>Сумма ставки TON</label>
@@ -556,7 +539,10 @@
       const resolved = m.status === "resolved";
       const names = marketOutcomes(m);
       const shares = pos.shares && pos.shares.length ? pos.shares : [pos.shares_yes || 0, pos.shares_no || 0];
-      const lines = names.map((n, i) => escapeHtml(n) + ": " + Number(shares[i] || 0).toFixed(2) + " долей").join(" · ");
+      const lines = m.mechanism === "p2p"
+        ? names.map((n,i) => Number(pos.costs?.[i] || 0) > 0
+          ? escapeHtml(n)+": ставка "+fmtTon(pos.costs[i])+" @"+(shares[i]/pos.costs[i]).toFixed(2)+" · выплата при победе "+fmtTon(shares[i]) : "").filter(Boolean).join(" · ")
+        : names.map((n, i) => escapeHtml(n) + ": " + Number(shares[i] || 0).toFixed(2) + " долей").join(" · ");
       const winningIndex = names.indexOf(m.winning_outcome);
       const lost = resolved && winningIndex >= 0 && Number(shares[winningIndex] || 0) <= 0;
       const canClaim = resolved && m.settlement_kind !== "auto" && !pos.claimed && !lost && shares.some(x => x > 0);
@@ -625,15 +611,18 @@
       await refreshMe();
       requireLogin();
       const userId = me.id;
-      const [markets, positions, settlements] = await Promise.all([
-        api("/markets"),
+      const [markets, positions, settlements, orders] = await Promise.all([
+        api("/users/" + userId + "/markets"),
         api("/users/" + userId + "/positions"),
-        api("/users/" + userId + "/settlements")
+        api("/users/" + userId + "/settlements"),
+        api("/users/" + userId + "/orders")
       ]);
+      await refreshMe();
       requireLogin();
       if (me.id !== userId) return;
       myPositions = {};
       for (const p of positions) myPositions[p.market_id] = p;
+      document.getElementById("mine-orders").innerHTML = orders.length ? orders.map(orderCard).join("") : '<p class="muted">Заявок пока нет.</p>';
       const created = markets.filter(m => m.creator_id === me.id);
       const createdRoot = document.getElementById("mine-created");
       const betsRoot = document.getElementById("mine-bets");
@@ -656,6 +645,7 @@
     }
 
     async function previewQuote(card) {
+      if (card.dataset.mechanism === "p2p") return hydrateP2P(card);
       const preview = card.querySelector("[data-preview]");
       if (!preview) return;
       const money = Number(card.querySelector(".amount")?.value || 0);
@@ -686,6 +676,8 @@
     }
 
     function showTab(name) {
+      if (name === "moderation" && !me?.is_admin) return;
+      if (name === "moderation") loadModeration().catch(e => showError(e.message));
       document.querySelectorAll("[data-panel]").forEach(p => {
         p.hidden = p.dataset.panel !== name;
       });
@@ -731,39 +723,13 @@
       document.querySelectorAll("#create-cats .chip").forEach(c => c.classList.toggle("on", c === btn));
     };
 
-    document.getElementById("add-outcome").onclick = () => {
-      syncOutcomesFromDom();
-      if (createOutcomes.length >= 8) return toast("Максимум 8 исходов", true);
-      createOutcomes.push({ name: "Исход " + (createOutcomes.length + 1), k: createOutcomes.length + 1 });
-      equalizeOdds();
-      renderOutcomesEditor();
-    };
-
-    document.getElementById("outcomes-editor").onclick = (ev) => {
-      const rm = ev.target.closest("[data-rm]");
-      if (!rm || createOutcomes.length <= 2) return;
-      syncOutcomesFromDom();
-      createOutcomes.splice(Number(rm.dataset.rm), 1);
-      equalizeOdds();
-      renderOutcomesEditor();
-    };
-
-    document.getElementById("outcomes-editor").addEventListener("input", () => {
-      syncOutcomesFromDom();
-      const probs = outcomeProbs();
-      document.querySelectorAll("#outcomes-editor .outcome-row").forEach((row, i) => {
-        const pct = row.querySelector(".pct");
-        if (pct) pct.textContent = fmtPct(probs[i] || 0);
-      });
-    });
-
     document.getElementById("create").onclick = async () => {
       showError("");
       try {
         requireLogin();
         syncOutcomesFromDom();
         const question = document.getElementById("question").value.trim();
-        const lock = Number(document.getElementById("lock").value);
+
         const closeLocal = document.getElementById("close-at").value;
         if (question.length < 8) throw new Error("Вопрос слишком короткий");
         if (!closeLocal) throw new Error("Укажите время конца приёма");
@@ -771,17 +737,11 @@
         if (Number.isNaN(closeDate.getTime()) || closeDate.getTime() <= Date.now()) {
           throw new Error("Конец приёма не может быть в прошлом");
         }
-        if (!(lock >= 10)) throw new Error("Залог от 10 TON");
-        if (me && lock > me.balance) throw new Error("Недостаточно TON на залог");
+
         const names = createOutcomes.map(o => o.name.trim());
         if (names.some(n => !n)) throw new Error("Заполните названия исходов");
         const uniq = new Set(names.map(n => n.toLowerCase()));
         if (uniq.size !== names.length) throw new Error("Имена исходов должны быть уникальными");
-        const ks = createOutcomes.map(o => Number(o.k));
-        if (ks.some(k => !(k > 1))) throw new Error("Коэффициент каждого исхода должен быть больше 1");
-        const probs = outcomeProbs();
-        const sumP = probs.reduce((a, b) => a + b, 0);
-        if (Math.abs(sumP - 1) > 1e-6) throw new Error("Сумма вероятностей должна быть 100%");
         await api("/markets", {
           method: "POST",
           body: JSON.stringify({
@@ -789,17 +749,17 @@
             category: createCategory,
             description: "",
             outcomes: names,
-            lock_ton: lock,
+            mechanism: "p2p",
             close_at: closeDate.toISOString(),
-            target_odds: ks
+
           })
         });
         document.getElementById("question").value = "";
         createOutcomes = [{ name: "Да", k: 2 }, { name: "Нет", k: 2 }];
         renderOutcomesEditor();
-        toast("Рынок создан · залог списан");
+        toast("Событие отправлено на модерацию");
         await refreshMe();
-        showTab("feed");
+        showTab("mine");
       } catch (e) { showError(e.message); }
     };
 
@@ -812,7 +772,18 @@
       showError("");
       try {
         requireLogin();
-        if (btn.dataset.act === "buy") {
+        if (btn.dataset.act === "p2p-refresh") { await hydrateP2P(card); return; }
+        if (btn.dataset.act === "p2p-limit" || btn.dataset.act === "p2p-ioc") {
+          if (card.submitting) return;
+          card.submitting = true;
+          try { await p2pPlace(card, btn.dataset.act === "p2p-ioc" ? "ioc" : "limit"); }
+          finally { card.submitting = false; }
+        } else if (btn.dataset.act === "approve" || btn.dataset.act === "reject") {
+          const reason = card.querySelector(".reject-reason").value.trim();
+          if (btn.dataset.act === "reject" && !reason) throw new Error("Укажите причину отклонения");
+          await api("/markets/"+id+"/"+btn.dataset.act, {method:"POST", body:JSON.stringify({reason})});
+          toast(btn.dataset.act === "approve" ? "Событие опубликовано" : "Событие отклонено");
+        } else if (btn.dataset.act === "buy") {
           const res = await api("/markets/" + id + "/buy", {
             method: "POST",
             body: JSON.stringify({
@@ -854,6 +825,7 @@
         }
         const panel = document.querySelector("[data-panel]:not([hidden])");
         if (panel && panel.dataset.panel === "mine") await loadMine();
+        else if (panel && panel.dataset.panel === "moderation") await loadModeration();
         else await loadMarkets();
         await refreshMe();
       } catch (e) {
@@ -866,6 +838,27 @@
     document.getElementById("mine-created").onclick = onCardClick;
     document.getElementById("mine-bets").onclick = onCardClick;
     document.getElementById("mine-results").onclick = onCardClick;
+    document.getElementById("moderation-markets").onclick = onCardClick;
+    document.getElementById("mine-orders").onclick = async (ev) => {
+      const btn = ev.target.closest("[data-cancel-order]");
+      if (!btn) return;
+      try {
+        requireLogin();
+        await api("/orders/"+btn.dataset.cancelOrder+"/cancel", {method:"POST"});
+        await loadMine();
+      } catch(e) { showError(e.message); }
+    };
+    for (const id of ["markets", "mine-created"]) {
+      document.getElementById(id).addEventListener("input", ev => {
+        const card = ev.target.closest('[data-mechanism="p2p"]');
+        if (!card) return;
+        clearTimeout(card.quoteTimer);
+        card.quoteVersion = (card.quoteVersion || 0)+1;
+        card.availableQuote = null;
+        card.querySelector('[data-act="p2p-ioc"]').disabled = true;
+        card.quoteTimer = setTimeout(() => p2pQuote(card), 250);
+      });
+    }
 
     document.getElementById("markets").addEventListener("input", (ev) => {
       if (!ev.target.classList.contains("amount")) return;
@@ -885,6 +878,7 @@
       refreshMe().catch(() => {});
       const panel = document.querySelector("[data-panel]:not([hidden])");
       if (panel && panel.dataset.panel === "mine") loadMine().catch(e => showError(e.message));
+      else if (panel && panel.dataset.panel === "moderation") loadModeration().catch(e => showError(e.message));
       else loadMarkets().catch(e => showError(e.message));
     });
 

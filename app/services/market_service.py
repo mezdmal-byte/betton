@@ -149,6 +149,9 @@ def _maybe_auto_close(db: Session, market: Market) -> bool:
         .execution_options(synchronize_session=False)
     )
     db.refresh(market)
+    if market.status == MarketStatus.closed and market.mechanism == "p2p":
+        from app.services import p2p_service
+        p2p_service.cancel_all(db, market)
     # The conditional write acquired a lock even if no row matched.
     return True
 
@@ -313,7 +316,7 @@ def _probs_from_create(
 def market_to_out(market: Market) -> MarketOut:
     names = market_outcomes(market)
     q = _quantities(market)
-    p = prices(q, market.b)
+    p = prices(q, market.b) if market.mechanism != "p2p" else []
     odds = [(1.0 / pi) if pi > 0 else 0.0 for pi in p]
     win = winning_name(market)
     return MarketOut(
@@ -340,6 +343,10 @@ def market_to_out(market: Market) -> MarketOut:
         winning_outcome=win,
         created_at=market.created_at,
         accepting_bets=is_accepting_bets(market),
+        mechanism=market.mechanism,
+        rejection_reason=market.rejection_reason,
+        moderated_at=as_utc(market.moderated_at),
+        moderated_by=market.moderated_by,
         settlement_kind=market.settlement_kind,
     )
 
@@ -441,7 +448,7 @@ def create_market(
         pot=float(lock_ton),
         close_at=_naive_utc(close_utc),
         lock_returned=False,
-        status=MarketStatus.open,
+        status=MarketStatus.pending,
     )
     _set_quantities(market, q)
     db.add(market)
@@ -455,16 +462,14 @@ def list_markets(
     category: str | None = None,
     status: MarketStatus | None = None,
 ) -> list[Market]:
-    query = db.query(Market)
+    query = db.query(Market).filter(Market.status.in_([MarketStatus.open, MarketStatus.closed, MarketStatus.resolved]))
     if category:
         query = query.filter(Market.category == _normalize_category(category))
     rows = query.order_by(Market.id.desc()).all()
-    changed = False
     for market in rows:
         if _maybe_auto_close(db, market):
-            changed = True
-    if changed:
-        db.commit()
+            # Release this market's refund locks before moving to the next market.
+            db.commit()
     if status is not None:
         rows = [m for m in rows if m.status == status]
     return rows
@@ -499,6 +504,8 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
     if _maybe_auto_close(db, market):
         db.flush()
     require_accepting(market)
+    if market.mechanism == "p2p":
+        raise HTTPException(status_code=409, detail="Для P2P используйте заявки")
     get_user(db, user_id)
     if money <= 0:
         raise HTTPException(status_code=400, detail="Сумма ставки должна быть > 0")
@@ -545,6 +552,8 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
 def quote_buy(db: Session, market_id: int, outcome, money: float) -> QuoteOut:
     market = get_market(db, market_id)
     require_accepting(market)
+    if market.mechanism == "p2p":
+        raise HTTPException(status_code=409, detail="Для P2P используйте заявки")
     if money <= 0:
         raise HTTPException(status_code=400, detail="Сумма ставки должна быть > 0")
     names = market_outcomes(market)
@@ -599,6 +608,11 @@ def close_market(db: Session, market_id: int, user_id: int) -> Market:
     _maybe_auto_close(db, market)
     if market.status == MarketStatus.resolved:
         raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
+    if market.status not in (MarketStatus.open, MarketStatus.closed):
+        raise HTTPException(status_code=409, detail="Событие не опубликовано")
+    if market.mechanism == "p2p":
+        from app.services import p2p_service
+        p2p_service.cancel_all(db, market)
     market.status = MarketStatus.closed
     db.commit()
     db.refresh(market)
@@ -701,12 +715,19 @@ def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -
     require_admin(actor)
     try:
         market = _lock_market(db, market_id)
-        _maybe_auto_close(db, market)
+        if market.mechanism == "p2p" and market.status == MarketStatus.open and not is_accepting_bets(market):
+            # Already locked. Settlement locks all recipients before refunding orders.
+            market.status = MarketStatus.closed
+        else:
+            _maybe_auto_close(db, market)
         if market.status == MarketStatus.resolved:
             raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
         if market.status != MarketStatus.closed:
             raise HTTPException(status_code=400, detail="Сначала остановите приём ставок")
 
+        if market.mechanism == "p2p":
+            from app.services import p2p_service
+            return p2p_service.settle(db, market, winning_outcome)
         names = market_outcomes(market)
         idx = parse_outcome(names, winning_outcome)
         plan = _plan_auto_settlement(db, market, idx, names)
@@ -960,3 +981,49 @@ def _require_funded_buy(db: Session, market: Market, idx: int, shares: float, pa
     if (not math.isfinite(available) or any(not math.isfinite(x) for x in liabilities)
             or max(liabilities) > available + SETTLEMENT_EPS):
         raise HTTPException(status_code=409, detail="Банк не покрывает выплаты после этой ставки. Ставка не принята, баланс не списан")
+
+
+def list_created_markets(db: Session, user_id: int) -> list[Market]:
+    return db.query(Market).filter(Market.creator_id == user_id).order_by(Market.id.desc()).all()
+
+
+def list_pending_markets(db: Session, actor: User) -> list[Market]:
+    require_admin(actor, "Только админ может модерировать события")
+    return db.query(Market).filter(Market.status == MarketStatus.pending).order_by(Market.id).all()
+
+
+def moderate_market(db: Session, market_id: int, user_id: int, *, reason: str | None = None) -> Market:
+    actor = get_user(db, user_id)
+    require_admin(actor, "Только админ может модерировать события")
+    if reason is not None:
+        reason = reason.strip()
+        if not reason or len(reason) > 1000:
+            raise HTTPException(status_code=422, detail="Укажите причину отклонения (до 1000 символов)")
+    try:
+        market = _lock_market(db, market_id)
+        if market.status != MarketStatus.pending:
+            raise HTTPException(status_code=409, detail="Событие уже прошло модерацию")
+        if reason is None:
+            close_at = as_utc(market.close_at)
+            if close_at is None or close_at <= utcnow():
+                raise HTTPException(status_code=409, detail="Время приёма ставок истекло. Отклоните событие для возврата залога")
+            market.status = MarketStatus.open
+        else:
+            if market.mechanism == "lmsr" and (market.lock_returned or not math.isfinite(market.pot)
+                    or abs(market.pot - market.lock_ton) > SETTLEMENT_EPS
+                    or db.query(Position).filter_by(market_id=market_id).first() is not None):
+                raise HTTPException(status_code=409, detail="Невозможно вернуть залог: состояние банка требует проверки")
+            _lock_users(db, [market.creator_id])
+            _adjust_balance(db, market.creator_id, market.lock_ton)
+            market.pot = 0.0
+            market.lock_returned = True
+            market.rejection_reason = reason
+            market.status = MarketStatus.rejected
+        market.moderated_by = actor.id
+        market.moderated_at = _naive_utc(utcnow())
+        db.commit()
+        db.refresh(market)
+        return market
+    except Exception:
+        db.rollback()
+        raise

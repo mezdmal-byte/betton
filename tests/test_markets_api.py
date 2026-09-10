@@ -1,3 +1,4 @@
+from tests.legacy_helpers import post_legacy_market
 from datetime import datetime, timedelta, timezone
 import uuid
 
@@ -43,7 +44,7 @@ def test_quote_and_resolve_only_admin(client: TestClient, monkeypatch):
     admin, admin_headers = _admin(client, monkeypatch)
     creator, creator_headers = _login(client)
     other, other_headers = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=creator_headers,
         json={
@@ -147,7 +148,7 @@ def test_demo_admin_three_outcomes_tips(client: TestClient, monkeypatch):
     assert user["balance"] == settings.starting_balance
     assert user["is_admin"] is False
 
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_headers,
         json={
@@ -225,7 +226,7 @@ def test_tip_split_when_creator_is_not_admin(client: TestClient, monkeypatch):
     admin, admin_headers = _admin(client, monkeypatch)
     creator, creator_headers = _login(client)
     winner, winner_headers = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=creator_headers,
         json={
@@ -272,7 +273,7 @@ def test_liquidity_lock_survives_reauth(client: TestClient, monkeypatch):
     admin, admin_headers = _admin(client, monkeypatch)
     start = admin["balance"]
     telegram_id = admin["telegram_id"]
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_headers,
         json={
@@ -296,7 +297,7 @@ def test_liquidity_lock_survives_reauth(client: TestClient, monkeypatch):
 
 def test_lock_insufficient(client: TestClient):
     user, headers = _login(client)
-    res = client.post(
+    res = post_legacy_market(client,
         "/markets",
         headers=headers,
         json={
