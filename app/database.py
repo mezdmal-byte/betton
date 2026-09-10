@@ -37,6 +37,13 @@ def _add_column_if_missing(conn, table: str, name: str, ddl: str, existing: set[
     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 
+def _ensure_varchar_capacity(conn, table: str, column: str, length: int) -> None:
+    """PostgreSQL enforces VARCHAR(n); SQLite does not. Widen without rewriting rows."""
+    if conn.dialect.name != "postgresql":
+        return
+    conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE VARCHAR({length})"))
+
+
 def ensure_schema() -> None:
     """create_all + колонки n-исходов / pot / close_at на уже существующих таблицах."""
     from app import models as _models  # noqa: F401
@@ -61,7 +68,11 @@ def ensure_schema() -> None:
         _add_column_if_missing(conn, "markets", "rejection_reason", "VARCHAR(1000)", market_cols)
         _add_column_if_missing(conn, "markets", "moderated_at", "TIMESTAMP", market_cols)
         _add_column_if_missing(conn, "markets", "moderated_by", "INTEGER", market_cols)
+        _add_column_if_missing(conn, "markets", "cancellation_reason", "VARCHAR(1000)", market_cols)
+        _add_column_if_missing(conn, "markets", "cancelled_at", "TIMESTAMP", market_cols)
+        _add_column_if_missing(conn, "markets", "cancelled_by", "INTEGER", market_cols)
         conn.execute(text("UPDATE markets SET category = 'unique' WHERE category IS NULL"))
+        _ensure_varchar_capacity(conn, "markets", "status", 16)
 
         if "positions" in tables:
             pos_cols = {c["name"] for c in insp.get_columns("positions")}

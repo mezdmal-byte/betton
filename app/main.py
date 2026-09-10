@@ -19,6 +19,7 @@ from app.schemas import (
     ClaimWinningsRequest,
     CloseMarketRequest,
     CollectResidualRequest,
+    CancelMarketRequest,
     MarketCreate,
     MarketOut,
     PositionOut,
@@ -122,6 +123,7 @@ def _validation_detail_ru(exc: RequestValidationError) -> str:
         "lock_ton": "залог",
         "close_at": "конец приёма",
         "outcomes": "исходы",
+        "reason": "причина",
     }
     label = labels.get(field, field)
     msg = str(err.get("msg", "")).lower()
@@ -136,7 +138,7 @@ def _validation_detail_ru(exc: RequestValidationError) -> str:
     if field in {"outcome", "winning_outcome"}:
         return "Укажите исход по имени или индексу"
     if field == "status":
-        return "Статус: open, closed или resolved"
+        return "Статус: open, closed, resolved или cancelled"
     if field == "close_at":
         return "Укажите дату и время конца приёма"
     return "Некорректный запрос"
@@ -311,6 +313,18 @@ def close_market_endpoint(
     _ = req
     market_service.require_admin(current_user, "Только админ может остановить приём ставок")
     market = market_service.close_market(db, market_id, user_id=current_user.id)
+    return market_service.market_to_out(market)
+
+
+@app.post("/markets/{market_id}/cancel", response_model=MarketOut)
+def cancel_market_endpoint(
+    market_id: int,
+    req: CancelMarketRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market_service.require_admin(current_user, "Только админ может отменить событие")
+    market = p2p_service.void_market(db, market_id, current_user.id, req.reason)
     return market_service.market_to_out(market)
 
 

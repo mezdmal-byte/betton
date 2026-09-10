@@ -27,6 +27,7 @@ class MarketStatus(str, enum.Enum):
     open = "open"
     closed = "closed"
     resolved = "resolved"
+    cancelled = "cancelled"
 
 
 class Outcome(str, enum.Enum):
@@ -81,6 +82,9 @@ class Market(Base):
     rejection_reason: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     moderated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     moderated_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cancellation_reason: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     settlement_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     creator: Mapped[User] = relationship(back_populates="markets")

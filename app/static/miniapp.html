@@ -232,6 +232,7 @@
         <button class="chip" data-status="open">Открытые</button>
         <button class="chip" data-status="closed">Стоп</button>
         <button class="chip" data-status="resolved">Рассчитаны</button>
+        <button class="chip" data-status="cancelled">Отменены</button>
       </div>
       <div id="markets"></div>
     </section>
@@ -340,6 +341,7 @@
       if (s === "rejected") return "Отклонено";
       if (s === "open") return "Открыт";
       if (s === "closed") return "Приём закрыт";
+      if (s === "cancelled") return "Отменено";
       return "Рассчитан";
     }
 
@@ -565,11 +567,26 @@
     }
 
     function settlementCard(s) {
-      const loss = !!s.is_loss;
+      const voided = s.settlement_kind === "void";
+      const loss = !voided && !!s.is_loss;
       const when = s.resolved_at ? escapeHtml(String(s.resolved_at).replace("T", " ").slice(0, 16)) + " UTC" : "";
       const chosen = (s.chosen_outcomes && s.chosen_outcomes.length)
         ? s.chosen_outcomes.map(escapeHtml).join(", ")
         : "нет ставок";
+      if (voided) {
+        return `
+        <div class="card" data-id="${s.market_id}">
+          <div class="question">${escapeHtml(s.question)}</div>
+          <div class="meta">
+            <span class="pill">Отменено</span>
+            ${when ? `<span class="pill">${when}</span>` : ""}
+          </div>
+          <p class="muted">Причина: ${escapeHtml(s.cancellation_reason || "")}</p>
+          <p class="muted">ставки: ${escapeHtml(chosen)}</p>
+          <p class="muted">возврат исполненной ставки ${fmtTon(s.payout)} · освобождённый остаток заявки ${fmtTon(s.residual_returned)}</p>
+          <p class="muted">всего возвращено ${fmtTon(s.credited)}</p>
+        </div>`;
+      }
       const creatorBits = (s.lock_ton > 0 || s.residual_returned > 0)
         ? `<p class="muted">залог ${fmtTon(s.lock_ton)} · возврат остатка ${fmtTon(s.residual_returned)}</p>`
         : "";
@@ -633,7 +650,7 @@
       await Promise.all(
         [...createdRoot.querySelectorAll(".card")].map(card => previewQuote(card))
       );
-      const active = positions.filter(p => p.market && p.market.status !== "resolved");
+      const active = positions.filter(p => p.market && p.market.status !== "resolved" && p.market.status !== "cancelled");
       betsRoot.innerHTML = active.length
         ? active.map(positionCard).join("")
         : '<p class="muted">Ставок пока нет.</p>';
@@ -794,6 +811,14 @@
           setBalance(res.balance);
           const avgK = res.paid > 0 ? (res.shares / res.paid) : 0;
           toast("Поставлено " + Number(res.paid).toFixed(2) + " TON, коэф ~" + avgK.toFixed(2));
+        } else if (btn.dataset.act === "p2p-cancel") {
+          const payload = p2pCancelPayload(card.querySelector(".cancel-reason")?.value);
+          if (!confirm(p2pCancelConfirmText(payload.reason))) return;
+          await api("/markets/" + id + "/cancel", {
+            method: "POST",
+            body: JSON.stringify({ reason: payload.reason })
+          });
+          toast("Событие отменено · ставки возвращены");
         } else if (btn.dataset.act === "close") {
           if (!confirm("Остановить приём ставок?")) return;
           await api("/markets/" + id + "/close", {
@@ -850,12 +875,14 @@
     };
     for (const id of ["markets", "mine-created"]) {
       document.getElementById(id).addEventListener("input", ev => {
+        if (!ev.target.matches(".p2p-money, .p2p-odds, .p2p-side")) return;
         const card = ev.target.closest('[data-mechanism="p2p"]');
         if (!card) return;
         clearTimeout(card.quoteTimer);
         card.quoteVersion = (card.quoteVersion || 0)+1;
         card.availableQuote = null;
-        card.querySelector('[data-act="p2p-ioc"]').disabled = true;
+        const ioc = card.querySelector('[data-act="p2p-ioc"]');
+        if (ioc) ioc.disabled = true;
         card.quoteTimer = setTimeout(() => p2pQuote(card), 250);
       });
     }

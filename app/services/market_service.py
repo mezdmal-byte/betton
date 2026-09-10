@@ -17,6 +17,7 @@ MIN_OUTCOMES = 2
 MAX_OUTCOMES = 8
 SETTLEMENT_EPS = 1e-9
 SETTLEMENT_AUTO = "auto"
+SETTLEMENT_VOID = "void"
 
 
 def utcnow() -> datetime:
@@ -347,6 +348,9 @@ def market_to_out(market: Market) -> MarketOut:
         rejection_reason=market.rejection_reason,
         moderated_at=as_utc(market.moderated_at),
         moderated_by=market.moderated_by,
+        cancellation_reason=market.cancellation_reason,
+        cancelled_at=as_utc(market.cancelled_at),
+        cancelled_by=market.cancelled_by,
         settlement_kind=market.settlement_kind,
     )
 
@@ -462,7 +466,11 @@ def list_markets(
     category: str | None = None,
     status: MarketStatus | None = None,
 ) -> list[Market]:
-    query = db.query(Market).filter(Market.status.in_([MarketStatus.open, MarketStatus.closed, MarketStatus.resolved]))
+    query = db.query(Market).filter(
+        Market.status.in_(
+            [MarketStatus.open, MarketStatus.closed, MarketStatus.resolved, MarketStatus.cancelled]
+        )
+    )
     if category:
         query = query.filter(Market.category == _normalize_category(category))
     rows = query.order_by(Market.id.desc()).all()
@@ -720,6 +728,8 @@ def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -
             market.status = MarketStatus.closed
         else:
             _maybe_auto_close(db, market)
+        if market.status == MarketStatus.cancelled:
+            raise HTTPException(status_code=400, detail="Событие отменено")
         if market.status == MarketStatus.resolved:
             raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
         if market.status != MarketStatus.closed:
@@ -944,6 +954,7 @@ def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
     for row in rows:
         market = db.get(Market, row.market_id)
         kind = market.settlement_kind if market is not None else SETTLEMENT_AUTO
+        voided = kind == SETTLEMENT_VOID
         out.append(
             SettlementOut(
                 market_id=row.market_id,
@@ -958,10 +969,14 @@ def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
                 lock_ton=float(row.lock_ton or 0.0),
                 residual_returned=float(row.residual_returned or 0.0),
                 resolved_at=as_utc(row.resolved_at),
-                is_loss=float(row.result or 0.0) < -SETTLEMENT_EPS or (
-                    float(row.payout or 0.0) <= SETTLEMENT_EPS and float(row.stakes_total or 0.0) > SETTLEMENT_EPS
+                is_loss=False if voided else (
+                    float(row.result or 0.0) < -SETTLEMENT_EPS or (
+                        float(row.payout or 0.0) <= SETTLEMENT_EPS
+                        and float(row.stakes_total or 0.0) > SETTLEMENT_EPS
+                    )
                 ),
                 settlement_kind=kind,
+                cancellation_reason=market.cancellation_reason if market is not None else None,
             )
         )
     return out
