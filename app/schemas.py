@@ -70,6 +70,10 @@ class RejectMarketRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=1000)
 
 
+class CancelMarketRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=1000)
+
+
 class CloseMarketRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -112,6 +116,9 @@ class MarketOut(BaseModel):
     rejection_reason: Optional[str] = None
     moderated_at: Optional[datetime] = None
     moderated_by: Optional[int] = None
+    cancellation_reason: Optional[str] = None
+    cancelled_at: Optional[datetime] = None
+    cancelled_by: Optional[int] = None
     mechanism: str = "lmsr"
     settlement_kind: Optional[str] = None
 
@@ -147,6 +154,7 @@ class SettlementOut(BaseModel):
     resolved_at: Optional[datetime] = None
     is_loss: bool = False
     settlement_kind: Optional[str] = None
+    cancellation_reason: Optional[str] = None
 
 
 from decimal import Decimal

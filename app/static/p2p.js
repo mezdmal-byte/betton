@@ -10,11 +10,33 @@ function moderationActions(m) {
     <button data-act="reject" class="no">Отклонить</button></div>`;
 }
 
+const P2P_CANCEL_WARNING = 'Все ставки по событию будут возвращены. Чаевые не удерживаются';
+
+function p2pCancelPayload(reason) {
+  const text = String(reason || '').trim();
+  if (!text) throw new Error('Укажите причину отмены');
+  if (text.length > 1000) throw new Error('Причина отмены слишком длинная');
+  return { reason: text, warning: P2P_CANCEL_WARNING };
+}
+
+function p2pCancelConfirmText(reason) {
+  const payload = p2pCancelPayload(reason);
+  return 'Причина: ' + payload.reason + '\n\n' + payload.warning;
+}
+
+function p2pCancelControls(m) {
+  if (!me?.is_admin || (m.status !== 'open' && m.status !== 'closed')) return '';
+  return `<textarea class="cancel-reason" maxlength="1000" placeholder="Причина отмены"></textarea>
+    <button class="no" data-act="p2p-cancel">Отменить событие</button>`;
+}
+
 function p2pCard(m) {
   const names = marketOutcomes(m);
-  const accepting = !!m.accepting_bets;
+  const accepting = !!m.accepting_bets && m.status !== 'cancelled';
   const admin = me?.is_admin;
-  const label = m.status === 'open' ? 'P2P' : statusLabel(m.status);
+  const cancelled = m.status === 'cancelled';
+  const label = cancelled ? 'Отменено' : (m.status === 'open' ? 'P2P' : statusLabel(m.status));
+  const canResolve = admin && m.status === 'closed';
   return `<div class="card" data-id="${m.id}" data-status="${m.status}" data-mechanism="p2p">
     <div class="question">${escapeHtml(m.question)}</div>
     <div class="meta"><span class="pill">${label}</span>
@@ -23,7 +45,8 @@ function p2pCard(m) {
     <p class="muted">До ${escapeHtml(String(m.close_at || '').replace('T',' ').slice(0,16))} UTC</p>
     ${m.status === 'pending' ? '<p class="muted">На модерации. Залог для P2P не нужен.</p>' : ''}
     ${m.status === 'rejected' ? `<p class="muted">Отклонено: ${escapeHtml(m.rejection_reason || '')}</p>` : ''}
-    ${m.winning_outcome ? `<p>Победитель: ${escapeHtml(m.winning_outcome)} · выплаты зачислены</p>` : ''}
+    ${cancelled ? `<p class="muted">Отменено: ${escapeHtml(m.cancellation_reason || '')}</p>` : ''}
+    ${!cancelled && m.winning_outcome ? `<p>Победитель: ${escapeHtml(m.winning_outcome)} · выплаты зачислены</p>` : ''}
     ${accepting ? `<div class="p2p-book muted">Загружаем предложения…</div><button class="ghost" data-act="p2p-refresh">Обновить предложения</button>
       <label>Исход</label><select class="p2p-side">${names.map((n,i)=>`<option value="${i}">${escapeHtml(n)}</option>`).join('')}</select>
       <label>Сумма TON</label><input class="p2p-money" type="number" min="0.01" step="0.01" value="100" inputmode="decimal">
@@ -34,7 +57,8 @@ function p2pCard(m) {
       <p class="muted">Неисполненная сумма заявки резервируется. Её можно вернуть отменой в «Мои».</p>` : ''}
     ${moderationActions(m)}
     ${admin && m.status === 'open' ? '<button class="ghost" data-act="close">Стоп ставки</button>' : ''}
-    ${admin && m.status === 'closed' ? names.map((n,i)=>`<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(n)}">Рассчитать: ${escapeHtml(n)}</button>`).join('') : ''}
+    ${canResolve ? names.map((n,i)=>`<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(n)}">Рассчитать: ${escapeHtml(n)}</button>`).join('') : ''}
+    ${p2pCancelControls(m)}
   </div>`;
 }
 

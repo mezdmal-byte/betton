@@ -47,7 +47,35 @@ const creator = settlementCard({
   result: 0, lock_ton: 50, residual_returned: 12.5,
   resolved_at: "2026-09-10T12:00:00", is_loss: false
 });
-const data = { autoCard, legacyCard, loss, creator };
+const adminOpen = p2pCard({
+  id: 11, question: "Отменить открытое?", category: "unique", status: "open",
+  mechanism: "p2p", pot: 91.66, outcomes: ["A", "B"], accepting_bets: true,
+  close_at: "2026-09-10T12:00:00"
+});
+const cancelledCard = p2pCard({
+  id: 12, question: "Уже отменено?", category: "unique", status: "cancelled",
+  mechanism: "p2p", pot: 0, cancellation_reason: "Источник не подтвердился",
+  outcomes: ["A", "B"], accepting_bets: false, close_at: "2026-09-10T12:00:00"
+});
+me.is_admin = false;
+const userOpen = p2pCard({
+  id: 11, question: "Отменить открытое?", category: "unique", status: "open",
+  mechanism: "p2p", pot: 91.66, outcomes: ["A", "B"], accepting_bets: true,
+  close_at: "2026-09-10T12:00:00"
+});
+me.is_admin = true;
+const refund = settlementCard({
+  market_id: 12, question: "Уже отменено?", winning_outcome: "Отменено",
+  chosen_outcomes: ["A"], stakes_total: 41.67, payout: 41.67, tip: 0,
+  credited: 100, result: 0, lock_ton: 0, residual_returned: 58.33,
+  resolved_at: "2026-09-10T12:00:00", is_loss: false, settlement_kind: "void",
+  cancellation_reason: "Источник не подтвердился"
+});
+let confirmText = "";
+try { confirmText = p2pCancelConfirmText("Источник не подтвердился"); } catch (e) { confirmText = e.message; }
+let emptyReason = "";
+try { p2pCancelPayload("  "); } catch (e) { emptyReason = e.message; }
+const data = { autoCard, legacyCard, loss, creator, adminOpen, cancelledCard, userOpen, refund, confirmText, emptyReason };
 if (typeof window !== "undefined") window.__SETTLEMENT_UI__ = data;
 if (typeof document !== "undefined") {
   const out = document.getElementById("out");
@@ -120,6 +148,22 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "Кто победит?" in data["loss"]
     assert "залог 50.00 TON" in data["creator"]
     assert "возврат остатка 12.50 TON" in data["creator"]
+    assert "Отменить событие" in data["adminOpen"]
+    assert "Оставить заявку" in data["adminOpen"]
+    assert "Отменить событие" not in data["userOpen"]
+    assert "Отменено" in data["cancelledCard"]
+    assert "Источник не подтвердился" in data["cancelledCard"]
+    assert "Оставить заявку" not in data["cancelledCard"]
+    assert "Принять доступное" not in data["cancelledCard"]
+    assert "Рассчитать:" not in data["cancelledCard"]
+    assert "Отменить событие" not in data["cancelledCard"]
+    assert "Забрать выигрыш" not in data["cancelledCard"]
+    assert "возврат исполненной ставки 41.67 TON" in data["refund"]
+    assert "освобождённый остаток заявки 58.33 TON" in data["refund"]
+    assert "всего возвращено 100.00 TON" in data["refund"]
+    assert "Все ставки по событию будут возвращены. Чаевые не удерживаются" in data["confirmText"]
+    assert "Причина: Источник не подтвердился" in data["confirmText"]
+    assert data["emptyReason"] == "Укажите причину отмены"
 
 
 @pytest.mark.parametrize("unauthorized", [None, "/users/1", "/users/1/positions", "/users/1/settlements"])

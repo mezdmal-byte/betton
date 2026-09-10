@@ -201,6 +201,104 @@ def cancel_all(db, market):
         _refund(db, order, 'expired')
 
 
+def void_market(db, market_id, user_id, reason):
+    actor = legacy.get_user(db, user_id)
+    legacy.require_admin(actor, 'Только админ может отменить событие')
+    reason = (reason or '').strip()
+    try:
+        market = legacy._lock_market(db, market_id)
+        if market.mechanism != 'p2p':
+            raise HTTPException(409, 'Этот рынок использует LMSR')
+        if market.status == MarketStatus.cancelled:
+            return market
+        if not reason or len(reason) > 1000:
+            raise HTTPException(422, 'Укажите причину отмены (до 1000 символов)')
+        if market.status == MarketStatus.pending:
+            raise HTTPException(400, 'Для непроверенного события используйте отклонение модерацией')
+        if market.status == MarketStatus.resolved:
+            raise HTTPException(400, 'Рассчитанное событие нельзя отменить')
+        if market.status not in (MarketStatus.open, MarketStatus.closed):
+            raise HTTPException(400, 'Отменить можно только открытое или закрытое событие')
+
+        orders = db.query(P2POrder).filter_by(market_id=market.id).all()
+        fills = db.query(P2PFill).filter_by(market_id=market.id).all()
+        filled_from_fills = defaultdict(int)
+        stake_from_fills = defaultdict(int)
+        chosen = defaultdict(set)
+        bank = 0
+        for fill in fills:
+            total = fill.maker_stake + fill.taker_stake
+            bank += total
+            filled_from_fills[fill.maker_order_id] += fill.maker_stake
+            filled_from_fills[fill.taker_order_id] += fill.taker_stake
+            stake_from_fills[fill.maker_user_id] += fill.maker_stake
+            stake_from_fills[fill.taker_user_id] += fill.taker_stake
+            chosen[fill.maker_user_id].add(fill.maker_outcome)
+            chosen[fill.taker_user_id].add(1 - fill.maker_outcome)
+
+        for order in orders:
+            if order.filled + order.remaining + order.refunded != order.amount:
+                raise HTTPException(409, 'Несогласованность учёта заявок')
+            if filled_from_fills[order.id] != order.filled:
+                raise HTTPException(409, 'Несогласованность учёта сделок')
+
+        if abs(float(market.pot or 0) - bank / ATOM) > 1e-7:
+            raise HTTPException(409, 'Банк не соответствует обеспечению сделок')
+
+        remainder = defaultdict(int)
+        remainder_outcomes = defaultdict(set)
+        for order in orders:
+            if order.remaining:
+                remainder[order.user_id] += order.remaining
+                remainder_outcomes[order.user_id].add(order.outcome)
+
+        users = (
+            set(stake_from_fills)
+            | set(remainder)
+            | {market.creator_id}
+            | {order.user_id for order in orders}
+            | {pos.user_id for pos in db.query(Position).filter_by(market_id=market.id)}
+        )
+        legacy._lock_users(db, list(users))
+        for order in orders:
+            if order.remaining:
+                _refund(db, order, 'cancelled')
+        for uid in sorted(stake_from_fills):
+            adjust_atoms(db, uid, stake_from_fills[uid])
+
+        when = legacy._naive_utc(legacy.utcnow())
+        names = legacy.market_outcomes(market)
+        for uid in set(stake_from_fills) | set(remainder):
+            executed = stake_from_fills.get(uid, 0)
+            leftover = remainder.get(uid, 0)
+            sides = chosen.get(uid, set()) | remainder_outcomes.get(uid, set())
+            db.add(SettlementRecord(
+                market_id=market.id, user_id=uid, question=market.question,
+                winning_outcome='Отменено',
+                chosen_outcomes=[names[i] for i in sorted(sides) if i < len(names)],
+                stakes_total=executed / ATOM, payout=executed / ATOM, tip=0,
+                credited=(executed + leftover) / ATOM, result=0, lock_ton=0,
+                residual_returned=leftover / ATOM, resolved_at=when,
+            ))
+        for pos in db.query(Position).filter_by(market_id=market.id):
+            pos.claimed = True
+            pos.tip_paid = 0
+        market.status = MarketStatus.cancelled
+        market.settlement_kind = legacy.SETTLEMENT_VOID
+        market.cancellation_reason = reason
+        market.cancelled_at = when
+        market.cancelled_by = actor.id
+        market.pot = 0
+        market.lock_returned = True
+        market.winning_outcome = None
+        db.commit()
+        db.refresh(market)
+        return market
+    except Exception:
+        db.rollback()
+        raise
+
+
 def list_orders(db, user_id):
     orders = db.query(P2POrder).filter_by(user_id=user_id).order_by(P2POrder.id.desc()).all()
     for mid in sorted({o.market_id for o in orders if o.status == 'open'}):
