@@ -119,10 +119,15 @@ def shares_for_cost(q: Sequence[float], b: float, outcome: int, money: float) ->
 
     log_rest = log_sum_exp(others)
     # rest * (e^{m/b} - 1); при m→0 это ~ rest * m/b
-    expm1_m = math.expm1(m_over_b)
-    if expm1_m <= 0:
-        return 0.0
-    log_term_rest = log_rest + math.log(expm1_m)
+    if m_over_b > 50:
+        # Same ln(exp(t)-1), without overflowing exp(t) for large stakes.
+        log_expm1 = m_over_b + math.log1p(-math.exp(-m_over_b))
+    else:
+        expm1_m = math.expm1(m_over_b)
+        if expm1_m <= 0:
+            return 0.0
+        log_expm1 = math.log(expm1_m)
+    log_term_rest = log_rest + log_expm1
     ln_inner = log_sum_exp([log_term_rest, log_term_self])
     shares = b * ln_inner - qi
     if shares < 0:
