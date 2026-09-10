@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Market, MarketStatus, P2POrder, P2PFill, Position, SettlementRecord, User
 from app.services import market_service as legacy
+from app.services import p2p_ledger as ledger
 
 ATOM = 1_000_000_000
 PRICE = 1_000_000
@@ -42,7 +43,8 @@ def create_market(db, user_id, req):
                     creator_id=user_id, category=req.category, outcomes=names,
                     mechanism='p2p', b=1, q=[0, 0], q_yes=0, q_no=0,
                     lock_ton=0, pot=0, lock_returned=True,
-                    close_at=legacy._naive_utc(req.close_at), status=MarketStatus.pending)
+                    close_at=legacy._naive_utc(req.close_at), status=MarketStatus.pending,
+                    p2p_journal_coverage=ledger.COVERAGE_FULL)
     db.add(market)
     db.commit()
     db.refresh(market)
@@ -104,10 +106,12 @@ def preview(db, market_id, user_id, outcome, amount, odds):
     return dict(limit_odds=PRICE/tick, requested=stats(plan, remaining), available=stats(best, best_remaining))
 
 
-def _refund(db, order, status='cancelled'):
+def _refund(db, order, status='cancelled', reason='cancel'):
     if order.remaining:
-        adjust_atoms(db, order.user_id, order.remaining)
-        order.refunded += order.remaining
+        leftover = order.remaining
+        adjust_atoms(db, order.user_id, leftover)
+        ledger.record_refund(db, order, leftover, reason)
+        order.refunded += leftover
         order.remaining = 0
     order.status = status
 
@@ -115,7 +119,7 @@ def _refund(db, order, status='cancelled'):
 def _finish_order(db, order):
     minimum = order.price // math.gcd(order.price, PRICE)
     if order.remaining < minimum:
-        _refund(db, order, 'filled' if order.filled else 'cancelled')
+        _refund(db, order, 'filled' if order.filled else 'cancelled', reason='remainder')
 
 
 def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
@@ -143,6 +147,7 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
                          filled=0, refunded=0, kind=kind, status='open')
         db.add(order)
         db.flush()
+        ledger.record_reserve(db, order)
         for maker, maker_stake, taker_stake in plan:
             maker.remaining -= maker_stake
             maker.filled += maker_stake
@@ -150,10 +155,13 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
             order.filled += taker_stake
             payout = maker_stake+taker_stake
             market.pot += payout/ATOM
-            db.add(P2PFill(market_id=market_id, maker_order_id=maker.id, taker_order_id=order.id,
+            fill = P2PFill(market_id=market_id, maker_order_id=maker.id, taker_order_id=order.id,
                           maker_user_id=maker.user_id, taker_user_id=user_id,
                           maker_outcome=maker.outcome, maker_stake=maker_stake,
-                          taker_stake=taker_stake, price=maker.price))
+                          taker_stake=taker_stake, price=maker.price)
+            db.add(fill)
+            db.flush()
+            ledger.record_fill_escrow(db, fill)
             for uid, side, stake in [(maker.user_id, maker.outcome, maker_stake), (user_id, idx, taker_stake)]:
                 pos = legacy._get_or_create_position(db, uid, market_id, 2)
                 shares, costs = legacy._pos_vectors(pos, 2)
@@ -164,7 +172,7 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
                 db.flush()
             _finish_order(db, maker)
         if kind == 'ioc':
-            _refund(db, order, 'filled' if order.filled else 'cancelled')
+            _refund(db, order, 'filled' if order.filled else 'cancelled', reason='ioc')
         else:
             _finish_order(db, order)
         db.commit()
@@ -198,7 +206,7 @@ def cancel_all(db, market):
     orders = db.query(P2POrder).filter_by(market_id=market.id, status='open').all()
     legacy._lock_users(db, [o.user_id for o in orders])
     for order in orders:
-        _refund(db, order, 'expired')
+        _refund(db, order, 'expired', reason='close')
 
 
 def void_market(db, market_id, user_id, reason):
@@ -262,9 +270,10 @@ def void_market(db, market_id, user_id, reason):
         legacy._lock_users(db, list(users))
         for order in orders:
             if order.remaining:
-                _refund(db, order, 'cancelled')
+                _refund(db, order, 'cancelled', reason='void')
         for uid in sorted(stake_from_fills):
             adjust_atoms(db, uid, stake_from_fills[uid])
+            ledger.record_void_return(db, market.id, uid, stake_from_fills[uid])
 
         when = legacy._naive_utc(legacy.utcnow())
         names = legacy.market_outcomes(market)
@@ -371,7 +380,15 @@ def settle(db, market, winning_outcome):
             creator_tip = 0 if uid == market.creator_id else tip*75//100
             credits[market.creator_id] += creator_tip
             credits[admin.id] += tip-creator_tip
-        credits[uid] += row['payout']-tip
+            if creator_tip:
+                ledger.record_tip(db, market.id, uid, market.creator_id, creator_tip)
+            admin_tip = tip-creator_tip
+            if admin_tip:
+                ledger.record_tip(db, market.id, uid, admin.id, admin_tip)
+        net = row['payout']-tip
+        credits[uid] += net
+        if net:
+            ledger.record_payout(db, market.id, uid, net)
         db.add(SettlementRecord(market_id=market.id, user_id=uid, question=market.question,
             winning_outcome=names[win], chosen_outcomes=[names[i] for i in sorted(row['chosen'])],
             stakes_total=row['cost']/ATOM, payout=row['payout']/ATOM, tip=tip/ATOM,

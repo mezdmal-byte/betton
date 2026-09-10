@@ -71,6 +71,19 @@ def ensure_schema() -> None:
         _add_column_if_missing(conn, "markets", "cancellation_reason", "VARCHAR(1000)", market_cols)
         _add_column_if_missing(conn, "markets", "cancelled_at", "TIMESTAMP", market_cols)
         _add_column_if_missing(conn, "markets", "cancelled_by", "INTEGER", market_cols)
+        _add_column_if_missing(conn, "markets", "p2p_journal_coverage", "VARCHAR(16)", market_cols)
+        conn.execute(
+            text(
+                "UPDATE markets SET p2p_journal_coverage = 'incomplete' "
+                "WHERE p2p_journal_coverage IS NULL AND mechanism = 'p2p'"
+            )
+        )
+        conn.execute(
+            text(
+                "UPDATE markets SET p2p_journal_coverage = 'not_applicable' "
+                "WHERE p2p_journal_coverage IS NULL"
+            )
+        )
         conn.execute(text("UPDATE markets SET category = 'unique' WHERE category IS NULL"))
         _ensure_varchar_capacity(conn, "markets", "status", 16)
 

@@ -29,10 +29,12 @@ from app.schemas import (
     RejectMarketRequest,
     OrderRequest,
     OrderPreviewRequest,
+    P2PReconciliationOut,
     SettlementOut,
     UserOut,
 )
 from app.services import market_service, p2p_service
+from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -367,6 +369,16 @@ def claim_winnings_endpoint(
         user_id=current_user.id,
         tip_rate=req.tip_rate,
     )
+
+
+@app.get("/markets/{market_id}/p2p-reconciliation", response_model=P2PReconciliationOut)
+def p2p_reconciliation_endpoint(
+    market_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market_service.require_admin(current_user, "Только админ может сверять журнал P2P")
+    return p2p_ledger.reconcile(db, market_id)
 
 
 @app.get("/markets/{market_id}/orderbook")
