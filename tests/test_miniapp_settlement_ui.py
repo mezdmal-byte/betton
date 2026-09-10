@@ -11,7 +11,7 @@ HTML = Path(__file__).resolve().parents[1] / "app" / "static" / "miniapp.html"
 
 def _chunk() -> str:
     html = HTML.read_text(encoding="utf-8")
-    return html[html.index("function odds(") : html.index("async function loadMarkets")]
+    return (HTML.with_name("p2p.js").read_text(encoding="utf-8") + "\n" + html[html.index("function odds(") : html.index("async function loadMarkets")])
 
 
 def _harness_html() -> str:
@@ -136,7 +136,7 @@ const AUTH_REOPEN = "AUTH_REOPEN", OPEN_IN_TG = "OPEN_IN_TG", inTelegram = true;
 let authBlocked = false, me = {id: 1, balance: 900}, myPositions = {};
 const nodes = {};
 const document = {getElementById(id) {
-  return nodes[id] ||= {innerHTML: '', textContent: '', querySelectorAll() {return []}};
+  return nodes[id] ||= {innerHTML: '', textContent: '', querySelectorAll() {return []}, addEventListener() {}};
 }};
 function getInitData() {return 'signed-data'}
 function displayName() {return 'Player'}

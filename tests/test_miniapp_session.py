@@ -10,7 +10,7 @@ def _section(html: str, start: str, end: str) -> str:
 
 def test_load_positions_map_rethrows_auth_reopen():
     html = HTML.read_text(encoding="utf-8")
-    body = _section(html, "async function loadPositionsMap", "function outcomeProbs")
+    body = _section(html, "async function loadPositionsMap", "function renderOutcomesEditor")
     assert "isAuthReopenError(e)" in body
     assert "throw e" in body
     assert "catch (e) {\n        myPositions = {};\n      }" not in body
@@ -24,7 +24,7 @@ def test_expired_session_on_positions_clears_ui():
     apply_fn = _section(html, "function applyUnauthorized()", "async function api(")
     api_fn = _section(html, "async function api(", "function paintUser(")
     paint_fn = _section(html, "function paintUser()", "function requireLogin")
-    positions_fn = _section(html, "async function loadPositionsMap", "function outcomeProbs")
+    positions_fn = _section(html, "async function loadPositionsMap", "function renderOutcomesEditor")
 
     assert "authBlocked = true" in apply_fn
     assert "me = null" in apply_fn

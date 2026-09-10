@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import (
     JSON,
     Boolean,
+    BigInteger,
     DateTime,
     Enum,
     Float,
@@ -21,6 +22,8 @@ from app.database import Base
 
 
 class MarketStatus(str, enum.Enum):
+    pending = "pending"
+    rejected = "rejected"
     open = "open"
     closed = "closed"
     resolved = "resolved"
@@ -58,6 +61,7 @@ class Market(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     category: Mapped[str] = mapped_column(String(32), default="unique", server_default="unique")
+    mechanism: Mapped[str] = mapped_column(String(16), default="lmsr", server_default="lmsr")
     b: Mapped[float] = mapped_column(Float)
     q_yes: Mapped[float] = mapped_column(Float, default=0.0)
     q_no: Mapped[float] = mapped_column(Float, default=0.0)
@@ -74,6 +78,9 @@ class Market(Base):
     winning_outcome: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    moderated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    moderated_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     settlement_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     creator: Mapped[User] = relationship(back_populates="markets")
@@ -139,3 +146,36 @@ class SettlementRecord(Base):
 
     user: Mapped[User] = relationship(back_populates="settlements")
     market: Mapped[Market] = relationship(back_populates="settlements")
+
+
+class P2POrder(Base):
+    __tablename__ = "p2p_orders"
+    __table_args__ = (UniqueConstraint("user_id", "request_id"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey("markets.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    request_id: Mapped[str] = mapped_column(String(64))
+    outcome: Mapped[int] = mapped_column(Integer)
+    price: Mapped[int] = mapped_column(Integer)
+    amount: Mapped[int] = mapped_column(BigInteger)
+    remaining: Mapped[int] = mapped_column(BigInteger)
+    filled: Mapped[int] = mapped_column(BigInteger, default=0)
+    refunded: Mapped[int] = mapped_column(BigInteger, default=0)
+    kind: Mapped[str] = mapped_column(String(8))
+    status: Mapped[str] = mapped_column(String(16), default="open")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class P2PFill(Base):
+    __tablename__ = "p2p_fills"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey("markets.id"), index=True)
+    maker_order_id: Mapped[int] = mapped_column(ForeignKey("p2p_orders.id"))
+    taker_order_id: Mapped[int] = mapped_column(ForeignKey("p2p_orders.id"))
+    maker_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    taker_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    maker_outcome: Mapped[int] = mapped_column(Integer)
+    maker_stake: Mapped[int] = mapped_column(BigInteger)
+    taker_stake: Mapped[int] = mapped_column(BigInteger)
+    price: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

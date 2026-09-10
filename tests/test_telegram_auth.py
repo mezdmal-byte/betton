@@ -1,3 +1,4 @@
+from tests.legacy_helpers import post_legacy_market
 import json
 import time
 import uuid
@@ -70,7 +71,7 @@ def test_signed_init_data_grants_access(client: TestClient):
 
 def test_relogin_keeps_account_and_balance(client: TestClient):
     user, headers = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=headers,
         json={
@@ -248,7 +249,7 @@ def test_foreign_user_id_cannot_spend_create_or_read(client: TestClient):
     victim_start = victim["balance"]
     attacker_start = attacker["balance"]
 
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=attacker_headers,
         json={
@@ -293,7 +294,7 @@ def test_regular_user_cannot_admin_even_with_admin_id_in_body(client: TestClient
     admin, admin_headers = _login(client, admin_tg)
     user, user_headers = _login(client)
 
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=user_headers,
         json={
@@ -358,7 +359,7 @@ def test_regular_user_cannot_admin_even_with_admin_id_in_body(client: TestClient
 
 def test_auth_failure_does_not_change_state(client: TestClient):
     user, headers = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=headers,
         json={

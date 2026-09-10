@@ -1,3 +1,4 @@
+from tests.legacy_helpers import post_legacy_market
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 import uuid
@@ -49,7 +50,7 @@ def test_auto_settle_pays_winners_without_claim(client: TestClient, monkeypatch)
     creator, creator_h = _login(client)
     winner, winner_h = _login(client)
     loser, loser_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=creator_h,
         json={
@@ -84,7 +85,7 @@ def test_auto_settle_pays_winners_without_claim(client: TestClient, monkeypatch)
 def test_winner_is_creator_tips_go_to_platform(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     creator, creator_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=creator_h,
         json={"question": "Победитель создатель отдаёт чаевые платформе?", "lock_ton": 40, "close_at": _close_at()},
@@ -103,7 +104,7 @@ def test_winner_is_creator_tips_go_to_platform(client: TestClient, monkeypatch):
 def test_creator_is_admin_merges_credits(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Создатель и админ один счёт?", "lock_ton": 30, "close_at": _close_at()},
@@ -121,7 +122,7 @@ def test_creator_is_admin_merges_credits(client: TestClient, monkeypatch):
 
 def test_one_account_player_creator_admin(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Один человек все роли?", "lock_ton": 40, "close_at": _close_at()},
@@ -145,7 +146,7 @@ def test_one_account_player_creator_admin(client: TestClient, monkeypatch):
 def test_both_outcomes_no_profit_no_tip(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Ставки на оба исхода без прибыли?", "lock_ton": 50, "close_at": _close_at()},
@@ -165,7 +166,7 @@ def test_both_outcomes_no_profit_no_tip(client: TestClient, monkeypatch):
 def test_insufficient_pot_conflict_no_changes(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Нехватка банка даёт 409?", "lock_ton": 20, "close_at": _close_at()},
@@ -196,7 +197,7 @@ def test_insufficient_pot_conflict_no_changes(client: TestClient, monkeypatch):
 def test_mid_credit_error_rolls_back(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Ошибка начисления откатывает всё?", "lock_ton": 30, "close_at": _close_at()},
@@ -227,7 +228,7 @@ def test_mid_credit_error_rolls_back(client: TestClient, monkeypatch):
 def test_repeat_and_parallel_resolve(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Повторный resolve не платит дважды?", "lock_ton": 40, "close_at": _close_at()},
@@ -243,7 +244,7 @@ def test_repeat_and_parallel_resolve(client: TestClient, monkeypatch):
     assert client.get(f"/markets/{mid}").json()["winning_outcome"] == "Да"
     assert client.get(f"/users/{user['id']}", headers=user_h).json()["balance"] == pytest.approx(bal)
 
-    created2 = client.post(
+    created2 = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Параллельный resolve?", "lock_ton": 40, "close_at": _close_at()},
@@ -269,7 +270,7 @@ def test_repeat_and_parallel_resolve(client: TestClient, monkeypatch):
 
 def test_parallel_buys_do_not_lose_balance(client: TestClient):
     user, headers = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=headers,
         json={"question": "Параллельные ставки не теряют баланс?", "lock_ton": 20, "close_at": _close_at()},
@@ -292,7 +293,7 @@ def test_parallel_buys_do_not_lose_balance(client: TestClient):
 def test_legacy_claim_still_works_for_old_resolved(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Старый расчёт ещё можно забрать?", "lock_ton": 30, "close_at": _close_at()},
@@ -320,7 +321,7 @@ def test_legacy_claim_still_works_for_old_resolved(client: TestClient, monkeypat
 def test_legacy_collect_residual_keeps_unpaid_liability(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Остаток не забирает долг победителю?", "lock_ton": 40, "close_at": _close_at()},
@@ -352,7 +353,7 @@ def test_legacy_collect_residual_keeps_unpaid_liability(client: TestClient, monk
 def test_history_survives_new_db_session(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "История живёт после новой сессии?", "lock_ton": 25, "close_at": _close_at()},
@@ -378,7 +379,7 @@ def test_stranger_cannot_read_settlements(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
     other, other_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Чужая история закрыта?", "lock_ton": 20, "close_at": _close_at()},
@@ -394,7 +395,7 @@ def test_stranger_cannot_read_settlements(client: TestClient, monkeypatch):
 def test_named_numeric_outcomes_use_name_not_index(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     user, user_h = _login(client)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={
@@ -417,7 +418,7 @@ def test_named_numeric_outcomes_use_name_not_index(client: TestClient, monkeypat
 
 def test_open_market_cannot_resolve(client: TestClient, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
-    created = client.post(
+    created = post_legacy_market(client,
         "/markets",
         headers=admin_h,
         json={"question": "Пока приём открыт считать нельзя?", "lock_ton": 20, "close_at": _close_at()},
@@ -432,7 +433,7 @@ def test_open_market_cannot_resolve(client: TestClient, monkeypatch):
 def test_stale_reader_cannot_overwrite_auto_settlement(client, monkeypatch, read_path):
     admin, admin_h = _admin(client, monkeypatch)
     player, player_h = _login(client)
-    mid = client.post("/markets", headers=admin_h, json={
+    mid = post_legacy_market(client,"/markets", headers=admin_h, json={
         "question": "Stale reader after settlement?", "lock_ton": 50,
         "close_at": _close_at(),
     }).json()["id"]

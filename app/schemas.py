@@ -34,6 +34,7 @@ class UserOut(BaseModel):
 
 class MarketCreate(BaseModel):
     model_config = ConfigDict(extra="ignore")
+    mechanism: Literal["lmsr", "p2p"] = "p2p"
     question: str
     description: Optional[str] = ""
     category: MarketCategory = "unique"
@@ -63,6 +64,10 @@ class ClaimWinningsRequest(BaseModel):
 class ResolveRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
     winning_outcome: OutcomeRef
+
+
+class RejectMarketRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=1000)
 
 
 class CloseMarketRequest(BaseModel):
@@ -104,6 +109,10 @@ class MarketOut(BaseModel):
     winning_outcome: Optional[str] = None
     created_at: Optional[datetime] = None
     accepting_bets: bool = False
+    rejection_reason: Optional[str] = None
+    moderated_at: Optional[datetime] = None
+    moderated_by: Optional[int] = None
+    mechanism: str = "lmsr"
     settlement_kind: Optional[str] = None
 
     class Config:
@@ -138,3 +147,17 @@ class SettlementOut(BaseModel):
     resolved_at: Optional[datetime] = None
     is_loss: bool = False
     settlement_kind: Optional[str] = None
+
+
+from decimal import Decimal
+
+
+class OrderPreviewRequest(BaseModel):
+    outcome: int = Field(ge=0, le=1)
+    money: Decimal
+    odds: Decimal
+
+
+class OrderRequest(OrderPreviewRequest):
+    kind: Literal["limit", "ioc"] = "limit"
+    request_id: str = Field(min_length=8, max_length=64)

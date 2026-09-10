@@ -1,3 +1,4 @@
+from tests.legacy_helpers import post_legacy_market
 import math
 import random
 
@@ -13,7 +14,7 @@ from tests.test_markets_api import _admin, _login, _close_at
 @pytest.mark.parametrize('probabilities', [[0.9, 0.1], [0.01, 0.99], [0.8, 0.15, 0.05], [1/8]*8])
 def test_collateral_covers_every_outcome(client, monkeypatch, probabilities):
     admin, headers = _admin(client, monkeypatch)
-    market = client.post('/markets', headers=headers, json={
+    market = post_legacy_market(client,'/markets', headers=headers, json={
         'question': 'Every outcome is funded?', 'lock_ton': 50,
         'outcomes': [f'Outcome {i}' for i in range(len(probabilities))],
         'target_probs': probabilities, 'close_at': _close_at(),
@@ -40,7 +41,7 @@ def test_collateral_covers_every_outcome(client, monkeypatch, probabilities):
 def test_unequal_market_resolves_full_payout(client, monkeypatch, winner):
     admin, admin_h = _admin(client, monkeypatch)
     player, player_h = _login(client)
-    market = client.post('/markets', headers=admin_h, json={
+    market = post_legacy_market(client,'/markets', headers=admin_h, json={
         'question': 'Full payout with unequal probabilities?', 'lock_ton': 50,
         'outcomes': ['A','B','C'], 'target_probs': [0.85, 0.1, 0.05],
         'close_at': _close_at(),
@@ -63,7 +64,7 @@ def test_unequal_market_resolves_full_payout(client, monkeypatch, winner):
 def test_original_90_10_failure_is_funded(client, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     player, player_h = _login(client)
-    mid = client.post('/markets', headers=admin_h, json={
+    mid = post_legacy_market(client,'/markets', headers=admin_h, json={
         'question': '50 collateral, 100 on rare outcome', 'lock_ton': 50,
         'target_odds': [1/0.9, 10], 'close_at': _close_at(),
     }).json()['id']
@@ -77,7 +78,7 @@ def test_original_90_10_failure_is_funded(client, monkeypatch):
 def test_legacy_unfunded_trade_is_rejected_without_mutations(client, monkeypatch):
     admin, admin_h = _admin(client, monkeypatch)
     player, player_h = _login(client)
-    mid = client.post('/markets', headers=admin_h, json={
+    mid = post_legacy_market(client,'/markets', headers=admin_h, json={
         'question': 'Legacy depth is preserved', 'lock_ton': 50, 'close_at': _close_at(),
     }).json()['id']
     with SessionLocal() as db:

@@ -56,7 +56,11 @@ def ensure_schema() -> None:
         _add_column_if_missing(conn, "markets", "pot", "FLOAT DEFAULT 0", market_cols)
         _add_column_if_missing(conn, "markets", "close_at", "DATETIME", market_cols)
         _add_column_if_missing(conn, "markets", "lock_returned", "BOOLEAN DEFAULT 0", market_cols)
+        _add_column_if_missing(conn, "markets", "mechanism", "VARCHAR(16) NOT NULL DEFAULT 'lmsr'", market_cols)
         _add_column_if_missing(conn, "markets", "settlement_kind", "VARCHAR(16)", market_cols)
+        _add_column_if_missing(conn, "markets", "rejection_reason", "VARCHAR(1000)", market_cols)
+        _add_column_if_missing(conn, "markets", "moderated_at", "TIMESTAMP", market_cols)
+        _add_column_if_missing(conn, "markets", "moderated_by", "INTEGER", market_cols)
         conn.execute(text("UPDATE markets SET category = 'unique' WHERE category IS NULL"))
 
         if "positions" in tables:
