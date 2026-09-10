@@ -557,7 +557,9 @@
       const names = marketOutcomes(m);
       const shares = pos.shares && pos.shares.length ? pos.shares : [pos.shares_yes || 0, pos.shares_no || 0];
       const lines = names.map((n, i) => escapeHtml(n) + ": " + Number(shares[i] || 0).toFixed(2) + " долей").join(" · ");
-      const canClaim = resolved && m.settlement_kind !== "auto" && !pos.claimed && shares.some(x => x > 0);
+      const winningIndex = names.indexOf(m.winning_outcome);
+      const lost = resolved && winningIndex >= 0 && Number(shares[winningIndex] || 0) <= 0;
+      const canClaim = resolved && m.settlement_kind !== "auto" && !pos.claimed && !lost && shares.some(x => x > 0);
       return `
         <div class="card" data-id="${m.id}" data-status="${m.status}">
           <div class="question">${escapeHtml(m.question)}</div>
@@ -571,7 +573,8 @@
             <div class="row">
               <button class="gold" data-act="claim">Забрать выигрыш</button>
             </div>` : ""}
-          ${resolved && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+          ${lost ? `<p class="muted">Проигрыш</p>` : ""}
+          ${resolved && !lost && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
         </div>`;
     }
 
@@ -619,11 +622,16 @@
 
     async function loadMine() {
       requireLogin();
+      await refreshMe();
+      requireLogin();
+      const userId = me.id;
       const [markets, positions, settlements] = await Promise.all([
         api("/markets"),
-        api("/users/" + me.id + "/positions"),
-        api("/users/" + me.id + "/settlements")
+        api("/users/" + userId + "/positions"),
+        api("/users/" + userId + "/settlements")
       ]);
+      requireLogin();
+      if (me.id !== userId) return;
       myPositions = {};
       for (const p of positions) myPositions[p.market_id] = p;
       const created = markets.filter(m => m.creator_id === me.id);
@@ -640,8 +648,10 @@
       betsRoot.innerHTML = active.length
         ? active.map(positionCard).join("")
         : '<p class="muted">Ставок пока нет.</p>';
-      resultsRoot.innerHTML = settlements.length
-        ? settlements.map(settlementCard).join("")
+      const legacy = positions.filter(p => p.market && p.market.status === "resolved"
+        && p.market.settlement_kind !== "auto");
+      resultsRoot.innerHTML = settlements.length || legacy.length
+        ? settlements.map(settlementCard).join("") + legacy.map(positionCard).join("")
         : '<p class="muted">Рассчитанных событий пока нет.</p>';
     }
 
@@ -855,6 +865,7 @@
     document.getElementById("markets").onclick = onCardClick;
     document.getElementById("mine-created").onclick = onCardClick;
     document.getElementById("mine-bets").onclick = onCardClick;
+    document.getElementById("mine-results").onclick = onCardClick;
 
     document.getElementById("markets").addEventListener("input", (ev) => {
       if (!ev.target.classList.contains("amount")) return;

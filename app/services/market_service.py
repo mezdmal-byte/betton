@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import text
+from sqlalchemy import text, update
 from sqlalchemy.orm import Session
 
 from app.config import ADMIN_BANKROLL, TIP_CREATOR_SHARE, TIP_PLATFORM_SHARE, settings
@@ -129,16 +129,28 @@ def winning_name(market: Market) -> str | None:
     return value
 
 
-def _maybe_auto_close(market: Market) -> bool:
+def _maybe_auto_close(db: Session, market: Market) -> bool:
     if market.status != MarketStatus.open:
         return False
     close_at = as_utc(market.close_at)
-    if close_at is None:
+    now = utcnow()
+    if close_at is None or now < close_at:
         return False
-    if utcnow() >= close_at:
-        market.status = MarketStatus.closed
-        return True
-    return False
+    # A reader may hold an old ORM snapshot after another request resolved it.
+    # Never assign CLOSED to that snapshot: compare the current row atomically.
+    db.execute(
+        update(Market)
+        .where(
+            Market.id == market.id,
+            Market.status == MarketStatus.open,
+            Market.close_at <= _naive_utc(now),
+        )
+        .values(status=MarketStatus.closed)
+        .execution_options(synchronize_session=False)
+    )
+    db.refresh(market)
+    # The conditional write acquired a lock even if no row matched.
+    return True
 
 
 def is_accepting_bets(market: Market) -> bool:
@@ -151,7 +163,6 @@ def is_accepting_bets(market: Market) -> bool:
 
 
 def require_accepting(market: Market) -> None:
-    _maybe_auto_close(market)
     if not is_accepting_bets(market):
         raise HTTPException(status_code=400, detail="Приём ставок закрыт")
 
@@ -296,7 +307,6 @@ def _probs_from_create(
 
 
 def market_to_out(market: Market) -> MarketOut:
-    _maybe_auto_close(market)
     names = market_outcomes(market)
     q = _quantities(market)
     p = prices(q, market.b)
@@ -321,7 +331,8 @@ def market_to_out(market: Market) -> MarketOut:
         price_yes=p[0] if p else 0.0,
         price_no=p[1] if len(p) > 1 else 0.0,
         cost_c=cost(q, market.b),
-        status=market.status,
+        status=(MarketStatus.closed if market.status == MarketStatus.open
+                and not is_accepting_bets(market) else market.status),
         winning_outcome=win,
         created_at=market.created_at,
         accepting_bets=is_accepting_bets(market),
@@ -443,7 +454,7 @@ def list_markets(
     rows = query.order_by(Market.id.desc()).all()
     changed = False
     for market in rows:
-        if _maybe_auto_close(market):
+        if _maybe_auto_close(db, market):
             changed = True
     if changed:
         db.commit()
@@ -456,7 +467,7 @@ def get_market(db: Session, market_id: int) -> Market:
     market = db.get(Market, market_id)
     if market is None:
         raise HTTPException(status_code=404, detail="Рынок не найден")
-    if _maybe_auto_close(market):
+    if _maybe_auto_close(db, market):
         db.commit()
         db.refresh(market)
     return market
@@ -478,7 +489,7 @@ def _get_or_create_position(db: Session, user_id: int, market_id: int, n: int) -
 
 def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float):
     market = _lock_market(db, market_id)
-    if _maybe_auto_close(market):
+    if _maybe_auto_close(db, market):
         db.flush()
     require_accepting(market)
     get_user(db, user_id)
@@ -576,7 +587,7 @@ def close_market(db: Session, market_id: int, user_id: int) -> Market:
     actor = get_user(db, user_id)
     require_admin(actor, "Только админ может остановить приём ставок")
     market = _lock_market(db, market_id)
-    _maybe_auto_close(market)
+    _maybe_auto_close(db, market)
     if market.status == MarketStatus.resolved:
         raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
     market.status = MarketStatus.closed
@@ -681,7 +692,7 @@ def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -
     require_admin(actor)
     try:
         market = _lock_market(db, market_id)
-        _maybe_auto_close(market)
+        _maybe_auto_close(db, market)
         if market.status == MarketStatus.resolved:
             raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
         if market.status != MarketStatus.closed:

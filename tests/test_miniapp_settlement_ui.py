@@ -120,3 +120,75 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "Кто победит?" in data["loss"]
     assert "залог 50.00 TON" in data["creator"]
     assert "возврат остатка 12.50 TON" in data["creator"]
+
+
+@pytest.mark.parametrize("unauthorized", [None, "/users/1", "/users/1/positions", "/users/1/settlements"])
+def test_load_mine_refreshes_balance_and_keeps_legacy_results(unauthorized):
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js required to execute async loadMine regression")
+    html = HTML.read_text(encoding="utf-8")
+    load_mine = html[html.index("async function loadMine()") : html.index("async function previewQuote")]
+    script = r'''
+const assert = require('node:assert/strict');
+const CAT_LABEL = {unique: "Уникальное"};
+const AUTH_REOPEN = "AUTH_REOPEN", OPEN_IN_TG = "OPEN_IN_TG", inTelegram = true;
+let authBlocked = false, me = {id: 1, balance: 900}, myPositions = {};
+const nodes = {};
+const document = {getElementById(id) {
+  return nodes[id] ||= {innerHTML: '', textContent: '', querySelectorAll() {return []}};
+}};
+function getInitData() {return 'signed-data'}
+function displayName() {return 'Player'}
+function showError(message) {document.getElementById('error').textContent = message}
+async function previewQuote() {}
+const calls = [];
+const market = id => ({id, question: 'legacy-' + id, status: 'resolved', creator_id: 2,
+  settlement_kind: null, outcomes: ['Да', 'Нет'], winning_outcome: 'Да'});
+const positions = [
+  {market_id: 7, market: market(7), shares: [10, 0], claimed: false},
+  {market_id: 8, market: market(8), shares: [10, 0], claimed: true},
+  {market_id: 9, market: market(9), shares: [0, 10], claimed: false},
+  {market_id: 10, market: {...market(10), settlement_kind: 'auto'}, shares: [10, 0], claimed: true}
+];
+async function fetch(path) {
+  calls.push(path);
+  const data = path === '/users/1' ? {id: 1, balance: 1049.5} :
+    path.endsWith('/positions') ? positions : [];
+  return {status: path === unauthorized ? 401 : 200, ok: path !== unauthorized,
+    async json() {return data}};
+}
+'''
+    script += "\nconst unauthorized = " + json.dumps(unauthorized) + ";\n" + _chunk() + load_mine
+    script += "\nfunction onCardClick() {}\n" + html[
+        html.index('    document.getElementById("markets").onclick'):
+        html.index('    document.getElementById("markets").addEventListener')
+    ]
+    script += r'''
+(async () => {
+  assert.equal(document.getElementById('mine-results').onclick, onCardClick);
+  if (unauthorized) {
+    await assert.rejects(loadMine(), {message: AUTH_REOPEN});
+    assert.equal(me, null);
+    assert.deepEqual(myPositions, {});
+    assert.equal(document.getElementById('balance').textContent, '—');
+    assert.equal(document.getElementById('create').disabled, true);
+    assert.equal(document.getElementById('error').textContent, AUTH_REOPEN);
+    assert.equal(calls.includes('/auth/telegram'), false);
+    if (unauthorized === '/users/1') assert.deepEqual(calls, ['/users/1']);
+  } else {
+    await loadMine();
+    assert.equal(calls[0], '/users/1');
+    assert.equal(document.getElementById('balance').textContent, '1049.50 TON');
+    const results = document.getElementById('mine-results').innerHTML;
+    for (const id of [7,8,9]) assert.ok(results.includes('legacy-' + id));
+    assert.equal(results.includes('legacy-10'), false);
+    assert.equal((results.match(/data-act="claim"/g) || []).length, 1);
+    assert.ok(results.includes('Выигрыш уже получен'));
+    assert.ok(results.includes('Проигрыш'));
+    assert.equal(document.getElementById('mine-bets').innerHTML.includes('legacy-'), false);
+  }
+})().catch(error => {console.error(error); process.exitCode = 1});
+'''
+    proc = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=20)
+    assert proc.returncode == 0, proc.stderr
