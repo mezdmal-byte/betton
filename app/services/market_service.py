@@ -288,8 +288,12 @@ def _probs_from_create(
     if target_probs:
         if len(target_probs) != n:
             raise HTTPException(status_code=400, detail="Число вероятностей должно совпадать с исходами")
+        if any(not math.isfinite(p) or p <= 0 for p in target_probs):
+            raise HTTPException(status_code=400, detail="Вероятности должны быть конечными и больше нуля")
         cleaned = [max(1e-12, float(p)) for p in target_probs]
         total = sum(cleaned)
+        if not math.isfinite(total):
+            raise HTTPException(status_code=400, detail="Некорректная сумма вероятностей")
         if total <= 0:
             raise HTTPException(status_code=400, detail="Сумма вероятностей должна быть > 0")
         return [p / total for p in cleaned]
@@ -397,7 +401,7 @@ def create_market(
 ) -> Market:
     creator = get_user(db, creator_id)
     names = _normalize_outcomes(outcomes)
-    if lock_ton < MIN_LOCK_TON:
+    if not math.isfinite(lock_ton) or lock_ton < MIN_LOCK_TON:
         raise HTTPException(status_code=400, detail="Залог не меньше 10 TON")
     if close_at is None:
         raise HTTPException(status_code=400, detail="Укажите время конца приёма ставок")
@@ -406,13 +410,16 @@ def create_market(
         raise HTTPException(status_code=400, detail="Конец приёма не может быть в прошлом")
 
     n = len(names)
-    liquidity = float(lock_ton) / math.log(n)
-    if b is not None and b > 0 and abs(b - liquidity) < 1e-9:
-        liquidity = float(b)
+    probs = _probs_from_create(n, target_odds, target_probs)
+    # With zero issued shares, worst-case subsidy is C(q0) - min(q0).
+    # For q0_i = b*ln(p_i), this is b*ln(1/min(p_i)). Uniform prices
+    # reduce to the original b = lock_ton / ln(n).
+    unit_q = q_from_target_probs(probs, 1.0)
+    risk_per_b = cost(unit_q, 1.0) - min(unit_q)
+    liquidity = float(lock_ton) / risk_per_b
     if liquidity <= 0 or not math.isfinite(liquidity):
         raise HTTPException(status_code=400, detail="Некорректный залог для расчёта глубины")
 
-    probs = _probs_from_create(n, target_odds, target_probs)
     q = q_from_target_probs(probs, liquidity)
 
     _lock_users(db, [creator.id])
@@ -500,6 +507,7 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
     idx = parse_outcome(names, outcome)
     new_q, shares, paid = apply_buy(_quantities(market), market.b, idx, money)
 
+    _require_funded_buy(db, market, idx, shares, paid)
     _lock_users(db, [user_id])
     _adjust_balance(db, user_id, -paid, require_funds=True)
     market.pot = float(market.pot or 0.0) + paid
@@ -542,6 +550,7 @@ def quote_buy(db: Session, market_id: int, outcome, money: float) -> QuoteOut:
     names = market_outcomes(market)
     idx = parse_outcome(names, outcome)
     _new_q, shares, paid = apply_buy(_quantities(market), market.b, idx, money)
+    _require_funded_buy(db, market, idx, shares, paid)
     avg_price = (paid / shares) if shares > 0 else 0.0
     odds = (shares / paid) if paid > 0 and shares > 0 else 0.0
     return QuoteOut(
@@ -936,3 +945,18 @@ def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
         )
     return out
 
+
+
+def _require_funded_buy(db: Session, market: Market, idx: int, shares: float, paid: float) -> None:
+    """Existing markets keep their quotes and shares, but cannot issue unfunded payouts."""
+    n = len(market_outcomes(market))
+    liabilities = [0.0] * n
+    for position in db.query(Position).filter_by(market_id=market.id, claimed=False):
+        quantities, _ = _pos_vectors(position, n)
+        for i, qty in enumerate(quantities):
+            liabilities[i] += qty
+    liabilities[idx] += shares
+    available = float(market.pot or 0.0) + paid
+    if (not math.isfinite(available) or any(not math.isfinite(x) for x in liabilities)
+            or max(liabilities) > available + SETTLEMENT_EPS):
+        raise HTTPException(status_code=409, detail="Банк не покрывает выплаты после этой ставки. Ставка не принята, баланс не списан")
