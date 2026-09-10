@@ -169,3 +169,39 @@ class OrderPreviewRequest(BaseModel):
 class OrderRequest(OrderPreviewRequest):
     kind: Literal["limit", "ioc"] = "limit"
     request_id: str = Field(min_length=8, max_length=64)
+
+
+class P2PMoneyEntryOut(BaseModel):
+    id: int
+    entry_key: str
+    op_type: str
+    market_id: int
+    order_id: Optional[int] = None
+    fill_id: Optional[int] = None
+    from_kind: str
+    from_user_id: Optional[int] = None
+    from_order_id: Optional[int] = None
+    to_kind: str
+    to_user_id: Optional[int] = None
+    to_order_id: Optional[int] = None
+    amount_nano: int
+    origin_key: Optional[str] = None
+    reason: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class P2PReconciliationOut(BaseModel):
+    market_id: int
+    status: str
+    journal_coverage: str
+    fully_verified: bool
+    coverage_note: str
+    float_tolerance_ton: float
+    float_fields: list[str]
+    integer_fields: list[str]
+    orders: dict
+    pot: dict
+    entry_counts: dict
+    coverage_gaps: list[dict]
+    discrepancies: list[dict]
+    entries: list[P2PMoneyEntryOut]

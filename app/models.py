@@ -86,6 +86,10 @@ class Market(Base):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     settlement_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # full = journal from market creation; incomplete = existed before the journal.
+    p2p_journal_coverage: Mapped[str] = mapped_column(
+        String(16), default="not_applicable", server_default="not_applicable"
+    )
 
     creator: Mapped[User] = relationship(back_populates="markets")
     positions: Mapped[list["Position"]] = relationship(back_populates="market")
@@ -182,4 +186,28 @@ class P2PFill(Base):
     maker_stake: Mapped[int] = mapped_column(BigInteger)
     taker_stake: Mapped[int] = mapped_column(BigInteger)
     price: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class P2PMoneyEntry(Base):
+    """Immutable P2P money movement. Insert-only; regular API never updates or deletes rows."""
+
+    __tablename__ = "p2p_money_entries"
+    __table_args__ = (UniqueConstraint("entry_key", name="uq_p2p_money_entry_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entry_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    op_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    market_id: Mapped[int] = mapped_column(ForeignKey("markets.id"), index=True)
+    order_id: Mapped[int | None] = mapped_column(ForeignKey("p2p_orders.id"), nullable=True)
+    fill_id: Mapped[int | None] = mapped_column(ForeignKey("p2p_fills.id"), nullable=True)
+    from_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    from_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    from_order_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    to_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    to_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    to_order_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    origin_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

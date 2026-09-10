@@ -70,6 +70,54 @@ float storage. Tests check conservation to 1e-7 TON. A real-money launch require
 separate migration of shared balances to fixed-point accounting; this PR does not
 claim on-chain custody or exact integer storage for the whole legacy application.
 
+## Money journal
+
+New P2P markets (`p2p_journal_coverage=full`) append an insert-only row for every
+actual movement. The journal does not move money and is not a completed migration of
+`User.balance` / `Market.pot` off float.
+
+| Type | From | To | Unique key |
+| --- | --- | --- | --- |
+| `reserve` | user balance | order reserve | `reserve:{order_id}` |
+| `fill_escrow` | order reserve | market pot | `fill:{fill_id}:maker` / `:taker` |
+| `refund` | order reserve | user balance | `refund:{order_id}` |
+| `payout` | market pot | winner balance | `payout:{market_id}:{user_id}` |
+| `tip` | market pot | creator/admin | `tip:{market_id}:{winner_id}:{recipient_id}` |
+| `void_return` | market pot | user balance | `void:{market_id}:{user_id}` |
+
+Refund `reason` values: `cancel`, `ioc`, `remainder`, `close`, `void`.
+Amounts are integer nanoTON. Journal insert and the matching debit/credit share one
+transaction; a journal error rolls the money movement back. Repeating the same
+request or settlement hits the semantic unique key and does not add a second movement.
+Tip rows are keyed by actual recipient: if creator and platform are the same account,
+shares of one winner are aggregated before insert. A retry with the same key but a
+different source or recipient is a conflict.
+
+Reconciliation rebuilds expected movements from orders, fills and saved settlement
+rows, then checks journal parties and directions against that picture. It does not
+treat the journal as the only source of truth.
+
+Markets that already existed when the journal shipped are marked `incomplete`.
+Their past reserves, fills and payouts are not invented. Later operations may appear
+in the journal, but reconciliation never reports `fully_verified=true` for them.
+
+Still float (not this journal, not an integer-money migration): `User.balance`,
+`Market.pot`, `Market.lock_ton`, LMSR `b`/`q`, position shares/costs, `Trade.*`,
+`SettlementRecord` money columns. Integer: P2P order/fill stakes and `P2PMoneyEntry.amount`.
+Pot vs journal uses the existing 1e-7 TON tolerance; integer fields are exact.
+
+Admin-only read-only audit (does not pay, refund, expire or rewrite):
+
+```
+GET /markets/{market_id}/p2p-reconciliation
+Authorization: tma <admin initData>
+```
+
+It reports coverage, order identity (`amount = filled + remaining + refunded`),
+fill vs order filled, reserve↔pot transitions, expected vs actual pot, recipients
+of payouts/tips/refunds, and concrete gaps. Do not compare a user's total `balance`
+to this journal: starting grants and LMSR activity also change it.
+
 ## Resolution and expiration
 
 One admin resolution automatically pays every matched winner from the matched pot.
@@ -98,11 +146,14 @@ There is no five-minute opening auction, resale/shorting, multi-outcome P2P or T
 
 ## Verification
 
-`python -m pytest -q tests`: 83 passed on isolated SQLite with fake credentials.
+`python -m pytest -q tests`: 109 passed, 4 skipped on isolated SQLite with fake credentials.
 Legacy scenarios explicitly create and approve LMSR fixtures. New tests cover
 moderation/privacy, no collateral, partial fills, IOC, self-trade exclusion,
 price/time priority, idempotency, concurrent fills/cancellation, refunds, 75/25 tips,
-resolution rollback and additive migration preserving existing LMSR data.
+resolution rollback, additive migration preserving existing LMSR data, the P2P money
+journal, reconciliation coverage for pre-journal markets, and admin-only audit access.
+PostgreSQL was not available in this workspace; journal uniqueness and `ensure_schema`
+were exercised on SQLite. Live Telegram has not been tested.
 
 Actual Mini App JavaScript + DOM flow test (Node + jsdom):
 

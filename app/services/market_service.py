@@ -453,6 +453,7 @@ def create_market(
         close_at=_naive_utc(close_utc),
         lock_returned=False,
         status=MarketStatus.pending,
+        p2p_journal_coverage="not_applicable",
     )
     _set_quantities(market, q)
     db.add(market)
