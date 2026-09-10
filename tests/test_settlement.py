@@ -426,3 +426,59 @@ def test_open_market_cannot_resolve(client: TestClient, monkeypatch):
     res = client.post(f"/markets/{mid}/resolve", headers=admin_h, json={"winning_outcome": 0})
     assert res.status_code == 400
     assert "приём" in res.json()["detail"].lower()
+
+
+@pytest.mark.parametrize("read_path", ["list", "get", "serialize"])
+def test_stale_reader_cannot_overwrite_auto_settlement(client, monkeypatch, read_path):
+    admin, admin_h = _admin(client, monkeypatch)
+    player, player_h = _login(client)
+    mid = client.post("/markets", headers=admin_h, json={
+        "question": "Stale reader after settlement?", "lock_ton": 50,
+        "close_at": _close_at(),
+    }).json()["id"]
+    assert client.post(f"/markets/{mid}/buy", headers=player_h,
+                       json={"outcome": 0, "money": 10}).status_code == 200
+    with SessionLocal() as db:
+        market = db.get(Market, mid)
+        market.close_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
+        db.commit()
+
+    original = market_service._maybe_auto_close
+    settled = False
+    after = None
+
+    def settle():
+        nonlocal settled, after
+        settled = True
+        with SessionLocal() as writer:
+            market_service.resolve_market(writer, mid, 0, admin["id"])
+        after = _balances()
+
+    def interleaved(db, market):
+        if market.id == mid and not settled:
+            settle()
+        return original(db, market)
+
+    monkeypatch.setattr(market_service, "_maybe_auto_close", interleaved)
+    with SessionLocal() as reader:
+        stale = reader.get(Market, mid)
+        assert stale.status == MarketStatus.open
+        if read_path == "list":
+            market_service.list_markets(reader)
+        elif read_path == "get":
+            market_service.get_market(reader, mid)
+        else:
+            settle()
+            out = market_service.market_to_out(stale)
+            assert out.status == MarketStatus.closed
+            assert stale not in reader.dirty  # Serialization must never persist a status.
+        reader.commit()
+
+    with SessionLocal() as db:
+        market = db.get(Market, mid)
+        assert market.status == MarketStatus.resolved
+        assert market.settlement_kind == "auto"
+        assert market.pot == 0
+        assert db.query(SettlementRecord).filter_by(market_id=mid).count() == 2
+        assert all(p.claimed for p in db.query(Position).filter_by(market_id=mid))
+    assert _balances() == after
