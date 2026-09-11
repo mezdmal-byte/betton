@@ -88,9 +88,9 @@ UI с живых payload: «Ожидает контрагента» / «Част
 
 4 skipped без Node.js на этой машине: `test_load_mine_refreshes_balance_and_keeps_legacy_results` (4 параметра). Остальной JS harness (Sprint 1–2 UI, E2E render) исполняется через Node, если он есть, иначе headless Edge.
 
-GitHub CI до Sprint 3 (SHA `f933e1d30a1558de6815dda6711ed6ad1dc4c245`, job sqlite): **161 passed**. Runner image `ubuntu-latest` уже содержит Node, поэтому JS-тесты в SQLite job исполняются, хотя workflow не вызывает `actions/setup-node`. Не утверждать, что «Node отсутствует в GitHub CI».
+GitHub CI до Sprint 3 (job sqlite на `f933e1d`): **161 passed**. Runner image `ubuntu-latest` уже содержит Node, поэтому JS-тесты в SQLite job исполняются, хотя workflow не вызывает `actions/setup-node`. Не утверждать, что «Node отсутствует в GitHub CI».
 
-PostgreSQL локально не запускался (нет Docker/psql). Job `postgres` на GitHub Actions после push: `test_p2p_journal_postgres.py`, `test_integer_money.py`, `test_money_migration.py`, плюс `tests/test_beta_e2e.py`.
+GitHub CI после Sprint 3 (job sqlite): **164 passed**. Job `postgres` (журнал + integer money + migration + E2E): **37 passed**.
 
 ## Страницы
 
