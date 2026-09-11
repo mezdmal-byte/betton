@@ -151,3 +151,45 @@ def test_migration_startup_guard(old_money_db, monkeypatch):
     monkeypatch.setattr(database, 'engine', engine)
     with pytest.raises(RuntimeError, match='migration required'):
         database.assert_money_ready()
+
+
+def test_full_legacy_schema_migrates_and_runs_lmsr(old_money_db, tmp_path, monkeypatch):
+    """Exercise the real ORM/startup adapters after converting a populated old schema."""
+    from datetime import datetime, timedelta
+    from sqlalchemy.schema import CreateTable
+    from sqlalchemy.orm import Session
+    from app import database
+    from app.config import settings
+    from app.models import Market, User
+    from app.services import market_service as service
+    url, engine = old_money_db
+    with engine.begin() as conn:
+        for table in ('p2p_fills', 'p2p_orders', 'markets', 'users'):
+            conn.exec_driver_sql(f'DROP TABLE {table}')
+        for table in database.Base.metadata.sorted_tables:
+            ddl = str(CreateTable(table).compile(engine))
+            if table.name in ('users', 'markets'):
+                ddl = '\n'.join(line for line in ddl.splitlines() if '_nano' not in line)
+            conn.exec_driver_sql(ddl)
+        conn.execute(User.__table__.insert(), [dict(id=1, telegram_id=101, username='creator', balance=950),
+                                               dict(id=2, telegram_id=102, username='admin', balance=1000000)])
+        conn.execute(Market.__table__.insert(), dict(id=1, question='Old market', creator_id=1,
+            mechanism='lmsr', status='pending', b=50/0.6931471805599453,
+            outcomes=['Да', 'Нет'], q=[0, 0], pot=50, lock_ton=50,
+            close_at=datetime.now()+timedelta(days=1)))
+    run_migration(url, tmp_path / 'full-backup')
+    monkeypatch.setattr(database, 'engine', engine)
+    monkeypatch.setattr(settings, 'admin_telegram_id', 102)
+    database.ensure_schema()
+    database.assert_money_ready()
+    with Session(engine, autoflush=False) as db:
+        def total():
+            return sum(u.balance_nano for u in db.query(User)) + sum(m.pot_nano for m in db.query(Market))
+        before = total()
+        service.moderate_market(db, 1, 2)
+        service.buy_shares(db, 1, 1, 0, 10.000000001)
+        service.close_market(db, 1, 2)
+        service.resolve_market(db, 1, 0, 2)
+        assert total() == before
+        assert db.get(Market, 1).pot_nano == 0
+        assert db.execute(text('SELECT pot FROM markets WHERE id=1')).scalar_one() == 50
