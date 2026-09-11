@@ -1,4 +1,10 @@
 from pathlib import Path
+import json
+import os
+import shutil
+import subprocess
+
+import pytest
 
 HTML = Path(__file__).resolve().parents[1] / "app" / "static" / "miniapp.html"
 P2P = HTML.with_name("p2p.js")
@@ -37,9 +43,116 @@ def test_feed_and_event_keep_existing_actions():
     html = HTML.read_text(encoding="utf-8")
     p2p = P2P.read_text(encoding="utf-8")
     assert "Оставить заявку" in p2p
-    assert "Принять доступное" in p2p
     assert "data-act=\"p2p-limit\"" in p2p
     assert "data-act=\"claim\"" in html
     assert "async function openEvent" in html
     assert "function friendlyError" in html
     assert "me ? fmtTon(me.balance) : \"—\"" in html
+
+
+def test_p2p_feed_does_not_infer_empty_book_from_zero_pot():
+    html = HTML.read_text(encoding="utf-8")
+    body = html[html.index("function feedSituation") : html.index("function feedCard")]
+    assert "Нет встречных заявок" not in body
+    assert "Сделок пока нет" in body
+    assert "Объём сделок" in body
+    assert "откройте событие" in body
+    assert "orderbook" not in body
+
+
+def _browser_bin():
+    roots = [
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files")),
+        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")),
+        Path(os.environ.get("LOCALAPPDATA", "")),
+    ]
+    names = [
+        Path("Microsoft/Edge/Application/msedge.exe"),
+        Path("Google/Chrome/Application/chrome.exe"),
+    ]
+    for root in roots:
+        for name in names:
+            candidate = root / name
+            if candidate.is_file():
+                return candidate
+    return None
+
+
+def test_reload_after_funds_refreshes_user_before_event_preview(tmp_path: Path):
+    html = HTML.read_text(encoding="utf-8")
+    helper = html[
+        html.index("async function reloadAfterFundsChange()") : html.index("document.querySelector(\".tabs\")")
+    ]
+    click = html[html.index("async function onCardClick") : html.index("document.getElementById(\"markets\").onclick")]
+    assert "await reloadAfterFundsChange()" in click
+    assert "await openEvent(activeEventId)" not in click
+    assert helper.index("await refreshMe()") < helper.index("await openEvent(activeEventId)")
+    body = (
+        "let me = {id: 1, balance: 1000};\n"
+        "let authBlocked = false;\n"
+        "let activeEventId = 11;\n"
+        "const calls = [];\n"
+        "const quoteBalances = [];\n"
+        "const realQuery = typeof document !== 'undefined' && document.querySelector.bind(document);\n"
+        "const query = function(sel) {\n"
+        "  if (sel === '[data-panel]:not([hidden])') return {dataset: {panel: 'event'}};\n"
+        "  return realQuery ? realQuery(sel) : null;\n"
+        "};\n"
+        "if (typeof document === 'undefined') {\n"
+        "  global.document = {querySelector: query};\n"
+        "} else {\n"
+        "  document.querySelector = query;\n"
+        "}\n"
+        "async function refreshMe() {\n"
+        "  calls.push('refreshMe-before:' + me.balance);\n"
+        "  me = {id: 1, balance: 880.5};\n"
+        "  calls.push('refreshMe-after:' + me.balance);\n"
+        "}\n"
+        "async function p2pQuote() { quoteBalances.push(me.balance); calls.push('p2pQuote:' + me.balance); }\n"
+        "async function openEvent(id) {\n"
+        "  calls.push('openEvent:' + id + ':' + me.balance);\n"
+        "  await p2pQuote();\n"
+        "}\n"
+        "async function loadMine() { calls.push('loadMine:' + me.balance); }\n"
+        "async function loadModeration() { calls.push('loadModeration'); }\n"
+        "async function loadMarkets() { calls.push('loadMarkets'); }\n"
+        + helper
+        + "calls.push('p2pPlace:' + me.balance);\n"
+        "reloadAfterFundsChange().then(() => {\n"
+        "  const data = {calls, quoteBalances, balance: me.balance};\n"
+        "  if (typeof process !== 'undefined' && process.stdout) process.stdout.write(JSON.stringify(data));\n"
+        "  if (typeof document !== 'undefined') {\n"
+        "    const out = document.getElementById('out');\n"
+        "    if (out) out.textContent = JSON.stringify(data);\n"
+        "  }\n"
+        "});\n"
+    )
+    node = shutil.which("node")
+    if node:
+        proc = subprocess.run([node, "-e", body], capture_output=True, text=True, timeout=20, encoding="utf-8")
+        assert proc.returncode == 0, proc.stderr or proc.stdout
+        data = json.loads(proc.stdout)
+    else:
+        browser = _browser_bin()
+        if browser is None:
+            pytest.skip("Нет Node.js и браузера для исполнения порядка refreshMe")
+        harness = tmp_path / "funds_order.html"
+        harness.write_text("<!doctype html><meta charset='utf-8'><pre id='out'></pre><script>" + body + "</script>", encoding="utf-8")
+        proc = subprocess.run(
+            [str(browser), "--headless=new", "--disable-gpu", "--dump-dom", harness.resolve().as_uri()],
+            check=False, capture_output=True, text=True, encoding="utf-8", timeout=60,
+        )
+        assert proc.returncode == 0, proc.stderr or proc.stdout
+        start = proc.stdout.find('<pre id="out">')
+        assert start != -1, proc.stdout[:2000]
+        start = proc.stdout.find(">", start) + 1
+        data = json.loads(proc.stdout[start:proc.stdout.find("</pre>", start)])
+    assert data["calls"] == [
+        "p2pPlace:1000",
+        "refreshMe-before:1000",
+        "refreshMe-after:880.5",
+        "openEvent:11:880.5",
+        "p2pQuote:880.5",
+    ]
+    assert data["quoteBalances"] == [880.5]
+    assert data["balance"] == 880.5

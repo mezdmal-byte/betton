@@ -192,9 +192,13 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "Причина: Источник не подтвердился" in data["confirmText"]
     assert data["emptyReason"] == "Укажите причину отмены"
     assert "data-open-market=" in data["feedWait"]
-    assert "Нет встречных заявок" in data["feedWait"]
+    assert "Нет встречных заявок" not in data["feedWait"]
+    assert "Сделок пока нет" in data["feedWait"]
+    assert "откройте событие" in data["feedWait"]
     assert "Да" in data["feedWait"] and "Нет" in data["feedWait"]
-    assert "Есть сделки" in data["feedLive"]
+    assert "Объём сделок" in data["feedLive"]
+    assert "Есть сделки" not in data["feedLive"]
+    assert "Нет встречных заявок" not in data["feedLive"]
     assert "Приём завершён" in data["feedClosed"]
     assert "nano" not in data["feedLive"].lower()
     assert any("ждать встречного предложения" in line for line in data["previewWait"])

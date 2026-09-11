@@ -525,8 +525,10 @@
         if (m.status === "closed" || (m.status === "open" && !m.accepting_bets)) {
           return "Новые заявки не принимаются";
         }
-        if ((m.pot || 0) > 0) return "Есть сделки · объём " + fmtTon(m.pot);
-        return "Нет встречных заявок. Рынок строится из заявок игроков";
+        if ((m.pot || 0) > 0) {
+          return "Объём сделок " + fmtTon(m.pot) + " · откройте событие для текущих предложений";
+        }
+        return "Сделок пока нет · откройте событие, чтобы увидеть текущие предложения";
       }
       const prices = marketPrices(m);
       if (m.status === "open" && m.accepting_bets && prices && prices.length) {
@@ -980,6 +982,16 @@
       }
     }
 
+    async function reloadAfterFundsChange() {
+      const panel = document.querySelector("[data-panel]:not([hidden])");
+      const view = panel && panel.dataset.panel;
+      if (me && !authBlocked && view !== "mine") await refreshMe();
+      if (view === "event" && activeEventId) await openEvent(activeEventId);
+      else if (view === "mine") await loadMine();
+      else if (view === "moderation") await loadModeration();
+      else await loadMarkets();
+    }
+
     document.querySelector(".tabs").onclick = (ev) => {
       const btn = ev.target.closest("[data-tab]");
       if (btn) showTab(btn.dataset.tab);
@@ -1134,12 +1146,7 @@
           setBalance(res.balance);
           toast("Зачислено " + Number(res.credited).toFixed(2) + " TON · комиссия " + Number(res.tip).toFixed(2));
         }
-        const panel = document.querySelector("[data-panel]:not([hidden])");
-        if (panel && panel.dataset.panel === "event" && activeEventId) await openEvent(activeEventId);
-        else if (panel && panel.dataset.panel === "mine") await loadMine();
-        else if (panel && panel.dataset.panel === "moderation") await loadModeration();
-        else await loadMarkets();
-        await refreshMe();
+        await reloadAfterFundsChange();
       } catch (e) {
         showError(e.message);
         toast(friendlyError(e.message), true);
@@ -1160,7 +1167,7 @@
           requireLogin();
           await api("/orders/"+btn.dataset.cancelOrder+"/cancel", {method:"POST"});
           toast("Заявка отменена. Остаток вернулся на баланс.");
-          await loadMine();
+          await reloadAfterFundsChange();
         } catch(e) { showError(e.message); }
         return;
       }
@@ -1205,12 +1212,7 @@
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden || !me || authBlocked) return;
-      refreshMe().catch(() => {});
-      const panel = document.querySelector("[data-panel]:not([hidden])");
-      if (panel && panel.dataset.panel === "event" && activeEventId) openEvent(activeEventId).catch(e => showError(e.message));
-      else if (panel && panel.dataset.panel === "mine") loadMine().catch(e => showError(e.message));
-      else if (panel && panel.dataset.panel === "moderation") loadModeration().catch(e => showError(e.message));
-      else loadMarkets().catch(e => showError(e.message));
+      reloadAfterFundsChange().catch(e => showError(e.message));
     });
 
     (async () => {
