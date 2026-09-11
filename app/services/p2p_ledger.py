@@ -194,10 +194,14 @@ def record(
         return row
     except IntegrityError:
         nested.rollback()
-        db.expunge(row)
+        # Rolling back the savepoint already removes its new objects from the
+        # session. Expunging row here raises InvalidRequestError and masks the
+        # unique-key conflict we are trying to handle.
         existing = db.query(P2PMoneyEntry).filter_by(entry_key=entry_key).one_or_none()
-        if existing is not None and _entry_identity(existing) == _identity(incoming):
-            return existing
+        if existing is not None:
+            if _entry_identity(existing) == _identity(incoming):
+                return existing
+            raise HTTPException(409, "Конфликт записи журнала")
         raise
 
 
