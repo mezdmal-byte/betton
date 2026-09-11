@@ -8,8 +8,8 @@
 | --- | --- |
 | Репозиторий | https://github.com/mezdmal-byte/betton |
 | Рабочая ветка | `feature/beta-ui` (от `feature/integer-money`) |
-| Current HEAD | `PENDING_SHA` |
-| UI sprint 2 | `PENDING_SHA` |
+| Current HEAD | `b5d0fdb994b26595d6dfc7296119ca4e5f1fc0a1` |
+| UI sprint 2 | `b5d0fdb994b26595d6dfc7296119ca4e5f1fc0a1` |
 | UI sprint 1 | `05c9b44734040b7cde6486ae6c539b6fe174454d` |
 | Точка ветки до UI | `88da7c7ed3be210d2bb2e204b876f51449096b56` (HANDOFF) |
 | Основа integer-money | `6b0bc658ee20c1293eeeb74469f5adbb935fb80b` |
