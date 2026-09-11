@@ -33,7 +33,8 @@
       color: var(--text);
       min-height: 100vh;
       min-height: 100dvh;
-      padding-bottom: calc(var(--nav-h) + 28px + env(safe-area-inset-bottom));
+      padding-bottom: calc(var(--nav-h) + 28px + env(safe-area-inset-bottom) + var(--kb, 0px));
+      overflow-wrap: anywhere;
     }
     header {
       padding: 12px 16px;
@@ -82,7 +83,7 @@
       left: 50%;
       transform: translateX(-50%);
       width: min(480px, 100%);
-      bottom: 0;
+      bottom: var(--kb, 0px);
       background: var(--bg);
       border-top: 1px solid var(--line);
       padding: 4px 8px calc(6px + env(safe-area-inset-bottom));
@@ -118,7 +119,7 @@
       gap: 8px;
       margin-bottom: 8px;
     }
-    .feed-time { color: var(--muted); font-size: .75rem; white-space: nowrap; }
+    .feed-time { color: var(--muted); font-size: .75rem; text-align: right; min-width: 0; }
     .outcome-pair {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
@@ -221,8 +222,8 @@
       flex-wrap: wrap;
     }
     .odd {
-      flex: 1 1 28%;
-      min-width: 92px;
+      flex: 1 1 0;
+      min-width: 0;
       border-radius: 14px;
       padding: 10px 8px;
       text-align: center;
@@ -248,16 +249,29 @@
     }
     .p2p-preview p { margin: 0 0 8px; }
     .p2p-preview p:last-child { margin-bottom: 0; }
+    .preview-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin: 0 0 8px;
+    }
+    .preview-row span { color: var(--muted); min-width: 0; }
+    .preview-row b { text-align: right; font-variant-numeric: tabular-nums; min-width: 0; }
+    .preview-note { margin: 8px 0 0; color: var(--muted); }
     .preview-warn { color: var(--muted); }
-    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+    .feed-toolbar { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; }
+    .feed-search-label, .feed-status-wrap { color: var(--muted); font-size: .8rem; font-weight: 700; }
+    .feed-status-wrap select { margin-top: 4px; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; }
     .chip {
-      min-height: 36px;
-      padding: 0 12px;
+      min-height: 32px;
+      padding: 0 10px;
       border-radius: 999px;
       border: 1px solid var(--line);
       background: var(--chip);
       color: var(--muted);
-      font-size: .82rem;
+      font-size: .78rem;
       font-weight: 700;
     }
     .chip.on { background: var(--brand); color: #fff; border-color: var(--brand); }
@@ -268,13 +282,43 @@
       background: var(--surface);
       color: var(--text);
       font-weight: 800;
+      overflow-wrap: anywhere;
     }
     .side-pick.on-yes { background: var(--yes); color: #fff; border-color: var(--yes); }
     .side-pick.on-no { background: var(--no); color: #fff; border-color: var(--no); }
     .p2p-side { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     .p2p-form { position: relative; }
-    .p2p-book { font-size: .85rem; margin: 8px 0; }
-    .p2p-book p { margin: 6px 0; }
+    .event-card > .status-pill { margin-bottom: 8px; }
+    .event-deadline { margin: 6px 0 0; }
+    .event-offers { margin: 8px 0 4px; font-size: .82rem; }
+    .event-offers-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    button.compact {
+      min-height: 32px;
+      padding: 4px 10px;
+      font-size: .78rem;
+      width: auto;
+      flex: 0 0 auto;
+    }
+    .event-bet {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      margin: 12px 0 10px;
+    }
+    .event-bet-title { margin: 0 0 8px; font-weight: 800; color: var(--brand); }
+    .event-bet .gold { min-height: 48px; }
+    .p2p-depth { margin-top: 4px; font-size: .82rem; }
+    .p2p-book { font-size: .85rem; margin: 0; }
+    .p2p-book p, .offer-line { margin: 4px 0; }
     .empty-state, .loading-state {
       text-align: center;
       padding: 36px 16px;
@@ -303,13 +347,65 @@
       font-weight: 700;
       display: none;
       z-index: 9;
+      overflow-wrap: anywhere;
     }
     .toast.show { display: block; }
     .toast.bad { background: #fdf2f2; color: var(--no); border-color: #f5c6c6; }
     h2 { font-size: .95rem; margin: 18px 0 0; color: var(--brand); }
+    .mine-lede { margin: 8px 0 4px; }
+    .mine-group { margin: 8px 0 16px; }
+    .mine-group-title {
+      font-size: .95rem;
+      font-weight: 800;
+      margin: 0 0 6px;
+      overflow-wrap: anywhere;
+    }
+    .kind-tag {
+      display: inline-block;
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .order-outcome, .pos-outcome { font-weight: 700; margin: 0 0 8px; }
+    .money-list {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+      gap: 4px 12px;
+      margin: 8px 0 10px;
+      font-size: .85rem;
+    }
+    .money-list dt { color: var(--muted); min-width: 0; }
+    .money-list dd {
+      margin: 0;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      min-width: 0;
+    }
+    .order-card .ghost, .cancel-hint { width: 100%; margin-top: 8px; }
+    .pos-line {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 8px;
+    }
+    .history-void { border-color: #f1e4c7; background: #fbf8f1; }
+    .void-banner { font-weight: 700; color: #8a6d3b; margin: 8px 0; }
+    .history-result {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin: 8px 0 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .history-result.win { color: var(--yes); }
+    .history-result.loss { color: var(--no); }
+    .history-result.void { color: #8a6d3b; }
     .outcome-row {
       display: grid;
-      grid-template-columns: 1fr 88px 64px 40px;
+      grid-template-columns: minmax(0, 1fr);
       gap: 6px;
       align-items: center;
       margin-bottom: 8px;
@@ -344,18 +440,24 @@
     <p class="err" id="error"></p>
 
     <section data-panel="feed">
-      <div class="chips" id="cat-filters">
-        <button class="chip on" data-cat="">Все</button>
-        <button class="chip" data-cat="sport">Спорт</button>
-        <button class="chip" data-cat="politics">Политика</button>
-        <button class="chip" data-cat="unique">Уникальное</button>
-      </div>
-      <div class="chips" id="status-filters">
-        <button class="chip on" data-status="">Все</button>
-        <button class="chip" data-status="open">Активные</button>
-        <button class="chip" data-status="closed">Приём закрыт</button>
-        <button class="chip" data-status="resolved">Завершены</button>
-        <button class="chip" data-status="cancelled">Отменены</button>
+      <div class="feed-toolbar">
+        <label class="feed-search-label" for="feed-search">Поиск по вопросу</label>
+        <input id="feed-search" type="search" placeholder="Например, кто победит" enterkeyhint="search" autocomplete="off"/>
+        <div class="chips" id="cat-filters" role="group" aria-label="Категории">
+          <button class="chip on" data-cat="">Все</button>
+          <button class="chip" data-cat="sport">Спорт</button>
+          <button class="chip" data-cat="politics">Политика</button>
+          <button class="chip" data-cat="unique">Уникальное</button>
+        </div>
+        <label class="feed-status-wrap" for="status-filter">Состояние
+          <select id="status-filter">
+            <option value="">Все</option>
+            <option value="open">Активные</option>
+            <option value="closed">Приём закрыт</option>
+            <option value="resolved">Завершены</option>
+            <option value="cancelled">Отменены</option>
+          </select>
+        </label>
       </div>
       <div id="markets"></div>
     </section>
@@ -388,14 +490,15 @@
     </section>
 
     <section data-panel="mine" hidden>
+      <p class="mine-lede muted">В шапке — доступный баланс. Здесь видно, какие деньги в заявках, какие уже в ставках и чем закончились события.</p>
       <h2>Мои заявки</h2>
-      <div id="mine-orders"><div class="empty-state">Заявок пока нет.</div></div>
+      <div id="mine-orders"><div class="empty-state">Активных заявок пока нет.</div></div>
       <h2>Мои позиции</h2>
-      <div id="mine-bets"><div class="empty-state">Открытых позиций пока нет.</div></div>
+      <div id="mine-bets"><div class="empty-state">У вас пока нет исполненных ставок.</div></div>
       <h2>Созданные события</h2>
       <div id="mine-created"><div class="empty-state">Вы ещё не создавали события.</div></div>
       <h2>История</h2>
-      <div id="mine-results"><div class="empty-state">Истории пока нет.</div></div>
+      <div id="mine-results"><div class="empty-state">Завершённых событий пока нет.</div></div>
     </section>
     <section data-panel="moderation" hidden><h2>На проверке</h2><div id="moderation-markets"></div></section>
   </main>
@@ -432,6 +535,8 @@
     let authBlocked = false;
     let filterCategory = "";
     let filterStatus = "";
+    let feedSearch = "";
+    let feedMarkets = [];
     let createCategory = "unique";
     const quoteTimers = {};
     let myPositions = {};
@@ -535,6 +640,27 @@
         return names.map((n, i) => n + " " + fmtK(prices[i] || 0)).join(" · ");
       }
       return "";
+    }
+
+    function filterFeedMarkets(markets, query) {
+      const q = String(query || "").trim().toLowerCase();
+      if (!q) return (markets || []).slice();
+      return (markets || []).filter(m => String(m.question || "").toLowerCase().includes(q));
+    }
+
+    function paintFeed() {
+      const root = document.getElementById("markets");
+      if (!root) return;
+      if (!feedMarkets.length) {
+        root.innerHTML = '<div class="empty-state"><strong>Пока нет событий</strong>Создайте вопрос в разделе «Создать». После проверки он появится в ленте.</div>';
+        return;
+      }
+      const shown = filterFeedMarkets(feedMarkets, feedSearch);
+      if (!shown.length) {
+        root.innerHTML = '<div class="empty-state"><strong>Ничего не найдено</strong>Попробуйте другой запрос или сбросьте поиск.</div>';
+        return;
+      }
+      root.innerHTML = shown.map(m => feedCard(m)).join("");
     }
 
     function feedCard(m) {
@@ -715,23 +841,22 @@
         `<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(name)}">Рассчитать: ${escapeHtml(name)}</button>`
       ).join("");
       return `
-        <div class="card" data-id="${m.id}" data-status="${m.status}" data-open-market="${m.id}">
+        <div class="card event-card" data-id="${m.id}" data-status="${m.status}" data-open-market="${m.id}">
+          <span class="status-pill status-${m.status === "resolved" ? "resolved" : (accepting ? "open" : "closed")}">${statusLabel(m.status)}</span>
           <div class="question">${escapeHtml(m.question)}</div>
-          <div class="meta">
-            <span class="pill">${statusLabel(m.status)}</span>
-            <span class="pill">${escapeHtml(CAT_LABEL[m.category] || "Уникальное")}</span>
-            <span class="pill">банк ${fmtTon(m.pot || 0)}</span>
-            ${m.close_at ? `<span class="pill">до ${escapeHtml(formatCloseAt(m.close_at))}</span>` : ""}
-            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${escapeHtml(m.winning_outcome)}</span>` : ""}
-          </div>
+          <p class="muted event-deadline">${escapeHtml(CAT_LABEL[m.category] || "Уникальное")}${m.close_at ? " · до " + escapeHtml(formatCloseAt(m.close_at)) : ""} · банк ${fmtTon(m.pot || 0)}</p>
+          ${resolved && m.winning_outcome ? `<p>Исход: ${escapeHtml(m.winning_outcome)}</p>` : ""}
           ${moderationActions(m)}
           ${m.status === "rejected" ? `<p class="muted">Отклонено: ${escapeHtml(m.rejection_reason || "")} · залог возвращён</p>` : ""}
           <div class="odds">${oddsHtml}</div>
           ${accepting ? `
+            <div class="event-bet">
+            <p class="event-bet-title">Ваша ставка</p>
             <label>Сумма ставки TON</label>
             <input type="number" min="1" step="1" value="10" class="amount" inputmode="decimal"/>
             <div class="preview" data-preview>Введите сумму — покажем доли и средний коэф</div>
-            <div class="row" style="flex-wrap:wrap">${buyBtns}</div>` : ""}
+            <div class="row" style="flex-wrap:wrap">${buyBtns}</div>
+            </div>` : ""}
           ${canStop ? `
             <div class="row">
               <button class="ghost" data-act="close">Стоп ставки</button>
@@ -755,21 +880,23 @@
       const resolved = m.status === "resolved";
       const names = marketOutcomes(m);
       const shares = pos.shares && pos.shares.length ? pos.shares : [pos.shares_yes || 0, pos.shares_no || 0];
-      const lines = m.mechanism === "p2p"
-        ? names.map((n,i) => Number(pos.costs?.[i] || 0) > 0
-          ? escapeHtml(n)+": ставка "+fmtTon(pos.costs[i])+" @"+(shares[i]/pos.costs[i]).toFixed(2)+" · выплата при победе "+fmtTon(shares[i]) : "").filter(Boolean).join(" · ")
-        : names.map((n, i) => escapeHtml(n) + ": " + Number(shares[i] || 0).toFixed(2) + " долей").join(" · ");
+      const p2p = m.mechanism === "p2p";
+      const lines = p2p
+        ? p2pPositionHtml(pos)
+        : `<p class="muted">${names.map((n, i) => escapeHtml(n) + ": " + Number(shares[i] || 0).toFixed(2) + " долей").join(" · ")}</p>`;
       const winningIndex = names.indexOf(m.winning_outcome);
       const lost = resolved && winningIndex >= 0 && Number(shares[winningIndex] || 0) <= 0;
       const canClaim = resolved && m.settlement_kind !== "auto" && !pos.claimed && !lost && shares.some(x => x > 0);
+      const st = typeof feedStatus === "function" ? feedStatus(m) : {key: m.status, text: statusLabel(m.status)};
       return `
         <div class="card" data-id="${m.id}" data-status="${m.status}" data-open-market="${m.id}">
+          <div class="kind-tag">${p2p ? "Исполненная ставка" : "Позиция"}</div>
           <div class="question">${escapeHtml(m.question)}</div>
           <div class="meta">
-            <span class="pill">${statusLabel(m.status)}</span>
+            <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
             ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${escapeHtml(m.winning_outcome)}</span>` : ""}
           </div>
-          <p class="muted">${lines}</p>
+          ${lines}
           ${canClaim ? `
             <p class="muted">комиссия 1% с прибыли: 75% создателю, 25% платформе</p>
             <div class="row">
@@ -780,6 +907,16 @@
         </div>`;
     }
 
+    function historyResultLine(s) {
+      const voided = s.settlement_kind === "void";
+      const result = Number(s.result || 0);
+      if (voided) return {text: "Возврат " + fmtTon(s.credited), cls: "void"};
+      if (result > 0.0001) return {text: "+" + fmtTon(result), cls: "win"};
+      if (result < -0.0001) return {text: fmtTon(result), cls: "loss"};
+      if (s.is_loss) return {text: "-" + fmtTon(s.stakes_total || 0), cls: "loss"};
+      return {text: fmtTon(result), cls: ""};
+    }
+
     function settlementCard(s) {
       const voided = s.settlement_kind === "void";
       const loss = !voided && !!s.is_loss;
@@ -787,34 +924,37 @@
       const chosen = (s.chosen_outcomes && s.chosen_outcomes.length)
         ? s.chosen_outcomes.map(escapeHtml).join(", ")
         : "нет ставок";
-      if (voided) {
-        return `
-        <div class="card" data-id="${s.market_id}">
-          <div class="question">${escapeHtml(s.question)}</div>
-          <div class="meta">
-            <span class="pill">Отменено</span>
-            ${when ? `<span class="pill">${when}</span>` : ""}
-          </div>
-          <p class="muted">Причина: ${escapeHtml(s.cancellation_reason || "")}</p>
-          <p class="muted">ставки: ${escapeHtml(chosen)}</p>
-          <p class="muted">возврат исполненной ставки ${fmtTon(s.payout)} · освобождённый остаток заявки ${fmtTon(s.residual_returned)}</p>
-          <p class="muted">всего возвращено ${fmtTon(s.credited)}</p>
-        </div>`;
-      }
+      const tip = Number(s.tip || 0);
+      const result = historyResultLine(s);
       const creatorBits = (s.lock_ton > 0 || s.residual_returned > 0)
         ? `<p class="muted">залог ${fmtTon(s.lock_ton)} · возврат остатка ${fmtTon(s.residual_returned)}</p>`
         : "";
+      if (voided) {
+        return `
+        <div class="card history-card history-void" data-id="${s.market_id}">
+          <div class="kind-tag">Итог события</div>
+          <div class="question">${escapeHtml(s.question)}</div>
+          <p class="void-banner">Событие отменено · средства возвращены</p>
+          <p class="muted">Ваш исход: ${chosen}</p>
+          <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}</p>
+          <p class="muted">исполненные ставки ${fmtTon(s.payout)} · остаток заявки ${fmtTon(s.residual_returned)}</p>
+          ${tip > 0 ? `<p class="muted">комиссия / чаевые ${fmtTon(tip)}</p>` : ""}
+          <p class="history-result void">${escapeHtml(result.text)}</p>
+        </div>`;
+      }
+      const hasStake = Number(s.stakes_total || 0) > 0.0001;
       return `
-        <div class="card" data-id="${s.market_id}">
+        <div class="card history-card" data-id="${s.market_id}">
+          <div class="kind-tag">Итог события</div>
           <div class="question">${escapeHtml(s.question)}</div>
           <div class="meta">
-            <span class="pill">${loss ? "Проигрыш" : "Расчёт"}</span>
-            <span class="pill">Исход: ${escapeHtml(s.winning_outcome || "")}</span>
+            ${hasStake ? `<span class="status-pill ${loss ? "status-cancelled" : "status-open"}">${loss ? "Проигрыш" : "Выигрыш"}</span>` : `<span class="pill">Расчёт</span>`}
             ${when ? `<span class="pill">${when}</span>` : ""}
           </div>
-          <p class="muted">ставки: ${escapeHtml(chosen)}</p>
-          <p class="muted">сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)} · чаевые ${fmtTon(s.tip)}</p>
-          <p class="muted">зачислено ${fmtTon(s.credited)} · результат ${fmtTon(s.result)}</p>
+          <p>Ваш исход: ${chosen}</p>
+          <p>Победивший исход: ${escapeHtml(s.winning_outcome || "")}</p>
+          <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}${tip > 0 ? " · комиссия / чаевые " + fmtTon(tip) : ""}</p>
+          <p class="history-result ${result.cls}">${escapeHtml(result.text)}</p>
           ${creatorBits}
         </div>`;
     }
@@ -828,11 +968,8 @@
       const root = document.getElementById("markets");
       root.innerHTML = '<p class="loading-state">Загружаем события…</p>';
       const markets = await api("/markets" + (q ? "?" + q : ""));
-      if (!markets.length) {
-        root.innerHTML = '<div class="empty-state"><strong>Пока нет событий</strong>Создайте вопрос в разделе «Создать». После проверки он появится в ленте.</div>';
-        return;
-      }
-      root.innerHTML = markets.map(m => feedCard(m)).join("");
+      feedMarkets = markets || [];
+      paintFeed();
     }
 
     async function loadMine() {
@@ -851,7 +988,7 @@
       if (me.id !== userId) return;
       myPositions = {};
       for (const p of positions) myPositions[p.market_id] = p;
-      document.getElementById("mine-orders").innerHTML = orders.length ? orders.map(orderCard).join("") : '<div class="empty-state">Заявок пока нет.</div>';
+      document.getElementById("mine-orders").innerHTML = renderMineOrders(orders);
       const created = markets.filter(m => m.creator_id === me.id);
       const createdRoot = document.getElementById("mine-created");
       const betsRoot = document.getElementById("mine-bets");
@@ -862,12 +999,12 @@
       const active = positions.filter(p => p.market && p.market.status !== "resolved" && p.market.status !== "cancelled");
       betsRoot.innerHTML = active.length
         ? active.map(positionCard).join("")
-        : '<div class="empty-state">Открытых позиций пока нет.</div>';
+        : '<div class="empty-state">У вас пока нет исполненных ставок.</div>';
       const legacy = positions.filter(p => p.market && p.market.status === "resolved"
         && p.market.settlement_kind !== "auto");
       resultsRoot.innerHTML = settlements.length || legacy.length
         ? settlements.map(settlementCard).join("") + legacy.map(positionCard).join("")
-        : '<div class="empty-state">Истории пока нет.</div>';
+        : '<div class="empty-state">Завершённых событий пока нет.</div>';
     }
 
     async function previewQuote(card) {
@@ -1005,13 +1142,15 @@
       loadMarkets().catch(e => showError(e.message));
     };
 
-    document.getElementById("status-filters").onclick = (ev) => {
-      const btn = ev.target.closest("[data-status]");
-      if (!btn) return;
-      filterStatus = btn.dataset.status;
-      document.querySelectorAll("#status-filters .chip").forEach(c => c.classList.toggle("on", c === btn));
+    document.getElementById("status-filter").onchange = (ev) => {
+      filterStatus = ev.target.value;
       loadMarkets().catch(e => showError(e.message));
     };
+
+    document.getElementById("feed-search").addEventListener("input", (ev) => {
+      feedSearch = ev.target.value;
+      paintFeed();
+    });
 
     document.getElementById("create-cats").onclick = (ev) => {
       const btn = ev.target.closest("[data-cat]");
@@ -1214,6 +1353,26 @@
       if (document.hidden || !me || authBlocked) return;
       reloadAfterFundsChange().catch(e => showError(e.message));
     });
+
+    document.addEventListener("focusin", (ev) => {
+      if (!ev.target.matches("input, textarea, select")) return;
+      setTimeout(() => {
+        try { ev.target.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) { /* old webview */ }
+      }, 120);
+    });
+
+    try {
+      const vv = window.visualViewport;
+      if (vv) {
+        const applyKb = () => {
+          const kb = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+          document.documentElement.style.setProperty("--kb", kb + "px");
+        };
+        vv.addEventListener("resize", applyKb);
+        vv.addEventListener("scroll", applyKb);
+        applyKb();
+      }
+    } catch (e) { /* браузер без visualViewport */ }
 
     (async () => {
       try {

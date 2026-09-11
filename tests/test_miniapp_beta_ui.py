@@ -34,7 +34,7 @@ def test_beta_visual_language_and_shell():
     p2p = P2P.read_text(encoding="utf-8")
     assert "nanoTON" not in p2p
     assert "function p2pPreviewLines" in p2p
-    assert "ждать встречного предложения" in p2p
+    assert "ждать другого пользователя" in p2p
     assert "function p2pPlaceToast" in p2p
     assert "function feedCard" in html
 

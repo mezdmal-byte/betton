@@ -46,22 +46,33 @@ function p2pCard(m) {
   const accepting = !!m.accepting_bets && m.status !== 'cancelled';
   const admin = me?.is_admin;
   const cancelled = m.status === 'cancelled';
-  const label = p2pStatusLabel(m);
+  const st = typeof feedStatus === 'function' ? feedStatus(m) : {key: cancelled ? 'cancelled' : m.status, text: p2pStatusLabel(m)};
   const canResolve = admin && m.status === 'closed';
   const yes = names[0] || 'Да';
   const no = names[1] || 'Нет';
-  return `<div class="card" data-id="${m.id}" data-status="${m.status}" data-mechanism="p2p">
+  const close = String(m.close_at || '').replace('T', ' ').slice(0, 16);
+  return `<div class="card event-card" data-id="${m.id}" data-status="${m.status}" data-mechanism="p2p">
+    <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
     <div class="question">${escapeHtml(m.question)}</div>
-    <div class="meta"><span class="status-pill status-${cancelled ? 'cancelled' : (m.status === 'open' && m.accepting_bets ? 'open' : 'closed')}">${escapeHtml(label)}</span>
-      <span class="pill">${escapeHtml(CAT_LABEL[m.category] || m.category)}</span>
-      ${(m.pot || 0) > 0 ? `<span class="pill">Сделки ${fmtP2P(m.pot)}</span>` : '<span class="pill">Сделок пока нет</span>'}</div>
-    <p class="muted">Приём заявок до ${escapeHtml(String(m.close_at || '').replace('T',' ').slice(0,16))} UTC</p>
+    ${close ? `<p class="muted event-deadline">Приём заявок до ${escapeHtml(close)} UTC</p>` : ''}
+    <div class="outcome-pair">
+      <span class="out yes-acc">${escapeHtml(yes)}</span>
+      <span class="out-vs">или</span>
+      <span class="out no-acc">${escapeHtml(no)}</span>
+    </div>
     ${m.status === 'pending' ? '<p class="muted">На модерации. Рынок появится в ленте после проверки. Залог не нужен.</p>' : ''}
     ${m.status === 'rejected' ? `<p class="muted">Отклонено: ${escapeHtml(m.rejection_reason || '')}</p>` : ''}
     ${cancelled ? `<p class="muted">Отменено: ${escapeHtml(m.cancellation_reason || '')}. Исполненные ставки и незакрытый остаток заявок возвращены без чаевых.</p>` : ''}
     ${!cancelled && m.winning_outcome ? `<p>Исход: ${escapeHtml(m.winning_outcome)} · выплаты зачислены</p>` : ''}
-    ${accepting ? `<div class="p2p-book muted">Загружаем предложения…</div><button class="ghost" data-act="p2p-refresh">Обновить предложения</button>
-      <div class="p2p-form">
+    ${accepting ? `<div class="event-offers">
+      <div class="event-offers-head">
+        <span>Текущие предложения</span>
+        <button type="button" class="ghost compact" data-act="p2p-refresh">Обновить</button>
+      </div>
+      <div class="p2p-book muted">Загружаем предложения…</div>
+    </div>
+      <div class="p2p-form event-bet">
+      <p class="event-bet-title">Ваша заявка</p>
       <label>Исход</label>
       <div class="side-picks">
         <button type="button" class="side-pick on-yes" data-outcome="0">${escapeHtml(yes)}</button>
@@ -75,7 +86,11 @@ function p2pCard(m) {
       <div class="row"><button class="ghost" data-act="p2p-ioc" disabled>Принять доступное</button></div>
       <p class="muted">Неисполненная сумма резервируется. Остаток можно вернуть отменой заявки в «Мои».</p>
       <p class="muted">Если событие отменят, исполненные ставки и незакрытый остаток заявки вернутся без чаевых.</p>
-      </div>` : ''}
+      </div>
+      <details class="p2p-depth"><summary>Все предложения</summary>
+        <p class="muted">Предложения других игроков. Свою заявку принять нельзя.</p>
+        <div class="p2p-book-full"></div>
+      </details>` : ''}
     ${moderationActions(m)}
     ${admin && m.status === 'open' ? '<button class="ghost" data-act="close">Стоп ставки</button>' : ''}
     ${canResolve ? names.map((n,i)=>`<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(n)}">Рассчитать: ${escapeHtml(n)}</button>`).join('') : ''}
@@ -83,41 +98,49 @@ function p2pCard(m) {
   </div>`;
 }
 
-function p2pPreviewLines(data, terms, balance) {
+function p2pPreviewModel(data, terms, balance) {
   const requested = data.requested || {};
-  const available = data.available || {};
   const money = Number(terms.money);
   const odds = Number(terms.odds);
   const name = terms.outcomeName || '';
   const matched = Number(requested.matched || 0);
-  const remaining = Number(requested.remaining || 0);
-  const lines = [];
-  lines.push((name ? ('Исход «' + name + '». ') : '') + 'Сумма ' + fmtP2P(money) + ', коэффициент не ниже ' + Number(odds).toFixed(2) + '.');
-  if (balance != null && Number.isFinite(Number(balance))) lines.push('Доступно: ' + fmtP2P(balance) + '.');
-  if (Number(available.matched) > 0) {
-    lines.push('Встречный объём сейчас: ' + fmtP2P(available.matched) +
-      (available.average_odds ? ' · средний коэффициент ' + Number(available.average_odds).toFixed(2) : '') + '.');
-  } else {
-    lines.push('Встречного объёма по этому коэффициенту сейчас нет.');
+  const remaining = Number(requested.remaining || (matched > 0 ? 0 : money));
+  const rows = [];
+  rows.push({label: 'Ваша сумма', value: fmtP2P(money), key: 'sum'});
+  rows.push({label: 'Коэффициент', value: 'не ниже ' + Number(odds).toFixed(2) + (name ? (' · «' + name + '»') : ''), key: 'odds'});
+  rows.push({label: 'Исполнится сейчас', value: fmtP2P(matched), key: 'now'});
+  rows.push({label: 'Останется заявкой', value: fmtP2P(remaining), key: 'rest'});
+  let note = '';
+  if (matched <= 0) {
+    note = 'Сейчас встречного предложения нет. Заявка будет ждать другого пользователя.';
+  } else if (remaining > 0) {
+    note = 'Сумма разделится на две части: исполненная — сразу, остаток будет ждать другого пользователя.';
+    if (requested.payout) {
+      rows.push({label: 'Возможная выплата', value: fmtP2P(requested.payout) + ' по исполненной части', key: 'payout'});
+    }
+  } else if (requested.payout) {
+    rows.push({label: 'Возможная выплата', value: fmtP2P(requested.payout), key: 'payout'});
   }
-  if (matched > 0 && remaining > 0) {
-    lines.push('Сразу может исполниться ' + fmtP2P(matched) +
-      (requested.payout ? ('. При победе по этой части выплата ' + fmtP2P(requested.payout)) : '') + '.');
-    lines.push('Сейчас доступно ' + fmtP2P(matched) + '. Остаток ' + fmtP2P(remaining) +
-      ' будет размещён как заявка и будет ждать встречного предложения.');
-  } else if (matched > 0) {
-    lines.push('Вся сумма может исполниться сразу' +
-      (requested.average_odds ? (' по среднему коэффициенту ' + Number(requested.average_odds).toFixed(2)) : '') +
-      (requested.payout ? ('. При победе выплата ' + fmtP2P(requested.payout)) : '') + '.');
-  } else {
-    lines.push('Заявка не исполнится сразу: вся сумма ' + fmtP2P(remaining || money) +
-      ' будет ждать встречного предложения.');
+  if (remaining > 0 && odds > 1 && matched > 0) {
+    note += ' Выплата по ещё неисполненной части появится только если найдётся контрагент — это не гарантия.';
   }
-  if (remaining > 0 && odds > 1) {
-    lines.push('Если остаток исполнят по вашему коэффициенту, при победе выплата по нему составит около ' +
-      fmtP2P(remaining * odds) + '. Это не обещание сделки: контрагент ещё может не найтись.');
-  }
+  return {rows, note, matched, remaining, balance};
+}
+
+function p2pPreviewLines(data, terms, balance) {
+  const model = p2pPreviewModel(data, terms, balance);
+  const lines = model.rows.map(row => row.label + ': ' + row.value);
+  if (model.note) lines.push(model.note);
   return lines;
+}
+
+function p2pPreviewHtml(data, terms, balance) {
+  const model = p2pPreviewModel(data, terms, balance);
+  const rows = model.rows.map(row =>
+    '<div class="preview-row preview-' + row.key + '"><span>' + escapeHtml(row.label) + '</span><b>' + escapeHtml(row.value) + '</b></div>'
+  ).join('');
+  const note = model.note ? '<p class="preview-note">' + escapeHtml(model.note) + '</p>' : '';
+  return rows + note;
 }
 
 function p2pPlaceToast(result) {
@@ -133,18 +156,30 @@ function p2pPlaceToast(result) {
   return 'Заявка создана.';
 }
 
+function p2pOfferLine(name, best) {
+  if (!best) return '<b>' + escapeHtml(name) + '</b>: нет предложений';
+  return '<b>' + escapeHtml(name) + '</b>: до ' + fmtP2P(best.available) + ' · ' + Number(best.odds).toFixed(2);
+}
+
 async function hydrateP2P(card) {
   const root = card.querySelector('.p2p-book');
   if (!root) return;
   const data = await api('/markets/' + card.dataset.id + '/orderbook');
   const names = [...card.querySelector('.p2p-side').options].map(o=>o.textContent);
-  root.innerHTML = (data.forming ? '<p>Рынок формируется из заявок игроков · сделок ещё нет</p>' :
-    '<p>Последняя сделка: ' + data.last_prices.map((p,i)=>escapeHtml(names[i])+' @'+(1/p).toFixed(2)).join(' · ')+'</p>') +
-    '<p>Предложения других игроков. Свою заявку принять нельзя.</p>' + names.map((name,i)=>{
-      const best = data.sides[i][0];
-      return `<p><b>${escapeHtml(name)}</b>: ${best ? 'доступно до '+fmtP2P(best.available)+' @'+best.odds.toFixed(2) : 'встречных предложений пока нет'}<br>Заявок на исход: ${fmtP2P(data.queued[i])}</p>`;
-    }).join('') + '<details><summary>Все предложения</summary>' +
-    names.map((name,i)=>'<p>'+escapeHtml(name)+': '+(data.sides[i].map(x=>'@'+x.odds.toFixed(2)+' — '+fmtP2P(x.available)).join('<br>') || 'нет заявок')+'</p>').join('')+'</details>';
+  const compact = names.map((name, i) => {
+    const best = data.sides[i][0];
+    return '<p class="offer-line">' + p2pOfferLine(name, best) + '</p>';
+  }).join('');
+  const head = data.forming
+    ? '<p>Сделок ещё нет — рынок собирается из заявок игроков.</p>'
+    : (data.last_prices
+      ? '<p>Последняя сделка: ' + data.last_prices.map((p,i)=>escapeHtml(names[i])+' · '+(1/p).toFixed(2)).join(' · ')+'</p>'
+      : '');
+  root.innerHTML = head + compact;
+  const depth = card.querySelector('.p2p-book-full');
+  if (depth) {
+    depth.innerHTML = names.map((name,i)=>'<p>'+escapeHtml(name)+': '+(data.sides[i].map(x=>'· '+x.odds.toFixed(2)+' — '+fmtP2P(x.available)).join('<br>') || 'нет заявок')+'</p>').join('');
+  }
   if (me) await p2pQuote(card);
 }
 
@@ -183,8 +218,9 @@ async function p2pQuote(card) {
     const payload = {outcome: terms.outcome, money: terms.money, odds: terms.odds};
     const data = await api('/markets/'+card.dataset.id+'/orders/quote', {method:'POST', body:JSON.stringify(payload)});
     if (version !== card.quoteVersion || !me || authBlocked) return;
-    const requested = data.requested, available = data.available;
-    preview.innerHTML = p2pPreviewLines(data, terms, me.balance).map(line => '<p>'+escapeHtml(line)+'</p>').join('');
+    const available = data.available;
+    preview.classList.remove('preview-error');
+    preview.innerHTML = p2pPreviewHtml(data, terms, me.balance);
     if (available && available.matched) {
       card.availableQuote = {terms: JSON.stringify(payload),
                              odds: Math.min(10000, Math.floor(available.worst_odds*1e6)/1e6)};
@@ -223,19 +259,102 @@ async function p2pPlace(card, kind) {
 }
 
 function orderStatusText(o) {
-  if (o.status === 'open' && o.filled > 0 && o.remaining > 0) return 'Частично исполнена; остаток ожидает';
+  if (o.status === 'open' && Number(o.filled) > 0 && Number(o.remaining) > 0) return 'Частично исполнена';
   if (o.status === 'open') return 'Ожидает контрагента';
-  if (o.status === 'filled') return 'Полностью исполнена';
+  if (o.status === 'filled') return 'Исполнена';
   if (o.status === 'cancelled') return 'Отменена';
-  if (o.status === 'expired') return 'Приём заявок завершён';
+  if (o.status === 'expired') return 'Приём завершён';
   return o.status;
 }
 
+function orderStatusKey(o) {
+  const text = orderStatusText(o);
+  if (text === 'Ожидает контрагента') return 'wait';
+  if (text === 'Частично исполнена') return 'open';
+  if (text === 'Исполнена') return 'resolved';
+  if (text === 'Отменена') return 'cancelled';
+  if (text === 'Приём завершён') return 'closed';
+  return 'closed';
+}
+
+function groupOrdersByEvent(orders) {
+  const groups = [];
+  const index = {};
+  (orders || []).forEach(order => {
+    const id = order.market_id;
+    if (index[id] == null) {
+      index[id] = groups.length;
+      groups.push({
+        market_id: id,
+        question: order.question || ('Событие #' + id),
+        orders: []
+      });
+    }
+    groups[index[id]].orders.push(order);
+  });
+  return groups;
+}
+
 function orderCard(o) {
-  return `<div class="card" data-open-market="${o.market_id}"><b>${escapeHtml(o.question || ("Событие #"+o.market_id))} · ${escapeHtml(o.outcome_name || ("исход "+(o.outcome+1)))} @${o.odds.toFixed(2)}</b>
-    <p>Исполнено ${fmtP2P(o.filled)} · в резерве ${fmtP2P(o.remaining)} · возвращено ${fmtP2P(o.refunded)}</p>
-    <p class="muted">${escapeHtml(orderStatusText(o))}</p>
-    ${o.status === 'open' ? `<button class="ghost" data-cancel-order="${o.id}">Отменить остаток</button>` : ''}</div>`;
+  const open = o.status === 'open';
+  return `<div class="card order-card" data-open-market="${o.market_id}">
+    <div class="kind-tag">Заявка</div>
+    <p class="order-outcome">${escapeHtml(o.outcome_name || ('исход ' + (Number(o.outcome) + 1)))} · коэффициент ${Number(o.odds).toFixed(2)}</p>
+    <dl class="money-list">
+      <dt>Исходная сумма</dt><dd>${fmtP2P(o.amount)}</dd>
+      <dt>Исполнено</dt><dd>${fmtP2P(o.filled)}</dd>
+      <dt>В резерве</dt><dd>${fmtP2P(o.remaining)}</dd>
+      <dt>Возвращено</dt><dd>${fmtP2P(o.refunded)}</dd>
+    </dl>
+    <span class="status-pill status-${orderStatusKey(o)}">${escapeHtml(orderStatusText(o))}</span>
+    ${open ? `<button class="ghost" data-cancel-order="${o.id}">Отменить остаток</button>
+    <p class="muted cancel-hint">Остаток вернётся на доступный баланс.</p>` : ''}
+  </div>`;
+}
+
+function renderMineOrders(orders) {
+  if (!orders || !orders.length) return '<div class="empty-state">Активных заявок пока нет.</div>';
+  return groupOrdersByEvent(orders).map(group =>
+    `<section class="mine-group">
+      <h3 class="mine-group-title">${escapeHtml(group.question)}</h3>
+      ${group.orders.map(orderCard).join('')}
+    </section>`
+  ).join('');
+}
+
+function p2pPositionParts(pos) {
+  const market = pos.market || {};
+  const names = (typeof marketOutcomes === 'function') ? marketOutcomes(market) : (market.outcomes || ['Да', 'Нет']);
+  const shares = pos.shares && pos.shares.length ? pos.shares : [pos.shares_yes || 0, pos.shares_no || 0];
+  const costs = pos.costs && pos.costs.length ? pos.costs : [pos.cost_yes || 0, pos.cost_no || 0];
+  const parts = [];
+  for (let i = 0; i < names.length; i++) {
+    const staked = Number(costs[i] || 0);
+    if (staked <= 0) continue;
+    const payout = Number(shares[i] || 0);
+    parts.push({
+      outcome: names[i],
+      staked,
+      avgOdds: payout / staked,
+      payout
+    });
+  }
+  return parts;
+}
+
+function p2pPositionHtml(pos) {
+  const parts = p2pPositionParts(pos);
+  if (!parts.length) return '<p class="muted">Исполненных ставок по этому событию нет.</p>';
+  return parts.map(part =>
+    `<div class="pos-line">
+      <div class="pos-outcome">${escapeHtml(part.outcome)}</div>
+      <dl class="money-list">
+        <dt>Поставлено</dt><dd>${fmtP2P(part.staked)}</dd>
+        <dt>Средний коэффициент</dt><dd>${Number(part.avgOdds).toFixed(2)}</dd>
+        <dt>Возможная выплата</dt><dd>${fmtP2P(part.payout)}</dd>
+      </dl>
+    </div>`
+  ).join('');
 }
 
 async function loadModeration() {

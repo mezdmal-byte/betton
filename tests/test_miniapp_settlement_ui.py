@@ -173,6 +173,9 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "Проигрыш" in data["loss"]
     assert "Выигрыш получен" not in data["loss"]
     assert "Кто победит?" in data["loss"]
+    assert "-15.00 TON" in data["loss"]
+    assert "Ваш исход" in data["loss"]
+    assert "Победивший исход" in data["loss"]
     assert "залог 50.00 TON" in data["creator"]
     assert "возврат остатка 12.50 TON" in data["creator"]
     assert "Отменить событие" in data["adminOpen"]
@@ -185,9 +188,11 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "Рассчитать:" not in data["cancelledCard"]
     assert "Отменить событие" not in data["cancelledCard"]
     assert "Забрать выигрыш" not in data["cancelledCard"]
-    assert "возврат исполненной ставки 41.67 TON" in data["refund"]
-    assert "освобождённый остаток заявки 58.33 TON" in data["refund"]
-    assert "всего возвращено 100.00 TON" in data["refund"]
+    assert "Событие отменено · средства возвращены" in data["refund"]
+    assert "Проигрыш" not in data["refund"]
+    assert "Возврат 100.00 TON" in data["refund"]
+    assert "41.67 TON" in data["refund"]
+    assert "58.33 TON" in data["refund"]
     assert "Все ставки по событию будут возвращены. Чаевые не удерживаются" in data["confirmText"]
     assert "Причина: Источник не подтвердился" in data["confirmText"]
     assert data["emptyReason"] == "Укажите причину отмены"
@@ -201,14 +206,22 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "Нет встречных заявок" not in data["feedLive"]
     assert "Приём завершён" in data["feedClosed"]
     assert "nano" not in data["feedLive"].lower()
-    assert any("ждать встречного предложения" in line for line in data["previewWait"])
-    assert any("не обещание сделки" in line for line in data["previewWait"])
-    assert any("Сейчас доступно" in line and "Остаток" in line for line in data["previewPartial"])
+    assert any("Сейчас встречного предложения нет" in line for line in data["previewWait"])
+    assert any("ждать другого пользователя" in line for line in data["previewWait"])
+    assert any("Ваша сумма" in line for line in data["previewWait"])
+    assert any("Исполнится сейчас" in line for line in data["previewWait"])
+    assert any("Останется заявкой" in line for line in data["previewPartial"])
+    assert any("Исполнится сейчас" in line for line in data["previewPartial"])
+    assert any("исполненной части" in line or "две части" in line for line in data["previewPartial"])
     assert "частично исполнена" in data["placePartial"].lower()
     assert "полностью исполнена" in data["placeFilled"].lower()
     assert "nano" not in data["placePartial"].lower()
     assert "Оставить заявку" in data["adminOpen"]
     assert "side-pick" in data["adminOpen"]
+    assert "Ваша заявка" in data["adminOpen"]
+    assert "Текущие предложения" in data["adminOpen"]
+    assert "Все предложения" in data["adminOpen"]
+    assert "Ваша заявка" not in data["cancelledCard"]
 
 
 @pytest.mark.parametrize("unauthorized", [None, "/users/1", "/users/1/positions", "/users/1/settlements"])
@@ -275,6 +288,8 @@ async function fetch(path) {
     assert.equal((results.match(/data-act="claim"/g) || []).length, 1);
     assert.ok(results.includes('Выигрыш уже получен'));
     assert.ok(results.includes('Проигрыш'));
+    assert.ok(document.getElementById('mine-orders').innerHTML.includes('Активных заявок пока нет'));
+    assert.ok(document.getElementById('mine-bets').innerHTML.includes('У вас пока нет исполненных ставок'));
     assert.equal(document.getElementById('mine-bets').innerHTML.includes('legacy-'), false);
   }
 })().catch(error => {console.error(error); process.exitCode = 1});
