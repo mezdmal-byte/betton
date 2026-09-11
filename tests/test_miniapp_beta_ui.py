@@ -14,16 +14,19 @@ def test_beta_visual_language_and_shell():
     html = HTML.read_text(encoding="utf-8")
     css = html[html.index("<style>") : html.index("</style>")]
     assert "--bg: #FFFFFF" in css
-    assert "--surface: #F4F5F7" in css
-    assert "--text: #2F2F2F" in css
+    assert "--surface: #F7F8FA" in css
+    assert "--text: #171717" in css
     assert "--yes: #20A39E" in css
     assert "--no: #EF5B5B" in css
-    assert "--brand: #23001E" in css
+    assert "--brand: #171717" in css
+    assert "#23001E" not in css
     assert "#d4af37" not in css.lower()
     assert "linear-gradient" not in css
     assert 'data-tab="feed">Лента</button>' in html
     assert 'data-tab="create">Создать</button>' in html
     assert 'data-tab="mine">Мои</button>' in html
+    assert 'data-tab="moderation" hidden>Проверка</button>' in html
+    assert 'data-tab="moderation" hidden>Модерация</button>' not in html
     assert 'data-panel="event"' in html
     assert 'id="event-root"' in html
     assert "Доступно" in html
@@ -52,12 +55,16 @@ def test_feed_and_event_keep_existing_actions():
 
 def test_p2p_feed_does_not_infer_empty_book_from_zero_pot():
     html = HTML.read_text(encoding="utf-8")
-    body = html[html.index("function feedSituation") : html.index("function feedCard")]
+    body = html[html.index("function feedSituation") : html.index("async function loadMarkets")]
     assert "Нет встречных заявок" not in body
-    assert "Сделок пока нет" in body
     assert "Объём сделок" in body
-    assert "откройте событие" in body
-    assert "orderbook" not in body
+    assert "function feedBestOffersHtml" in body
+    assert "Нет предложений" in body
+    assert "best_offers" in body
+    assert "/orderbook" not in body
+    load = html[html.index("async function loadMarkets") : html.index("async function loadMine")]
+    assert "/markets" in load
+    assert "orderbook" not in load
 
 
 def _browser_bin():

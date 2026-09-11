@@ -14,7 +14,7 @@
 | Sprint 1 Mini App code | `05c9b44734040b7cde6486ae6c539b6fe174454d` |
 | Точка ветки до UI | `88da7c7ed3be210d2bb2e204b876f51449096b56` (HANDOFF) |
 | Основа integer-money | `6b0bc658ee20c1293eeeb74469f5adbb935fb80b` |
-| PR №11 | [draft / open](https://github.com/mezdmal-byte/betton/pull/11) `feature/beta-ui` → `feature/integer-money`, **не слит**. Title: Beta UI Sprint 1–2 |
+| PR №11 | [draft / open](https://github.com/mezdmal-byte/betton/pull/11) `feature/beta-ui` → `feature/integer-money`, **не слит**. Title: Beta UI Sprint 1–2. Final Live UI Polish — SHA после коммита этого sprint. |
 | PR №10 | [draft / open](https://github.com/mezdmal-byte/betton/pull/10) `feature/integer-money`, **не слит** |
 | `origin/main` | `23fa84d417e21cbb954cb6ebcb7087ac1910cb36` (PR №9). **Не менять.** |
 | Production Render | `srv-daffpoon74is739r4csg`, Free, auto-deploy с `main`. **Не деплоить и не перезапускать.** |
@@ -35,7 +35,7 @@ integer-money уже внутри ветки. Production storage migration — *
 
 P2P-позиция: исход, поставлено, средний коэффициент, возможная выплата, статус события — без внутренних shares. Legacy LMSR по-прежнему показывает доли.
 
-История: вопрос, выбранный исход, победивший исход, сумма ставок, выплата, комиссия/чаевые при наличии, итог `+X TON` / `-X TON` / `Возврат X TON`. Отмена визуально отделена от проигрыша: «Событие отменено · средства возвращены».
+История: вопрос, выбранный исход, победивший исход, сумма ставок, выплата, **Сервисный сбор** при наличии, итог `+X TON` / `-X TON` / `Возврат X TON`. Отмена визуально отделена от проигрыша: «Событие отменено · средства возвращены».
 
 Страница события: статус → вопрос → срок → исходы → компактные предложения → форма заявки → preview → действия. Подробный стакан в `<details>`. Preview выделяет сумму, исполнение сейчас, остаток заявки, коэффициент и выплату только по исполненной части. Если встречного объёма нет — это не ошибка.
 
@@ -92,6 +92,43 @@ GitHub CI до Sprint 3 (job sqlite на `f933e1d`): **161 passed**. Runner imag
 
 GitHub CI после Sprint 3 (job sqlite): **164 passed**. Job `postgres` (журнал + integer money + migration + E2E): **37 passed**.
 
+## Final Live UI Polish
+
+Закрытие UX-дефектов живого Telegram WebView. Экономика, matching, integer nanoTON, 1% settlement, auth, migrations, production infra **не менялись**.
+
+### Live issues addressed
+
+- Палитра graphite + teal: фон `#FFFFFF`, surface `#F7F8FA`, текст `#171717`, YES `#20A39E`, NO `#EF5B5B`. Фиолетовый `#23001E` убран. Логотип: **Bet** graphite, **TON** teal. Без градиентов, золота и казино-эстетики.
+- Меньше вложенных рамок: внутренние блоки отделяются surface/padding.
+- **Лента показывает best odds** из `GET /markets` (`best_offers`), без N+1 `/orderbook` на карточку. Нет предложения → «Нет предложений», коэффициент не выдумывается. Closed/resolved/cancelled → `best_offers: null`.
+- Публичный стакан сохранён. Authenticated `GET /markets/{id}/orderbook` дополнительно отдаёт `available_to_me` без заявок текущего пользователя. UI различает «лучшее предложение рынка» и «доступно вам сейчас». «Принять доступное» не включается, если ликвидность только своя. Self-match по-прежнему запрещён.
+- Top-of-book на странице события кликабелен: выбирает исход, подставляет коэффициент, делает preview, заявку не отправляет.
+- Компактный мини-маркет предложений; полный стакан в `<details>` с tabular numbers.
+- CTA «Оставить заявку» — graphite. YES/NO — tinted surface + accent border/text.
+- Нижняя навигация: **Проверка** вместо «Модерация», одна строка (`nowrap`) на 320–430 px.
+- Telegram `BackButton`: `show` на событии, `hide` при возврате в ленту/раздел, `onClick` = тот же `closeEvent`, что «← К ленте». Handler регистрируется один раз.
+- Даты в UI — локальный timezone браузера/WebView, locale `ru-RU`. Backend timestamps без изменений.
+- Пользовательские тексты: обязательный **сервисный сбор 1% с чистой прибыли победителя**, не «чаевые». Пример 100 → 180, прибыль 80, сбор 0.80. Ledger `op_type` не переименовывался.
+- `bot/main.py` `/start` и `/help`: P2P рынок, нет LMSR как текущей механики, нет гарантированной ликвидности.
+- «Мои»: иерархия Доступно / В резерве / Исполнено / Возвращено, tabular numbers.
+
+### Tests
+
+- `tests/test_best_offers.py` — empty / one-side / two-side / closed+resolved; list не вызывает `book()`; own order не executable для того же пользователя.
+- `tests/test_live_polish_ui.py` — feed best odds, prefill, local dates, BackButton lifecycle, «Проверка», fee copy без «чаевые».
+- `tests/test_bot_texts.py` — START/HELP не обещают LMSR-ликвидность.
+- Существующие Sprint 1–3 UI и E2E обновлены под новые тексты.
+
+Локально, Windows, SQLite tempfile: `pytest tests --ignore=tests/test_p2p_journal_postgres.py` → **168 passed, 4 skipped** (те же 4 `loadMine` без Node.js).
+
+GitHub CI после push: sqlite + postgres jobs на PR №11.
+
+### Remaining live limitation
+
+- Второй реальный Telegram-аккаунт для живого E2E matching всё ещё pending.
+- Persistent production storage всё ещё **DEFERRED**.
+- Merge PR №10 / №11, push `main`, deploy/restart Render — запрещены.
+
 ## Страницы
 
 - Лента (`#markets`) — поиск и компактные фильтры
@@ -104,7 +141,7 @@ GitHub CI после Sprint 3 (job sqlite): **164 passed**. Job `postgres` (жу
 
 Без новых сущностей.
 
-Публичные: `GET /markets`, `GET /markets/{id}`, `GET /markets/{id}/orderbook`.
+Публичные: `GET /markets` (P2P: `best_offers` top-of-book, без N+1), `GET /markets/{id}`, `GET /markets/{id}/orderbook` (публичный агрегат; при Telegram-сессии ещё `available_to_me`).
 
 Auth: `POST /auth/telegram`, `GET /users/{id}`.
 
@@ -114,27 +151,26 @@ LMSR: `POST /markets/{id}/quote`, `POST /markets/{id}/buy`, `POST /markets/{id}/
 
 Прочее: `POST /markets`, `GET /users/{id}/markets|positions|settlements`, админ `GET /moderation/markets`, `POST /markets/{id}/approve|reject|close|resolve|cancel|collect-residual`.
 
-Лента **не** вызывает orderbook на каждую карточку. `pot` — объём уже исполненных сделок, не текущая ликвидность стакана. Живой стакан только на странице события.
+Лента **не** вызывает orderbook на каждую карточку: `best_offers` считаются одним запросом на сервере из той же агрегации стакана. `pot` — объём уже исполненных сделок. Полный стакан — на странице события.
 
 После внешнего ревью Sprint 1: лента больше не выводит «Нет встречных заявок» из `pot == 0`; после P2P-заявки сначала `GET /users/{id}`, затем перерисовка события и новый quote; Render service ID возвращён к `srv-daffpoon74is739r4csg`; PR №11 переведён в Draft.
 
 ## Известные UX / API ограничения
 
-- `GET /markets` не отдаёт стакан; карточка ленты не показывает лучшую цену P2P (её нет в модели списка). Не выдумываем «текущий коэффициент».
 - `GET /markets/{id}` → 404 для pending/rejected; автор открывает такие события из кэша «Мои».
 - Quote P2P требует Telegram-сессию; в обычном браузере форма видна, расчёт — после входа.
-- Список не содержит queued volume; на ленте нельзя честно писать «нет встречных заявок» при `pot == 0`.
 - Дата в форме создания зависит от локали браузера (`datetime-local`).
 - Поиск ленты только клиентский по уже загруженному списку (категория/статус по-прежнему с API).
 - Заявки в «Мои» группируются визуально, сущности не сливаются: исполненная ставка остаётся в позициях, итог — в истории.
 - Workflow SQLite не пинит Node: JS-тесты идут, пока `ubuntu-latest` отдаёт `node`. Для гарантии нужен `actions/setup-node`.
 - Sprint 3 E2E — TestClient + JS-рендер payload, не живая Telegram Mini App-сессия.
+- Живой E2E со вторым реальным Telegram-аккаунтом всё ещё pending.
 
 ## Следующий этап (не начинать без задачи)
 
-- Прогон в живой Telegram-сессии: partial/full/cancel/resolve/void на реальных котировках.
-- Если понадобится лучшая цена на карточке ленты — сначала расширить `GET /markets`, не фейковать коэффициент.
+- Второй реальный Telegram-аккаунт: partial/full matching в живом WebView.
 - По желанию: `actions/setup-node` в sqlite job, чтобы JS не зависел от image.
+- Persistent production storage — DEFERRED.
 - Не merge PR №10 / №11, не деплой Render.
 
 ## Запрещено до отдельного разрешения

@@ -8,19 +8,23 @@
   <style>
     :root {
       --bg: #FFFFFF;
-      --surface: #F4F5F7;
-      --text: #2F2F2F;
+      --surface: #F7F8FA;
+      --text: #171717;
       --muted: #6B7280;
       --yes: #20A39E;
       --no: #EF5B5B;
-      --brand: #23001E;
+      --brand: #171717;
+      --yes-bg: #F2FBFA;
+      --no-bg: #FDF6F6;
+      --nav-active-bg: #ECF8F7;
+      --nav-active-fg: #0F766E;
       --line: #E5E7EB;
-      --chip: #F4F5F7;
+      --chip: #F7F8FA;
       --input-bg: #FFFFFF;
-      --input-fg: #2F2F2F;
+      --input-fg: #171717;
       --input-ph: #6B7280;
-      --nav-h: 72px;
-      --shadow: 0 1px 2px rgba(35, 0, 30, .04);
+      --nav-h: 64px;
+      --shadow: none;
     }
     * { box-sizing: border-box; }
     html { background: var(--surface); }
@@ -51,10 +55,11 @@
     .brand {
       margin: 0;
       font-size: 1.05rem;
-      letter-spacing: .12em;
+      letter-spacing: .04em;
       font-weight: 800;
       color: var(--brand);
     }
+    .brand-ton { color: var(--yes); }
     .who {
       color: var(--muted);
       font-size: .75rem;
@@ -78,6 +83,7 @@
     .balance { color: var(--brand); font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
     .tabs {
       display: flex;
+      flex-wrap: nowrap;
       gap: 0;
       position: fixed;
       left: 50%;
@@ -86,20 +92,23 @@
       bottom: var(--kb, 0px);
       background: var(--bg);
       border-top: 1px solid var(--line);
-      padding: 4px 8px calc(6px + env(safe-area-inset-bottom));
+      padding: 4px 4px calc(6px + env(safe-area-inset-bottom));
       z-index: 8;
     }
     .tab {
-      flex: 1;
-      min-height: 52px;
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 44px;
       border: 0;
       background: transparent;
       color: var(--muted);
-      border-radius: 12px;
+      border-radius: 10px;
       font-weight: 700;
       font-size: .8rem;
+      white-space: nowrap;
+      padding: 0 4px;
     }
-    .tab.active { color: var(--brand); background: var(--surface); }
+    .tab.active { color: var(--nav-active-fg); background: var(--nav-active-bg); }
     main { padding: 8px 16px 36px; }
     .card {
       background: var(--bg);
@@ -108,7 +117,6 @@
       padding: 14px;
       margin: 10px 0;
       color: var(--text);
-      box-shadow: var(--shadow);
     }
     .feed-card { cursor: pointer; }
     .feed-card:active { background: var(--surface); }
@@ -133,12 +141,11 @@
       font-size: .9rem;
       padding: 8px 6px;
       border-radius: 12px;
-      border: 1px solid var(--line);
       background: var(--surface);
       overflow-wrap: anywhere;
     }
-    .out.yes-acc { color: var(--yes); border-color: rgba(32, 163, 158, .28); }
-    .out.no-acc { color: var(--no); border-color: rgba(239, 91, 91, .28); }
+    .out.yes-acc { color: var(--yes); background: var(--yes-bg); }
+    .out.no-acc { color: var(--no); background: var(--no-bg); }
     .out-vs { color: var(--muted); font-size: .72rem; font-weight: 700; }
     .situation { margin: 0; }
     .question {
@@ -152,7 +159,6 @@
     .meta { color: var(--muted); font-size: .8rem; margin: 8px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; }
     .pill {
       background: var(--surface);
-      border: 1px solid var(--line);
       border-radius: 999px;
       padding: 3px 8px;
     }
@@ -164,13 +170,12 @@
       font-weight: 700;
       background: var(--surface);
       color: var(--muted);
-      border: 1px solid var(--line);
     }
-    .status-open { color: var(--yes); border-color: rgba(32, 163, 158, .3); background: #f3fbfa; }
-    .status-wait { color: #8a6d3b; border-color: #f1e4c7; background: #fbf8f1; }
+    .status-open { color: var(--yes); background: var(--yes-bg); }
+    .status-wait { color: #8a6d3b; background: #fbf8f1; }
     .status-closed { color: var(--muted); }
-    .status-resolved { color: var(--brand); border-color: #d9d0d7; background: #f7f4f6; }
-    .status-cancelled, .status-rejected { color: var(--no); border-color: rgba(239, 91, 91, .28); background: #fdf6f6; }
+    .status-resolved { color: var(--text); background: var(--surface); }
+    .status-cancelled, .status-rejected { color: var(--no); background: var(--no-bg); }
     label { display: block; color: var(--muted); font-size: .8rem; margin: 8px 0 4px; }
     input, select, textarea {
       width: 100%;
@@ -204,14 +209,13 @@
     .row { display: flex; gap: 8px; margin-top: 10px; }
     .row > * { flex: 1; min-width: 0; }
     .gold { background: var(--brand); color: #fff; }
-    .yes { background: var(--yes); color: #fff; }
-    .no { background: var(--no); color: #fff; }
+    .yes { background: var(--yes-bg); color: var(--yes); border: 1px solid var(--yes); }
+    .no { background: var(--no-bg); color: var(--no); border: 1px solid var(--no); }
     .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
     .muted { color: var(--muted); font-size: .85rem; line-height: 1.45; }
     .err { color: var(--no); font-size: .85rem; min-height: 0; margin: 0 0 8px; }
     .err:not(:empty) {
-      background: #fdf6f6;
-      border: 1px solid #f5c6c6;
+      background: var(--no-bg);
       border-radius: 12px;
       padding: 10px 12px;
     }
@@ -227,10 +231,9 @@
       border-radius: 14px;
       padding: 10px 8px;
       text-align: center;
-      border: 1px solid var(--line);
       background: var(--surface);
     }
-    .odd b { display: block; font-size: 1.35rem; letter-spacing: .02em; }
+    .odd b { display: block; font-size: 1.35rem; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
     .odd .kname { font-size: .85rem; font-weight: 800; overflow-wrap: anywhere; }
     .odd .pct { color: var(--muted); font-size: .75rem; margin-top: 2px; }
     .c0 .kname, .c0 b { color: var(--yes); }
@@ -238,10 +241,9 @@
     .c2 .kname, .c2 b { color: var(--brand); }
     .preview { color: var(--muted); font-size: .8rem; min-height: 2.4em; margin-top: 8px; line-height: 1.35; }
     .p2p-preview {
-      background: var(--surface);
-      border: 1px solid var(--line);
+      background: var(--bg);
       border-radius: 12px;
-      padding: 12px;
+      padding: 12px 0 4px;
       margin-top: 10px;
       color: var(--text);
       font-size: .85rem;
@@ -279,13 +281,13 @@
     .side-pick {
       min-height: 48px;
       border: 1px solid var(--line);
-      background: var(--surface);
+      background: var(--bg);
       color: var(--text);
       font-weight: 800;
       overflow-wrap: anywhere;
     }
-    .side-pick.on-yes { background: var(--yes); color: #fff; border-color: var(--yes); }
-    .side-pick.on-no { background: var(--no); color: #fff; border-color: var(--no); }
+    .side-pick.on-yes { background: var(--yes-bg); color: var(--yes); border-color: var(--yes); }
+    .side-pick.on-no { background: var(--no-bg); color: var(--no); border-color: var(--no); }
     .p2p-side { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     .p2p-form { position: relative; }
     .event-card > .status-pill { margin-bottom: 8px; }
@@ -309,16 +311,90 @@
     }
     .event-bet {
       background: var(--surface);
-      border: 1px solid var(--line);
       border-radius: 16px;
       padding: 14px;
       margin: 12px 0 10px;
     }
-    .event-bet-title { margin: 0 0 8px; font-weight: 800; color: var(--brand); }
+    .event-bet-title { margin: 0 0 8px; font-weight: 800; color: var(--text); }
     .event-bet .gold { min-height: 48px; }
     .p2p-depth { margin-top: 4px; font-size: .82rem; }
     .p2p-book { font-size: .85rem; margin: 0; }
     .p2p-book p, .offer-line { margin: 4px 0; }
+    .best-board {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 8px 0 4px;
+    }
+    .best-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      text-align: center;
+      gap: 2px;
+      min-height: 72px;
+      padding: 10px 8px;
+      border-radius: 14px;
+      background: var(--surface);
+      border: 1px solid transparent;
+      color: var(--text);
+      font-weight: 700;
+    }
+    .best-cell.yes-acc { background: var(--yes-bg); color: var(--yes); }
+    .best-cell.no-acc { background: var(--no-bg); color: var(--no); }
+    .best-cell[data-prefill-odds] { cursor: pointer; border-color: transparent; }
+    .best-cell[data-prefill-odds].yes-acc { border-color: rgba(32, 163, 158, .35); }
+    .best-cell[data-prefill-odds].no-acc { border-color: rgba(239, 91, 91, .35); }
+    .best-name { font-size: .8rem; font-weight: 800; }
+    .best-odds {
+      font-size: 1.45rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+    }
+    .best-vol { font-size: .72rem; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .best-you { font-size: .68rem; color: var(--muted); font-weight: 600; margin-top: 4px; line-height: 1.3; }
+    .feed-odds {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0 8px;
+    }
+    .feed-odd {
+      text-align: center;
+      padding: 10px 6px;
+      border-radius: 14px;
+      background: var(--surface);
+    }
+    .feed-odd.yes-acc { background: var(--yes-bg); color: var(--yes); }
+    .feed-odd.no-acc { background: var(--no-bg); color: var(--no); }
+    .feed-odd-name { display: block; font-size: .78rem; font-weight: 800; }
+    .feed-odd-k {
+      display: block;
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+      margin: 2px 0;
+    }
+    .feed-odd-vol { display: block; font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .book-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+      margin: 4px 0 10px;
+    }
+    .book-table th {
+      text-align: left;
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--muted);
+      padding: 4px 0;
+    }
+    .book-table td { padding: 4px 0; font-size: .85rem; color: var(--text); }
+    .book-table td.num, .book-table th:last-child, .book-table td:last-child { text-align: right; }
+    .depth-name { font-weight: 800; color: var(--text); margin: 8px 0 0; }
+    .p2p-odds, .p2p-money, .amount, .balance { font-variant-numeric: tabular-nums; }
     .empty-state, .loading-state {
       text-align: center;
       padding: 36px 16px;
@@ -339,9 +415,8 @@
       transform: translateX(-50%);
       width: calc(min(480px, 100%) - 32px);
       bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom));
-      background: #ecf8f7;
-      color: #14635f;
-      border: 1px solid #b7e3e0;
+      background: var(--yes-bg);
+      color: var(--nav-active-fg);
       border-radius: 12px;
       padding: 12px 14px;
       font-weight: 700;
@@ -350,7 +425,7 @@
       overflow-wrap: anywhere;
     }
     .toast.show { display: block; }
-    .toast.bad { background: #fdf2f2; color: var(--no); border-color: #f5c6c6; }
+    .toast.bad { background: var(--no-bg); color: var(--no); }
     h2 { font-size: .95rem; margin: 18px 0 0; color: var(--brand); }
     .mine-lede { margin: 8px 0 4px; }
     .mine-group { margin: 8px 0 16px; }
@@ -378,6 +453,7 @@
       font-size: .85rem;
     }
     .money-list dt { color: var(--muted); min-width: 0; }
+    .money-list dt.lead { font-weight: 700; color: var(--text); }
     .money-list dd {
       margin: 0;
       font-weight: 700;
@@ -385,6 +461,7 @@
       text-align: right;
       min-width: 0;
     }
+    .money-list dd.lead { font-size: 1.05rem; }
     .order-card .ghost, .cancel-hint { width: 100%; margin-top: 8px; }
     .pos-line {
       background: var(--surface);
@@ -392,7 +469,7 @@
       padding: 10px;
       margin-top: 8px;
     }
-    .history-void { border-color: #f1e4c7; background: #fbf8f1; }
+    .history-void { background: #fbf8f1; }
     .void-banner { font-weight: 700; color: #8a6d3b; margin: 8px 0; }
     .history-result {
       font-size: 1.15rem;
@@ -428,7 +505,7 @@
 <body>
   <header>
     <div>
-      <h1 class="brand">BetTON</h1>
+      <h1 class="brand">Bet<span class="brand-ton">TON</span></h1>
       <div class="who" id="who"></div>
     </div>
     <div class="balance-wrap">
@@ -481,6 +558,8 @@
         <label>Два исхода</label>
         <div id="outcomes-editor"></div>
         <p class="muted">Событие появится в ленте после проверки. Залог не нужен: цену задают заявки игроков, а не букмекер.</p>
+        <p class="muted">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+        <p class="muted">Пример: ставка 100 TON, выплата 180 TON, чистая прибыль 80 TON, сервисный сбор 0.80 TON. Проигравшая ставка не платит дополнительный сбор.</p>
         <label>Конец приёма заявок</label>
         <input id="close-at" type="datetime-local" required/>
         <div class="row">
@@ -490,7 +569,7 @@
     </section>
 
     <section data-panel="mine" hidden>
-      <p class="mine-lede muted">В шапке — доступный баланс. Здесь видно, какие деньги в заявках, какие уже в ставках и чем закончились события.</p>
+      <p class="mine-lede muted">В шапке — <b>доступно</b>. Ниже: что <b>в резерве</b> заявок, что уже <b>исполнено</b> и что <b>возвращено</b>.</p>
       <h2>Мои заявки</h2>
       <div id="mine-orders"><div class="empty-state">Активных заявок пока нет.</div></div>
       <h2>Мои позиции</h2>
@@ -506,7 +585,7 @@
     <button class="tab active" data-tab="feed">Лента</button>
     <button class="tab" data-tab="create">Создать</button>
     <button class="tab" data-tab="mine">Мои</button>
-    <button class="tab" id="moderation-tab" data-tab="moderation" hidden>Модерация</button>
+    <button class="tab" id="moderation-tab" data-tab="moderation" hidden>Проверка</button>
   </nav>
   <div class="toast" id="toast"></div>
 
@@ -602,9 +681,17 @@
       return "Завершено";
     }
 
-    function formatCloseAt(value) {
+    function formatCloseAt(value, now) {
       if (!value) return "";
-      return String(value).replace("T", " ").slice(0, 16) + " UTC";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) {
+        const raw = String(value).replace("T", " ").slice(0, 16);
+        return raw || "";
+      }
+      const ref = now instanceof Date ? now : new Date();
+      const opts = { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" };
+      if (d.getFullYear() !== ref.getFullYear()) opts.year = "numeric";
+      return d.toLocaleString("ru-RU", opts);
     }
 
     function feedStatus(m) {
@@ -630,10 +717,8 @@
         if (m.status === "closed" || (m.status === "open" && !m.accepting_bets)) {
           return "Новые заявки не принимаются";
         }
-        if ((m.pot || 0) > 0) {
-          return "Объём сделок " + fmtTon(m.pot) + " · откройте событие для текущих предложений";
-        }
-        return "Сделок пока нет · откройте событие, чтобы увидеть текущие предложения";
+        if ((m.pot || 0) > 0) return "Объём сделок " + fmtTon(m.pot);
+        return "";
       }
       const prices = marketPrices(m);
       if (m.status === "open" && m.accepting_bets && prices && prices.length) {
@@ -663,6 +748,23 @@
       root.innerHTML = shown.map(m => feedCard(m)).join("");
     }
 
+    function feedBestOffersHtml(m) {
+      if (m.mechanism !== "p2p" || !m.accepting_bets || !Array.isArray(m.best_offers)) return "";
+      const names = marketOutcomes(m);
+      return '<div class="feed-odds">' + [0, 1].map(i => {
+        const off = m.best_offers[i];
+        const name = names[i] || (i === 0 ? "Да" : "Нет");
+        const cls = i === 0 ? "yes-acc" : "no-acc";
+        if (!off) {
+          return '<div class="feed-odd ' + cls + '"><span class="feed-odd-name">' + escapeHtml(name) +
+            '</span><b class="feed-odd-k">—</b><span class="feed-odd-vol">Нет предложений</span></div>';
+        }
+        return '<div class="feed-odd ' + cls + '"><span class="feed-odd-name">' + escapeHtml(name) +
+          '</span><b class="feed-odd-k">' + Number(off.odds).toFixed(2) +
+          '</b><span class="feed-odd-vol">' + escapeHtml(fmtTon(off.available)) + '</span></div>';
+      }).join("") + "</div>";
+    }
+
     function feedCard(m) {
       const names = marketOutcomes(m);
       const st = feedStatus(m);
@@ -670,6 +772,12 @@
       const no = names[1] || "Нет";
       const close = formatCloseAt(m.close_at);
       const situation = feedSituation(m);
+      const oddsHtml = feedBestOffersHtml(m);
+      const pair = oddsHtml || `<div class="outcome-pair">
+            <span class="out yes-acc">${escapeHtml(yes)}</span>
+            <span class="out-vs">или</span>
+            <span class="out no-acc">${escapeHtml(no)}</span>
+          </div>`;
       if (typeof eventCache !== "undefined") eventCache[m.id] = m;
       return `
         <article class="card feed-card" role="button" tabindex="0" data-open-market="${m.id}" data-id="${m.id}" data-status="${m.status}" data-mechanism="${escapeHtml(m.mechanism || "")}">
@@ -678,11 +786,7 @@
             <span class="feed-time">${close ? ("до " + escapeHtml(close)) : ""}</span>
           </div>
           <div class="question">${escapeHtml(m.question)}</div>
-          <div class="outcome-pair">
-            <span class="out yes-acc">${escapeHtml(yes)}</span>
-            <span class="out-vs">или</span>
-            <span class="out no-acc">${escapeHtml(no)}</span>
-          </div>
+          ${pair}
           ${situation ? `<p class="muted situation">${escapeHtml(situation)}</p>` : ""}
         </article>`;
     }
@@ -863,7 +967,7 @@
             </div>` : ""}
           ${canResolve ? `<div class="row" style="flex-wrap:wrap">${resolveBtns}</div>` : ""}
           ${canClaim ? `
-            <p class="muted" style="margin-top:8px">комиссия 1% с прибыли: 75% создателю, 25% платформе</p>
+            <p class="muted" style="margin-top:8px">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
             <div class="row">
               <button class="gold" data-act="claim">Забрать выигрыш</button>
             </div>` : ""}
@@ -871,7 +975,7 @@
             <div class="row">
               <button class="ghost" data-act="residual">Забрать остаток залога</button>
             </div>` : ""}
-          ${resolved && pos && pos.claimed && !isAuto ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+          ${resolved && pos && pos.claimed && !isAuto ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · сервисный сбор " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
         </div>`;
     }
 
@@ -898,12 +1002,12 @@
           </div>
           ${lines}
           ${canClaim ? `
-            <p class="muted">комиссия 1% с прибыли: 75% создателю, 25% платформе</p>
+            <p class="muted">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
             <div class="row">
               <button class="gold" data-act="claim">Забрать выигрыш</button>
             </div>` : ""}
           ${lost ? `<p class="muted">Проигрыш</p>` : ""}
-          ${resolved && !lost && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · комиссия " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+          ${resolved && !lost && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · сервисный сбор " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
         </div>`;
     }
 
@@ -920,7 +1024,7 @@
     function settlementCard(s) {
       const voided = s.settlement_kind === "void";
       const loss = !voided && !!s.is_loss;
-      const when = s.resolved_at ? escapeHtml(String(s.resolved_at).replace("T", " ").slice(0, 16)) + " UTC" : "";
+      const when = s.resolved_at ? escapeHtml(formatCloseAt(s.resolved_at)) : "";
       const chosen = (s.chosen_outcomes && s.chosen_outcomes.length)
         ? s.chosen_outcomes.map(escapeHtml).join(", ")
         : "нет ставок";
@@ -938,7 +1042,7 @@
           <p class="muted">Ваш исход: ${chosen}</p>
           <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}</p>
           <p class="muted">исполненные ставки ${fmtTon(s.payout)} · остаток заявки ${fmtTon(s.residual_returned)}</p>
-          ${tip > 0 ? `<p class="muted">комиссия / чаевые ${fmtTon(tip)}</p>` : ""}
+          ${tip > 0 ? `<p class="muted">Сервисный сбор ${fmtTon(tip)}</p>` : ""}
           <p class="history-result void">${escapeHtml(result.text)}</p>
         </div>`;
       }
@@ -953,7 +1057,7 @@
           </div>
           <p>Ваш исход: ${chosen}</p>
           <p>Победивший исход: ${escapeHtml(s.winning_outcome || "")}</p>
-          <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}${tip > 0 ? " · комиссия / чаевые " + fmtTon(tip) : ""}</p>
+          <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}${tip > 0 ? " · Сервисный сбор " + fmtTon(tip) : ""}</p>
           <p class="history-result ${result.cls}">${escapeHtml(result.text)}</p>
           ${creatorBits}
         </div>`;
@@ -1038,14 +1142,17 @@
       quoteTimers[id] = setTimeout(() => previewQuote(card), 220);
     }
 
+    let telegramBackBound = false;
     function setTelegramBack(on) {
       try {
         if (!tg || !tg.BackButton) return;
         if (on) {
+          if (!telegramBackBound) {
+            tg.BackButton.onClick(closeEvent);
+            telegramBackBound = true;
+          }
           tg.BackButton.show();
-          tg.BackButton.onClick(closeEvent);
         } else {
-          tg.BackButton.offClick(closeEvent);
           tg.BackButton.hide();
         }
       } catch (e) { /* браузер без Telegram */ }
@@ -1193,7 +1300,7 @@
         document.getElementById("question").value = "";
         createOutcomes = [{ name: "Да", k: 2 }, { name: "Нет", k: 2 }];
         renderOutcomesEditor();
-        toast("Событие отправлено на модерацию");
+        toast("Событие отправлено на проверку");
         await refreshMe();
         showTab("mine");
       } catch (e) { showError(e.message); }
@@ -1204,12 +1311,27 @@
       if (pick) {
         const card = pick.closest(".card");
         if (!card) return;
-        const select = card.querySelector(".p2p-side");
-        if (select) select.value = pick.dataset.outcome;
-        card.querySelectorAll(".side-pick").forEach(btn => {
-          btn.classList.toggle("on-yes", btn === pick && Number(pick.dataset.outcome) === 0);
-          btn.classList.toggle("on-no", btn === pick && Number(pick.dataset.outcome) === 1);
-        });
+        if (typeof applyBestOddsPrefill === "function") {
+          applyBestOddsPrefill(card, pick.dataset.outcome);
+        } else {
+          const select = card.querySelector(".p2p-side");
+          if (select) select.value = pick.dataset.outcome;
+          card.querySelectorAll(".side-pick").forEach(btn => {
+            btn.classList.toggle("on-yes", btn === pick && Number(pick.dataset.outcome) === 0);
+            btn.classList.toggle("on-no", btn === pick && Number(pick.dataset.outcome) === 1);
+          });
+        }
+        if (typeof p2pQuote === "function") p2pQuote(card);
+        return;
+      }
+      const best = ev.target.closest("[data-prefill-outcome]");
+      if (best) {
+        const card = best.closest(".card");
+        if (!card) return;
+        ev.preventDefault();
+        if (typeof applyBestOddsPrefill === "function") {
+          applyBestOddsPrefill(card, best.dataset.prefillOutcome, best.dataset.prefillOdds);
+        }
         if (typeof p2pQuote === "function") p2pQuote(card);
         return;
       }
@@ -1283,7 +1405,7 @@
             body: JSON.stringify({})
           });
           setBalance(res.balance);
-          toast("Зачислено " + Number(res.credited).toFixed(2) + " TON · комиссия " + Number(res.tip).toFixed(2));
+          toast("Зачислено " + Number(res.credited).toFixed(2) + " TON · сервисный сбор " + Number(res.tip).toFixed(2));
         }
         await reloadAfterFundsChange();
       } catch (e) {
@@ -1376,6 +1498,7 @@
 
     (async () => {
       try {
+        setTelegramBack(false);
         document.getElementById("close-at").value = defaultCloseAt();
         renderOutcomesEditor();
         if (!inTelegram) {

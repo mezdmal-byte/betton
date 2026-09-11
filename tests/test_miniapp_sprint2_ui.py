@@ -64,7 +64,9 @@ def test_sprint2_shell_search_empty_states_and_no_nanoton():
     assert html.count("nanoTON") == 1
     assert "overflow-x: hidden" in css
     assert "min-width: 92px" not in css
-    assert "white-space: nowrap" not in css
+    tab_block = css[css.index(".tab {") : css.index(".tab.active")]
+    assert "white-space: nowrap" in tab_block
+    assert css.count("white-space: nowrap") == 1
     assert not re.search(r"(?<!max-)width:\s*[5-9]\d{2,}px", css)
     assert not re.search(r"(?<!@media \()min-width:\s*(?:[1-9]\d{2,}|9\d)px", css)
 
@@ -219,7 +221,8 @@ def test_sprint2_mine_history_search_and_preview_js(tmp_path: Path):
     assert "долей" not in data["posP2P"]
     assert "shares" not in data["posP2P"]
     assert "+8.12 TON" in data["win"]
-    assert "комиссия / чаевые 0.08 TON" in data["win"]
+    assert "Сервисный сбор 0.08 TON" in data["win"]
+    assert "чаевые" not in data["win"].lower()
     assert "Проигрыш" not in data["win"]
     assert "-15.00 TON" in data["loss"]
     assert "Проигрыш" in data["loss"]

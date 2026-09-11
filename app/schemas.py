@@ -90,6 +90,11 @@ class QuoteOut(BaseModel):
     outcome_index: int
 
 
+class BestOfferOut(BaseModel):
+    odds: float
+    available: float
+
+
 class MarketOut(BaseModel):
     id: int
     question: str
@@ -121,6 +126,7 @@ class MarketOut(BaseModel):
     cancelled_by: Optional[int] = None
     mechanism: str = "lmsr"
     settlement_kind: Optional[str] = None
+    best_offers: Optional[list[Optional[BestOfferOut]]] = None
 
     class Config:
         from_attributes = True
