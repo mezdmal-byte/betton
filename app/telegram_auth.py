@@ -122,3 +122,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     init_data = parse_tma_authorization(request.headers.get("Authorization"))
     tg_user = validate_init_data(init_data, settings.bot_token)
     return market_service.get_or_create_telegram_user(db, telegram_id=tg_user["id"])
+
+
+def get_optional_user(request: Request, db: Session = Depends(get_db)) -> User | None:
+    header = request.headers.get("Authorization")
+    if not header or not str(header).strip():
+        return None
+    return get_current_user(request, db)

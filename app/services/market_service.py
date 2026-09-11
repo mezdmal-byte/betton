@@ -293,7 +293,7 @@ def _probs_from_create(
     return [1.0 / n] * n
 
 
-def market_to_out(market: Market) -> MarketOut:
+def market_to_out(market: Market, best_offers=None) -> MarketOut:
     names = market_outcomes(market)
     q = _quantities(market)
     p = prices(q, market.b) if market.mechanism != "p2p" else []
@@ -331,6 +331,7 @@ def market_to_out(market: Market) -> MarketOut:
         cancelled_at=as_utc(market.cancelled_at),
         cancelled_by=market.cancelled_by,
         settlement_kind=market.settlement_kind,
+        best_offers=best_offers,
     )
 
 

@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
 from app.models import MarketStatus, User
-from app.telegram_auth import get_current_user
+from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
     BuySharesRequest,
     ClaimWinningsRequest,
@@ -256,6 +256,11 @@ def create_market_endpoint(
     return market_service.market_to_out(market)
 
 
+def _markets_to_out(db: Session, markets) -> list[MarketOut]:
+    offers = p2p_service.best_offers_map(db, markets)
+    return [market_service.market_to_out(m, best_offers=offers.get(m.id)) for m in markets]
+
+
 @app.get("/markets", response_model=list[MarketOut])
 def list_markets_endpoint(
     category: str | None = None,
@@ -263,10 +268,7 @@ def list_markets_endpoint(
     db: Session = Depends(get_db),
 ):
     cat = (category or "").strip() or None
-    return [
-        market_service.market_to_out(m)
-        for m in market_service.list_markets(db, category=cat, status=status)
-    ]
+    return _markets_to_out(db, market_service.list_markets(db, category=cat, status=status))
 
 
 @app.get("/markets/{market_id}", response_model=MarketOut)
@@ -274,7 +276,8 @@ def get_market_endpoint(market_id: int, db: Session = Depends(get_db)):
     market = market_service.get_market(db, market_id)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(status_code=404, detail="Рынок не найден")
-    return market_service.market_to_out(market)
+    offers = p2p_service.best_offers_map(db, [market])
+    return market_service.market_to_out(market, best_offers=offers.get(market.id))
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)
@@ -383,8 +386,13 @@ def p2p_reconciliation_endpoint(
 
 
 @app.get("/markets/{market_id}/orderbook")
-def orderbook_endpoint(market_id: int, db: Session = Depends(get_db)):
-    return p2p_service.book(db, market_id)
+def orderbook_endpoint(
+    market_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    viewer_id = current_user.id if current_user is not None else None
+    return p2p_service.book(db, market_id, viewer_id=viewer_id)
 
 
 @app.post("/markets/{market_id}/orders/quote")

@@ -321,29 +321,83 @@ def list_orders(db, user_id):
     return result
 
 
-def book(db, market_id):
+def _accumulate_book(orders, accepting=True, exclude_user_id=None):
+    sides = [defaultdict(int), defaultdict(int)]
+    queued = [0, 0]
+    if accepting:
+        for o in orders:
+            if exclude_user_id is not None and o.user_id == exclude_user_id:
+                continue
+            divisor = math.gcd(o.price, PRICE)
+            lots = o.remaining // (o.price // divisor)
+            sides[1 - o.outcome][PRICE - o.price] += lots * ((PRICE - o.price) // divisor)
+            queued[o.outcome] += o.remaining
+    formatted = [
+        [dict(odds=PRICE / p, available=a / ATOM) for p, a in sorted(side.items()) if a]
+        for side in sides
+    ]
+    return formatted, [v / ATOM for v in queued]
+
+
+def top_of_book(levels):
+    return levels[0] if levels else None
+
+
+def best_offers_from_orders(orders, accepting=True):
+    if not accepting:
+        return None
+    sides, _queued = _accumulate_book(orders, accepting=True)
+    return [top_of_book(side) for side in sides]
+
+
+def best_offers_map(db, markets):
+    """Top-of-book for many P2P markets in one query. Closed/resolved/cancelled → None."""
+    result = {}
+    p2p_markets = [m for m in markets if getattr(m, 'mechanism', None) == 'p2p']
+    accepting = [m for m in p2p_markets if legacy.is_accepting_bets(m)]
+    for market in p2p_markets:
+        if market not in accepting:
+            result[market.id] = None
+    if not accepting:
+        return result
+    ids = [m.id for m in accepting]
+    orders = db.query(P2POrder).filter(
+        P2POrder.market_id.in_(ids),
+        P2POrder.status == 'open',
+        P2POrder.remaining > 0,
+    ).all()
+    by_market = defaultdict(list)
+    for order in orders:
+        by_market[order.market_id].append(order)
+    for market in accepting:
+        result[market.id] = best_offers_from_orders(by_market.get(market.id, []), accepting=True)
+    return result
+
+
+def book(db, market_id, viewer_id=None):
     market = legacy.get_market(db, market_id)
     require_p2p(market)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(404, 'Рынок не найден')
     orders = db.query(P2POrder).filter_by(market_id=market_id, status='open').all()
-    sides = [defaultdict(int), defaultdict(int)]
-    queued = [0, 0]
-    if legacy.is_accepting_bets(market):
-        for o in orders:
-            divisor = math.gcd(o.price, PRICE)
-            lots = o.remaining // (o.price//divisor)
-            sides[1-o.outcome][PRICE-o.price] += lots*((PRICE-o.price)//divisor)
-            queued[o.outcome] += o.remaining
+    accepting = legacy.is_accepting_bets(market)
+    sides, queued = _accumulate_book(orders, accepting=accepting)
     last = db.query(P2PFill).filter_by(market_id=market_id).order_by(P2PFill.id.desc()).first()
     last_prices = None
     if last:
         last_prices = [0, 0]
-        last_prices[last.maker_outcome] = last.price/PRICE
-        last_prices[1-last.maker_outcome] = (PRICE-last.price)/PRICE
-    return dict(sides=[[dict(odds=PRICE/p, available=a/ATOM) for p, a in sorted(side.items()) if a] for side in sides],
-                queued=[v/ATOM for v in queued], last_prices=last_prices,
-                forming=last is None and market.status == MarketStatus.open)
+        last_prices[last.maker_outcome] = last.price / PRICE
+        last_prices[1 - last.maker_outcome] = (PRICE - last.price) / PRICE
+    payload = dict(
+        sides=sides,
+        queued=queued,
+        last_prices=last_prices,
+        forming=last is None and market.status == MarketStatus.open,
+    )
+    if viewer_id is not None:
+        mine, _queued = _accumulate_book(orders, accepting=accepting, exclude_user_id=viewer_id)
+        payload['available_to_me'] = mine
+    return payload
 
 
 def settle(db, market, winning_outcome):
