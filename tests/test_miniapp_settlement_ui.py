@@ -75,7 +75,34 @@ let confirmText = "";
 try { confirmText = p2pCancelConfirmText("Источник не подтвердился"); } catch (e) { confirmText = e.message; }
 let emptyReason = "";
 try { p2pCancelPayload("  "); } catch (e) { emptyReason = e.message; }
-const data = { autoCard, legacyCard, loss, creator, adminOpen, cancelledCard, userOpen, refund, confirmText, emptyReason };
+const feedWait = feedCard({
+  id: 21, question: "Будет дождь?", category: "unique", status: "open",
+  mechanism: "p2p", pot: 0, outcomes: ["Да", "Нет"], accepting_bets: true,
+  close_at: "2026-09-12T12:00:00"
+});
+const feedLive = feedCard({
+  id: 22, question: "Будет дождь?", category: "unique", status: "open",
+  mechanism: "p2p", pot: 40, outcomes: ["Да", "Нет"], accepting_bets: true,
+  close_at: "2026-09-12T12:00:00"
+});
+const feedClosed = feedCard({
+  id: 23, question: "Будет дождь?", category: "unique", status: "closed",
+  mechanism: "p2p", pot: 40, outcomes: ["Да", "Нет"], accepting_bets: false,
+  close_at: "2026-09-12T12:00:00"
+});
+const previewWait = p2pPreviewLines(
+  {requested: {matched: 0, remaining: 10, payout: null}, available: {matched: 0}},
+  {money: 10, odds: 2, outcomeName: "Да"},
+  80
+);
+const previewPartial = p2pPreviewLines(
+  {requested: {matched: 4, remaining: 6, payout: 8, average_odds: 2}, available: {matched: 4, average_odds: 2}},
+  {money: 10, odds: 2, outcomeName: "Нет"},
+  80
+);
+const placePartial = p2pPlaceToast({filled: 4, remaining: 6, refunded: 0});
+const placeFilled = p2pPlaceToast({filled: 10, remaining: 0, refunded: 0});
+const data = { autoCard, legacyCard, loss, creator, adminOpen, cancelledCard, userOpen, refund, confirmText, emptyReason, feedWait, feedLive, feedClosed, previewWait, previewPartial, placePartial, placeFilled };
 if (typeof window !== "undefined") window.__SETTLEMENT_UI__ = data;
 if (typeof document !== "undefined") {
   const out = document.getElementById("out");
@@ -164,6 +191,20 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "Все ставки по событию будут возвращены. Чаевые не удерживаются" in data["confirmText"]
     assert "Причина: Источник не подтвердился" in data["confirmText"]
     assert data["emptyReason"] == "Укажите причину отмены"
+    assert "data-open-market=" in data["feedWait"]
+    assert "Нет встречных заявок" in data["feedWait"]
+    assert "Да" in data["feedWait"] and "Нет" in data["feedWait"]
+    assert "Есть сделки" in data["feedLive"]
+    assert "Приём завершён" in data["feedClosed"]
+    assert "nano" not in data["feedLive"].lower()
+    assert any("ждать встречного предложения" in line for line in data["previewWait"])
+    assert any("не обещание сделки" in line for line in data["previewWait"])
+    assert any("Сейчас доступно" in line and "Остаток" in line for line in data["previewPartial"])
+    assert "частично исполнена" in data["placePartial"].lower()
+    assert "полностью исполнена" in data["placeFilled"].lower()
+    assert "nano" not in data["placePartial"].lower()
+    assert "Оставить заявку" in data["adminOpen"]
+    assert "side-pick" in data["adminOpen"]
 
 
 @pytest.mark.parametrize("unauthorized", [None, "/users/1", "/users/1/positions", "/users/1/settlements"])
