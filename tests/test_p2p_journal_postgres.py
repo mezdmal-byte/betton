@@ -1,11 +1,14 @@
 """PostgreSQL integration for the P2P money journal. Skipped unless BETTON_TEST_DATABASE_URL is set."""
 import os
+import uuid
+from threading import Barrier, local
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.engine import make_url
 
 from app.database import SessionLocal, ensure_schema
 from app.models import P2PMoneyEntry, P2POrder, User
@@ -61,12 +64,13 @@ def test_pg_ensure_schema_creates_journal_unique_and_is_idempotent(client):
 def test_pg_old_p2p_market_marked_incomplete(monkeypatch):
     from app import database
 
-    admin_url = _PG_URL.rsplit("/", 1)[0] + "/postgres"
-    migrate_url = _PG_URL.rsplit("/", 1)[0] + "/betton_journal_migrate"
+    # Only create/drop a database owned by this test run, never a fixed name.
+    name = "betton_journal_migrate_" + uuid.uuid4().hex
+    admin_url = make_url(_PG_URL).set(database="postgres")
+    migrate_url = make_url(_PG_URL).set(database=name)
     admin = create_engine(admin_url, isolation_level="AUTOCOMMIT")
     with admin.connect() as conn:
-        conn.execute(text("DROP DATABASE IF EXISTS betton_journal_migrate"))
-        conn.execute(text("CREATE DATABASE betton_journal_migrate"))
+        conn.execute(text(f'CREATE DATABASE "{name}"'))
     admin.dispose()
     old = create_engine(migrate_url)
     with old.begin() as conn:
@@ -120,7 +124,7 @@ def test_pg_old_p2p_market_marked_incomplete(monkeypatch):
         old.dispose()
         admin = create_engine(admin_url, isolation_level="AUTOCOMMIT")
         with admin.connect() as conn:
-            conn.execute(text("DROP DATABASE IF EXISTS betton_journal_migrate"))
+            conn.execute(text(f'DROP DATABASE "{name}"'))
         admin.dispose()
 
 
@@ -227,33 +231,38 @@ def _record_outcome(entry_key, mid, amount, uid):
         db.close()
 
 
-def test_pg_concurrent_same_key_conflict_is_recorded(client, monkeypatch):
-    """Capture the PostgreSQL unique race. No lock/retry redesign in this PR.
-
-    Observed on Postgres 16 + SQLAlchemy: one writer commits; the other often
-    hits InvalidRequestError because the session is left invalidated after the
-    unique violation, instead of a controlled HTTP 409. Unique still keeps one row.
-    """
+@pytest.mark.parametrize("same_identity", [False, True])
+def test_pg_concurrent_same_key_is_controlled(client, monkeypatch, same_identity):
     admin, ah, a, ha, b, hb, mid = ready(client, monkeypatch)
-    submit(client, mid, ha, 0, 10, 2)
-    key = "reserve:pg-conflict"
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        first = pool.submit(_record_outcome, key, mid, 10 * 1_000_000_000, a["id"])
-        second = pool.submit(_record_outcome, key, mid, 20 * 1_000_000_000, b["id"])
-        observed = sorted([first.result(timeout=30), second.result(timeout=30)])
+    key = "reserve:pg-race:" + str(mid)
+    barrier = Barrier(2)
+    seen = local()
+
+    def pause_initial_read(conn, cursor, statement, parameters, context, executemany):
+        if not statement.lstrip().upper().startswith("SELECT") or "p2p_money_entries" not in statement:
+            return
+        values = parameters.values() if isinstance(parameters, dict) else parameters
+        if key not in values or getattr(seen, "paused", False):
+            return
+        seen.paused = True
+        # Both initial reads must finish before either INSERT is allowed.
+        barrier.wait(timeout=10)
+
+    engine = _engine()
+    event.listen(engine, "after_cursor_execute", pause_initial_read)
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(_record_outcome, key, mid, 10 * 1_000_000_000, a["id"])
+            second = pool.submit(_record_outcome, key, mid,
+                                 (10 if same_identity else 20) * 1_000_000_000,
+                                 a["id"] if same_identity else b["id"])
+            observed = sorted([first.result(timeout=30), second.result(timeout=30)])
+    finally:
+        event.remove(engine, "after_cursor_execute", pause_initial_read)
+    expected = ["committed", "committed"] if same_identity else ["committed", "http-409"]
+    assert observed == expected
     with SessionLocal() as db:
-        rows = db.query(P2PMoneyEntry).filter_by(entry_key=key).all()
-    assert len(rows) == 1, observed
-    committed = [item for item in observed if item == "committed"]
-    lost = [item for item in observed if item != "committed"]
-    assert committed == ["committed"], observed
-    assert len(lost) == 1, observed
-    loser = lost[0]
-    assert (
-        loser == "http-409"
-        or loser.startswith("integrity:")
-        or loser.startswith("other:InvalidRequestError")
-    ), observed
+        assert db.query(P2PMoneyEntry).filter_by(entry_key=key).count() == 1
 
 
 def test_pg_place_integrityerror_rolls_back_and_is_409(client, monkeypatch):

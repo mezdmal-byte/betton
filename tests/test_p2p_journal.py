@@ -18,6 +18,42 @@ def audit(client, mid, headers):
     return client.get(f'/markets/{mid}/p2p-reconciliation', headers=headers)
 
 
+@pytest.mark.parametrize('conflict', [False, True])
+def test_record_unique_conflict_after_initial_miss(client, monkeypatch, conflict):
+    from sqlalchemy.orm import Query
+    admin, ah, a, ha, b, hb, mid = ready(client, monkeypatch)
+    submit(client, mid, ha, 0, 100, 2)
+    with SessionLocal() as db:
+        row = db.query(P2PMoneyEntry).filter_by(market_id=mid, op_type='reserve').one()
+        data = {name: getattr(row, name) for name in (
+            'entry_key', 'op_type', 'market_id', 'amount', 'from_kind', 'to_kind',
+            'from_user_id', 'to_user_id', 'to_order_id', 'order_id', 'origin_key', 'reason')}
+        if conflict:
+            data['to_user_id'] = b['id']
+        original = Query.one_or_none
+        missed = False
+
+        def miss_once(query):
+            nonlocal missed
+            if not missed and query.column_descriptions[0]['entity'] is P2PMoneyEntry:
+                missed = True
+                return None
+            return original(query)
+
+        # Force the initial read to miss, then let the actual UNIQUE constraint
+        # fail the insert. Exercise real savepoint cleanup on either database.
+        monkeypatch.setattr(Query, 'one_or_none', miss_once)
+        if conflict:
+            with pytest.raises(HTTPException) as err:
+                ledger.record(db, **data)
+            assert err.value.status_code == 409
+        else:
+            assert ledger.record(db, **data).id == row.id
+        assert db.query(P2PMoneyEntry).filter_by(entry_key=row.entry_key).count() == 1
+        assert row.to_user_id == a['id']
+        db.commit()
+
+
 def entries(mid, op=None):
     with SessionLocal() as db:
         q = db.query(P2PMoneyEntry).filter_by(market_id=mid)
