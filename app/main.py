@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import ensure_schema, get_db
+from app.database import ensure_schema, get_db, assert_money_ready
 from app.models import MarketStatus, User
 from app.telegram_auth import get_current_user
 from app.schemas import (
@@ -72,6 +72,7 @@ async def expire_orders_task():
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
     ensure_schema()
+    assert_money_ready()
     task = asyncio.create_task(setup_webhook_task())
     expiry = asyncio.create_task(expire_orders_task())
     yield
