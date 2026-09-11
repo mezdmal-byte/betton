@@ -1,6 +1,6 @@
 # BetTON handoff
 
-2026-09-11. Merge в `main`, деплой и рестарт Render **не разрешены**.
+2026-09-12. Merge в `main`, деплой и рестарт Render **не разрешены**.
 
 ## Текущее состояние
 
@@ -14,7 +14,8 @@
 | Sprint 1 Mini App code | `05c9b44734040b7cde6486ae6c539b6fe174454d` |
 | Точка ветки до UI | `88da7c7ed3be210d2bb2e204b876f51449096b56` (HANDOFF) |
 | Основа integer-money | `6b0bc658ee20c1293eeeb74469f5adbb935fb80b` |
-| PR №11 | [draft / open](https://github.com/mezdmal-byte/betton/pull/11) `feature/beta-ui` → `feature/integer-money`, **не слит**. Title: Beta UI Sprint 1–2. Final Live UI Polish — SHA после коммита этого sprint. |
+| PR №11 | [draft / open](https://github.com/mezdmal-byte/betton/pull/11) `feature/beta-ui` → `feature/integer-money`, **не слит**. Title: Beta UI Sprint 1–2 |
+| Final Live UI Polish code | `9acdb716482773926a072e3a47b38ad5ebad60db` |
 | PR №10 | [draft / open](https://github.com/mezdmal-byte/betton/pull/10) `feature/integer-money`, **не слит** |
 | `origin/main` | `23fa84d417e21cbb954cb6ebcb7087ac1910cb36` (PR №9). **Не менять.** |
 | Production Render | `srv-daffpoon74is739r4csg`, Free, auto-deploy с `main`. **Не деплоить и не перезапускать.** |
