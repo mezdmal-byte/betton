@@ -87,22 +87,12 @@ def test_reload_after_funds_refreshes_user_before_event_preview(tmp_path: Path):
     assert "await reloadAfterFundsChange()" in click
     assert "await openEvent(activeEventId)" not in click
     assert helper.index("await refreshMe()") < helper.index("await openEvent(activeEventId)")
-    body = (
+    stubs = (
         "let me = {id: 1, balance: 1000};\n"
         "let authBlocked = false;\n"
         "let activeEventId = 11;\n"
         "const calls = [];\n"
         "const quoteBalances = [];\n"
-        "const realQuery = typeof document !== 'undefined' && document.querySelector.bind(document);\n"
-        "const query = function(sel) {\n"
-        "  if (sel === '[data-panel]:not([hidden])') return {dataset: {panel: 'event'}};\n"
-        "  return realQuery ? realQuery(sel) : null;\n"
-        "};\n"
-        "if (typeof document === 'undefined') {\n"
-        "  global.document = {querySelector: query};\n"
-        "} else {\n"
-        "  document.querySelector = query;\n"
-        "}\n"
         "async function refreshMe() {\n"
         "  calls.push('refreshMe-before:' + me.balance);\n"
         "  me = {id: 1, balance: 880.5};\n"
@@ -116,28 +106,45 @@ def test_reload_after_funds_refreshes_user_before_event_preview(tmp_path: Path):
         "async function loadMine() { calls.push('loadMine:' + me.balance); }\n"
         "async function loadModeration() { calls.push('loadModeration'); }\n"
         "async function loadMarkets() { calls.push('loadMarkets'); }\n"
-        + helper
-        + "calls.push('p2pPlace:' + me.balance);\n"
-        "reloadAfterFundsChange().then(() => {\n"
-        "  const data = {calls, quoteBalances, balance: me.balance};\n"
-        "  if (typeof process !== 'undefined' && process.stdout) process.stdout.write(JSON.stringify(data));\n"
-        "  if (typeof document !== 'undefined') {\n"
-        "    const out = document.getElementById('out');\n"
-        "    if (out) out.textContent = JSON.stringify(data);\n"
-        "  }\n"
+    )
+    finish = (
+        "calls.push('p2pPlace:' + me.balance);\n"
+        "reloadAfterFundsChange().then(function() {\n"
+        "  const data = {calls: calls, quoteBalances: quoteBalances, balance: me.balance};\n"
+        "  if (typeof process !== 'undefined' && process.stdout && process.stdout.write) process.stdout.write(JSON.stringify(data));\n"
+        "  const out = typeof document !== 'undefined' && document.getElementById && document.getElementById('out');\n"
+        "  if (out) out.textContent = JSON.stringify(data);\n"
         "});\n"
     )
     node = shutil.which("node")
     if node:
-        proc = subprocess.run([node, "-e", body], capture_output=True, text=True, timeout=20, encoding="utf-8")
+        fake_doc = (
+            "var document = {querySelector: function(sel) {"
+            " if (sel === '[data-panel]:not([hidden])') return {dataset: {panel: 'event'}};"
+            " return null; }, getElementById: function() { return null; }};\n"
+        )
+        proc = subprocess.run(
+            [node, "-e", fake_doc + stubs + helper + finish],
+            capture_output=True, text=True, timeout=20, encoding="utf-8",
+        )
         assert proc.returncode == 0, proc.stderr or proc.stdout
         data = json.loads(proc.stdout)
     else:
         browser = _browser_bin()
         if browser is None:
             pytest.skip("Нет Node.js и браузера для исполнения порядка refreshMe")
+        browser_js = (
+            "const _q = document.querySelector.bind(document);\n"
+            "document.querySelector = function(sel) {"
+            " if (sel === '[data-panel]:not([hidden])') return {dataset: {panel: 'event'}};"
+            " return _q(sel); };\n"
+            + stubs + helper + finish
+        )
         harness = tmp_path / "funds_order.html"
-        harness.write_text("<!doctype html><meta charset='utf-8'><pre id='out'></pre><script>" + body + "</script>", encoding="utf-8")
+        harness.write_text(
+            "<!doctype html><meta charset='utf-8'><pre id='out'></pre><script>" + browser_js + "</script>",
+            encoding="utf-8",
+        )
         proc = subprocess.run(
             [str(browser), "--headless=new", "--disable-gpu", "--dump-dom", harness.resolve().as_uri()],
             check=False, capture_output=True, text=True, encoding="utf-8", timeout=60,
