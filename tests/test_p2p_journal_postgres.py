@@ -37,6 +37,17 @@ def test_pg_reports_server_version(client):
     print(f"PostgreSQL server_version={version}")
 
 
+def test_pg_money_preflight_is_readonly(client):
+    from sqlalchemy.exc import DBAPIError
+    from app.money_preflight import inspect_money, readonly_connection
+    with readonly_connection(_PG_URL) as conn:
+        assert conn.exec_driver_sql('SHOW transaction_read_only').scalar_one() == 'on'
+        assert conn.exec_driver_sql('SHOW transaction_isolation').scalar_one() == 'repeatable read'
+        assert inspect_money(conn)['database'] == 'postgresql'
+        with pytest.raises(DBAPIError):
+            conn.execute(text('UPDATE users SET balance=0'))
+
+
 def test_pg_ensure_schema_creates_journal_unique_and_is_idempotent(client):
     engine = _engine()
     ensure_schema()
