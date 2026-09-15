@@ -12,7 +12,7 @@ function initialsFrom(name) {
 }
 
 function avatarHtml(sizeClass) {
-  const name = (typeof displayName === "function" && displayName()) || "игрок";
+  const name = (typeof displayName === "function" && displayName()) || tt("player", "игрок");
   const photo = profilePhotoUrl();
   const img = photo
     ? `<img src="${escapeHtml(photo)}" alt="">`
@@ -21,7 +21,20 @@ function avatarHtml(sizeClass) {
 }
 
 function txLabel(type) {
-  return ({
+  const keys = {
+    reserve: "tx.reserve",
+    fill: "tx.fill",
+    refund: "tx.refund",
+    cancel: "tx.cancel",
+    win: "tx.win",
+    loss: "tx.loss",
+    fee: "tx.fee",
+    void: "tx.void",
+    credit: "tx.credit",
+    deposit: "tx.deposit",
+    withdraw: "tx.withdraw"
+  };
+  const fallback = {
     reserve: "Заявка создана",
     fill: "Исполнено",
     refund: "Возврат остатка",
@@ -33,7 +46,8 @@ function txLabel(type) {
     credit: "Зачисление",
     deposit: "Пополнение",
     withdraw: "Вывод"
-  })[type] || type;
+  };
+  return tt(keys[type] || type, fallback[type] || type);
 }
 
 function txIcon(type) {
@@ -48,7 +62,7 @@ function formatTxDate(value) {
   if (!value) return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString((typeof localeTag === "function" ? localeTag() : undefined), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 function txRow(row) {
@@ -67,7 +81,7 @@ function txRow(row) {
 
 function renderTxList(rows, emptyText) {
   if (!rows || !rows.length) {
-    return `<div class="empty-state">${escapeHtml(emptyText || "Операций пока нет.")}</div>`;
+    return `<div class="empty-state">${escapeHtml(emptyText || tt("account.emptyTx", "Операций пока нет."))}</div>`;
   }
   return rows.map(txRow).join("");
 }
@@ -83,7 +97,7 @@ function paintAccountHeader(account) {
   if (!root) return;
   const reserved = account ? account.reserved : 0;
   const positions = account ? account.in_positions : 0;
-  const admin = me && me.is_admin ? ' <span class="admin-mark">админ</span>' : "";
+  const admin = me && me.is_admin ? ' <span class="admin-mark">' + escapeHtml(tt("account.admin", "админ")) + "</span>" : "";
   root.innerHTML = `
     <div class="profile-hero">
       ${avatarHtml("avatar")}
@@ -93,14 +107,14 @@ function paintAccountHeader(account) {
       </div>
     </div>
     <div class="balance-card" id="account-balance-card" role="button" tabindex="0">
-      <div class="kicker">ДОСТУПНО</div>
+      <div class="kicker">${escapeHtml(tt("account.available", "ДОСТУПНО"))}</div>
       <div class="lead">${me ? fmtTon(me.balance) : "—"}</div>
       <div class="balance-sub">
-        <span>В резерве <b>${fmtTon(reserved)}</b></span>
-        <span>В исполненных позициях <b>${fmtTon(positions)}</b></span>
+        <span>${escapeHtml(tt("account.reserved", "В резерве"))} <b>${fmtTon(reserved)}</b></span>
+        <span>${escapeHtml(tt("account.inPositions", "В исполненных позициях"))} <b>${fmtTon(positions)}</b></span>
       </div>
     </div>
-    <p class="muted">Сервисный сбор — 1% только с чистой прибыли победителя.</p>`;
+    <p class="muted">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>`;
 }
 
 function paintWalletSummary(account) {
@@ -109,11 +123,11 @@ function paintWalletSummary(account) {
   const reserved = account ? account.reserved : 0;
   const positions = account ? account.in_positions : 0;
   root.innerHTML = `<div class="balance-card" id="wallet-balance-card">
-    <div class="kicker">ДОСТУПНО</div>
+    <div class="kicker">${escapeHtml(tt("account.available", "ДОСТУПНО"))}</div>
     <div class="lead">${me ? fmtTon(me.balance) : "—"}</div>
     <div class="balance-sub">
-      <span>В резерве <b>${fmtTon(reserved)}</b></span>
-      <span>В позициях <b>${fmtTon(positions)}</b></span>
+      <span>${escapeHtml(tt("account.reserved", "В резерве"))} <b>${fmtTon(reserved)}</b></span>
+      <span>${escapeHtml(tt("account.inPositionsShort", "В позициях"))} <b>${fmtTon(positions)}</b></span>
     </div>
   </div>`;
   const avail = document.getElementById("withdraw-available");
