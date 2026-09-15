@@ -78,15 +78,10 @@ def test_live_polish_copy_and_nav_source():
 
 
 def _run_js(script: str, tmp_path: Path) -> dict:
-    node = shutil.which("node")
-    if node:
-        proc = subprocess.run(
-            [node, "-e", script],
-            capture_output=True,
-            text=True,
-            timeout=20,
-            encoding="utf-8",
-        )
+    from tests.node_harness import run_node_script
+
+    proc = run_node_script(script, tmp_path, name="live_polish.js")
+    if proc is not None:
         assert proc.returncode == 0, proc.stderr or proc.stdout
         return json.loads(proc.stdout)
     browser = _browser_bin()

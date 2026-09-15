@@ -19,12 +19,21 @@ def make_init_data(
     include_hash: bool = True,
     hash_override: str | None = None,
     first_name: str = "Test",
+    last_name: str | None = None,
+    photo_url: str | None = None,
+    language_code: str | None = None,
 ) -> str:
     token = TEST_BOT_TOKEN if token is None else token
     if user_json is None:
         user_obj: dict = {"id": user_id, "first_name": first_name}
         if username is not None:
             user_obj["username"] = username
+        if last_name is not None:
+            user_obj["last_name"] = last_name
+        if photo_url is not None:
+            user_obj["photo_url"] = photo_url
+        if language_code is not None:
+            user_obj["language_code"] = language_code
         user_json = json.dumps(user_obj, separators=(",", ":"))
     fields: dict[str, str] = {
         "auth_date": str(int(time.time()) if auth_date is None else auth_date),

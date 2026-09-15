@@ -123,17 +123,15 @@ def test_reload_after_funds_refreshes_user_before_event_preview(tmp_path: Path):
         "  if (out) out.textContent = JSON.stringify(data);\n"
         "});\n"
     )
-    node = shutil.which("node")
-    if node:
-        fake_doc = (
-            "var document = {querySelector: function(sel) {"
-            " if (sel === '[data-panel]:not([hidden])') return {dataset: {panel: 'event'}};"
-            " return null; }, getElementById: function() { return null; }};\n"
-        )
-        proc = subprocess.run(
-            [node, "-e", fake_doc + stubs + helper + finish],
-            capture_output=True, text=True, timeout=20, encoding="utf-8",
-        )
+    from tests.node_harness import run_node_script
+
+    fake_doc = (
+        "var document = {querySelector: function(sel) {"
+        " if (sel === '[data-panel]:not([hidden])') return {dataset: {panel: 'event'}};"
+        " return null; }, getElementById: function() { return null; }};\n"
+    )
+    proc = run_node_script(fake_doc + stubs + helper + finish, tmp_path, name="funds_order.js")
+    if proc is not None:
         assert proc.returncode == 0, proc.stderr or proc.stdout
         data = json.loads(proc.stdout)
     else:

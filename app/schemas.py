@@ -27,9 +27,56 @@ class UserOut(BaseModel):
     telegram_id: Optional[int]
     balance: float
     is_admin: bool = False
+    telegram_username: Optional[str] = None
+    display_name: Optional[str] = None
+    photo_url: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class CreatorBriefOut(BaseModel):
+    id: int
+    display_name: str
+    telegram_username: Optional[str] = None
+
+
+class MarketActivityOut(BaseModel):
+    volume: float = 0.0
+    volume_nano: int = 0
+    fills: int = 0
+    unique_participants: int = 0
+
+
+class AccountOut(BaseModel):
+    id: int
+    username: str
+    telegram_id: Optional[int] = None
+    telegram_username: Optional[str] = None
+    display_name: Optional[str] = None
+    photo_url: Optional[str] = None
+    is_admin: bool = False
+    balance: float
+    balance_nano: int
+    reserved: float
+    reserved_nano: int
+    in_positions: float
+    in_positions_nano: int
+
+
+class CreatorStatsOut(BaseModel):
+    id: int
+    display_name: str
+    telegram_username: Optional[str] = None
+    photo_url: Optional[str] = None
+    rank: Optional[int] = None
+    markets_created: int = 0
+    volume: float = 0.0
+    volume_nano: int = 0
+    fills: int = 0
+    unique_participants: int = 0
+    active_markets: int = 0
+    completed_markets: int = 0
 
 
 class MarketCreate(BaseModel):
@@ -127,6 +174,8 @@ class MarketOut(BaseModel):
     mechanism: str = "lmsr"
     settlement_kind: Optional[str] = None
     best_offers: Optional[list[Optional[BestOfferOut]]] = None
+    creator: Optional[CreatorBriefOut] = None
+    activity: Optional[MarketActivityOut] = None
 
     class Config:
         from_attributes = True

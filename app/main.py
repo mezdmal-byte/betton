@@ -15,10 +15,12 @@ from app.database import ensure_schema, get_db, assert_money_ready
 from app.models import MarketStatus, User
 from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
+    AccountOut,
     BuySharesRequest,
     ClaimWinningsRequest,
     CloseMarketRequest,
     CollectResidualRequest,
+    CreatorStatsOut,
     CancelMarketRequest,
     MarketCreate,
     MarketOut,
@@ -33,7 +35,7 @@ from app.schemas import (
     SettlementOut,
     UserOut,
 )
-from app.services import market_service, p2p_service
+from app.services import discovery, market_service, p2p_service
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -191,6 +193,29 @@ def get_user_endpoint(user_id: int, current_user: User = Depends(get_current_use
     return current_user
 
 
+@app.get("/users/{user_id}/account", response_model=AccountOut)
+def get_account_endpoint(
+    user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return discovery.account_summary(db, current_user)
+
+
+@app.get("/creators/top", response_model=list[CreatorStatsOut])
+def top_creators_endpoint(limit: int = 10, db: Session = Depends(get_db)):
+    return discovery.list_top_creators(db, limit=limit)
+
+
+@app.get("/creators/{user_id}")
+def creator_profile_endpoint(user_id: int, db: Session = Depends(get_db)):
+    stats, markets = discovery.get_creator_profile(db, user_id)
+    return {
+        "creator": stats,
+        "markets": discovery.attach_market_views(db, markets),
+    }
+
+
 @app.get("/users/{user_id}/positions", response_model=list[PositionOut])
 def list_user_positions_endpoint(
     user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
@@ -215,12 +240,12 @@ def list_created_markets_endpoint(
 ):
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
-    return [market_service.market_to_out(m) for m in market_service.list_created_markets(db, user_id)]
+    return discovery.attach_market_views(db, market_service.list_created_markets(db, user_id))
 
 
 @app.get("/moderation/markets", response_model=list[MarketOut])
 def moderation_queue_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return [market_service.market_to_out(m) for m in market_service.list_pending_markets(db, current_user)]
+    return discovery.attach_market_views(db, market_service.list_pending_markets(db, current_user))
 
 
 @app.post("/markets/{market_id}/approve", response_model=MarketOut)
@@ -257,8 +282,7 @@ def create_market_endpoint(
 
 
 def _markets_to_out(db: Session, markets) -> list[MarketOut]:
-    offers = p2p_service.best_offers_map(db, markets)
-    return [market_service.market_to_out(m, best_offers=offers.get(m.id)) for m in markets]
+    return discovery.attach_market_views(db, markets)
 
 
 @app.get("/markets", response_model=list[MarketOut])
@@ -276,8 +300,7 @@ def get_market_endpoint(market_id: int, db: Session = Depends(get_db)):
     market = market_service.get_market(db, market_id)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(status_code=404, detail="Рынок не найден")
-    offers = p2p_service.best_offers_map(db, [market])
-    return market_service.market_to_out(market, best_offers=offers.get(market.id))
+    return discovery.attach_market_views(db, [market])[0]
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)

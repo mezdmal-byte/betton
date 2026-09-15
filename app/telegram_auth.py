@@ -109,9 +109,17 @@ def validate_init_data(
 
     user_id = _require_positive_int(user_obj.get("id"))
     username = user_obj.get("username")
+    first_name = user_obj.get("first_name")
+    last_name = user_obj.get("last_name")
+    photo_url = user_obj.get("photo_url")
+    language_code = user_obj.get("language_code")
     return {
         "id": user_id,
         "username": username if isinstance(username, str) else None,
+        "first_name": first_name if isinstance(first_name, str) else None,
+        "last_name": last_name if isinstance(last_name, str) else None,
+        "photo_url": photo_url if isinstance(photo_url, str) else None,
+        "language_code": language_code if isinstance(language_code, str) else None,
         "user": user_obj,
     }
 
@@ -121,7 +129,14 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
 
     init_data = parse_tma_authorization(request.headers.get("Authorization"))
     tg_user = validate_init_data(init_data, settings.bot_token)
-    return market_service.get_or_create_telegram_user(db, telegram_id=tg_user["id"])
+    return market_service.get_or_create_telegram_user(
+        db,
+        telegram_id=tg_user["id"],
+        username=tg_user.get("username"),
+        first_name=tg_user.get("first_name"),
+        last_name=tg_user.get("last_name"),
+        photo_url=tg_user.get("photo_url"),
+    )
 
 
 def get_optional_user(request: Request, db: Session = Depends(get_db)) -> User | None:

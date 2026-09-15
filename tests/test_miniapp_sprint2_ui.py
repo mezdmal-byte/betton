@@ -162,15 +162,14 @@ if (typeof process !== "undefined" && process.stdout) process.stdout.write(JSON.
 
 
 def _run_ui_js(tmp_path: Path) -> dict:
-    node = shutil.which("node")
-    if node:
-        proc = subprocess.run(
-            [node, "-e", _harness_html().split("<script>", 1)[1].rsplit("</script>", 1)[0]],
-            check=False,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-        )
+    from tests.node_harness import run_node_script
+
+    proc = run_node_script(
+        _harness_html().split("<script>", 1)[1].rsplit("</script>", 1)[0],
+        tmp_path,
+        name="sprint2_ui.js",
+    )
+    if proc is not None:
         assert proc.returncode == 0, proc.stderr or proc.stdout
         return json.loads(proc.stdout)
     browser = _browser_bin()

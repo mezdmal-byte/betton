@@ -132,15 +132,14 @@ def _browser_bin() -> Path | None:
 
 
 def _run_ui_js(tmp_path: Path) -> dict:
-    node = shutil.which("node")
-    if node:
-        proc = subprocess.run(
-            [node, "-e", _harness_html().split("<script>", 1)[1].rsplit("</script>", 1)[0]],
-            check=False,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-        )
+    from tests.node_harness import run_node_script
+
+    proc = run_node_script(
+        _harness_html().split("<script>", 1)[1].rsplit("</script>", 1)[0],
+        tmp_path,
+        name="settlement_ui.js",
+    )
+    if proc is not None:
         assert proc.returncode == 0, proc.stderr
         return json.loads(proc.stdout)
     browser = _browser_bin()
@@ -223,9 +222,10 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
 
 
 @pytest.mark.parametrize("unauthorized", [None, "/users/1", "/users/1/positions", "/users/1/settlements"])
-def test_load_mine_refreshes_balance_and_keeps_legacy_results(unauthorized):
-    node = shutil.which("node")
-    if not node:
+def test_load_mine_refreshes_balance_and_keeps_legacy_results(unauthorized, tmp_path):
+    from tests.node_harness import node_bin, run_node_script
+
+    if not node_bin():
         pytest.skip("Node.js required to execute async loadMine regression")
     html = HTML.read_text(encoding="utf-8")
     load_mine = html[html.index("async function loadMine()") : html.index("async function previewQuote")]
@@ -292,5 +292,6 @@ async function fetch(path) {
   }
 })().catch(error => {console.error(error); process.exitCode = 1});
 '''
-    proc = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=20)
+    proc = run_node_script(script, tmp_path, name="load_mine.js")
+    assert proc is not None
     assert proc.returncode == 0, proc.stderr

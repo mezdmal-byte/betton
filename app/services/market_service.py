@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import ADMIN_BANKROLL, TIP_CREATOR_SHARE, TIP_PLATFORM_SHARE, settings
 from app.lmsr import apply_buy, cost, max_tip, prices
 from app.models import Market, MarketStatus, Position, SettlementRecord, Trade, User
-from app.schemas import MarketOut, PositionOut, QuoteOut, SettlementOut
+from app.schemas import MarketActivityOut, MarketOut, PositionOut, QuoteOut, SettlementOut
 
 ALLOWED_CATEGORIES = ("sport", "politics", "unique")
 MIN_LOCK_TON = 10.0
@@ -293,7 +293,7 @@ def _probs_from_create(
     return [1.0 / n] * n
 
 
-def market_to_out(market: Market, best_offers=None) -> MarketOut:
+def market_to_out(market: Market, best_offers=None, creator=None, activity=None) -> MarketOut:
     names = market_outcomes(market)
     q = _quantities(market)
     p = prices(q, market.b) if market.mechanism != "p2p" else []
@@ -332,6 +332,8 @@ def market_to_out(market: Market, best_offers=None) -> MarketOut:
         cancelled_by=market.cancelled_by,
         settlement_kind=market.settlement_kind,
         best_offers=best_offers,
+        creator=creator,
+        activity=activity if activity is not None else MarketActivityOut(),
     )
 
 
@@ -351,20 +353,87 @@ def create_user(db: Session, username: str, telegram_id: int | None = None) -> U
     return user
 
 
+def _clean_telegram_username(username: str | None) -> str | None:
+    if not isinstance(username, str):
+        return None
+    text = username.strip()
+    if text.startswith("@"):
+        text = text[1:].strip()
+    if not text or len(text) > 64:
+        return None
+    return text
+
+
+def _clean_display_name(first_name: str | None, last_name: str | None) -> str | None:
+    parts: list[str] = []
+    if isinstance(first_name, str) and first_name.strip():
+        parts.append(first_name.strip())
+    if isinstance(last_name, str) and last_name.strip():
+        parts.append(last_name.strip())
+    if not parts:
+        return None
+    return " ".join(parts)[:128]
+
+
+def _clean_photo_url(photo_url: str | None) -> str | None:
+    if not isinstance(photo_url, str):
+        return None
+    text = photo_url.strip()
+    if not text.startswith("https://") or len(text) > 1024:
+        return None
+    return text
+
+
+def apply_telegram_profile(
+    user: User,
+    *,
+    username: str | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
+    photo_url: str | None = None,
+) -> bool:
+    """Update non-financial public profile fields from verified Telegram initData."""
+    changed = False
+    tg_username = _clean_telegram_username(username)
+    if user.telegram_username != tg_username:
+        user.telegram_username = tg_username
+        changed = True
+    display = _clean_display_name(first_name, last_name)
+    if display is not None and user.display_name != display:
+        user.display_name = display
+        changed = True
+    photo = _clean_photo_url(photo_url)
+    if photo is not None and user.photo_url != photo:
+        user.photo_url = photo
+        changed = True
+    return changed
+
+
 def get_or_create_telegram_user(
     db: Session,
     telegram_id: int,
     username: str | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
+    photo_url: str | None = None,
 ) -> User:
     user = db.query(User).filter(User.telegram_id == telegram_id).one_or_none()
-    if user is not None:
-        return user
-    _ = username
-    uname = f"tg{telegram_id}"
-    # Never attach Telegram to an existing account by username match alone.
-    while db.query(User).filter(User.username == uname).one_or_none() is not None:
-        uname = f"tg{telegram_id}_{uuid.uuid4().hex[:8]}"
-    return create_user(db, username=uname, telegram_id=telegram_id)
+    if user is None:
+        uname = f"tg{telegram_id}"
+        # Never attach Telegram to an existing account by username match alone.
+        while db.query(User).filter(User.username == uname).one_or_none() is not None:
+            uname = f"tg{telegram_id}_{uuid.uuid4().hex[:8]}"
+        user = create_user(db, username=uname, telegram_id=telegram_id)
+    if apply_telegram_profile(
+        user,
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        photo_url=photo_url,
+    ):
+        db.commit()
+        db.refresh(user)
+    return user
 
 
 def _normalize_category(category: str | None) -> str:

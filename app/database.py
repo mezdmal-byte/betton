@@ -62,6 +62,9 @@ def ensure_schema() -> None:
                                      ('markets', 'lock_nano', market_cols)]:
             _add_column_if_missing(conn, table, name,
                 f'BIGINT CHECK ({name} BETWEEN 0 AND 9223372036854775807)', columns)
+        _add_column_if_missing(conn, "users", "telegram_username", "VARCHAR(64)", user_cols)
+        _add_column_if_missing(conn, "users", "display_name", "VARCHAR(128)", user_cols)
+        _add_column_if_missing(conn, "users", "photo_url", "VARCHAR(1024)", user_cols)
         _add_column_if_missing(conn, "markets", "category", "VARCHAR(32) DEFAULT 'unique'", market_cols)
         _add_column_if_missing(conn, "markets", "outcomes", "TEXT", market_cols)
         _add_column_if_missing(conn, "markets", "q", "TEXT", market_cols)
