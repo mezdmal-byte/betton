@@ -245,7 +245,7 @@
     <div class="auth-block-card">
       <h2 data-i18n="auth.expiredTitle">Сессия закончилась</h2>
       <p class="muted" data-i18n="auth.expiredBody">Чтобы безопасно продолжить работу, откройте BetTON заново через Telegram.</p>
-      <button type="button" class="gold" id="auth-reopen" data-i18n="auth.reopen">Перезапустить BetTON</button>
+      <button type="button" class="gold" id="auth-reopen" data-i18n="auth.reopen">Закрыть BetTON</button>
     </div>
   </div>
   <div id="filter-backdrop" class="sheet-backdrop" hidden></div>
@@ -286,8 +286,10 @@
     }
     function openHelp() {
       const current = document.querySelector("[data-panel]:not([hidden])");
-      if (current && current.dataset.panel && current.dataset.panel !== "help") {
-        eventReturnTab = current.dataset.panel;
+      const panel = current && current.dataset.panel;
+      if (panel && panel !== "help") {
+        helpReturnTab = panel;
+        helpReturnEventId = panel === "event" ? activeEventId : null;
       }
       showTab("help");
     }
@@ -340,6 +342,9 @@
         if (root) {
           root.innerHTML = marketCard(eventCache[activeEventId]);
           const card = root.querySelector(".card");
+          if (card && eventPreselect != null && typeof applyBestOddsPrefill === "function") {
+            applyBestOddsPrefill(card, eventPreselect);
+          }
           if (card && typeof previewQuote === "function") previewQuote(card);
         }
       }
@@ -390,6 +395,8 @@
     let eventCache = {};
     let eventTradeMode = "simple";
     let eventPreselect = null;
+    let helpReturnTab = "feed";
+    let helpReturnEventId = null;
     let accountState = null;
     let txFilter = "";
     let txRows = [];
@@ -1190,7 +1197,15 @@
         return;
       }
       if (panel && panel.dataset.panel === "help") {
-        showTab(eventReturnTab || "feed");
+        if (helpReturnTab === "event" && helpReturnEventId) {
+          openEvent(helpReturnEventId);
+          return;
+        }
+        if (helpReturnTab === "top-creators") {
+          showTopCreators();
+          return;
+        }
+        showTab(helpReturnTab === "create" || helpReturnTab === "mine" || helpReturnTab === "profile" || helpReturnTab === "wallet" || helpReturnTab === "moderation" ? helpReturnTab : "feed");
         return;
       }
       activeEventId = null;
@@ -1203,11 +1218,11 @@
     async function openEvent(id, preloaded, opts) {
       opts = opts || {};
       const current = document.querySelector("[data-panel]:not([hidden])");
-      if (current && current.dataset.panel && current.dataset.panel !== "event") {
+      if (current && current.dataset.panel && current.dataset.panel !== "event" && current.dataset.panel !== "help") {
         eventReturnTab = current.dataset.panel;
       }
       if (opts.mode) eventTradeMode = opts.mode;
-      if (opts.preselect != null) eventPreselect = opts.preselect;
+      if (opts.preselect != null) eventPreselect = Number(opts.preselect);
       activeEventId = id;
       document.querySelectorAll("[data-panel]").forEach(p => {
         p.hidden = p.dataset.panel !== "event";
@@ -1256,6 +1271,7 @@
       if (name === "moderation" && !me?.is_admin) return;
       activeEventId = null;
       eventTradeMode = "simple";
+      if (name !== "help") eventPreselect = null;
       setTelegramBack(name === "wallet" || name === "help" || name === "creator" || name === "top-creators" || name === "profile" || name === "moderation");
       if (name === "moderation") loadModeration().catch(e => showError(e.message));
       document.querySelectorAll("[data-panel]").forEach(p => {
@@ -1396,8 +1412,8 @@
       const open = ev.target.closest("[data-open-creator]");
       if (open) openCreator(Number(open.dataset.openCreator)).catch(e => showError(e.message));
     });
-    document.getElementById("creator-back").onclick = () => showTab("feed");
-    document.getElementById("help-back").onclick = () => showTab(eventReturnTab || "feed");
+    document.getElementById("creator-back").onclick = () => closeEvent();
+    document.getElementById("help-back").onclick = () => closeEvent();
     document.getElementById("onboard-dismiss").onclick = dismissOnboarding;
     document.getElementById("onboard-feed").onclick = () => { dismissOnboarding(); showTab("feed"); };
     document.getElementById("onboard-create").onclick = () => { dismissOnboarding(); showTab("create"); };
@@ -1512,7 +1528,8 @@
       const simple = ev.target.closest("[data-simple-outcome]");
       if (simple) {
         const card = simple.closest(".card");
-        if (typeof applyBestOddsPrefill === "function") applyBestOddsPrefill(card, simple.dataset.simpleOutcome);
+        eventPreselect = Number(simple.dataset.simpleOutcome);
+        if (typeof applyBestOddsPrefill === "function") applyBestOddsPrefill(card, eventPreselect);
         if (typeof p2pQuote === "function") p2pQuote(card);
         return;
       }
@@ -1520,7 +1537,8 @@
       if (pick) {
         const card = pick.closest(".card");
         if (!card) return;
-        if (typeof applyBestOddsPrefill === "function") applyBestOddsPrefill(card, pick.dataset.outcome);
+        eventPreselect = Number(pick.dataset.outcome);
+        if (typeof applyBestOddsPrefill === "function") applyBestOddsPrefill(card, eventPreselect);
         if (typeof p2pQuote === "function") p2pQuote(card);
         return;
       }
@@ -1529,8 +1547,9 @@
         const card = best.closest(".card");
         if (!card) return;
         ev.preventDefault();
+        eventPreselect = Number(best.dataset.prefillOutcome);
         if (typeof applyBestOddsPrefill === "function") {
-          applyBestOddsPrefill(card, best.dataset.prefillOutcome, best.dataset.prefillOdds);
+          applyBestOddsPrefill(card, eventPreselect, best.dataset.prefillOdds);
         }
         if (typeof p2pQuote === "function") p2pQuote(card);
         return;

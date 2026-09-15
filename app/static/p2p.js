@@ -423,7 +423,9 @@ function applyBestOddsPrefill(card, outcome, odds) {
     const oddsInput = card.querySelector(".p2p-odds");
     if (oddsInput) {
       const n = Number(odds);
-      if (Number.isFinite(n)) oddsInput.value = String(Math.round(n * 100) / 100);
+      if (Number.isFinite(n)) {
+        oddsInput.value = oddsInput.type === "hidden" ? String(n) : String(Math.round(n * 100) / 100);
+      }
     }
   }
 }
@@ -505,7 +507,7 @@ async function p2pSimpleQuote(card) {
   if (card.classList) card.classList.remove("simple-no-liq");
   if (button) button.dataset.fallback = "";
   const oddsInput = card.querySelector(".p2p-odds");
-  if (oddsInput) oddsInput.value = String(Math.round(Number(best.odds) * 100) / 100);
+  if (oddsInput) oddsInput.value = String(Number(best.odds));
   if (!money || money <= 0) {
     preview.innerHTML = "";
     return;
@@ -594,8 +596,11 @@ async function p2pPlace(card, kind) {
   }
   if (kind === "ioc") {
     const quoted = card.availableQuote && JSON.parse(card.availableQuote.terms);
-    const same = quoted && Number(quoted.outcome) === payload.outcome && String(quoted.money) === String(payload.money) && Number(quoted.odds) === payload.odds;
-    if (!same) throw new Error("Обновите предложение");
+    if (!quoted) throw new Error("Обновите предложение");
+    const simple = (card.dataset.tradeMode || "simple") === "simple";
+    const sameSide = Number(quoted.outcome) === payload.outcome && String(quoted.money) === String(payload.money);
+    const sameOdds = simple || Number(quoted.odds) === payload.odds;
+    if (!sameSide || !sameOdds) throw new Error("Обновите предложение");
     payload.odds = card.availableQuote.odds;
   }
   const fingerprint = JSON.stringify({...payload, kind});

@@ -166,7 +166,8 @@ function paintWalletSummary(account) {
     <div class="balance-sub">
       <span>${escapeHtml(tt("account.reserved", "В резерве"))} <b>${fmtTon(reserved)}</b></span>
       <span>${escapeHtml(tt("account.inPositionsShort", "В позициях"))} <b>${fmtTon(positions)}</b></span>
-    </div>`;
+    </div>
+  </div>`;
   const avail = document.getElementById("withdraw-available");
   if (avail) avail.textContent = me ? fmtTon(me.balance) : "";
 }

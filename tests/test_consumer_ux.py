@@ -138,7 +138,8 @@ def test_auth_expired_blocking_overlay():
     apply_fn = html[html.index("function applyUnauthorized()") : html.index("async function api(")]
     assert 'id="auth-block"' in html
     assert "Сессия закончилась" in html
-    assert "Перезапустить BetTON" in html
+    assert "Закрыть BetTON" in html
+    assert "Перезапустить BetTON" not in html
     assert "auth-block" in apply_fn
     assert "block.hidden = false" in apply_fn
     assert "tg.close" in html
