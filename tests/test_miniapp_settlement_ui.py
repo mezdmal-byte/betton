@@ -178,11 +178,12 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "залог 50.00 TON" in data["creator"]
     assert "возврат остатка 12.50 TON" in data["creator"]
     assert "Отменить событие" in data["adminOpen"]
-    assert "Оставить заявку" in data["adminOpen"]
+    assert "Выставить свой коэффициент" in data["adminOpen"]
     assert "Отменить событие" not in data["userOpen"]
-    assert "Отменено" in data["cancelledCard"]
+    assert "Отменено" in data["cancelledCard"] or "Событие отменено" in data["cancelledCard"]
     assert "Источник не подтвердился" in data["cancelledCard"]
     assert "Оставить заявку" not in data["cancelledCard"]
+    assert "Разместить заявку" not in data["cancelledCard"]
     assert "Принять доступное" not in data["cancelledCard"]
     assert "Рассчитать:" not in data["cancelledCard"]
     assert "Отменить событие" not in data["cancelledCard"]
@@ -198,7 +199,7 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "data-open-market=" in data["feedWait"]
     assert "Нет встречных заявок" not in data["feedWait"]
     assert "Да" in data["feedWait"] and "Нет" in data["feedWait"]
-    assert "Объём сделок" in data["feedLive"]
+    assert "40.00 TON" in data["feedLive"]
     assert "Есть сделки" not in data["feedLive"]
     assert "Нет встречных заявок" not in data["feedLive"]
     assert "Приём завершён" in data["feedClosed"]
@@ -213,11 +214,8 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "частично исполнена" in data["placePartial"].lower()
     assert "полностью исполнена" in data["placeFilled"].lower()
     assert "nano" not in data["placePartial"].lower()
-    assert "Оставить заявку" in data["adminOpen"]
-    assert "side-pick" in data["adminOpen"]
-    assert "Ваша заявка" in data["adminOpen"]
-    assert "Текущие предложения" in data["adminOpen"]
-    assert "Все предложения" in data["adminOpen"]
+    assert "Выставить свой коэффициент" in data["adminOpen"]
+    assert "p2p-simple" in data["adminOpen"]
     assert "Ваша заявка" not in data["cancelledCard"]
 
 
@@ -228,12 +226,12 @@ def test_load_mine_refreshes_balance_and_keeps_legacy_results(unauthorized, tmp_
     if not node_bin():
         pytest.skip("Node.js required to execute async loadMine regression")
     html = HTML.read_text(encoding="utf-8")
-    load_mine = html[html.index("function paintAccountOverview") : html.index("async function previewQuote")]
+    load_mine = html[html.index("function paintMineFromCache") : html.index("async function previewQuote")]
     script = r'''
 const assert = require('node:assert/strict');
 const CAT_LABEL = {unique: "Уникальное"};
 const AUTH_REOPEN = "AUTH_REOPEN", OPEN_IN_TG = "OPEN_IN_TG", inTelegram = true;
-let authBlocked = false, me = {id: 1, balance: 900}, myPositions = {};
+    let authBlocked = false, authReady = true, me = {id: 1, balance: 900}, myPositions = {};
 const nodes = {};
 const document = {getElementById(id) {
   return nodes[id] ||= {innerHTML: '', textContent: '', querySelectorAll() {return []}, addEventListener() {}};
@@ -262,7 +260,7 @@ async function fetch(path) {
     script += "\nconst unauthorized = " + json.dumps(unauthorized) + ";\n" + _chunk() + load_mine
     script += "\nfunction onCardClick() {}\n" + html[
         html.index('    document.getElementById("markets").onclick'):
-        html.index('    document.getElementById("markets").addEventListener')
+        html.index('    document.getElementById("event-back").onclick')
     ]
     script += r'''
 (async () => {
@@ -271,7 +269,7 @@ async function fetch(path) {
     await assert.rejects(loadMine(), {message: AUTH_REOPEN});
     assert.equal(me, null);
     assert.deepEqual(myPositions, {});
-    assert.equal(document.getElementById('balance').textContent, '—');
+    assert.equal(document.getElementById('balance').textContent, '');
     assert.equal(document.getElementById('create').disabled, true);
     assert.equal(document.getElementById('error').textContent, AUTH_REOPEN);
     assert.equal(calls.includes('/auth/telegram'), false);
@@ -279,15 +277,15 @@ async function fetch(path) {
   } else {
     await loadMine();
     assert.equal(calls[0], '/users/1');
-    assert.equal(document.getElementById('balance').textContent, '1049.50 TON');
+        assert.equal(document.getElementById('balance').textContent, '1 049.50 TON');
     const results = document.getElementById('mine-results').innerHTML;
     for (const id of [7,8,9]) assert.ok(results.includes('legacy-' + id));
     assert.equal(results.includes('legacy-10'), false);
     assert.equal((results.match(/data-act="claim"/g) || []).length, 1);
     assert.ok(results.includes('Выигрыш уже получен'));
     assert.ok(results.includes('Проигрыш'));
-    assert.ok(document.getElementById('mine-orders').innerHTML.includes('Активных заявок пока нет'));
-    assert.ok(document.getElementById('mine-bets').innerHTML.includes('У вас пока нет исполненных ставок'));
+    assert.ok(document.getElementById('mine-orders').innerHTML.includes('Нет активных заявок'));
+    assert.ok(document.getElementById('mine-bets').innerHTML.includes('Нет позиций'));
     assert.equal(document.getElementById('mine-bets').innerHTML.includes('legacy-'), false);
   }
 })().catch(error => {console.error(error); process.exitCode = 1});

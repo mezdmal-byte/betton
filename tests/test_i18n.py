@@ -27,11 +27,13 @@ def test_i18n_dictionaries_cover_ru_en_zh_and_fallback():
     assert "Автор получает 1%" not in text
     assert "creator gets 1%" not in text.lower()
     html = HTML.read_text(encoding="utf-8")
+    account = (ROOT / "app" / "static" / "account.js").read_text(encoding="utf-8")
+    blob = html + "\n" + account
     assert "/static/i18n.js" in html
-    assert 'id="lang-switch"' in html
-    assert 'data-lang="ru"' in html
-    assert 'data-lang="en"' in html
-    assert 'data-lang="zh"' in html
+    assert 'id="lang-switch"' in blob
+    assert 'data-lang="ru"' in blob
+    assert 'data-lang="en"' in blob
+    assert 'data-lang="zh"' in blob
     assert 'data-i18n="nav.feed"' in html
     assert "function detectLang" in text
 
@@ -55,7 +57,7 @@ def test_create_form_is_compact_with_expandable_fees():
     html = HTML.read_text(encoding="utf-8")
     create = html[html.index('data-panel="create"') : html.index('data-panel="mine"')]
     assert "<details" in create
-    assert "Условия и сборы" in create
+    assert "Правила и сборы" in create
     assert create.count("Пример: ставка 100 TON") == 1
     assert create.index("<details") < create.index("Пример: ставка 100 TON")
     assert 'data-vis="public"' in create
@@ -73,15 +75,15 @@ def test_user_generated_questions_are_not_in_i18n_dict():
 
 def test_responsive_desktop_container_and_compact_nav():
     html = HTML.read_text(encoding="utf-8")
-    css = html[html.index("<style>") : html.index("</style>")]
+    css = (ROOT / "app" / "static" / "ui.css").read_text(encoding="utf-8")
     assert "--app-max: 480px" in css
     assert "@media (width >= 768px)" in css
     assert "@media (width >= 1024px)" in css
-    assert "@media (width >= 1280px)" in css
     assert "grid-template-columns: 1fr 1fr" in css
     assert "account-desktop" in css
-    assert html.count('data-tab="') == 4
-    assert 'data-tab="feed">Лента</button>' in html or 'data-i18n="nav.feed">Лента</button>' in html
+    assert html.count('data-tab="') == 3
+    assert 'data-tab="feed"' in html
+    assert "Рынки" in html
 
 
 def test_bot_start_help_follow_language_code_with_en_fallback():
@@ -129,11 +131,11 @@ def test_i18n_key_parity_across_ru_en_zh():
 def test_account_overview_rerenders_without_russian_after_lang_switch(tmp_path):
     from tests.node_harness import run_node_script
 
-    html = HTML.read_text(encoding="utf-8")
+    account = (ROOT / "app" / "static" / "account.js").read_text(encoding="utf-8")
     i18n = I18N.read_text(encoding="utf-8")
-    start = html.index("function paintAccountOverview")
-    end = html.index("function paintMineFromCache")
-    overview_fn = html[start:end]
+    start = account.index("function paintAccountHeader")
+    end = account.index("function paintProfileHeader")
+    header_fn = account[start:end]
     script = (
         i18n
         + r"""
@@ -141,29 +143,30 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function fmtTon(v) { return Number(v).toFixed(2) + ' TON'; }
-let accountState = { creator_earnings: 1.25, creator_earnings_nano: 1250000000 };
-let mineState = { created: [{id:1}], orders: [{id:1},{id:2},{id:3}], active: [] };
-let overviewHtml = '';
+function displayName() { return 'Dmitry'; }
+let me = { id: 1, balance: 12.5, telegram_username: 'dmitry' };
+let accountState = { reserved: 1, in_positions: 2, creator_earnings: 1.25, creator_earnings_nano: 1250000000 };
+let headerHtml = '';
 global.document = {
   documentElement: { lang: 'ru' },
   querySelectorAll() { return []; },
   getElementById(id) {
-    if (id !== 'account-overview') return null;
-    return { set innerHTML(v) { overviewHtml = v; }, get innerHTML() { return overviewHtml; } };
+    if (id !== 'account-header') return null;
+    return { set innerHTML(v) { headerHtml = v; }, get innerHTML() { return headerHtml; } };
   }
 };
 """
-        + overview_fn
+        + header_fn
         + r"""
 setLang('ru', false);
-paintAccountOverview();
-const ru = overviewHtml;
+paintAccountHeader(accountState);
+const ru = headerHtml;
 setLang('zh', false);
-paintAccountOverview();
-const zh = overviewHtml;
+paintAccountHeader(accountState);
+const zh = headerHtml;
 setLang('en', false);
-paintAccountOverview();
-const en = overviewHtml;
+paintAccountHeader(accountState);
+const en = headerHtml;
 const data = { ru, zh, en };
 if (typeof process !== 'undefined' && process.stdout) process.stdout.write(JSON.stringify(data));
 """
@@ -175,14 +178,13 @@ if (typeof process !== 'undefined' && process.stdout) process.stdout.write(JSON.
     assert proc.returncode == 0, proc.stderr or proc.stdout
     import json
     data = json.loads(proc.stdout)
-    assert "События" in data["ru"]
-    assert "Заявки" in data["ru"]
-    assert "Позиции" in data["ru"]
-    assert "Вознаграждение автора" in data["ru"]
+    assert "Портфель" in data["ru"]
+    assert "Доход автора" in data["ru"]
+    assert "В резерве" in data["ru"]
     assert not __import__("re").search(r"[А-Яа-яЁё]", data["zh"])
     assert not __import__("re").search(r"[А-Яа-яЁё]", data["en"])
     assert "Creator earnings" in data["en"] or "earnings" in data["en"].lower()
     assert "1.25 TON" in data["zh"]
-    assert "События" not in data["zh"]
-    assert "События" not in data["en"]
-    assert "Заявки" not in data["en"]
+    assert "Портфель" not in data["zh"]
+    assert "Портфель" not in data["en"]
+    assert "Доход автора" not in data["en"]

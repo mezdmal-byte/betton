@@ -29,6 +29,42 @@
 
 integer-money уже внутри ветки. Production storage migration — **DEFERRED**.
 
+## Consumer UX Architecture pass (static HTML/JS, React deferred)
+
+Цель: довести Telegram Mini App до состояния, которое уже можно показывать реальному пользователю и Василию. Frontend остаётся **static HTML + CSS + JS**. React / Vue / Svelte / Next / Vite / Tailwind / Bootstrap / MUI / shadcn **намеренно не добавлялись**. Backend matching, integer nanoTON, settlement, fee math, auth HMAC, private access **не менялись**.
+
+PR №12 (`feature/vasily-product` → `feature/beta-ui`) оставить Draft. Merge, deploy, `main`, PR №10, PR №11, Render, production DB **не трогались**.
+
+### Navigation / header / feed
+
+Нижняя навигация обычного пользователя: **Рынки / Создать / Портфель**. Admin «Проверка» убрана из bottom nav и доступна только из Profile. Header: BetTON + баланс (клик → Портфель) + avatar (клик → Profile). Feed: header → search → sort → categories → market cards. Status dropdown убран с главного экрана (фильтр в compact sheet). TOP creators preview (max 3) вставляется после 5–6 карточек. Карточки показывают category, time left, question, creator, volume, participants, YES/NO best executable offers; без fake odds.
+
+### Simple bet / advanced own odds
+
+Основной market screen: выбрать Да/Нет, сумму, увидеть выплату, CTA. Simple bet = существующий **IOC только по available_to_me**. Собственная ликвидность не исполняется. Нет встречного предложения → честный empty state + «Выставить свой коэффициент». Advanced — отдельный subview с limit order, степпером коэффициента и стаканом. Стакан на простом экране collapsed. Closed / resolved / cancelled прячут betting controls.
+
+### Portfolio ≠ Profile
+
+Портфель: доступно / в резерве / в позициях, Пополнить/Вывести, вкладки Позиции / Заявки / История, компактный Доход автора. Язык, help и admin moderation живут в Profile. Wallet shell визуально в той же design system, без blockchain.
+
+### Auth / loading / empty / i18n
+
+Expired Telegram session → blocking overlay `#auth-block`, money controls не показываются. Header/feed/portfolio skeleton вместо «—». RU/EN/ZH key parity и live rerender сохранены. UGC не переводится.
+
+### Tests
+
+`tests/test_consumer_ux.py` + обновлённые UI tests. SQLite: `python -m pytest -q tests --ignore=tests/test_p2p_journal_postgres.py`. PostgreSQL CI command без изменений workflow.
+
+### Safe demo seed (не запускать на live/user DB автоматически)
+
+```
+python scripts/seed_demo_markets.py --count 100 --database-url sqlite:///./.betton-demo-qa.db --allow-local-demo --demo-tag vasily
+```
+
+Не seed текущую пользовательскую live DB. Не запускать на Render.
+
+Известные UX-ограничения этого pass: feed-карточки используют public `best_offers` (персональный `available_to_me` — на странице рынка, без N+1); simple bet не оставляет resting limit; без Telegram initData money controls недоступны; event images не вводились; React migration не начиналась.
+
 ## Vasily Product Expansion
 
 Продуктовый sprint вокруг уже принятой P2P beta. Matching, partial fill, IOC/limit, self-match, settlement, integer nanoTON, P2P ledger, auth/initData, webhook, расчёт 1%, refund/cancel и legacy LMSR **не переписывались**.
@@ -97,7 +133,7 @@ Best offers batch сохранён. Creator names/activity batch, без `/users
 
 Onboarding dismissible (`betton-onboard-v1`): честный 1%, без «без комиссии». Help «Как это работает». Форма создания компактная, сборы в collapsed `<details>`.
 
-Mobile-first; desktop `--app-max` 720/1080/1200, лента 2 колонки с 768px, account/wallet две колонки с 1024px. Bottom nav по-прежнему Лента / Создать / Мои (+ Проверка у админа).
+Mobile-first; desktop `--app-max` 720/900, лента 2 колонки с 768px, account/wallet две колонки с 1024px. Bottom nav: **Рынки / Создать / Портфель**. Admin moderation только из Profile, не из постоянной нижней навигации.
 
 ### Demo seeder
 
@@ -113,7 +149,7 @@ python scripts/seed_demo_markets.py --count 100 --database-url sqlite:///./betto
 
 ## Tests / CI
 
-Новые: `test_profile_creators.py`, `test_history.py`, `test_wallet_ui.py`, `test_feed.py`, `test_private_markets.py`, `test_i18n.py`, `test_demo_seed.py`. SQLite full suite. PostgreSQL job: journal + integer money + migration + E2E + profile/private/feed/seed. sqlite job: `actions/setup-node`.
+Новые: `test_profile_creators.py`, `test_history.py`, `test_wallet_ui.py`, `test_feed.py`, `test_private_markets.py`, `test_i18n.py`, `test_demo_seed.py`, `test_consumer_ux.py`. SQLite full suite. PostgreSQL job: journal + integer money + migration + E2E + profile/private/feed/seed. sqlite job: `actions/setup-node`.
 
 ### Известные ограничения этого sprint
 

@@ -12,21 +12,21 @@ P2P = HTML.with_name("p2p.js")
 
 def test_beta_visual_language_and_shell():
     html = HTML.read_text(encoding="utf-8")
-    css = html[html.index("<style>") : html.index("</style>")]
-    assert "--bg: #FFFFFF" in css
-    assert "--surface: #F7F8FA" in css
+    css = HTML.with_name("ui.css").read_text(encoding="utf-8")
+    assert "--bg: #f7f8fa" in css
+    assert "--surface: #ffffff" in css
     assert "--text: #171717" in css
-    assert "--yes: #20A39E" in css
-    assert "--no: #EF5B5B" in css
+    assert "--yes: #20a39e" in css
+    assert "--no: #ef5b5b" in css
     assert "--brand: #171717" in css
     assert "#23001E" not in css
     assert "#d4af37" not in css.lower()
     assert "linear-gradient" not in css
-    assert 'data-tab="feed">Лента</button>' in html
-    assert 'data-tab="create">Создать</button>' in html
-    assert 'data-tab="mine">Мои</button>' in html
-    assert 'data-tab="moderation" hidden>Проверка</button>' in html
-    assert 'data-tab="moderation" hidden>Модерация</button>' not in html
+    assert 'data-tab="feed"' in html
+    assert 'data-tab="create"' in html
+    assert 'data-tab="mine"' in html
+    assert html.count('data-tab="') == 3
+    assert 'data-tab="moderation"' not in html
     assert 'data-panel="event"' in html
     assert 'id="event-root"' in html
     assert "Доступно" in html
@@ -45,12 +45,12 @@ def test_beta_visual_language_and_shell():
 def test_feed_and_event_keep_existing_actions():
     html = HTML.read_text(encoding="utf-8")
     p2p = P2P.read_text(encoding="utf-8")
-    assert "Оставить заявку" in p2p
+    assert "Разместить заявку" in p2p
     assert "data-act=\"p2p-limit\"" in p2p
     assert "data-act=\"claim\"" in html
     assert "async function openEvent" in html
     assert "function friendlyError" in html
-    assert "me ? fmtTon(me.balance) : \"—\"" in html
+    assert "fmtTon(me.balance)" in html
 
 
 def test_p2p_feed_does_not_infer_empty_book_from_zero_pot():
@@ -62,7 +62,7 @@ def test_p2p_feed_does_not_infer_empty_book_from_zero_pot():
     assert "Нет предложений" in body
     assert "best_offers" in body
     assert "/orderbook" not in body
-    load = html[html.index("async function loadMarkets") : html.index("async function loadMine")]
+    load = html[html.index("async function loadMarkets") : html.index("async function loadTopCreators")]
     assert "/markets" in load
     assert "orderbook" not in load
 
@@ -88,7 +88,7 @@ def _browser_bin():
 def test_reload_after_funds_refreshes_user_before_event_preview(tmp_path: Path):
     html = HTML.read_text(encoding="utf-8")
     helper = html[
-        html.index("async function reloadAfterFundsChange()") : html.index("document.querySelector(\".tabs\")")
+        html.index("async function reloadAfterFundsChange()") : html.index("function paintNavIcons")
     ]
     click = html[html.index("async function onCardClick") : html.index("document.getElementById(\"markets\").onclick")]
     assert "await reloadAfterFundsChange()" in click

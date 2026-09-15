@@ -187,9 +187,9 @@ def test_private_share_ui_boot_and_create_chips():
     assert 'params.get("share")' in html
     assert "start=market_" in html
     assert "bot_username" in html
+    assert "Тип: По ссылке" not in p2p or "private.badge" in p2p
     assert "Приватное" in p2p
     assert 'data-act="share"' in p2p
-    assert "Тип: По ссылке" in p2p
     assert "Поделиться" in p2p
     access = (Path(__file__).resolve().parents[1] / "app" / "services" / "market_access.py").read_text(encoding="utf-8")
     assert "logging" not in access

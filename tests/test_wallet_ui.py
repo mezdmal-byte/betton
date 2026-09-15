@@ -31,16 +31,16 @@ def test_wallet_shell_is_production_looking_and_disabled():
 
 def test_account_screen_has_profile_sections():
     html = HTML.read_text(encoding="utf-8")
-    assert 'data-account="overview"' in html
-    assert 'data-account="events"' in html
-    assert 'data-account="orders"' in html
+    assert 'data-panel="profile"' in html
     assert 'data-account="positions"' in html
+    assert 'data-account="orders"' in html
     assert 'data-account="history"' in html
     assert 'id="mine-orders"' in html
     assert 'id="tx-list"' in html
     assert "Сервисный сбор — 1% только с чистой прибыли победителя" in html
     assert "без комиссии" not in html.lower()
-    assert 'data-tab="feed">Лента</button>' in html
-    assert 'data-tab="create">Создать</button>' in html
-    assert 'data-tab="mine">Мои</button>' in html
-    assert html.count('data-tab="') == 4
+    assert 'data-tab="feed"' in html
+    assert 'data-tab="create"' in html
+    assert 'data-tab="mine"' in html
+    assert html.count('data-tab="') == 3
+    assert 'data-tab="moderation"' not in html

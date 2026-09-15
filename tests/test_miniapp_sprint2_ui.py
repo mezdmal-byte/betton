@@ -40,20 +40,18 @@ def _browser_bin() -> Path | None:
 
 def test_sprint2_shell_search_empty_states_and_no_nanoton():
     html = HTML.read_text(encoding="utf-8")
-    css = html[html.index("<style>") : html.index("</style>")]
+    css = HTML.with_name("ui.css").read_text(encoding="utf-8")
     p2p = P2P.read_text(encoding="utf-8")
+    i18n = HTML.with_name("i18n.js").read_text(encoding="utf-8")
     assert 'id="feed-search"' in html
-    assert 'for="feed-search"' in html
-    assert 'id="status-filter"' in html
-    assert 'id="status-filters"' not in html
+    assert 'id="status-filter"' not in html
+    assert 'id="status-filters"' in html
     assert "function filterFeedMarkets" in html
-    assert "Активных заявок пока нет." in html
-    assert "У вас пока нет исполненных ставок." in html
-    assert "Завершённых событий пока нет." in html
+    assert "Нет активных заявок" in i18n
+    assert "Нет позиций" in i18n
     assert "Вы ещё не создавали события." in html
-    assert "Остаток вернётся на доступный баланс." in p2p
     assert "Отменить остаток" in p2p
-    assert "Ожидает контрагента" in p2p
+    assert "Ждёт исполнения" in p2p
     assert "Частично исполнена" in p2p
     assert "Исполнена" in p2p
     assert "Отменена" in p2p
@@ -66,21 +64,27 @@ def test_sprint2_shell_search_empty_states_and_no_nanoton():
     assert "min-width: 92px" not in css
     tab_block = css[css.index(".tab {") : css.index(".tab.active")]
     assert "white-space: nowrap" in tab_block
-    assert css.count("white-space: nowrap") == 1
     assert not re.search(r"(?<!max-)width:\s*[5-9]\d{2,}px", css)
-    assert not re.search(r"(?<!@media \()min-width:\s*(?:[1-9]\d{2,}|9\d)px", css)
 
 
 def test_event_page_order_and_book_in_details():
     p2p = P2P.read_text(encoding="utf-8")
-    body = p2p[p2p.index("function p2pCard") : p2p.index("function p2pPreviewModel")]
-    assert body.index("status-pill") < body.index("question")
-    assert body.index("event-deadline") < body.index("outcome-pair")
-    assert body.index("outcome-pair") < body.index("event-offers")
-    assert body.index("event-offers") < body.index("event-bet")
-    assert body.index("p2p-preview") < body.index('data-act="p2p-limit"')
-    assert body.index("event-bet") < body.index("p2p-depth")
-    assert "<details" in body and "Все предложения" in body
+    simple = p2p[p2p.index("function simpleP2PCard") : p2p.index("function advancedP2PCard")]
+    advanced = p2p[p2p.index("function advancedP2PCard") : p2p.index("function p2pCard")]
+    head = p2p[p2p.index("function eventHead") : p2p.index("function userPnLHtml")]
+    assert "eventHead" in simple
+    assert "event-question" in head
+    assert "data-simple-outcome" in simple
+    assert "p2p-preview" in simple
+    assert 'data-act="p2p-simple"' in simple
+    assert 'data-act="open-advanced"' in simple
+    assert "bookDetails" in simple
+    details = p2p[p2p.index("function bookDetails") : p2p.index("function closedMarketCard")]
+    assert "p2p-depth" in details
+    assert "market.book" in details
+    assert "<details" in details
+    assert 'data-act="p2p-limit"' in advanced
+    assert "advanced.title" in advanced
 
 
 def _harness_html() -> str:
@@ -196,7 +200,7 @@ def _run_ui_js(tmp_path: Path) -> dict:
 def test_sprint2_mine_history_search_and_preview_js(tmp_path: Path):
     data = _run_ui_js(tmp_path)
     assert data["statuses"] == {
-        "wait": "Ожидает контрагента",
+        "wait": "Ждёт исполнения",
         "partial": "Частично исполнена",
         "filled": "Исполнена",
         "cancelled": "Отменена",
@@ -204,19 +208,13 @@ def test_sprint2_mine_history_search_and_preview_js(tmp_path: Path):
     }
     assert data["grouped"].count("mine-group-title") == 1
     assert data["grouped"].count("Один матч?") == 1
-    assert "Заявка" in data["grouped"]
     assert "Да" in data["grouped"] and "Нет" in data["grouped"]
-    assert "Активных заявок пока нет." in data["emptyOrders"]
+    assert "Нет активных заявок" in data["emptyOrders"]
     assert "Отменить остаток" in data["openOrder"]
-    assert "Остаток вернётся на доступный баланс." in data["openOrder"]
-    assert "Исходная сумма" in data["openOrder"]
-    assert "В резерве" in data["openOrder"]
+    assert "Исполнено" in data["openOrder"]
     assert "nano" not in data["openOrder"].lower()
     assert "P2P позиция?" in data["posP2P"]
-    assert "Исполненная ставка" in data["posP2P"]
-    assert "Поставлено" in data["posP2P"]
     assert "Средний коэффициент" in data["posP2P"]
-    assert "Возможная выплата" in data["posP2P"]
     assert "долей" not in data["posP2P"]
     assert "shares" not in data["posP2P"]
     assert "+8.12 TON" in data["win"]

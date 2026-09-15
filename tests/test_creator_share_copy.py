@@ -53,18 +53,16 @@ def test_profile_overview_is_dashboard_not_documentation():
     html = (ROOT / "app" / "static" / "miniapp.html").read_text(encoding="utf-8")
     account = (ROOT / "app" / "static" / "account.js").read_text(encoding="utf-8")
     header = account[account.index("function paintAccountHeader") : account.index("function paintWalletSummary")]
-    overview_fn = html[html.index("function paintAccountOverview") : html.index("function paintMineFromCache")]
     help = html[html.index('data-panel="help"') : html.index('data-panel="top-creators"')]
     assert "account.fee" not in header
     assert "creator.shareDetail" not in header
-    assert "stat-chip" in overview_fn
-    assert "account.statEvents" in overview_fn
-    assert "creator.shareLine" in overview_fn
-    assert overview_fn.count("creator.shareDetail") == 1
-    assert "creator.shareNote" not in overview_fn
+    assert "account.creatorIncome" in header
+    assert "creator.shareNote" in header
     assert "Автор события получает 75% сервисного сбора" in help
     assert "help.creatorShare" in help
     assert 'data-panel="top-creators"' in html
     assert "showTopCreators" in html
     assert "top-creators-preview" in html
     assert "slice(0, 3)" in html
+    assert 'data-tab="moderation"' not in html
+    assert 'data-panel="profile"' in html
