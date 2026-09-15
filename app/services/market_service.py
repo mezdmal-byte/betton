@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import text, update
+from sqlalchemy import func, text, update
 from sqlalchemy.orm import Session
 
 from app.config import ADMIN_BANKROLL, TIP_CREATOR_SHARE, TIP_PLATFORM_SHARE, settings
@@ -520,22 +520,77 @@ def list_markets(
     db: Session,
     category: str | None = None,
     status: MarketStatus | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
 ) -> list[Market]:
+    rows, _total = list_markets_page(
+        db, category=category, status=status, q=q, sort=sort, limit=limit, offset=offset
+    )
+    return rows
+
+
+def list_markets_page(
+    db: Session,
+    category: str | None = None,
+    status: MarketStatus | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
+) -> tuple[list[Market], int]:
+    from app.services import discovery
+
     query = db.query(Market).filter(
         Market.status.in_(
             [MarketStatus.open, MarketStatus.closed, MarketStatus.resolved, MarketStatus.cancelled]
         )
     )
+    if hasattr(Market, "visibility"):
+        query = query.filter(Market.visibility == "public")
     if category:
         query = query.filter(Market.category == _normalize_category(category))
+    needle = (q or "").strip().lower()
+    if needle:
+        pattern = f"%{needle}%"
+        query = query.filter(
+            (func.lower(Market.question).like(pattern))
+            | (func.lower(func.coalesce(Market.description, "")).like(pattern))
+        )
     rows = query.order_by(Market.id.desc()).all()
     for market in rows:
         if _maybe_auto_close(db, market):
-            # Release this market's refund locks before moving to the next market.
             db.commit()
     if status is not None:
         rows = [m for m in rows if m.status == status]
-    return rows
+    mode = (sort or "new").strip().lower()
+    if mode == "closing":
+        upcoming = []
+        for market in rows:
+            close_at = as_utc(market.close_at)
+            if is_accepting_bets(market) and close_at is not None:
+                upcoming.append(market)
+        upcoming.sort(key=lambda m: (as_utc(m.close_at), m.id))
+        rows = upcoming
+    elif mode == "popular":
+        activity = discovery.market_activity_map(db, [m.id for m in rows])
+        rows.sort(
+            key=lambda m: (
+                -int(activity.get(m.id).volume_nano if activity.get(m.id) else 0),
+                -int(activity.get(m.id).unique_participants if activity.get(m.id) else 0),
+                -int(activity.get(m.id).fills if activity.get(m.id) else 0),
+                -(m.id or 0),
+            )
+        )
+    else:
+        rows.sort(key=lambda m: (as_utc(m.created_at) or utcnow(), m.id), reverse=True)
+    total = len(rows)
+    start = max(0, int(offset or 0))
+    if limit is not None:
+        cap = max(1, min(int(limit), 100))
+        rows = rows[start:start + cap]
+    return rows, total
 
 
 def get_market(db: Session, market_id: int) -> Market:

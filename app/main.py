@@ -3,7 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -300,12 +300,22 @@ def _markets_to_out(db: Session, markets) -> list[MarketOut]:
 
 @app.get("/markets", response_model=list[MarketOut])
 def list_markets_endpoint(
+    response: Response,
     category: str | None = None,
     status: MarketStatus | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
     db: Session = Depends(get_db),
 ):
     cat = (category or "").strip() or None
-    return _markets_to_out(db, market_service.list_markets(db, category=cat, status=status))
+    query = (q or "").strip() or None
+    rows, total = market_service.list_markets_page(
+        db, category=cat, status=status, q=query, sort=sort, limit=limit, offset=offset
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return _markets_to_out(db, rows)
 
 
 @app.get("/markets/{market_id}", response_model=MarketOut)

@@ -57,6 +57,7 @@ function p2pCard(m) {
     <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
     <div class="question">${escapeHtml(m.question)}</div>
     ${close ? `<p class="muted event-deadline">Приём заявок до ${escapeHtml(close)}</p>` : ''}
+    ${m.creator ? `<p class="event-meta-line">Автор: <button type="button" class="ghost compact" data-open-creator="${m.creator.id}">${escapeHtml(m.creator.telegram_username ? ('@' + m.creator.telegram_username) : m.creator.display_name)}</button></p>` : ''}
     <div class="outcome-pair">
       <span class="out yes-acc">${escapeHtml(yes)}</span>
       <span class="out-vs">или</span>
