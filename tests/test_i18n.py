@@ -20,6 +20,12 @@ def test_i18n_dictionaries_cover_ru_en_zh_and_fallback():
     assert "без комиссии" not in text.lower()
     assert "Service fee is 1%" in text
     assert "服务费仅为获胜者净利润的 1%" in text
+    assert "Вознаграждение автору: 75% сервисного сбора" in text
+    assert "Автор события получает 75% сервисного сбора" in text
+    assert "Creator reward: 75% of the service fee" in text
+    assert "作者奖励：服务费的 75%" in text
+    assert "Автор получает 1%" not in text
+    assert "creator gets 1%" not in text.lower()
     html = HTML.read_text(encoding="utf-8")
     assert "/static/i18n.js" in html
     assert 'id="lang-switch"' in html
@@ -54,6 +60,9 @@ def test_create_form_is_compact_with_expandable_fees():
     assert create.index("<details") < create.index("Пример: ставка 100 TON")
     assert 'data-vis="public"' in create
     assert 'data-vis="unlisted"' in create
+    assert "Вознаграждение автору: 75% сервисного сбора" in create
+    assert "Автор события получает 75% сервисного сбора" in create
+    assert "Автор получает 1%" not in create
 
 
 def test_user_generated_questions_are_not_in_i18n_dict():

@@ -94,8 +94,13 @@ def test_unlisted_opens_immediately_and_stays_out_of_public_surfaces(client: Tes
 
     assert client.get(f"/markets/{private['id']}").status_code == 404
     assert client.get(f"/markets/{private['id']}/orderbook").status_code == 404
-    book = client.get(f"/markets/{private['id']}/orderbook", headers=ht)
-    assert book.status_code == 200
+    stranger_book = client.get(f"/markets/{private['id']}/orderbook", headers=ht)
+    assert stranger_book.status_code == 404
+    assert stranger_book.status_code != 403
+    creator_book = client.get(f"/markets/{private['id']}/orderbook", headers=hm)
+    assert creator_book.status_code == 200, creator_book.text
+    admin_book = client.get(f"/markets/{private['id']}/orderbook", headers=ah)
+    assert admin_book.status_code == 200, admin_book.text
 
     queue_ids = {m["id"] for m in client.get("/moderation/markets", headers=ah).json()}
     assert private["id"] not in queue_ids
@@ -104,6 +109,11 @@ def test_unlisted_opens_immediately_and_stays_out_of_public_surfaces(client: Tes
     profile_ids = {m["id"] for m in profile["markets"]}
     assert public["id"] in profile_ids
     assert private["id"] not in profile_ids
+    assert profile["creator"]["markets_created"] == 1
+    only, ho = _login(client, username="onlyunlisted", first_name="Only")
+    sole = _create(client, ho, "Only the invited club sees this kickoff time?", visibility="unlisted")
+    assert sole["id"] not in {m["id"] for m in client.get(f"/creators/{only['id']}").json()["markets"]}
+    assert only["id"] not in {row["id"] for row in client.get("/creators/top").json()}
 
     mine = client.get(f"/users/{maker['id']}/markets", headers=hm).json()
     mine_private = next(m for m in mine if m["id"] == private["id"])
@@ -137,7 +147,7 @@ def test_share_token_resolve_auth_and_isolation(client: TestClient):
     other_resolved = client.get(f"/markets/share/{other}", headers=hv).json()
     assert other_resolved["id"] == second["id"]
 
-    placed = submit(client, first["id"], hv, 0, 25, 2)
+    placed = submit(client, first["id"], {**hv, "X-Market-Share-Token": token}, 0, 25, 2)
     assert placed.status_code == 200, placed.text
 
 
@@ -169,6 +179,10 @@ def test_private_share_ui_boot_and_create_chips():
     assert 'data-vis="public"' in html
     assert 'data-vis="unlisted"' in html
     assert "visibility: createVisibility" in html
+    assert "X-Market-Share-Token" in html
+    assert "eventShareById" in html
+    assert "shareHeadersFor" in html
+    assert "rememberShareToken" in html
     assert "/markets/share/" in html
     assert 'params.get("share")' in html
     assert "start=market_" in html
@@ -177,3 +191,70 @@ def test_private_share_ui_boot_and_create_chips():
     assert 'data-act="share"' in p2p
     assert "Тип: По ссылке" in p2p
     assert "Поделиться" in p2p
+    access = (Path(__file__).resolve().parents[1] / "app" / "services" / "market_access.py").read_text(encoding="utf-8")
+    assert "logging" not in access
+    assert "print(" not in access
+
+
+QUOTE = {"outcome": 0, "money": 10, "odds": 2}
+
+
+def _share(headers, token):
+    return {**headers, "X-Market-Share-Token": token}
+
+
+def test_unlisted_numeric_id_requires_share_token(client: TestClient, monkeypatch):
+    admin, ah = _admin(client, monkeypatch)
+    maker, hm = _login(client, username="gatekeeper", first_name="Gate")
+    trader, ht = _login(client, username="stranger", first_name="Stranger")
+    public = _create(client, hm, "Will the listed derby finish after extra time?")
+    assert client.post(f"/markets/{public['id']}/approve", headers=ah).status_code == 200
+    private = _create(client, hm, "Hidden derby kickoff stays invite only?", visibility="unlisted")
+    token = private["share_token"]
+    other = _create(client, hm, "Second hidden derby also invite only?", visibility="unlisted")["share_token"]
+    mid = private["id"]
+    pub = public["id"]
+
+    assert client.get(f"/markets/{pub}/orderbook").status_code == 200
+    assert client.get(f"/markets/{pub}/orderbook", headers=ht).status_code == 200
+    assert client.post(f"/markets/{pub}/orders/quote", headers=ht, json=QUOTE).status_code == 200
+    assert submit(client, pub, ht, 0, 10, 2).status_code == 200
+
+    for path, method, kwargs in (
+        (f"/markets/{mid}", "get", {}),
+        (f"/markets/{mid}/orderbook", "get", {}),
+        (f"/markets/{mid}/orders/quote", "post", {"json": QUOTE}),
+        (f"/markets/{mid}/orders", "post", {"json": {**QUOTE, "request_id": "no-token-place-abcdefgh"}}),
+    ):
+        res = getattr(client, method)(path, headers=ht, **kwargs)
+        assert res.status_code == 404, (path, res.status_code, res.text)
+        assert res.status_code != 403
+
+    wrong = _share(ht, other)
+    assert client.get(f"/markets/{mid}", headers=wrong).status_code == 404
+    assert client.get(f"/markets/{mid}/orderbook", headers=wrong).status_code == 404
+    assert client.post(f"/markets/{mid}/orders/quote", headers=wrong, json=QUOTE).status_code == 404
+    assert submit(client, mid, wrong, 0, 10, 2).status_code == 404
+
+    ok = _share(ht, token)
+    assert client.get(f"/markets/{mid}", headers=ok).status_code == 200
+    assert client.get(f"/markets/{mid}/orderbook", headers=ok).status_code == 200
+    quoted = client.post(f"/markets/{mid}/orders/quote", headers=ok, json=QUOTE)
+    assert quoted.status_code == 200, quoted.text
+    placed = submit(client, mid, ok, 0, 12, 2)
+    assert placed.status_code == 200, placed.text
+    cancelled = client.post(f"/orders/{placed.json()['id']}/cancel", headers=ht)
+    assert cancelled.status_code == 200, cancelled.text
+
+    assert client.get(f"/markets/{mid}", headers=hm).status_code == 200
+    assert client.get(f"/markets/{mid}/orderbook", headers=hm).status_code == 200
+    assert client.post(f"/markets/{mid}/orders/quote", headers=hm, json=QUOTE).status_code == 200
+    assert submit(client, mid, hm, 0, 8, 2).status_code == 200
+
+    assert client.get(f"/markets/{mid}", headers=ah).status_code == 200
+    assert client.get(f"/markets/{mid}/orderbook", headers=ah).status_code == 200
+    assert client.post(f"/markets/{mid}/orders/quote", headers=ah, json=QUOTE).status_code == 200
+    assert submit(client, mid, ah, 0, 9, 2).status_code == 200
+
+    assert client.get(f"/markets/share/{token}", headers=ht).status_code == 200
+    assert client.get("/markets/share/not-a-real-share-token-zzzz", headers=ht).status_code == 404

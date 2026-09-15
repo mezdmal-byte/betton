@@ -657,6 +657,7 @@
         <strong data-i18n="help.title">Как это работает</strong>
         <p data-i18n="help.p2p">Пользователи сами предлагают коэффициенты лимитными заявками. Букмекера нет: исполнение зависит от встречной заявки. Частичное исполнение — нормальная ситуация.</p>
         <p data-i18n="help.fee">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя. Проигравшая ставка этот сбор не платит.</p>
+        <p data-i18n="help.creatorShare">Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли. Автор не получает долю со своего собственного выигрыша.</p>
         <p data-i18n="help.cancel">Неисполненный остаток можно отменить — деньги вернутся на доступный баланс. Если событие отменят, ставки возвращаются без сервисного сбора.</p>
       </div>
     </section>
@@ -696,6 +697,9 @@
           <p data-i18n="create.how">Как работает событие?</p>
           <p data-i18n="create.feesP2p">Это P2P-рынок: коэффициенты задают сами пользователи, букмекера нет. Заявка резервирует сумму и ждёт встречную.</p>
           <p data-i18n="create.feesFee">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+          <p data-i18n="creator.shareCompact">Вознаграждение автору: 75% сервисного сбора</p>
+          <p data-i18n="creator.shareDetail">Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли.</p>
+          <p data-i18n="creator.shareNote" title="Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя.">Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша.</p>
           <p data-i18n="create.feesExample">Пример: ставка 100 TON, выплата 180 TON, чистая прибыль 80 TON, сервисный сбор 0.80 TON. Проигравшая ставка не платит дополнительный сбор.</p>
           <p data-i18n="create.feesCancel">Если событие отменят, исполненные ставки и незакрытый остаток заявки вернутся без сервисного сбора.</p>
           <p data-i18n="create.moderationNote">Публичное событие появится в ленте после проверки. Событие по ссылке открывается сразу и не показывается в общей ленте.</p>
@@ -926,7 +930,7 @@
 
     let activeEventId = null;
     let eventReturnTab = "feed";
-    const eventCache = {};
+    let eventCache = {};
     let accountState = null;
     let txFilter = "";
     let txRows = [];
@@ -1158,9 +1162,28 @@
       showError(AUTH_REOPEN);
     }
 
+    let eventShareById = {};
+
+    function rememberShareToken(m) {
+      if (m && m.id && m.share_token) eventShareById[m.id] = m.share_token;
+    }
+
+    function shareHeadersFor(path) {
+      const match = String(path || "").match(/^\/markets\/(\d+)(?:\/|$)/);
+      if (!match) return {};
+      const token = eventShareById[Number(match[1])];
+      if (!token) return {};
+      return { "X-Market-Share-Token": token };
+    }
+
     async function api(path, options) {
       options = options || {};
-      const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+      const shareHeaders = typeof shareHeadersFor === "function" ? shareHeadersFor(path) : {};
+      const headers = Object.assign(
+        { "Content-Type": "application/json" },
+        shareHeaders,
+        options.headers || {}
+      );
       const initData = getInitData();
       if (initData) headers["Authorization"] = "tma " + initData;
       const res = await fetch(path, Object.assign({}, options, { headers }));
@@ -1445,6 +1468,7 @@
         </div>
         <p class="muted">${escapeHtml(tt("creator.stats", "{markets} событий · {volume} оборот · {fills} ставок · {people} участников", { markets: c.markets_created, volume: fmtTon(c.volume || 0), fills: c.fills, people: c.unique_participants }))}</p>
         <p class="muted">${escapeHtml(tt("creator.active", "Активных: {active} · Завершённых: {done}", { active: c.active_markets, done: c.completed_markets }))}</p>
+        ${mine ? '<p class="muted">' + escapeHtml(tt("creator.shareCompact", "Вознаграждение автору: 75% сервисного сбора")) + "</p><p class=\"muted\">" + escapeHtml(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли.")) + "</p><p class=\"muted\">" + escapeHtml(tt("creator.shareNote", "Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша.")) + "</p>" : ""}
         ${mine ? '<div class="row"><button type="button" class="gold" id="creator-wallet">' + escapeHtml(tt("creator.wallet", "Кошелёк")) + '</button><button type="button" class="ghost" id="creator-account">' + escapeHtml(tt("creator.profile", "Мой профиль")) + "</button></div>" : ""}
         <h2>${escapeHtml(tt("creator.events", "События автора"))}</h2>
         ${(data.markets || []).map(feedCard).join("") || ('<div class="empty-state">' + escapeHtml(tt("creator.empty", "Публичных событий пока нет.")) + "</div>")}`;
@@ -1476,6 +1500,7 @@
       if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
       document.getElementById("mine-orders").innerHTML = renderMineOrders(orders);
       const created = markets.filter(m => m.creator_id === me.id);
+      if (typeof rememberShareToken === "function") created.forEach(rememberShareToken);
       const createdRoot = document.getElementById("mine-created");
       const betsRoot = document.getElementById("mine-bets");
       const resultsRoot = document.getElementById("mine-results");
@@ -1494,6 +1519,9 @@
       const overview = document.getElementById("account-overview");
       if (overview) {
         overview.innerHTML = `<p class="muted">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>
+          <p class="muted">${escapeHtml(tt("creator.shareCompact", "Вознаграждение автору: 75% сервисного сбора"))}</p>
+          <p class="muted">${escapeHtml(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли."))}</p>
+          <p class="muted">${escapeHtml(tt("creator.shareNote", "Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша."))}</p>
           <p class="muted">${created.length} · ${orders.length} · ${active.length}</p>`;
       }
       const txList = document.getElementById("tx-list");
@@ -1586,12 +1614,13 @@
       showError("");
       try {
         let m = preloaded || eventCache[id];
-        const unlisted = m && m.visibility === "unlisted";
+        rememberShareToken(m);
         const canFetch = !m || (m.status !== "pending" && m.status !== "rejected");
-        if (canFetch && !unlisted) {
+        if (canFetch) {
           try {
             m = await api("/markets/" + id);
             eventCache[id] = m;
+            rememberShareToken(m);
           } catch (e) {
             if (!preloaded && !eventCache[id]) throw e;
             m = preloaded || eventCache[id];
@@ -2049,6 +2078,7 @@
           try {
             const shared = await api("/markets/share/" + encodeURIComponent(share));
             eventCache[shared.id] = shared;
+            rememberShareToken(shared);
             await openEvent(shared.id, shared);
           } catch (e) { showError(e.message); }
         }

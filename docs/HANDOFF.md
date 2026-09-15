@@ -35,9 +35,13 @@ integer-money уже внутри ветки. Production storage migration — *
 
 Ветка: `feature/vasily-product` → `feature/beta-ui`. Draft PR, **не merge**. `main`, PR №10, PR №11, Render, production env/DB **не трогались**.
 
-### Экономика 1% не изменена. Creator reward не добавлялся.
+### Экономика 1% не изменена. Новый creator reward не добавлялся.
 
-Сервисный сбор по-прежнему **1% только с чистой прибыли победителя**. Внутренний split 75/25 (creator/platform) в ledger не менялся и в UI не выдаётся за «вознаграждение творцу 1%». Новый creator payout не создавался.
+Новый creator reward не добавлялся. Существующее распределение сервисного сбора сохранено: 75% creator / 25% platform в предусмотренных текущей settlement-логикой случаях. В repair pass это только отражено в UI.
+
+Сервисный сбор по-прежнему **1% только с чистой прибыли победителя**. Внутренний split 75/25 (creator/platform) в ledger не менялся и в UI не выдаётся за «автор получает 1%». Новый creator payout не создавался.
+
+Unlisted: публичные surfaces по-прежнему скрывают событие. Orderbook / quote / place и GET по numeric id закрыты централизованным access check: нужен `X-Market-Share-Token` этого market, либо creator/admin. Иначе 404, не 403. Mini App: `?share=` → существующий share resolve → token только для открытого event → заголовок, не query string. Отмена своей заявки через `/orders/{id}/cancel` без token.
 
 Криптоинтеграции нет: нет TON Connect, Solana adapter, RPC, deposit address, seed phrase, on-chain tx. Wallet — visual-final shell, CTA disabled, баланс через эти формы не меняется.
 

@@ -97,9 +97,16 @@ def plan_matches(orders, amount, limit_price):
     return plan, remaining
 
 
-def preview(db, market_id, user_id, outcome, amount, odds):
+def _guard_unlisted(db, market, user_id=None, share_token=None):
+    from app.services import market_access
+    viewer = db.get(User, user_id) if user_id is not None else None
+    market_access.require_unlisted_access(market, viewer=viewer, share_token=share_token)
+
+
+def preview(db, market_id, user_id, outcome, amount, odds, share_token=None):
     market = legacy.get_market(db, market_id)
     require_p2p(market)
+    _guard_unlisted(db, market, user_id, share_token)
     legacy.require_accepting(market)
     idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
     atomic, tick = parse_terms(amount, odds)
@@ -131,7 +138,7 @@ def _finish_order(db, order):
         _refund(db, order, 'filled' if order.filled else 'cancelled', reason='remainder')
 
 
-def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
+def place(db, market_id, user_id, outcome, amount, odds, kind, request_id, share_token=None):
     atomic, tick = parse_terms(amount, odds)
     if kind not in ('limit', 'ioc') or not 8 <= len(request_id) <= 64:
         raise HTTPException(400, 'Некорректный тип или идентификатор заявки')
@@ -140,6 +147,7 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
     try:
         market = legacy._lock_market(db, market_id)
         require_p2p(market)
+        _guard_unlisted(db, market, user_id, share_token)
         idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
         existing = db.query(P2POrder).filter_by(user_id=user_id, request_id=request_id).first()
         if existing:
@@ -382,13 +390,12 @@ def best_offers_map(db, markets):
     return result
 
 
-def book(db, market_id, viewer_id=None):
+def book(db, market_id, viewer_id=None, share_token=None):
     market = legacy.get_market(db, market_id)
     require_p2p(market)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(404, 'Рынок не найден')
-    if (getattr(market, 'visibility', None) or 'public') == 'unlisted' and viewer_id is None:
-        raise HTTPException(404, 'Рынок не найден')
+    _guard_unlisted(db, market, viewer_id, share_token)
     orders = db.query(P2POrder).filter_by(market_id=market_id, status='open').all()
     accepting = legacy.is_accepting_bets(market)
     sides, queued = _accumulate_book(orders, accepting=accepting)

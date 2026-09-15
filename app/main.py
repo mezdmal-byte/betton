@@ -36,7 +36,7 @@ from app.schemas import (
     TransactionOut,
     UserOut,
 )
-from app.services import discovery, history, market_service, p2p_service
+from app.services import discovery, history, market_access, market_service, p2p_service
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -343,17 +343,34 @@ def resolve_share_market(
 
 
 @app.get("/markets/{market_id}", response_model=MarketOut)
-def get_market_endpoint(market_id: int, db: Session = Depends(get_db)):
+def get_market_endpoint(
+    market_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
     market = market_service.get_market(db, market_id)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(status_code=404, detail="Рынок не найден")
-    if (getattr(market, "visibility", None) or "public") == "unlisted":
-        raise HTTPException(status_code=404, detail="Рынок не найден")
-    return discovery.attach_market_views(db, [market])[0]
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    unlisted = (getattr(market, "visibility", None) or "public") == "unlisted"
+    return discovery.attach_market_views(db, [market], include_share_token=unlisted)[0]
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)
-def quote_endpoint(market_id: int, req: QuoteRequest, db: Session = Depends(get_db)):
+def quote_endpoint(
+    market_id: int,
+    req: QuoteRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    market = market_service.get_market(db, market_id)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
     return market_service.quote_buy(db, market_id, req.outcome, req.money)
 
 
@@ -361,9 +378,14 @@ def quote_endpoint(market_id: int, req: QuoteRequest, db: Session = Depends(get_
 def buy_shares_endpoint(
     market_id: int,
     req: BuySharesRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    market = market_service.get_market(db, market_id)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
     res = market_service.buy_shares(
         db,
         market_id=market_id,
@@ -460,23 +482,57 @@ def p2p_reconciliation_endpoint(
 @app.get("/markets/{market_id}/orderbook")
 def orderbook_endpoint(
     market_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
     viewer_id = current_user.id if current_user is not None else None
-    return p2p_service.book(db, market_id, viewer_id=viewer_id)
+    return p2p_service.book(
+        db,
+        market_id,
+        viewer_id=viewer_id,
+        share_token=market_access.share_token_from_request(request),
+    )
 
 
 @app.post("/markets/{market_id}/orders/quote")
-def order_quote_endpoint(market_id: int, req: OrderPreviewRequest,
-                         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return p2p_service.preview(db, market_id, current_user.id, req.outcome, req.money, req.odds)
+def order_quote_endpoint(
+    market_id: int,
+    req: OrderPreviewRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return p2p_service.preview(
+        db,
+        market_id,
+        current_user.id,
+        req.outcome,
+        req.money,
+        req.odds,
+        share_token=market_access.share_token_from_request(request),
+    )
 
 
 @app.post("/markets/{market_id}/orders")
-def place_order_endpoint(market_id: int, req: OrderRequest,
-                         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return p2p_service.place(db, market_id, current_user.id, req.outcome, req.money, req.odds, req.kind, req.request_id)
+def place_order_endpoint(
+    market_id: int,
+    req: OrderRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return p2p_service.place(
+        db,
+        market_id,
+        current_user.id,
+        req.outcome,
+        req.money,
+        req.odds,
+        req.kind,
+        req.request_id,
+        share_token=market_access.share_token_from_request(request),
+    )
 
 
 @app.post("/orders/{order_id}/cancel")
