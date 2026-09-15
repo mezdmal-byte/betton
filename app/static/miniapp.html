@@ -5,642 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
   <title>BetTON</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root {
-      --bg: #FFFFFF;
-      --surface: #F7F8FA;
-      --text: #171717;
-      --muted: #6B7280;
-      --yes: #20A39E;
-      --no: #EF5B5B;
-      --brand: #171717;
-      --yes-bg: #F2FBFA;
-      --no-bg: #FDF6F6;
-      --nav-active-bg: #ECF8F7;
-      --nav-active-fg: #0F766E;
-      --line: #E5E7EB;
-      --chip: #F7F8FA;
-      --input-bg: #FFFFFF;
-      --input-fg: #171717;
-      --input-ph: #6B7280;
-      --nav-h: 64px;
-      --shadow: none;
-      --app-max: 480px;
-    }
-    * { box-sizing: border-box; }
-    html { background: var(--surface); }
-    html, body { max-width: 100%; overflow-x: hidden; }
-    body {
-      margin: 0 auto;
-      max-width: var(--app-max);
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding-bottom: calc(var(--nav-h) + 28px + env(safe-area-inset-bottom) + var(--kb, 0px));
-      overflow-wrap: anywhere;
-    }
-    header {
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 4;
-      background: var(--bg);
-      border-bottom: 1px solid var(--line);
-    }
-    .brand {
-      margin: 0;
-      font-size: 1.05rem;
-      letter-spacing: .04em;
-      font-weight: 800;
-      color: var(--brand);
-    }
-    .brand-ton { color: var(--yes); }
-    .who {
-      color: var(--muted);
-      font-size: .75rem;
-      margin-top: 2px;
-      min-height: 0;
-    }
-    .who:empty { display: none; }
-    .admin-mark {
-      display: inline-block;
-      background: var(--surface);
-      color: var(--brand);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 1px 8px;
-      font-size: .68rem;
-      font-weight: 700;
-      letter-spacing: .03em;
-    }
-    .balance-wrap { text-align: right; }
-    .balance-label { color: var(--muted); font-size: .7rem; }
-    .balance { color: var(--brand); font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-    .tabs {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 0;
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(var(--app-max), 100%);
-      bottom: var(--kb, 0px);
-      background: var(--bg);
-      border-top: 1px solid var(--line);
-      padding: 4px 4px calc(6px + env(safe-area-inset-bottom));
-      z-index: 8;
-    }
-    .tab {
-      flex: 1 1 0;
-      min-width: 0;
-      min-height: 44px;
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: .8rem;
-      white-space: nowrap;
-      padding: 0 4px;
-    }
-    .tab.active { color: var(--nav-active-fg); background: var(--nav-active-bg); }
-    main { padding: 8px 16px 36px; }
-    .card {
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
-      margin: 10px 0;
-      color: var(--text);
-    }
-    .feed-card { cursor: pointer; padding: 12px; margin: 8px 0; }
-    .feed-card:active { background: var(--surface); }
-    .feed-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .feed-time { color: var(--muted); font-size: .75rem; text-align: right; min-width: 0; }
-    .outcome-pair {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 8px;
-      align-items: center;
-      margin: 12px 0 8px;
-    }
-    .out {
-      text-align: center;
-      font-weight: 700;
-      font-size: .9rem;
-      padding: 8px 6px;
-      border-radius: 12px;
-      background: var(--surface);
-      overflow-wrap: anywhere;
-    }
-    .out.yes-acc { color: var(--yes); background: var(--yes-bg); }
-    .out.no-acc { color: var(--no); background: var(--no-bg); }
-    .out-vs { color: var(--muted); font-size: .72rem; font-weight: 700; }
-    .situation { margin: 0; }
-    .question {
-      color: var(--text);
-      -webkit-text-fill-color: var(--text);
-      font-weight: 700;
-      font-size: 1.08rem;
-      line-height: 1.35;
-      overflow-wrap: anywhere;
-    }
-    .meta { color: var(--muted); font-size: .8rem; margin: 8px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .pill {
-      background: var(--surface);
-      border-radius: 999px;
-      padding: 3px 8px;
-    }
-    .status-pill {
-      display: inline-block;
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-size: .72rem;
-      font-weight: 700;
-      background: var(--surface);
-      color: var(--muted);
-    }
-    .status-open { color: var(--yes); background: var(--yes-bg); }
-    .status-wait { color: #8a6d3b; background: #fbf8f1; }
-    .status-closed { color: var(--muted); }
-    .status-resolved { color: var(--text); background: var(--surface); }
-    .status-cancelled, .status-rejected { color: var(--no); background: var(--no-bg); }
-    label { display: block; color: var(--muted); font-size: .8rem; margin: 8px 0 4px; }
-    input, select, textarea {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: var(--input-bg);
-      color: var(--input-fg);
-      -webkit-text-fill-color: var(--input-fg);
-      caret-color: var(--input-fg);
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 16px;
-      min-height: 44px;
-      color-scheme: light;
-    }
-    input::placeholder, textarea::placeholder {
-      color: var(--input-ph);
-      -webkit-text-fill-color: var(--input-ph);
-      opacity: 1;
-    }
-    button {
-      border: 0;
-      border-radius: 12px;
-      padding: 12px;
-      min-height: 44px;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    button:disabled { opacity: .45; }
-    .row { display: flex; gap: 8px; margin-top: 10px; }
-    .row > * { flex: 1; min-width: 0; }
-    .gold { background: var(--brand); color: #fff; }
-    .yes { background: var(--yes-bg); color: var(--yes); border: 1px solid var(--yes); }
-    .no { background: var(--no-bg); color: var(--no); border: 1px solid var(--no); }
-    .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
-    .muted { color: var(--muted); font-size: .85rem; line-height: 1.45; }
-    .err { color: var(--no); font-size: .85rem; min-height: 0; margin: 0 0 8px; }
-    .err:not(:empty) {
-      background: var(--no-bg);
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
-    .odds {
-      display: flex;
-      gap: 8px;
-      margin: 10px 0;
-      flex-wrap: wrap;
-    }
-    .odd {
-      flex: 1 1 0;
-      min-width: 0;
-      border-radius: 14px;
-      padding: 10px 8px;
-      text-align: center;
-      background: var(--surface);
-    }
-    .odd b { display: block; font-size: 1.35rem; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
-    .odd .kname { font-size: .85rem; font-weight: 800; overflow-wrap: anywhere; }
-    .odd .pct { color: var(--muted); font-size: .75rem; margin-top: 2px; }
-    .c0 .kname, .c0 b { color: var(--yes); }
-    .c1 .kname, .c1 b { color: var(--no); }
-    .c2 .kname, .c2 b { color: var(--brand); }
-    .preview { color: var(--muted); font-size: .8rem; min-height: 2.4em; margin-top: 8px; line-height: 1.35; }
-    .p2p-preview {
-      background: var(--bg);
-      border-radius: 12px;
-      padding: 12px 0 4px;
-      margin-top: 10px;
-      color: var(--text);
-      font-size: .85rem;
-      line-height: 1.45;
-    }
-    .p2p-preview p { margin: 0 0 8px; }
-    .p2p-preview p:last-child { margin-bottom: 0; }
-    .preview-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 12px;
-      margin: 0 0 8px;
-    }
-    .preview-row span { color: var(--muted); min-width: 0; }
-    .preview-row b { text-align: right; font-variant-numeric: tabular-nums; min-width: 0; }
-    .preview-note { margin: 8px 0 0; color: var(--muted); }
-    .preview-warn { color: var(--muted); }
-    .feed-toolbar { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; }
-    .feed-search-label, .feed-status-wrap { color: var(--muted); font-size: .8rem; font-weight: 700; }
-    .feed-status-wrap select { margin-top: 4px; }
-    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; }
-    .chip {
-      min-height: 32px;
-      padding: 0 10px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: var(--chip);
-      color: var(--muted);
-      font-size: .78rem;
-      font-weight: 700;
-    }
-    .chip.on { background: var(--brand); color: #fff; border-color: var(--brand); }
-    .side-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; }
-    .side-pick {
-      min-height: 48px;
-      border: 1px solid var(--line);
-      background: var(--bg);
-      color: var(--text);
-      font-weight: 800;
-      overflow-wrap: anywhere;
-    }
-    .side-pick.on-yes { background: var(--yes-bg); color: var(--yes); border-color: var(--yes); }
-    .side-pick.on-no { background: var(--no-bg); color: var(--no); border-color: var(--no); }
-    .p2p-side { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-    .p2p-form { position: relative; }
-    .event-card > .status-pill { margin-bottom: 8px; }
-    .event-deadline { margin: 6px 0 0; }
-    .event-offers { margin: 8px 0 4px; font-size: .82rem; }
-    .event-offers-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    button.compact {
-      min-height: 32px;
-      padding: 4px 10px;
-      font-size: .78rem;
-      width: auto;
-      flex: 0 0 auto;
-    }
-    .event-bet {
-      background: var(--surface);
-      border-radius: 16px;
-      padding: 14px;
-      margin: 12px 0 10px;
-    }
-    .event-bet-title { margin: 0 0 8px; font-weight: 800; color: var(--text); }
-    .event-bet .gold { min-height: 48px; }
-    .p2p-depth { margin-top: 4px; font-size: .82rem; }
-    .p2p-book { font-size: .85rem; margin: 0; }
-    .p2p-book p, .offer-line { margin: 4px 0; }
-    .best-board {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 8px 0 4px;
-    }
-    .best-cell {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      text-align: center;
-      gap: 2px;
-      min-height: 72px;
-      padding: 10px 8px;
-      border-radius: 14px;
-      background: var(--surface);
-      border: 1px solid transparent;
-      color: var(--text);
-      font-weight: 700;
-    }
-    .best-cell.yes-acc { background: var(--yes-bg); color: var(--yes); }
-    .best-cell.no-acc { background: var(--no-bg); color: var(--no); }
-    .best-cell[data-prefill-odds] { cursor: pointer; border-color: transparent; }
-    .best-cell[data-prefill-odds].yes-acc { border-color: rgba(32, 163, 158, .35); }
-    .best-cell[data-prefill-odds].no-acc { border-color: rgba(239, 91, 91, .35); }
-    .best-name { font-size: .8rem; font-weight: 800; }
-    .best-odds {
-      font-size: 1.45rem;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.15;
-    }
-    .best-vol { font-size: .72rem; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
-    .best-you { font-size: .68rem; color: var(--muted); font-weight: 600; margin-top: 4px; line-height: 1.3; }
-    .feed-odds {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 12px 0 8px;
-    }
-    .feed-odd {
-      text-align: center;
-      padding: 10px 6px;
-      border-radius: 14px;
-      background: var(--surface);
-    }
-    .feed-odd.yes-acc { background: var(--yes-bg); color: var(--yes); }
-    .feed-odd.no-acc { background: var(--no-bg); color: var(--no); }
-    .feed-odd-name { display: block; font-size: .78rem; font-weight: 800; }
-    .feed-odd-k {
-      display: block;
-      font-size: 1.35rem;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.2;
-      margin: 2px 0;
-    }
-    .feed-odd-vol { display: block; font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .book-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-variant-numeric: tabular-nums;
-      margin: 4px 0 10px;
-    }
-    .book-table th {
-      text-align: left;
-      font-size: .7rem;
-      font-weight: 700;
-      color: var(--muted);
-      padding: 4px 0;
-    }
-    .book-table td { padding: 4px 0; font-size: .85rem; color: var(--text); }
-    .book-table td.num, .book-table th:last-child, .book-table td:last-child { text-align: right; }
-    .depth-name { font-weight: 800; color: var(--text); margin: 8px 0 0; }
-    .p2p-odds, .p2p-money, .amount, .balance { font-variant-numeric: tabular-nums; }
-    .empty-state, .loading-state {
-      text-align: center;
-      padding: 36px 16px;
-      color: var(--muted);
-    }
-    .empty-state strong { display: block; color: var(--text); margin-bottom: 6px; }
-    .back {
-      background: transparent;
-      color: var(--brand);
-      border: 0;
-      min-height: 40px;
-      padding: 4px 0;
-      font-size: .9rem;
-    }
-    .toast {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(min(var(--app-max), 100%) - 32px);
-      bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom));
-      background: var(--yes-bg);
-      color: var(--nav-active-fg);
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-weight: 700;
-      display: none;
-      z-index: 9;
-      overflow-wrap: anywhere;
-    }
-    .toast.show { display: block; }
-    .toast.bad { background: var(--no-bg); color: var(--no); }
-    h2 { font-size: .95rem; margin: 18px 0 0; color: var(--brand); }
-    .mine-lede { margin: 8px 0 4px; }
-    .mine-group { margin: 8px 0 16px; }
-    .mine-group-title {
-      font-size: .95rem;
-      font-weight: 800;
-      margin: 0 0 6px;
-      overflow-wrap: anywhere;
-    }
-    .kind-tag {
-      display: inline-block;
-      font-size: .68rem;
-      font-weight: 800;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    .order-outcome, .pos-outcome { font-weight: 700; margin: 0 0 8px; }
-    .money-list {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-      gap: 4px 12px;
-      margin: 8px 0 10px;
-      font-size: .85rem;
-    }
-    .money-list dt { color: var(--muted); min-width: 0; }
-    .money-list dt.lead { font-weight: 700; color: var(--text); }
-    .money-list dd {
-      margin: 0;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      text-align: right;
-      min-width: 0;
-    }
-    .money-list dd.lead { font-size: 1.05rem; }
-    .order-card .ghost, .cancel-hint { width: 100%; margin-top: 8px; }
-    .pos-line {
-      background: var(--surface);
-      border-radius: 12px;
-      padding: 10px;
-      margin-top: 8px;
-    }
-    .history-void { background: #fbf8f1; }
-    .void-banner { font-weight: 700; color: #8a6d3b; margin: 8px 0; }
-    .history-result {
-      font-size: 1.15rem;
-      font-weight: 800;
-      margin: 8px 0 0;
-      font-variant-numeric: tabular-nums;
-    }
-    .history-result.win { color: var(--yes); }
-    .history-result.loss { color: var(--no); }
-    .history-result.void { color: #8a6d3b; }
-    .outcome-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 6px;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .outcome-row .pct { color: var(--muted); font-size: .8rem; text-align: right; }
-    .rm {
-      min-height: 40px;
-      padding: 0;
-      background: transparent;
-      color: var(--no);
-      border: 1px solid var(--line);
-    }
-    details { margin-top: 8px; color: var(--muted); }
-    [hidden] { display: none !important; }
-    .avatar, .avatar-btn {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: var(--surface); border: 1px solid var(--line);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: .85rem; color: var(--brand);
-      overflow: hidden; padding: 0; flex: 0 0 auto;
-    }
-    .avatar img, .avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    .balance-wrap { text-align: right; cursor: pointer; min-height: 44px; }
-    .profile-hero { display: flex; gap: 12px; align-items: center; margin: 8px 0 12px; }
-    .profile-hero .avatar { width: 56px; height: 56px; font-size: 1.1rem; }
-    .profile-name { font-weight: 800; font-size: 1.1rem; }
-    .profile-handle { color: var(--muted); font-size: .8rem; margin-top: 2px; }
-    .balance-card {
-      background: var(--surface); border-radius: 16px; padding: 16px;
-      cursor: pointer; border: 1px solid var(--line);
-    }
-    .balance-card .kicker { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .04em; }
-    .balance-card .lead { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; margin: 4px 0 10px; }
-    .balance-sub { display: flex; gap: 16px; color: var(--muted); font-size: .8rem; }
-    .balance-sub b { color: var(--text); font-variant-numeric: tabular-nums; }
-    .account-nav, .wallet-tabs, .wallet-nets { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
-    .tx-row {
-      display: grid; grid-template-columns: 36px minmax(0, 1fr) auto;
-      gap: 10px; align-items: center; padding: 12px 0;
-      border-bottom: 1px solid var(--line);
-    }
-    .tx-icon {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: var(--surface); display: flex; align-items: center; justify-content: center;
-      font-weight: 800; color: var(--muted);
-    }
-    .tx-amt { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
-    .tx-amt.pos { color: var(--yes); }
-    .tx-amt.neg { color: var(--no); }
-    .wallet-panel { margin-top: 8px; }
-    .qr-slot {
-      width: 148px; height: 148px; margin: 12px auto;
-      border: 1px dashed var(--line); border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--muted); font-size: .75rem; text-align: center; padding: 12px;
-      background: var(--surface);
-    }
-    .info-box { background: var(--surface); border-radius: 14px; padding: 12px; margin: 10px 0; }
-    .info-box p { margin: 0 0 6px; }
-    .info-box p:last-child { margin-bottom: 0; }
-    #top-creators-link { display: inline-block; margin: 4px 0 8px; font-weight: 700; color: var(--nav-active-fg); }
-    .top-preview {
-      display: flex; gap: 8px; overflow-x: auto; margin: 0 0 8px;
-      padding-bottom: 2px; -webkit-overflow-scrolling: touch;
-    }
-    .top-chip {
-      flex: 0 0 auto; max-width: 170px;
-      border: 1px solid var(--line); border-radius: 12px;
-      padding: 8px 10px; background: var(--surface); cursor: pointer; text-align: left;
-    }
-    .top-chip .creator-rank { font-size: .72rem; }
-    .top-chip b { display: block; font-size: .86rem; margin: 2px 0; }
-    .top-chip .muted { font-size: .72rem; margin: 0; }
-    .creator-row { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
-    .creator-rank { font-weight: 800; color: var(--muted); min-width: 1.6em; }
-    .creator-full-row { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); gap: 8px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
-    .creator-metrics { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 4px; font-size: .75rem; color: var(--muted); }
-    .creator-metrics b { color: var(--text); font-variant-numeric: tabular-nums; }
-    .stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 10px; }
-    .stat-chip {
-      background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-      padding: 10px 8px; text-align: center;
-    }
-    .stat-chip span { display: block; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .02em; }
-    .stat-chip b { display: block; font-size: 1.25rem; font-variant-numeric: tabular-nums; margin-top: 4px; }
-    .stat-chip.earnings { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; text-align: left; padding: 12px 14px; }
-    .stat-chip.earnings span { margin: 0; }
-    .stat-chip.earnings b { margin: 0; font-size: 1.15rem; color: var(--yes); }
-    .fee-line { margin: 8px 0 0; }
-    .fee-line summary {
-      list-style: none; cursor: pointer; color: var(--muted); font-size: .82rem; font-weight: 700;
-    }
-    .fee-line summary::-webkit-details-marker { display: none; }
-    .fee-line p { margin: 8px 0 0; color: var(--muted); font-size: .8rem; line-height: 1.4; }
-    #feed-more { width: 100%; margin: 8px 0 16px; }
-    .feed-creator { font-size: .78rem; color: var(--muted); margin: 6px 0 0; }
-    .feed-creator button { background: none; border: 0; color: var(--nav-active-fg); font-weight: 700; min-height: 32px; padding: 0; width: auto; }
-    .event-meta-line { color: var(--muted); font-size: .8rem; margin: 6px 0; }
-    .onboard { position: relative; padding: 12px 40px 10px 14px; margin: 8px 0 10px; }
-    .onboard-x {
-      position: absolute; top: 4px; right: 4px; width: 36px; min-height: 36px;
-      padding: 0; background: transparent; color: var(--muted); font-size: 1.2rem;
-    }
-    .onboard strong { display: block; font-size: 1rem; line-height: 1.3; }
-    .onboard .onboard-lead { margin: 4px 0 8px; font-size: .85rem; }
-    .onboard .row { margin-top: 0; }
-    .onboard .row button { min-height: 40px; font-size: .9rem; padding: 8px; }
-    .onboard-foot { margin: 8px 0 0; }
-    .onboard-foot button, .onboard-foot summary {
-      min-height: 28px; padding: 0; border: 0; background: none; color: var(--muted);
-      font-weight: 700; font-size: .78rem; cursor: pointer;
-    }
-    .onboard-foot p { margin: 6px 0 0; font-size: .75rem; color: var(--muted); }
-    .help-card p { margin: 0 0 10px; }
-    .lang-row { margin: 10px 0 4px; }
-    .fees-box { margin-top: 12px; }
-    .fees-box p { margin: 0 0 8px; }
-    .account-aside, .account-main { min-width: 0; }
-    @media (min-width: 481px) {
-      body { box-shadow: 0 0 0 1px var(--line); }
-    }
-    @media (width >= 768px) {
-      :root { --app-max: 720px; }
-      #markets {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        align-items: start;
-      }
-      #markets .card { margin: 0; }
-      #markets .empty-state, #markets .loading-state { grid-column: 1 / -1; }
-    }
-    @media (width >= 1024px) {
-      :root { --app-max: 1080px; }
-      .account-desktop, .wallet-desktop {
-        display: grid;
-        grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
-        gap: 20px;
-        align-items: start;
-      }
-    }
-    @media (width >= 1280px) {
-      :root { --app-max: 1200px; }
-    }
-  </style>
+  <link rel="stylesheet" href="/static/ui.css"/>
 </head>
 <body>
   <header>
-    <div>
-      <h1 class="brand">Bet<span class="brand-ton">TON</span></h1>
-      <div class="who" id="who"></div>
-    </div>
+    <h1 class="brand">Bet<span class="brand-ton">TON</span></h1>
     <div class="header-right">
       <div class="balance-wrap" id="balance-open" role="button" tabindex="0">
         <div class="balance-label" data-i18n="header.available">Доступно</div>
-        <div class="balance" id="balance">—</div>
+        <div class="balance" id="balance"><span class="skeleton" aria-hidden="true"></span></div>
       </div>
       <button type="button" class="avatar-btn" id="profile-open" data-i18n-aria="header.profile" aria-label="Профиль"></button>
     </div>
@@ -663,31 +36,25 @@
         </details>
       </div>
       <div class="feed-toolbar">
-        <div class="chips" id="sort-filters" role="group" aria-label="Сортировка">
+        <div class="search-wrap">
+          <span id="search-icon"></span>
+          <input id="feed-search" type="search" data-i18n-placeholder="feed.searchPh" placeholder="Поиск рынков, тем или авторов" enterkeyhint="search" autocomplete="off"/>
+        </div>
+        <div class="chips-row" id="sort-filters" role="group" aria-label="Сортировка">
           <button type="button" class="chip on" data-sort="new" data-i18n="feed.new">Новые</button>
           <button type="button" class="chip" data-sort="popular" data-i18n="feed.popular">Популярные</button>
-          <button type="button" class="chip" data-sort="closing" data-i18n="feed.closing">Закрываются</button>
+          <button type="button" class="chip" data-sort="closing" data-i18n="feed.closing">Скоро закроются</button>
         </div>
-        <div class="chips" id="cat-filters" role="group" aria-label="Категории">
-          <button class="chip on" data-cat="" data-i18n="cat.all">Все</button>
-          <button class="chip" data-cat="sport" data-i18n="cat.sport">Спорт</button>
-          <button class="chip" data-cat="politics" data-i18n="cat.politics">Политика</button>
-          <button class="chip" data-cat="unique" data-i18n="cat.unique">Уникальное</button>
+        <div class="cat-row">
+          <div class="chips" id="cat-filters" role="group" aria-label="Категории">
+            <button type="button" class="chip on" data-cat="" data-i18n="cat.all">Все</button>
+            <button type="button" class="chip" data-cat="sport" data-i18n="cat.sport">Спорт</button>
+            <button type="button" class="chip" data-cat="politics" data-i18n="cat.politics">Политика</button>
+            <button type="button" class="chip" data-cat="unique" data-i18n="cat.unique">Уникальное</button>
+          </div>
+          <button type="button" class="chip chip-icon" id="feed-filters-open" data-i18n-aria="feed.filters" aria-label="Фильтры"></button>
         </div>
-        <label class="feed-search-label" for="feed-search" data-i18n="feed.search">Поиск по вопросу</label>
-        <input id="feed-search" type="search" data-i18n-placeholder="feed.searchPh" placeholder="Например, кто победит" enterkeyhint="search" autocomplete="off"/>
-        <label class="feed-status-wrap" for="status-filter"><span data-i18n="feed.status">Состояние</span>
-          <select id="status-filter">
-            <option value="" data-i18n="status.all">Все</option>
-            <option value="open" data-i18n="status.open">Активные</option>
-            <option value="closed" data-i18n="status.closed">Приём закрыт</option>
-            <option value="resolved" data-i18n="status.resolved">Завершены</option>
-            <option value="cancelled" data-i18n="status.cancelled">Отменены</option>
-          </select>
-        </label>
       </div>
-      <a href="#top-creators-panel" id="top-creators-link" class="muted" data-i18n="feed.topCreators">Лучшие авторы →</a>
-      <div class="top-preview" id="top-creators-preview"></div>
       <div id="markets"></div>
       <button type="button" class="ghost" id="feed-more" hidden data-i18n="feed.more">Показать ещё</button>
     </section>
@@ -704,7 +71,7 @@
     </section>
 
     <section data-panel="top-creators" hidden>
-      <button type="button" class="back" id="top-creators-back" data-i18n="back.feed">← К ленте</button>
+      <button type="button" class="back" id="top-creators-back" data-i18n="back.feed">← Рынки</button>
       <div class="card">
         <strong data-i18n="creators.title">TOP-10 авторов</strong>
         <div id="top-creators-full"></div>
@@ -712,18 +79,18 @@
     </section>
 
     <section data-panel="creator" hidden>
-      <button type="button" class="back" id="creator-back" data-i18n="back.feed">← К ленте</button>
+      <button type="button" class="back" id="creator-back" data-i18n="back.feed">← Рынки</button>
       <div id="creator-root"></div>
     </section>
 
     <section data-panel="event" hidden>
-      <button type="button" class="back" id="event-back" data-i18n="back.feed">← К ленте</button>
+      <button type="button" class="back" id="event-back" data-i18n="back.feed">← Рынки</button>
       <div id="event-root"></div>
     </section>
 
     <section data-panel="create" hidden>
       <div class="card">
-        <strong data-i18n="create.title">Новое событие</strong>
+        <strong data-i18n="create.title">Создать рынок</strong>
         <label data-i18n="create.question">Вопрос</label>
         <input id="question" maxlength="512" data-i18n-placeholder="create.questionPh" placeholder="Кто победит в матче?"/>
         <label data-i18n="create.category">Категория</label>
@@ -732,23 +99,23 @@
           <button type="button" class="chip" data-cat="politics" data-i18n="cat.politics">Политика</button>
           <button type="button" class="chip on" data-cat="unique" data-i18n="cat.unique">Уникальное</button>
         </div>
-        <label data-i18n="create.outcomes">Два исхода</label>
+        <label data-i18n="create.outcomes">Варианты исхода</label>
         <div id="outcomes-editor"></div>
-        <label data-i18n="create.visibility">Тип события</label>
+        <label data-i18n="create.visibility">Кто может участвовать</label>
         <div class="chips" id="create-visibility">
           <button type="button" class="chip on" data-vis="public" data-i18n="create.public">Публичное</button>
           <button type="button" class="chip" data-vis="unlisted" data-i18n="create.unlisted">По ссылке</button>
         </div>
-        <label data-i18n="create.close">Конец приёма</label>
+        <label data-i18n="create.close">Дата и время закрытия</label>
         <input id="close-at" type="datetime-local" required/>
         <details class="fees-box">
-          <summary data-i18n="create.feesSummary">Условия и сборы ⓘ</summary>
+          <summary data-i18n="create.feesSummary">Правила и сборы</summary>
           <p data-i18n="create.how">Как работает событие?</p>
           <p data-i18n="create.feesP2p">Это P2P-рынок: коэффициенты задают сами пользователи, букмекера нет. Заявка резервирует сумму и ждёт встречную.</p>
           <p data-i18n="create.feesFee">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя.</p>
           <p data-i18n="creator.shareCompact">Вознаграждение автора — 75% сервисного сбора</p>
           <p data-i18n="creator.shareDetail">Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли.</p>
-          <p data-i18n="creator.shareNote" title="Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя.">Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша.</p>
+          <p data-i18n="creator.shareNote">Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша.</p>
           <p data-i18n="create.feesExample">Пример: ставка 100 TON, выплата 180 TON, чистая прибыль 80 TON, сервисный сбор 0.80 TON. Проигравшая ставка не платит дополнительный сбор.</p>
           <p data-i18n="create.feesCancel">Если событие отменят, исполненные ставки и незакрытый остаток заявки вернутся без сервисного сбора.</p>
           <p data-i18n="create.moderationNote">Публичное событие появится в ленте после проверки. Событие по ссылке открывается сразу и не показывается в общей ленте.</p>
@@ -767,55 +134,50 @@
             <button type="button" class="gold" id="open-deposit" data-i18n="account.deposit">Пополнить</button>
             <button type="button" class="ghost" id="open-withdraw" data-i18n="account.withdraw">Вывести</button>
           </div>
-          <p class="muted lang-row" data-i18n="account.lang">Язык</p>
-          <div class="chips" id="lang-switch">
-            <button type="button" class="chip" data-lang="ru">RU</button>
-            <button type="button" class="chip" data-lang="en">EN</button>
-            <button type="button" class="chip" data-lang="zh">简体中文</button>
-          </div>
-          <p><button type="button" class="ghost compact" id="profile-help" data-i18n="onboard.how">Как это работает</button></p>
           <div class="account-nav chips" id="account-nav" role="tablist">
-            <button type="button" class="chip on" data-account="overview" data-i18n="account.overview">Обзор</button>
-            <button type="button" class="chip" data-account="events" data-i18n="account.events">Мои события</button>
-            <button type="button" class="chip" data-account="orders" data-i18n="account.orders">Мои заявки</button>
-            <button type="button" class="chip" data-account="positions" data-i18n="account.positions">Мои позиции</button>
-            <button type="button" class="chip" data-account="history" data-i18n="account.history">История</button>
+            <button type="button" class="chip on" data-account="positions" data-i18n="portfolio.positions">Позиции</button>
+            <button type="button" class="chip" data-account="orders" data-i18n="portfolio.orders">Заявки</button>
+            <button type="button" class="chip" data-account="history" data-i18n="portfolio.history">История</button>
           </div>
         </div>
         <div class="account-main">
-      <div data-account-panel="overview" id="account-overview"></div>
-      <div data-account-panel="events" hidden>
-        <h2 data-i18n="account.events">Мои события</h2>
-        <div id="mine-created"><div class="empty-state">Вы ещё не создавали события.</div></div>
-      </div>
-      <div data-account-panel="orders" hidden>
-        <h2 data-i18n="account.orders">Мои заявки</h2>
-        <div id="mine-orders"><div class="empty-state">Активных заявок пока нет.</div></div>
-      </div>
-      <div data-account-panel="positions" hidden>
-        <h2 data-i18n="account.positions">Мои позиции</h2>
-        <div id="mine-bets"><div class="empty-state">У вас пока нет исполненных ставок.</div></div>
-      </div>
-      <div data-account-panel="history" hidden>
-        <h2 data-i18n="account.history">История</h2>
-        <div class="chips" id="tx-filters">
-          <button type="button" class="chip on" data-tx="" data-i18n="tx.all">Все</button>
-          <button type="button" class="chip" data-tx="bets" data-i18n="tx.bets">Ставки</button>
-          <button type="button" class="chip" data-tx="wins" data-i18n="tx.wins">Выигрыши</button>
-          <button type="button" class="chip" data-tx="refunds" data-i18n="tx.refunds">Возвраты</button>
-          <button type="button" class="chip" data-tx="deposits" data-i18n="tx.deposits">Пополнения</button>
-          <button type="button" class="chip" data-tx="withdrawals" data-i18n="tx.withdrawals">Выводы</button>
-        </div>
-        <div id="tx-list"></div>
-        <div id="mine-results"><div class="empty-state">Завершённых событий пока нет.</div></div>
-      </div>
+          <div data-account-panel="overview" id="account-overview" hidden></div>
+          <div data-account-panel="events" hidden>
+            <h2 data-i18n="account.events">Мои события</h2>
+            <div id="mine-created"><div class="empty-state">Вы ещё не создавали события.</div></div>
+          </div>
+          <div data-account-panel="positions">
+            <div id="mine-bets"><div class="empty-state">Нет позиций</div></div>
+          </div>
+          <div data-account-panel="orders" hidden>
+            <div id="mine-orders"><div class="empty-state">Нет активных заявок</div></div>
+          </div>
+          <div data-account-panel="history" hidden>
+            <div class="chips" id="tx-filters">
+              <button type="button" class="chip on" data-tx="" data-i18n="tx.all">Все</button>
+              <button type="button" class="chip" data-tx="bets" data-i18n="tx.bets">Ставки</button>
+              <button type="button" class="chip" data-tx="wins" data-i18n="tx.wins">Выигрыши</button>
+              <button type="button" class="chip" data-tx="refunds" data-i18n="tx.refunds">Возвраты</button>
+              <button type="button" class="chip" data-tx="deposits" data-i18n="tx.deposits">Пополнения</button>
+              <button type="button" class="chip" data-tx="withdrawals" data-i18n="tx.withdrawals">Выводы</button>
+            </div>
+            <div id="tx-list"></div>
+            <div id="mine-results"></div>
+          </div>
         </div>
       </div>
     </section>
+
+    <section data-panel="profile" hidden>
+      <div id="profile-root">
+        <div id="profile-header"></div>
+      </div>
+    </section>
+
     <section data-panel="wallet" hidden>
       <div class="wallet-desktop">
         <div class="account-aside">
-      <button type="button" class="back" id="wallet-back" data-i18n="back.profile">← К профилю</button>
+      <button type="button" class="back" id="wallet-back" data-i18n="back.portfolio">← Портфель</button>
       <div id="wallet-summary"></div>
       <div class="wallet-nets chips" id="wallet-nets">
         <button type="button" class="chip on" data-net="ton">TON</button>
@@ -855,9 +217,9 @@
           <input id="withdraw-amount" inputmode="decimal" placeholder="0.00"/>
           <button type="button" class="ghost compact" id="withdraw-max">MAX</button>
         </div>
-        <p class="muted"><span data-i18n="wallet.available">Доступно: </span><span id="withdraw-available">—</span></p>
+        <p class="muted"><span data-i18n="wallet.available">Доступно: </span><span id="withdraw-available"></span></p>
         <p class="muted" data-i18n="wallet.fee">Комиссия сети: будет определена при подключении</p>
-        <p class="muted"><span data-i18n="wallet.receive">К получению: </span><span id="withdraw-receive">—</span></p>
+        <p class="muted"><span data-i18n="wallet.receive">К получению: </span><span id="withdraw-receive"></span></p>
         <button type="button" class="gold" id="withdraw-cta" disabled data-i18n="wallet.withdrawCta">Вывести</button>
         <p class="muted" data-i18n="wallet.withdrawNote">Вывод будет доступен после подключения блокчейн-модуля.</p>
       </div>
@@ -867,16 +229,37 @@
         </div>
       </div>
     </section>
-    <section data-panel="moderation" hidden><h2 data-i18n="moderation.title">На проверке</h2><div id="moderation-markets"></div></section>
+    <section data-panel="moderation" hidden>
+      <button type="button" class="back" id="moderation-back" data-i18n="back.help">← Назад</button>
+      <h2 data-i18n="moderation.title">На проверке</h2>
+      <div id="moderation-markets"></div>
+    </section>
   </main>
   <nav class="tabs">
-    <button class="tab active" data-i18n="nav.feed" data-tab="feed">Лента</button>
+    <button class="tab active" data-i18n="nav.feed" data-tab="feed">Рынки</button>
     <button class="tab" data-i18n="nav.create" data-tab="create">Создать</button>
-    <button class="tab" data-i18n="nav.mine" data-tab="mine">Мои</button>
-    <button class="tab" id="moderation-tab" data-i18n="nav.moderation" data-tab="moderation" hidden>Проверка</button>
+    <button class="tab" data-i18n="nav.mine" data-tab="mine">Портфель</button>
   </nav>
   <div class="toast" id="toast"></div>
+  <div id="auth-block" class="auth-block" hidden>
+    <div class="auth-block-card">
+      <h2 data-i18n="auth.expiredTitle">Сессия закончилась</h2>
+      <p class="muted" data-i18n="auth.expiredBody">Чтобы безопасно продолжить работу, откройте BetTON заново через Telegram.</p>
+      <button type="button" class="gold" id="auth-reopen" data-i18n="auth.reopen">Перезапустить BetTON</button>
+    </div>
+  </div>
+  <div id="filter-backdrop" class="sheet-backdrop" hidden></div>
+  <div id="feed-filters-sheet" class="sheet" hidden>
+    <h3 data-i18n="feed.filterTitle">Статус</h3>
+    <div class="chips" id="status-filters">
+      <button type="button" class="chip on" data-status="open" data-i18n="status.open">Активные</button>
+      <button type="button" class="chip" data-status="closed" data-i18n="status.closed">Приём закрыт</button>
+      <button type="button" class="chip" data-status="resolved" data-i18n="status.resolved">Завершены</button>
+      <button type="button" class="chip" data-status="cancelled" data-i18n="status.cancelled">Отменены</button>
+    </div>
+  </div>
 
+  <script src="/static/icons.js"></script>
   <script src="/static/i18n.js"></script>
   <script src="/static/p2p.js"></script>
   <script src="/static/account.js"></script>
@@ -898,7 +281,7 @@
       const btn = document.getElementById("create");
       if (!btn) return;
       btn.textContent = createVisibility === "unlisted"
-        ? tt("create.submitUnlisted", "Создать по ссылке")
+        ? tt("create.submitUnlisted", "Создать событие")
         : tt("create.submit", "Отправить на проверку");
     }
     function openHelp() {
@@ -946,6 +329,7 @@
       if (typeof paintTopCreators === "function") paintTopCreators();
       if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
       if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
+      if (typeof paintProfileHeader === "function") paintProfileHeader();
       if (typeof paintMineFromCache === "function") paintMineFromCache();
       if (typeof paintCreatorFromCache === "function") paintCreatorFromCache();
       if (typeof paintModeration === "function") paintModeration();
@@ -962,6 +346,7 @@
       const err = document.getElementById("error");
       if (err && err.textContent) err.textContent = friendlyError(err.textContent);
       if (typeof applyI18n === "function") applyI18n();
+      paintNavIcons();
     }
     window.onLangChange = refreshDynamicLang;
     const tg = window.Telegram && window.Telegram.WebApp;
@@ -969,8 +354,6 @@
       if (tg) {
         tg.ready();
         tg.expand();
-        // Не перекрашивать фон/карточки из themeParams: светлая тема Telegram
-        // делает название пари того же цвета, что и карточка.
       }
     } catch (e) { /* браузер без Telegram */ }
 
@@ -982,8 +365,9 @@
 
     let me = null;
     let authBlocked = false;
+    let authReady = false;
     let filterCategory = "";
-    let filterStatus = "";
+    let filterStatus = "open";
     let feedSearch = "";
     let feedSort = "new";
     let feedOffset = 0;
@@ -1004,6 +388,8 @@
     let activeEventId = null;
     let eventReturnTab = "feed";
     let eventCache = {};
+    let eventTradeMode = "simple";
+    let eventPreselect = null;
     let accountState = null;
     let txFilter = "";
     let txRows = [];
@@ -1058,7 +444,13 @@
 
     function fmtK(p) { return odds(p).toFixed(2); }
     function fmtPct(p) { return (p * 100).toFixed(1) + "%"; }
-    function fmtTon(v) { return Number(v).toFixed(2) + " TON"; }
+    function fmtTon(v) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "0.00 TON";
+      const parts = n.toFixed(2).split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      return parts.join(".") + " TON";
+    }
 
     function statusLabel(s) {
       if (s === "pending") return tt("status.pending", "На модерации");
@@ -1080,6 +472,21 @@
       const opts = { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" };
       if (d.getFullYear() !== ref.getFullYear()) opts.year = "numeric";
       return d.toLocaleString((typeof localeTag === "function" ? localeTag() : "ru-RU"), opts);
+    }
+
+    function formatTimeLeft(value, now) {
+      if (!value) return "";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return formatCloseAt(value, now);
+      const ref = now instanceof Date ? now : new Date();
+      const ms = d.getTime() - ref.getTime();
+      if (ms <= 0) return tt("time.ended", "закрыто");
+      const mins = Math.max(1, Math.round(ms / 60000));
+      const hours = Math.floor(mins / 60);
+      const days = Math.floor(hours / 24);
+      if (days >= 1) return tt("time.dh", "{d} д {h} ч", { d: days, h: hours % 24 });
+      if (hours >= 1) return tt("time.h", "{h} ч", { h: hours });
+      return tt("time.m", "{m} мин", { m: mins });
     }
 
     function feedStatus(m) {
@@ -1124,6 +531,23 @@
         || String(m.description || "").toLowerCase().includes(q));
     }
 
+    function topCreatorsBlockHtml() {
+      const rows = (topCreatorsRows || []).slice(0, 3);
+      if (!rows.length) return "";
+      const medals = ["🥇", "🥈", "🥉"];
+      return `<section class="top-creators-block">
+        <div class="top-creators-head">
+          <strong>${escapeHtml(tt("feed.topCreators", "Лучшие авторы"))}</strong>
+          <button type="button" id="top-creators-link">${escapeHtml(tt("feed.topAll", "Все →"))}</button>
+        </div>
+        <div class="top-preview" id="top-creators-preview">${rows.map((row, i) => `
+          <button type="button" class="top-chip" data-open-creator="${row.id}">
+            <span><span class="creator-rank">${medals[i] || ("#" + row.rank)}</span> <b>${escapeHtml(creatorHandle(row))}</b></span>
+            <span class="muted">${escapeHtml(fmtTon(row.volume || 0))}</span>
+          </button>`).join("")}</div>
+      </section>`;
+    }
+
     function paintFeed() {
       const root = document.getElementById("markets");
       if (!root) return;
@@ -1134,27 +558,32 @@
         if (more) more.hidden = true;
         return;
       }
-      root.innerHTML = feedMarkets.map(m => feedCard(m)).join("");
+      const cards = feedMarkets.map(m => feedCard(m));
+      const preview = topCreatorsBlockHtml();
+      if (preview) {
+        const at = Math.min(6, cards.length);
+        cards.splice(at, 0, preview);
+      }
+      root.innerHTML = cards.join("");
       const more = document.getElementById("feed-more");
       if (more) more.hidden = feedMarkets.length >= feedTotal;
     }
 
     function feedBestOffersHtml(m) {
-      if (m.mechanism !== "p2p" || !m.accepting_bets || !Array.isArray(m.best_offers)) return "";
-      const hasOffer = m.best_offers.some(off => off);
-      if (!hasOffer) return "";
+      if (m.mechanism !== "p2p" || !m.accepting_bets) return "";
+      const offers = Array.isArray(m.best_offers) ? m.best_offers : [null, null];
       const names = marketOutcomes(m);
       return '<div class="feed-odds">' + [0, 1].map(i => {
-        const off = m.best_offers[i];
+        const off = offers[i];
         const name = names[i] || (i === 0 ? tt("outcome.yes", "Да") : tt("outcome.no", "Нет"));
         const cls = i === 0 ? "yes-acc" : "no-acc";
         if (!off) {
-          return '<div class="feed-odd ' + cls + '"><span class="feed-odd-name">' + escapeHtml(name) +
-            '</span><b class="feed-odd-k">—</b><span class="feed-odd-vol">' + escapeHtml(tt("feed.noOffers", "Нет предложений")) + "</span></div>";
+          return '<button type="button" class="feed-odd ' + cls + '" data-open-market="' + m.id + '" data-preselect="' + i + '"><span class="feed-odd-name">' + escapeHtml(name) +
+            '</span><b class="feed-odd-k">—</b><span class="feed-odd-vol">' + escapeHtml(tt("feed.noOffers", "Нет предложений")) + "</span></button>";
         }
-        return '<div class="feed-odd ' + cls + '"><span class="feed-odd-name">' + escapeHtml(name) +
+        return '<button type="button" class="feed-odd ' + cls + '" data-open-market="' + m.id + '" data-preselect="' + i + '"><span class="feed-odd-name">' + escapeHtml(name) +
           '</span><b class="feed-odd-k">' + Number(off.odds).toFixed(2) +
-          '</b><span class="feed-odd-vol">' + escapeHtml(fmtTon(off.available)) + '</span></div>';
+          '</b><span class="feed-odd-vol">' + escapeHtml(fmtTon(off.available)) + "</span></button>";
       }).join("") + "</div>";
     }
 
@@ -1163,8 +592,8 @@
       const st = feedStatus(m);
       const yes = names[0] || tt("outcome.yes", "Да");
       const no = names[1] || tt("outcome.no", "Нет");
-      const close = formatCloseAt(m.close_at);
-      const situation = feedSituation(m);
+      const left = formatTimeLeft(m.close_at);
+      const timeOrStatus = st.key === "open" ? left : st.text;
       const oddsHtml = feedBestOffersHtml(m);
       const pair = oddsHtml || `<div class="outcome-pair">
             <span class="out yes-acc">${escapeHtml(yes)}</span>
@@ -1172,23 +601,31 @@
             <span class="out no-acc">${escapeHtml(no)}</span>
           </div>`;
       const creator = m.creator;
-      const creatorHtml = creator ? `<div class="feed-creator">${escapeHtml(tt("feed.author", "Автор: "))}<button type="button" data-open-creator="${creator.id}">${escapeHtml(creator.telegram_username ? ("@" + creator.telegram_username) : creator.display_name)}</button></div>` : "";
+      const creatorHtml = creator
+        ? `<button type="button" data-open-creator="${creator.id}">${escapeHtml(creator.telegram_username ? ("@" + creator.telegram_username) : creator.display_name)}</button>`
+        : "";
+      const cat = typeof catLabel === "function"
+        ? catLabel(m.category)
+        : ((typeof CAT_LABEL !== "undefined" && CAT_LABEL[m.category]) || m.category || "");
       const act = m.activity;
-      const hasAct = act && ((act.volume_nano && act.volume_nano > 0) || (act.unique_participants && act.unique_participants > 0) || (act.fills && act.fills > 0));
-      const actHtml = hasAct
-        ? `<p class="muted situation">${escapeHtml(tt("feed.volume", "{volume} оборот · {people} участников", { volume: fmtTon(act.volume || 0), people: act.unique_participants || 0 }))}</p>`
-        : (situation ? `<p class="muted situation">${escapeHtml(situation)}</p>` : "");
+      const volume = act && act.volume != null ? act.volume : (m.pot || 0);
+      const people = act && act.unique_participants != null ? act.unique_participants : 0;
       if (typeof eventCache !== "undefined") eventCache[m.id] = m;
       return `
         <article class="card feed-card" role="button" tabindex="0" data-open-market="${m.id}" data-id="${m.id}" data-status="${m.status}" data-mechanism="${escapeHtml(m.mechanism || "")}">
           <div class="feed-top">
-            <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
-            <span class="feed-time">${close ? (escapeHtml(tt("feed.until", "до ")) + escapeHtml(close)) : ""}</span>
+            <span class="feed-cat">${escapeHtml(cat)}</span>
+            <span class="feed-time">${timeOrStatus ? ((st.key === "open" && typeof icon === "function" ? icon("clock", {size: 14}) + " " : "") + escapeHtml(timeOrStatus)) : ""}</span>
           </div>
           <div class="question">${escapeHtml(m.question)}</div>
+          <div class="feed-meta">
+            <div class="feed-meta-left feed-creator">${creatorHtml}</div>
+            <div class="feed-meta-right">
+              <span>${escapeHtml(fmtTon(volume))}</span>
+              <span>${escapeHtml(String(people))}</span>
+            </div>
+          </div>
           ${pair}
-          ${creatorHtml}
-          ${actHtml}
         </article>`;
     }
 
@@ -1238,10 +675,12 @@
       me = null;
       myPositions = {};
       paintUser();
-      for (const id of ["mine-created", "mine-bets", "mine-results", "mine-orders", "moderation-markets", "account-header", "tx-list", "wallet-history", "account-overview"]) {
+      for (const id of ["mine-created", "mine-bets", "mine-results", "mine-orders", "moderation-markets", "account-header", "tx-list", "wallet-history", "account-overview", "profile-header"]) {
         const el = document.getElementById(id);
         if (el) el.innerHTML = "";
       }
+      const block = document.getElementById("auth-block");
+      if (block) block.hidden = false;
       showError(AUTH_REOPEN);
     }
 
@@ -1280,16 +719,18 @@
     }
 
     function paintUser() {
-      const admin = me && me.is_admin;
-      document.getElementById("moderation-tab").hidden = !admin;
-      document.getElementById("who").innerHTML = admin ? '<span class="admin-mark">' + escapeHtml(tt("account.admin", "админ")) + "</span>" : "";
-      document.getElementById("balance").textContent = me ? fmtTon(me.balance) : "—";
       const avatar = document.getElementById("profile-open");
-      if (avatar) {
-        avatar.innerHTML = (typeof avatarHtml === "function" && me) ? avatarHtml("avatar") : (me ? "BT" : "");
+      const balance = document.getElementById("balance");
+      if (!authReady && inTelegram && !authBlocked) {
+        if (balance) balance.innerHTML = '<span class="skeleton" aria-hidden="true"></span>';
+      } else if (me) {
+        if (balance) balance.textContent = fmtTon(me.balance);
+      } else if (balance) {
+        balance.textContent = "";
       }
-      const lock = document.getElementById("lock");
-      if (lock && me) lock.max = String(me.balance);
+      if (avatar) {
+        avatar.innerHTML = (typeof avatarHtml === "function" && me) ? avatarHtml("avatar") : "";
+      }
       const createBtn = document.getElementById("create");
       if (createBtn) createBtn.disabled = !me;
     }
@@ -1304,6 +745,7 @@
         throw new Error(inTelegram ? AUTH_REOPEN : OPEN_IN_TG);
       }
       me = await api("/auth/telegram", { method: "POST", body: "{}" });
+      authReady = true;
       paintUser();
     }
 
@@ -1346,7 +788,7 @@
     }
 
     function marketCard(m) {
-      if (m.mechanism === "p2p") return p2pCard(m);
+      if (m.mechanism === "p2p") return p2pCard(m, eventTradeMode);
       const names = marketOutcomes(m);
       const prices = marketPrices(m);
       const accepting = !!m.accepting_bets;
@@ -1376,14 +818,13 @@
           <span class="status-pill status-${m.status === "resolved" ? "resolved" : (accepting ? "open" : "closed")}">${statusLabel(m.status)}</span>
           <div class="question">${escapeHtml(m.question)}</div>
           ${m.creator ? `<p class="event-meta-line">${escapeHtml(tt("feed.author", "Автор: "))}<button type="button" class="ghost compact" data-open-creator="${m.creator.id}">${escapeHtml(m.creator.telegram_username ? ("@" + m.creator.telegram_username) : m.creator.display_name)}</button></p>` : ""}
-          <p class="muted event-deadline">${escapeHtml(typeof catLabel === "function" ? catLabel(m.category) : ((typeof CAT_LABEL !== "undefined" && CAT_LABEL[m.category]) || tt("cat.unique", "Уникальное")))}${m.close_at ? " · " + escapeHtml(tt("feed.until", "до ")) + escapeHtml(formatCloseAt(m.close_at)) : ""} · ${escapeHtml(tt("event.bank", "банк {vol}", {vol: fmtTon(m.pot || 0)}))}</p>
+          <p class="muted event-deadline">${escapeHtml(typeof catLabel === "function" ? catLabel(m.category) : ((typeof CAT_LABEL !== "undefined" && CAT_LABEL[m.category]) || tt("cat.unique", "Уникальное")))}${m.close_at ? " · " + escapeHtml(formatTimeLeft(m.close_at)) : ""}</p>
           ${resolved && m.winning_outcome ? `<p>${escapeHtml(tt("sit.winner", "Исход: {name}", {name: m.winning_outcome}))}</p>` : ""}
           ${moderationActions(m)}
           ${m.status === "rejected" ? `<p class="muted">${escapeHtml(tt("event.rejectedLock", "Отклонено: {reason} · залог возвращён", {reason: m.rejection_reason || ""}))}</p>` : ""}
           <div class="odds">${oddsHtml}</div>
           ${accepting ? `
             <div class="event-bet">
-            <p class="event-bet-title">${escapeHtml(tt("event.yourBet", "Ваша ставка"))}</p>
             <label>${escapeHtml(tt("event.betAmount", "Сумма ставки TON"))}</label>
             <input type="number" min="1" step="1" value="10" class="amount" inputmode="decimal"/>
             <div class="preview" data-preview>${escapeHtml(tt("event.previewLegacy", "Введите сумму — покажем доли и средний коэф"))}</div>
@@ -1419,23 +860,30 @@
       const winningIndex = names.indexOf(m.winning_outcome);
       const lost = resolved && winningIndex >= 0 && Number(shares[winningIndex] || 0) <= 0;
       const canClaim = resolved && m.settlement_kind !== "auto" && !pos.claimed && !lost && shares.some(x => x > 0);
-      const st = typeof feedStatus === "function" ? feedStatus(m) : {key: m.status, text: statusLabel(m.status)};
+      let result = "";
+      if (resolved && p2p) {
+        const parts = p2pPositionParts(pos);
+        const winPart = parts.find(p => p.outcome === m.winning_outcome);
+        if (winPart) {
+          const pnl = Number(winPart.payout || 0) - Number(winPart.staked || 0);
+          result = `<p class="history-result win">${escapeHtml(tt("market.yourWin", "Выигрыш {amt}", {amt: fmtTon(Math.max(0, pnl))}))}</p>`;
+        } else if (lost || parts.length) {
+          const stake = parts.reduce((s, p) => s + Number(p.staked || 0), 0);
+          result = `<p class="history-result loss">${escapeHtml(tt("market.yourLoss", "Проигрыш {amt}", {amt: fmtTon(stake)}))}</p>`;
+        }
+      } else if (resolved && !p2p) {
+        if (lost) result = `<p class="history-result loss">${escapeHtml(tt("hist.loss", "Проигрыш"))}</p>`;
+        else if (pos.claimed) result = `<p class="muted">${escapeHtml(tt("event.claimed", "Выигрыш уже получен"))}</p>`;
+      }
       return `
         <div class="card" data-id="${m.id}" data-status="${m.status}" data-open-market="${m.id}">
-          <div class="kind-tag">${p2p ? escapeHtml(tt("pos.filledTag", "Исполненная ставка")) : escapeHtml(tt("pos.tag", "Позиция"))}</div>
           <div class="question">${escapeHtml(m.question)}</div>
-          <div class="meta">
-            <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
-            ${resolved && m.winning_outcome ? `<span class="pill">${escapeHtml(tt("pos.winner", "Исход: {name}", {name: m.winning_outcome}))}</span>` : ""}
-          </div>
           ${lines}
+          ${result}
           ${canClaim ? `
-            <p class="muted">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>
             <div class="row">
               <button class="gold" data-act="claim">${escapeHtml(tt("event.claim", "Забрать выигрыш"))}</button>
             </div>` : ""}
-          ${lost ? `<p class="muted">${escapeHtml(tt("pos.loss", "Проигрыш"))}</p>` : ""}
-          ${resolved && !lost && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">${escapeHtml(tt("event.claimed", "Выигрыш уже получен"))}${pos.tip_paid ? " · " + escapeHtml(tt("event.feePaid", "сервисный сбор {amt}", {amt: Number(pos.tip_paid).toFixed(2) + " TON"})) : ""}</p>` : ""}
         </div>`;
     }
 
@@ -1504,20 +952,20 @@
       qs.set("limit", String(FEED_PAGE));
       qs.set("offset", String(append ? feedOffset : 0));
       const root = document.getElementById("markets");
-      if (!append) root.innerHTML = '<p class="loading-state">' + escapeHtml(tt("feed.loading", "Загружаем события…")) + "</p>";
-      const res = await fetch("/markets?" + qs.toString(), {
-        headers: getInitData() ? { Authorization: "tma " + getInitData() } : {}
-      });
+      if (!append) root.innerHTML = '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>';
+      const headers = getInitData() ? { Authorization: "tma " + getInitData() } : {};
+      const creatorsPromise = append ? Promise.resolve(topCreatorsRows) : api("/creators/top?limit=10").catch(() => []);
+      const res = await fetch("/markets?" + qs.toString(), { headers });
       if (res.status === 401) {
         applyUnauthorized();
         throw new Error(AUTH_REOPEN);
       }
       const markets = await res.json().catch(() => []);
+      if (!append) topCreatorsRows = await creatorsPromise;
       feedTotal = Number(res.headers.get("X-Total-Count") || (markets && markets.length) || 0);
       feedMarkets = append ? feedMarkets.concat(markets || []) : (markets || []);
       feedOffset = feedMarkets.length;
       paintFeed();
-      loadTopCreators().catch(() => {});
     }
 
     async function loadTopCreators() {
@@ -1530,17 +978,8 @@
     }
 
     function paintTopCreators() {
-      const preview = document.getElementById("top-creators-preview");
       const full = document.getElementById("top-creators-full");
       const rows = topCreatorsRows || [];
-      if (preview) {
-        preview.innerHTML = rows.slice(0, 3).map(row => `
-          <button type="button" class="top-chip" data-open-creator="${row.id}">
-            <span class="creator-rank">#${row.rank}</span>
-            <b>${escapeHtml(creatorHandle(row))}</b>
-            <span class="muted">${escapeHtml(fmtTon(row.volume || 0))}</span>
-          </button>`).join("");
-      }
       if (full) {
         if (!rows.length) {
           full.innerHTML = '<div class="empty-state">' + escapeHtml(tt("creators.empty", "Пока нет авторов с публичной активностью.")) + "</div>";
@@ -1571,35 +1010,10 @@
       if (!topCreatorsRows.length) loadTopCreators().catch(() => {});
     }
 
-    function paintAccountOverview() {
-      const overview = document.getElementById("account-overview");
-      if (!overview) return;
-      const created = (mineState.created || []).length;
-      const orders = (mineState.orders || []).length;
-      const positions = (mineState.active || []).length;
-      const earningsNano = accountState && accountState.creator_earnings_nano;
-      const earningsHtml = (earningsNano != null)
-        ? `<div class="stat-chip earnings"><span>${escapeHtml(tt("account.creatorIncome", "Доход автора"))}</span><b>${escapeHtml(fmtTon(accountState.creator_earnings || 0))}</b></div>`
-        : "";
-      overview.innerHTML = `
-        <div class="stat-grid">
-          <div class="stat-chip"><span>${escapeHtml(tt("account.statEvents", "События"))}</span><b>${created}</b></div>
-          <div class="stat-chip"><span>${escapeHtml(tt("account.statOrders", "Заявки"))}</span><b>${orders}</b></div>
-          <div class="stat-chip"><span>${escapeHtml(tt("account.statPositions", "Позиции"))}</span><b>${positions}</b></div>
-          ${earningsHtml}
-        </div>
-        <details class="fee-line">
-          <summary>${escapeHtml(tt("creator.shareLine", "Вознаграждение автора — 75% сервисного сбора ⓘ"))}</summary>
-          <p>${escapeHtml(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли."))}</p>
-        </details>`;
-    }
-
     function paintMineFromCache() {
       const created = mineState.created || [];
       const orders = mineState.orders || [];
       const active = mineState.active || [];
-      const settlements = mineState.settlements || [];
-      const positions = mineState.positions || [];
       const createdRoot = document.getElementById("mine-created");
       const betsRoot = document.getElementById("mine-bets");
       const resultsRoot = document.getElementById("mine-results");
@@ -1613,17 +1027,21 @@
       if (betsRoot) {
         betsRoot.innerHTML = active.length
           ? active.map(positionCard).join("")
-          : '<div class="empty-state">' + escapeHtml(tt("account.emptyBets", "У вас пока нет исполненных ставок.")) + "</div>";
+          : '<div class="empty-state"><strong>' + escapeHtml(tt("empty.positionsTitle", "Нет позиций")) + "</strong>" +
+            escapeHtml(tt("empty.positionsBody", "Исполненные ставки появятся здесь.")) +
+            '<div><button type="button" class="gold" data-go-feed="1">' + escapeHtml(tt("empty.findMarket", "Найти рынок")) + "</button></div></div>";
       }
       if (resultsRoot) {
+        const settlements = mineState.settlements || [];
+        const positions = mineState.positions || [];
         const legacy = positions.filter(p => p.market && p.market.status === "resolved" && p.market.settlement_kind !== "auto");
         resultsRoot.innerHTML = settlements.length || legacy.length
           ? settlements.map(settlementCard).join("") + legacy.map(positionCard).join("")
-          : '<div class="empty-state">' + escapeHtml(tt("account.emptyHistory", "Завершённых событий пока нет.")) + "</div>";
+          : "";
       }
-      paintAccountOverview();
+      if (typeof paintAccountOverview === "function") paintAccountOverview();
       const txList = document.getElementById("tx-list");
-      if (txList && typeof renderTxList === "function") txList.innerHTML = renderTxList(txRows, tt("account.emptyTx", "Операций пока нет."));
+      if (txList && typeof renderTxList === "function") txList.innerHTML = renderTxList(txRows, tt("empty.historyBody", "Операции по ставкам и выплатам появятся здесь."));
       const walletHistory = document.getElementById("wallet-history");
       if (walletHistory && typeof renderTxList === "function") walletHistory.innerHTML = renderTxList(txRows, tt("account.emptyTx", "Операций пока нет."));
     }
@@ -1689,37 +1107,7 @@
       mineState = { created, orders, positions, settlements, active };
       if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
       if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
-      paintMineFromCache();
-    }
-
-    async function loadMine() {
-      requireLogin();
-      await refreshMe();
-      requireLogin();
-      const userId = me.id;
-      const kind = (typeof txFilter === "string") ? txFilter : "";
-      const txQuery = kind ? ("?kind=" + encodeURIComponent(kind)) : "";
-      const [markets, positions, settlements, orders, account, transactions] = await Promise.all([
-        api("/users/" + userId + "/markets"),
-        api("/users/" + userId + "/positions"),
-        api("/users/" + userId + "/settlements"),
-        api("/users/" + userId + "/orders"),
-        api("/users/" + userId + "/account").catch(() => null),
-        api("/users/" + userId + "/transactions" + txQuery).catch(() => [])
-      ]);
-      await refreshMe();
-      requireLogin();
-      if (me.id !== userId) return;
-      myPositions = {};
-      for (const p of positions) myPositions[p.market_id] = p;
-      accountState = account && !Array.isArray(account) ? account : null;
-      txRows = Array.isArray(transactions) ? transactions : [];
-      const created = markets.filter(m => m.creator_id === me.id);
-      if (typeof rememberShareToken === "function") created.forEach(rememberShareToken);
-      const active = positions.filter(p => p.market && p.market.status !== "resolved" && p.market.status !== "cancelled");
-      mineState = { created, orders, positions, settlements, active };
-      if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
-      if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
+      if (typeof paintProfileHeader === "function") paintProfileHeader();
       paintMineFromCache();
     }
 
@@ -1772,8 +1160,21 @@
 
     function closeEvent() {
       const panel = document.querySelector("[data-panel]:not([hidden])");
+      if (panel && panel.dataset.panel === "event" && eventTradeMode === "advanced" && activeEventId) {
+        eventTradeMode = "simple";
+        openEvent(activeEventId);
+        return;
+      }
       if (panel && panel.dataset.panel === "wallet") {
         showTab("mine");
+        return;
+      }
+      if (panel && panel.dataset.panel === "profile") {
+        showTab("feed");
+        return;
+      }
+      if (panel && panel.dataset.panel === "moderation") {
+        showTab("profile");
         return;
       }
       if (panel && panel.dataset.panel === "creator") {
@@ -1781,7 +1182,7 @@
           showTopCreators();
           return;
         }
-        showTab(creatorReturnTab === "create" || creatorReturnTab === "mine" ? creatorReturnTab : "feed");
+        showTab(creatorReturnTab === "create" || creatorReturnTab === "mine" || creatorReturnTab === "profile" ? creatorReturnTab : "feed");
         return;
       }
       if (panel && panel.dataset.panel === "top-creators") {
@@ -1793,24 +1194,31 @@
         return;
       }
       activeEventId = null;
+      eventTradeMode = "simple";
+      eventPreselect = null;
       setTelegramBack(false);
       showTab(eventReturnTab || "feed");
     }
 
-    async function openEvent(id, preloaded) {
+    async function openEvent(id, preloaded, opts) {
+      opts = opts || {};
       const current = document.querySelector("[data-panel]:not([hidden])");
       if (current && current.dataset.panel && current.dataset.panel !== "event") {
         eventReturnTab = current.dataset.panel;
       }
+      if (opts.mode) eventTradeMode = opts.mode;
+      if (opts.preselect != null) eventPreselect = opts.preselect;
       activeEventId = id;
       document.querySelectorAll("[data-panel]").forEach(p => {
         p.hidden = p.dataset.panel !== "event";
       });
       document.querySelectorAll(".tab").forEach(t => {
-        t.classList.toggle("active", t.dataset.tab === (eventReturnTab || "feed"));
+        t.classList.toggle("active", t.dataset.tab === (eventReturnTab === "create" || eventReturnTab === "mine" ? eventReturnTab : "feed"));
       });
       setTelegramBack(true);
       const root = document.getElementById("event-root");
+      const back = document.getElementById("event-back");
+      if (back) back.textContent = eventTradeMode === "advanced" ? tt("back.market", "← К рынку") : tt("back.feed", "← Рынки");
       root.innerHTML = '<p class="loading-state">' + escapeHtml(tt("event.loading", "Загружаем событие…")) + "</p>";
       showError("");
       try {
@@ -1832,7 +1240,10 @@
         if (!m) throw new Error("Событие недоступно.");
         root.innerHTML = marketCard(m);
         const card = root.querySelector(".card");
-        if (card) await previewQuote(card);
+        if (card && eventPreselect != null && typeof applyBestOddsPrefill === "function") {
+          applyBestOddsPrefill(card, eventPreselect);
+        }
+        if (card && typeof previewQuote === "function") await previewQuote(card);
       } catch (e) {
         root.innerHTML = '<div class="empty-state"><strong>' + escapeHtml(tt("event.openFail", "Не удалось открыть событие")) + "</strong>" +
           escapeHtml(friendlyError(e.message)) + "</div>";
@@ -1844,21 +1255,22 @@
       if (name === "event") return;
       if (name === "moderation" && !me?.is_admin) return;
       activeEventId = null;
-      setTelegramBack(name === "wallet" || name === "help" || name === "creator" || name === "top-creators");
+      eventTradeMode = "simple";
+      setTelegramBack(name === "wallet" || name === "help" || name === "creator" || name === "top-creators" || name === "profile" || name === "moderation");
       if (name === "moderation") loadModeration().catch(e => showError(e.message));
       document.querySelectorAll("[data-panel]").forEach(p => {
         p.hidden = p.dataset.panel !== name;
       });
       document.querySelectorAll(".tab").forEach(t => {
         let mapped = name;
-        if (name === "wallet") mapped = "mine";
+        if (name === "wallet" || name === "profile") mapped = name === "wallet" ? "mine" : "feed";
         else if (name === "creator" || name === "top-creators") mapped = "feed";
-        else if (name === "help") mapped = (eventReturnTab === "create" || eventReturnTab === "mine") ? eventReturnTab : "feed";
+        else if (name === "help" || name === "moderation") mapped = (eventReturnTab === "create" || eventReturnTab === "mine") ? eventReturnTab : "feed";
         t.classList.toggle("active", t.dataset.tab === mapped);
       });
       showError("");
       if (name === "feed") loadMarkets().catch(e => showError(e.message));
-      if (name === "mine" || name === "wallet") {
+      if (name === "mine" || name === "wallet" || name === "profile") {
         if (!me) {
           showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG);
           return;
@@ -1872,9 +1284,30 @@
       const view = panel && panel.dataset.panel;
       if (me && !authBlocked && view !== "mine") await refreshMe();
       if (view === "event" && activeEventId) await openEvent(activeEventId);
-      else if (view === "mine" || view === "wallet") await loadMine();
+      else if (view === "mine" || view === "wallet" || view === "profile") await loadMine();
       else if (view === "moderation") await loadModeration();
       else await loadMarkets();
+    }
+
+    function paintNavIcons() {
+      const labels = {
+        feed: [typeof icon === "function" ? icon("markets", {size: 22}) : "", tt("nav.feed", "Рынки")],
+        create: [typeof icon === "function" ? icon("plus", {size: 22}) : "", tt("nav.create", "Создать")],
+        mine: [typeof icon === "function" ? icon("portfolio", {size: 22}) : "", tt("nav.mine", "Портфель")]
+      };
+      document.querySelectorAll(".tab").forEach(btn => {
+        const pair = labels[btn.dataset.tab];
+        if (pair) btn.innerHTML = pair[0] + "<span>" + pair[1] + "</span>";
+      });
+      const searchIcon = document.getElementById("search-icon");
+      if (searchIcon && typeof icon === "function") searchIcon.innerHTML = icon("search", {size: 18});
+      const filterBtn = document.getElementById("feed-filters-open");
+      if (filterBtn && typeof icon === "function") filterBtn.innerHTML = icon("filter", {size: 18});
+    }
+
+    function setFilterSheet(open) {
+      document.getElementById("filter-backdrop").hidden = !open;
+      document.getElementById("feed-filters-sheet").hidden = !open;
     }
 
     document.querySelector(".tabs").onclick = (ev) => {
@@ -1884,12 +1317,16 @@
 
     document.getElementById("balance-open").addEventListener("click", () => {
       if (!me) { showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG); return; }
-      openWallet("deposit");
+      showTab("mine");
     });
-    document.getElementById("profile-open").addEventListener("click", () => showTab("mine"));
+    document.getElementById("profile-open").addEventListener("click", () => {
+      if (!me) { showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG); return; }
+      showTab("profile");
+    });
     document.getElementById("open-deposit").addEventListener("click", () => openWallet("deposit"));
     document.getElementById("open-withdraw").addEventListener("click", () => openWallet("withdraw"));
     document.getElementById("wallet-back").addEventListener("click", () => showTab("mine"));
+    document.getElementById("moderation-back").addEventListener("click", () => showTab("profile"));
     document.getElementById("account-nav").addEventListener("click", (ev) => {
       const btn = ev.target.closest("[data-account]");
       if (btn) showAccountSection(btn.dataset.account);
@@ -1917,6 +1354,24 @@
     document.getElementById("withdraw-amount").addEventListener("input", previewWithdraw);
     document.addEventListener("click", (ev) => {
       if (ev.target.closest("#account-balance-card")) openWallet("deposit");
+      if (ev.target.closest("#portfolio-earnings")) {
+        ev.preventDefault();
+        toast(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли."));
+      }
+      if (ev.target.closest("[data-go-feed]")) showTab("feed");
+    });
+
+    document.getElementById("profile-root").addEventListener("click", (ev) => {
+      const lang = ev.target.closest("[data-lang]");
+      if (lang) { setLang(lang.dataset.lang); return; }
+      if (ev.target.closest("#profile-help")) { openHelp(); return; }
+      const act = ev.target.closest("[data-profile-act]");
+      if (!act) return;
+      const name = act.dataset.profileAct;
+      if (name === "public" && me) openCreator(me.id).catch(e => showError(e.message));
+      if (name === "events") { showTab("mine"); showAccountSection("events"); document.querySelectorAll("[data-account-panel]").forEach(p => { p.hidden = p.getAttribute("data-account-panel") !== "events"; }); }
+      if (name === "earnings") openHelp();
+      if (name === "moderation") showTab("moderation");
     });
 
     document.getElementById("cat-filters").onclick = (ev) => {
@@ -1936,15 +1391,7 @@
     };
 
     document.getElementById("feed-more").onclick = () => loadMarkets({ append: true }).catch(e => showError(e.message));
-    document.getElementById("top-creators-link").onclick = (ev) => {
-      ev.preventDefault();
-      showTopCreators();
-    };
     document.getElementById("top-creators-back").onclick = () => showTab("feed");
-    document.getElementById("top-creators-preview").addEventListener("click", (ev) => {
-      const open = ev.target.closest("[data-open-creator]");
-      if (open) openCreator(Number(open.dataset.openCreator)).catch(e => showError(e.message));
-    });
     document.getElementById("top-creators-full").addEventListener("click", (ev) => {
       const open = ev.target.closest("[data-open-creator]");
       if (open) openCreator(Number(open.dataset.openCreator)).catch(e => showError(e.message));
@@ -1954,21 +1401,21 @@
     document.getElementById("onboard-dismiss").onclick = dismissOnboarding;
     document.getElementById("onboard-feed").onclick = () => { dismissOnboarding(); showTab("feed"); };
     document.getElementById("onboard-create").onclick = () => { dismissOnboarding(); showTab("create"); };
-    document.getElementById("profile-help").onclick = openHelp;
-    document.getElementById("lang-switch").onclick = (ev) => {
-      const btn = ev.target.closest("[data-lang]");
-      if (!btn) return;
-      setLang(btn.dataset.lang);
-    };
     document.getElementById("creator-root").addEventListener("click", (ev) => {
       if (ev.target.id === "creator-wallet") { openWallet("deposit"); return; }
-      if (ev.target.id === "creator-account") { showTab("mine"); return; }
+      if (ev.target.id === "creator-account") { showTab("profile"); return; }
       const open = ev.target.closest("[data-open-creator]");
       if (open) openCreator(Number(open.dataset.openCreator)).catch(e => showError(e.message));
     });
 
-    document.getElementById("status-filter").onchange = (ev) => {
-      filterStatus = ev.target.value;
+    document.getElementById("feed-filters-open").onclick = () => setFilterSheet(true);
+    document.getElementById("filter-backdrop").onclick = () => setFilterSheet(false);
+    document.getElementById("status-filters").onclick = (ev) => {
+      const btn = ev.target.closest("[data-status]");
+      if (!btn) return;
+      filterStatus = btn.dataset.status || "open";
+      document.querySelectorAll("#status-filters .chip").forEach(c => c.classList.toggle("on", c === btn));
+      setFilterSheet(false);
       loadMarkets().catch(e => showError(e.message));
     };
 
@@ -1998,7 +1445,6 @@
         requireLogin();
         syncOutcomesFromDom();
         const question = document.getElementById("question").value.trim();
-
         const closeLocal = document.getElementById("close-at").value;
         if (question.length < 8) throw new Error(tt("create.qShort", "Вопрос слишком короткий"));
         if (!closeLocal) throw new Error(tt("create.needClose", "Укажите время конца приёма"));
@@ -2006,7 +1452,6 @@
         if (Number.isNaN(closeDate.getTime()) || closeDate.getTime() <= Date.now()) {
           throw new Error(tt("create.closePast", "Конец приёма не может быть в прошлом"));
         }
-
         const names = createOutcomes.map(o => o.name.trim());
         if (names.some(n => !n)) throw new Error(tt("create.needOutcomes", "Заполните названия исходов"));
         const uniq = new Set(names.map(n => n.toLowerCase()));
@@ -2021,7 +1466,6 @@
             mechanism: "p2p",
             visibility: createVisibility,
             close_at: closeDate.toISOString(),
-
           })
         });
         document.getElementById("question").value = "";
@@ -2029,11 +1473,26 @@
         renderOutcomesEditor();
         toast(createVisibility === "unlisted" ? tt("create.toastUnlisted", "Приватное событие открыто по ссылке") : tt("create.toastPublic", "Событие отправлено на проверку"));
         await refreshMe();
-        showTab("mine");
+        showTab("profile");
       } catch (e) { showError(e.message); }
     };
 
+    document.getElementById("auth-reopen").onclick = () => {
+      try {
+        if (tg && typeof tg.close === "function") {
+          tg.close();
+          return;
+        }
+      } catch (e) { /* no telegram close */ }
+      toast(tt("auth.expiredBody", "Чтобы безопасно продолжить работу, откройте BetTON заново через Telegram."), true);
+    };
+
     async function onCardClick(ev) {
+      if (ev.target.closest("#top-creators-link")) {
+        ev.preventDefault();
+        showTopCreators();
+        return;
+      }
       const creatorBtn = ev.target.closest("[data-open-creator]");
       if (creatorBtn) {
         ev.preventDefault();
@@ -2041,20 +1500,27 @@
         await openCreator(Number(creatorBtn.dataset.openCreator));
         return;
       }
+      const amt = ev.target.closest("[data-amt]");
+      if (amt) {
+        const card = amt.closest(".card");
+        const input = card && card.querySelector(".p2p-money");
+        if (input) input.value = amt.dataset.amt;
+        card.querySelectorAll("[data-amt]").forEach(b => b.classList.toggle("on", b === amt));
+        if (typeof p2pQuote === "function") p2pQuote(card);
+        return;
+      }
+      const simple = ev.target.closest("[data-simple-outcome]");
+      if (simple) {
+        const card = simple.closest(".card");
+        if (typeof applyBestOddsPrefill === "function") applyBestOddsPrefill(card, simple.dataset.simpleOutcome);
+        if (typeof p2pQuote === "function") p2pQuote(card);
+        return;
+      }
       const pick = ev.target.closest(".side-pick");
       if (pick) {
         const card = pick.closest(".card");
         if (!card) return;
-        if (typeof applyBestOddsPrefill === "function") {
-          applyBestOddsPrefill(card, pick.dataset.outcome);
-        } else {
-          const select = card.querySelector(".p2p-side");
-          if (select) select.value = pick.dataset.outcome;
-          card.querySelectorAll(".side-pick").forEach(btn => {
-            btn.classList.toggle("on-yes", btn === pick && Number(pick.dataset.outcome) === 0);
-            btn.classList.toggle("on-no", btn === pick && Number(pick.dataset.outcome) === 1);
-          });
-        }
+        if (typeof applyBestOddsPrefill === "function") applyBestOddsPrefill(card, pick.dataset.outcome);
         if (typeof p2pQuote === "function") p2pQuote(card);
         return;
       }
@@ -2071,16 +1537,34 @@
       }
       const open = ev.target.closest("[data-open-market]");
       if (open && !ev.target.closest("button[data-act], button[data-cancel-order], textarea, input, select")) {
-        await openEvent(Number(open.dataset.openMarket));
+        const pre = ev.target.closest("[data-preselect]");
+        await openEvent(Number(open.dataset.openMarket), null, { preselect: pre ? Number(pre.dataset.preselect) : undefined });
         return;
       }
       const btn = ev.target.closest("button[data-act]");
       if (!btn) return;
       const card = btn.closest(".card");
+      if (!card) return;
       const id = card.dataset.id;
       const amount = Number(card.querySelector(".amount")?.value || 0);
       showError("");
       try {
+        if (btn.dataset.act === "open-help") {
+          openHelp();
+          return;
+        }
+        if (btn.dataset.act === "open-advanced" || btn.dataset.fallback === "advanced") {
+          eventTradeMode = "advanced";
+          await openEvent(Number(id), eventCache[id], { mode: "advanced" });
+          return;
+        }
+        if (btn.dataset.act === "odds-inc" || btn.dataset.act === "odds-dec") {
+          const input = card.querySelector(".p2p-odds");
+          const n = Number(input.value || 2);
+          input.value = String(Math.max(1.01, Math.round((n + (btn.dataset.act === "odds-inc" ? 0.01 : -0.01)) * 100) / 100));
+          if (typeof p2pQuote === "function") p2pQuote(card);
+          return;
+        }
         requireLogin();
         if (btn.dataset.act === "share") {
           const token = card.dataset.shareToken;
@@ -2108,10 +1592,15 @@
           return;
         }
         if (btn.dataset.act === "p2p-refresh") { await hydrateP2P(card); return; }
-        if (btn.dataset.act === "p2p-limit" || btn.dataset.act === "p2p-ioc") {
+        if (btn.dataset.act === "p2p-limit" || btn.dataset.act === "p2p-ioc" || btn.dataset.act === "p2p-simple") {
+          if (btn.dataset.act === "p2p-simple" && btn.dataset.fallback === "advanced") {
+            eventTradeMode = "advanced";
+            await openEvent(Number(id), eventCache[id], { mode: "advanced" });
+            return;
+          }
           if (card.submitting) return;
           card.submitting = true;
-          try { await p2pPlace(card, btn.dataset.act === "p2p-ioc" ? "ioc" : "limit"); }
+          try { await p2pPlace(card, btn.dataset.act === "p2p-limit" ? "limit" : "ioc"); }
           finally { card.submitting = false; }
         } else if (btn.dataset.act === "approve" || btn.dataset.act === "reject") {
           const reason = card.querySelector(".reject-reason").value.trim();
@@ -2174,7 +1663,6 @@
     }
 
     document.getElementById("markets").onclick = onCardClick;
-    document.getElementById("top-creators").onclick = onCardClick;
     document.getElementById("mine-created").onclick = onCardClick;
     document.getElementById("mine-bets").onclick = onCardClick;
     document.getElementById("mine-results").onclick = onCardClick;
@@ -2192,6 +1680,7 @@
         } catch(e) { showError(e.message); }
         return;
       }
+      if (ev.target.closest("[data-go-feed]")) { showTab("feed"); return; }
       const open = ev.target.closest("[data-open-market]");
       if (open) openEvent(Number(open.dataset.openMarket));
     };
@@ -2203,24 +1692,11 @@
         clearTimeout(card.quoteTimer);
         card.quoteVersion = (card.quoteVersion || 0)+1;
         card.availableQuote = null;
-        const ioc = card.querySelector('[data-act="p2p-ioc"]');
+        const ioc = card.querySelector('[data-act="p2p-ioc"], [data-act="p2p-simple"]');
         if (ioc) ioc.disabled = true;
         card.quoteTimer = setTimeout(() => p2pQuote(card), 250);
       });
     }
-
-    document.getElementById("markets").addEventListener("input", (ev) => {
-      if (!ev.target.classList.contains("amount")) return;
-      scheduleQuote(ev.target.closest(".card"));
-    });
-    document.getElementById("markets").addEventListener("change", (ev) => {
-      if (!ev.target.classList.contains("amount")) return;
-      scheduleQuote(ev.target.closest(".card"));
-    });
-    document.getElementById("mine-created").addEventListener("input", (ev) => {
-      if (!ev.target.classList.contains("amount")) return;
-      scheduleQuote(ev.target.closest(".card"));
-    });
 
     document.getElementById("event-root").addEventListener("input", (ev) => {
       if (!ev.target.classList.contains("amount")) return;
@@ -2243,6 +1719,14 @@
       }, 120);
     });
 
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      const card = ev.target.closest(".feed-card");
+      if (!card) return;
+      ev.preventDefault();
+      openEvent(Number(card.dataset.openMarket)).catch(e => showError(e.message));
+    });
+
     try {
       const vv = window.visualViewport;
       if (vv) {
@@ -2260,14 +1744,17 @@
       try {
         setTelegramBack(false);
         setLang(detectLang(telegramLangCode()), false);
+        paintNavIcons();
         showOnboarding();
         paintCreateSubmit();
         createOutcomes = defaultOutcomes();
         document.getElementById("close-at").value = defaultCloseAt();
         renderOutcomesEditor();
         if (!inTelegram) {
+          authReady = true;
           document.getElementById("create").disabled = true;
           showError(OPEN_IN_TG);
+          paintUser();
           await loadMarkets();
           return;
         }
@@ -2291,7 +1778,12 @@
           } catch (e) { showError(e.message); }
         }
         await loadMarkets();
-      } catch (e) { showError(e.message); }
+      } catch (e) {
+        authReady = true;
+        paintUser();
+        showError(e.message);
+        if (isAuthReopenError(e) || String(e.message) === AUTH_REOPEN) applyUnauthorized();
+      }
     })();
   </script>
 </body>
