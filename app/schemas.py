@@ -194,6 +194,19 @@ class PositionOut(BaseModel):
     market: MarketOut
 
 
+class TransactionOut(BaseModel):
+    id: str
+    type: str
+    market_id: Optional[int] = None
+    question: str = ""
+    created_at: Optional[datetime] = None
+    amount_nano: int
+    amount: float
+    display_nano: int
+    display_amount: float
+    informational: bool = False
+
+
 class SettlementOut(BaseModel):
     market_id: int
     question: str

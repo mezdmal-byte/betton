@@ -33,9 +33,10 @@ from app.schemas import (
     OrderPreviewRequest,
     P2PReconciliationOut,
     SettlementOut,
+    TransactionOut,
     UserOut,
 )
-from app.services import discovery, market_service, p2p_service
+from app.services import discovery, history, market_service, p2p_service
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -200,6 +201,18 @@ def get_account_endpoint(
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
     return discovery.account_summary(db, current_user)
+
+
+@app.get("/users/{user_id}/transactions", response_model=list[TransactionOut])
+def list_transactions_endpoint(
+    user_id: int,
+    kind: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return history.list_transactions(db, user_id, kind=kind)
 
 
 @app.get("/creators/top", response_model=list[CreatorStatsOut])

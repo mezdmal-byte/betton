@@ -497,6 +497,53 @@
     }
     details { margin-top: 8px; color: var(--muted); }
     [hidden] { display: none !important; }
+    .avatar, .avatar-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: .85rem; color: var(--brand);
+      overflow: hidden; padding: 0; flex: 0 0 auto;
+    }
+    .avatar img, .avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .balance-wrap { text-align: right; cursor: pointer; min-height: 44px; }
+    .profile-hero { display: flex; gap: 12px; align-items: center; margin: 8px 0 12px; }
+    .profile-hero .avatar { width: 56px; height: 56px; font-size: 1.1rem; }
+    .profile-name { font-weight: 800; font-size: 1.1rem; }
+    .profile-handle { color: var(--muted); font-size: .8rem; margin-top: 2px; }
+    .balance-card {
+      background: var(--surface); border-radius: 16px; padding: 16px;
+      cursor: pointer; border: 1px solid var(--line);
+    }
+    .balance-card .kicker { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .04em; }
+    .balance-card .lead { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; margin: 4px 0 10px; }
+    .balance-sub { display: flex; gap: 16px; color: var(--muted); font-size: .8rem; }
+    .balance-sub b { color: var(--text); font-variant-numeric: tabular-nums; }
+    .account-nav, .wallet-tabs, .wallet-nets { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+    .tx-row {
+      display: grid; grid-template-columns: 36px minmax(0, 1fr) auto;
+      gap: 10px; align-items: center; padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .tx-icon {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--surface); display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: var(--muted);
+    }
+    .tx-amt { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+    .tx-amt.pos { color: var(--yes); }
+    .tx-amt.neg { color: var(--no); }
+    .wallet-panel { margin-top: 8px; }
+    .qr-slot {
+      width: 148px; height: 148px; margin: 12px auto;
+      border: 1px dashed var(--line); border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: .75rem; text-align: center; padding: 12px;
+      background: var(--surface);
+    }
+    .info-box { background: var(--surface); border-radius: 14px; padding: 12px; margin: 10px 0; }
+    .info-box p { margin: 0 0 6px; }
+    .info-box p:last-child { margin-bottom: 0; }
     @media (min-width: 481px) {
       body { box-shadow: 0 0 0 1px var(--line); }
     }
@@ -508,9 +555,12 @@
       <h1 class="brand">Bet<span class="brand-ton">TON</span></h1>
       <div class="who" id="who"></div>
     </div>
-    <div class="balance-wrap">
-      <div class="balance-label">Доступно</div>
-      <div class="balance" id="balance">—</div>
+    <div class="header-right">
+      <div class="balance-wrap" id="balance-open" role="button" tabindex="0">
+        <div class="balance-label">Доступно</div>
+        <div class="balance" id="balance">—</div>
+      </div>
+      <button type="button" class="avatar-btn" id="profile-open" aria-label="Профиль"></button>
     </div>
   </header>
   <main>
@@ -569,15 +619,93 @@
     </section>
 
     <section data-panel="mine" hidden>
-      <p class="mine-lede muted">В шапке — <b>доступно</b>. Ниже: что <b>в резерве</b> заявок, что уже <b>исполнено</b> и что <b>возвращено</b>.</p>
-      <h2>Мои заявки</h2>
-      <div id="mine-orders"><div class="empty-state">Активных заявок пока нет.</div></div>
-      <h2>Мои позиции</h2>
-      <div id="mine-bets"><div class="empty-state">У вас пока нет исполненных ставок.</div></div>
-      <h2>Созданные события</h2>
-      <div id="mine-created"><div class="empty-state">Вы ещё не создавали события.</div></div>
-      <h2>История</h2>
-      <div id="mine-results"><div class="empty-state">Завершённых событий пока нет.</div></div>
+      <div id="account-header"></div>
+      <div class="row">
+        <button type="button" class="gold" id="open-deposit">Пополнить</button>
+        <button type="button" class="ghost" id="open-withdraw">Вывести</button>
+      </div>
+      <div class="account-nav chips" id="account-nav" role="tablist">
+        <button type="button" class="chip on" data-account="overview">Обзор</button>
+        <button type="button" class="chip" data-account="events">Мои события</button>
+        <button type="button" class="chip" data-account="orders">Мои заявки</button>
+        <button type="button" class="chip" data-account="positions">Мои позиции</button>
+        <button type="button" class="chip" data-account="history">История</button>
+      </div>
+      <div data-account-panel="overview" id="account-overview"></div>
+      <div data-account-panel="events" hidden>
+        <h2>Мои события</h2>
+        <div id="mine-created"><div class="empty-state">Вы ещё не создавали события.</div></div>
+      </div>
+      <div data-account-panel="orders" hidden>
+        <h2>Мои заявки</h2>
+        <div id="mine-orders"><div class="empty-state">Активных заявок пока нет.</div></div>
+      </div>
+      <div data-account-panel="positions" hidden>
+        <h2>Мои позиции</h2>
+        <div id="mine-bets"><div class="empty-state">У вас пока нет исполненных ставок.</div></div>
+      </div>
+      <div data-account-panel="history" hidden>
+        <h2>История</h2>
+        <div class="chips" id="tx-filters">
+          <button type="button" class="chip on" data-tx="">Все</button>
+          <button type="button" class="chip" data-tx="bets">Ставки</button>
+          <button type="button" class="chip" data-tx="wins">Выигрыши</button>
+          <button type="button" class="chip" data-tx="refunds">Возвраты</button>
+          <button type="button" class="chip" data-tx="deposits">Пополнения</button>
+          <button type="button" class="chip" data-tx="withdrawals">Выводы</button>
+        </div>
+        <div id="tx-list"></div>
+        <div id="mine-results"><div class="empty-state">Завершённых событий пока нет.</div></div>
+      </div>
+    </section>
+    <section data-panel="wallet" hidden>
+      <button type="button" class="back" id="wallet-back">← К профилю</button>
+      <div id="wallet-summary"></div>
+      <div class="wallet-nets chips" id="wallet-nets">
+        <button type="button" class="chip on" data-net="ton">TON</button>
+        <button type="button" class="chip" data-net="solana">Solana</button>
+      </div>
+      <div class="wallet-tabs chips" id="wallet-tabs">
+        <button type="button" class="chip on" data-wtab="deposit">Пополнить</button>
+        <button type="button" class="chip" data-wtab="withdraw">Вывести</button>
+        <button type="button" class="chip" data-wtab="history">История</button>
+      </div>
+      <div class="wallet-panel" data-wpanel="deposit">
+        <label>Сеть</label>
+        <p id="deposit-net-label">TON</p>
+        <label>Актив</label>
+        <p id="deposit-asset-label">TON</p>
+        <label>Адрес пополнения</label>
+        <div class="info-box" id="deposit-address">Адрес появится после подключения блокчейн-модуля</div>
+        <div class="qr-slot">QR появится вместе с адресом</div>
+        <div class="info-box muted">
+          <p>Сеть: <span id="deposit-net-info">TON</span></p>
+          <p>Минимальное пополнение: будет определено при подключении</p>
+          <p>Число подтверждений: будет определено</p>
+          <p>Отправляйте только актив выбранной сети. Другие токены могут быть потеряны.</p>
+        </div>
+        <button type="button" class="gold" id="deposit-cta" disabled>Получить адрес</button>
+        <p class="muted">Блокчейн-пополнения пока не подключены. Сейчас используется тестовый баланс BetTON.</p>
+      </div>
+      <div class="wallet-panel" data-wpanel="withdraw" hidden>
+        <label>Сеть</label>
+        <p id="withdraw-net-label">TON</p>
+        <label>Адрес получателя</label>
+        <input id="withdraw-address" placeholder="Адрес кошелька" autocomplete="off"/>
+        <label>Сумма</label>
+        <div class="row">
+          <input id="withdraw-amount" inputmode="decimal" placeholder="0.00"/>
+          <button type="button" class="ghost compact" id="withdraw-max">MAX</button>
+        </div>
+        <p class="muted">Доступно: <span id="withdraw-available">—</span></p>
+        <p class="muted">Комиссия сети: будет определена при подключении</p>
+        <p class="muted">К получению: <span id="withdraw-receive">—</span></p>
+        <button type="button" class="gold" id="withdraw-cta" disabled>Вывести</button>
+        <p class="muted">Вывод будет доступен после подключения блокчейн-модуля.</p>
+      </div>
+      <div class="wallet-panel" data-wpanel="history" hidden>
+        <div id="wallet-history"></div>
+      </div>
     </section>
     <section data-panel="moderation" hidden><h2>На проверке</h2><div id="moderation-markets"></div></section>
   </main>
@@ -590,6 +718,7 @@
   <div class="toast" id="toast"></div>
 
   <script src="/static/p2p.js"></script>
+  <script src="/static/account.js"></script>
   <script>
     const CAT_LABEL = { sport: "Спорт", politics: "Политика", unique: "Уникальное" };
     const OPEN_IN_TG = "Откройте BetTON через Telegram";
@@ -627,6 +756,9 @@
     let activeEventId = null;
     let eventReturnTab = "feed";
     const eventCache = {};
+    let accountState = null;
+    let txFilter = "";
+    let txRows = [];
 
     function friendlyError(e) {
       const m = String(e || "");
@@ -656,6 +788,8 @@
     }
 
     function displayName() {
+      if (me && me.display_name) return me.display_name;
+      if (me && me.telegram_username) return "@" + me.telegram_username;
       const unsafe = inTelegram && tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
       if (unsafe && (unsafe.first_name || unsafe.username)) {
         return unsafe.first_name || unsafe.username;
@@ -837,7 +971,10 @@
       me = null;
       myPositions = {};
       paintUser();
-      for (const id of ["mine-created", "mine-bets", "mine-results", "mine-orders", "moderation-markets"]) document.getElementById(id).innerHTML = "";
+      for (const id of ["mine-created", "mine-bets", "mine-results", "mine-orders", "moderation-markets", "account-header", "tx-list", "wallet-history", "account-overview"]) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = "";
+      }
       showError(AUTH_REOPEN);
     }
 
@@ -861,6 +998,10 @@
       document.getElementById("moderation-tab").hidden = !admin;
       document.getElementById("who").innerHTML = admin ? '<span class="admin-mark">админ</span>' : "";
       document.getElementById("balance").textContent = me ? fmtTon(me.balance) : "—";
+      const avatar = document.getElementById("profile-open");
+      if (avatar) {
+        avatar.innerHTML = (typeof avatarHtml === "function" && me) ? avatarHtml("avatar") : (me ? "BT" : "");
+      }
       const lock = document.getElementById("lock");
       if (lock && me) lock.max = String(me.balance);
       const createBtn = document.getElementById("create");
@@ -1081,17 +1222,25 @@
       await refreshMe();
       requireLogin();
       const userId = me.id;
-      const [markets, positions, settlements, orders] = await Promise.all([
+      const kind = (typeof txFilter === "string") ? txFilter : "";
+      const txQuery = kind ? ("?kind=" + encodeURIComponent(kind)) : "";
+      const [markets, positions, settlements, orders, account, transactions] = await Promise.all([
         api("/users/" + userId + "/markets"),
         api("/users/" + userId + "/positions"),
         api("/users/" + userId + "/settlements"),
-        api("/users/" + userId + "/orders")
+        api("/users/" + userId + "/orders"),
+        api("/users/" + userId + "/account").catch(() => null),
+        api("/users/" + userId + "/transactions" + txQuery).catch(() => [])
       ]);
       await refreshMe();
       requireLogin();
       if (me.id !== userId) return;
       myPositions = {};
       for (const p of positions) myPositions[p.market_id] = p;
+      accountState = account && !Array.isArray(account) ? account : null;
+      txRows = Array.isArray(transactions) ? transactions : [];
+      if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
+      if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
       document.getElementById("mine-orders").innerHTML = renderMineOrders(orders);
       const created = markets.filter(m => m.creator_id === me.id);
       const createdRoot = document.getElementById("mine-created");
@@ -1109,6 +1258,15 @@
       resultsRoot.innerHTML = settlements.length || legacy.length
         ? settlements.map(settlementCard).join("") + legacy.map(positionCard).join("")
         : '<div class="empty-state">Завершённых событий пока нет.</div>';
+      const overview = document.getElementById("account-overview");
+      if (overview) {
+        overview.innerHTML = `<p class="muted">В шапке — <b>доступно</b>. Ниже: что <b>в резерве</b> заявок, что уже <b>исполнено</b> и что <b>возвращено</b>.</p>
+          <p class="muted">${created.length} событий · ${orders.length} заявок · ${active.length} позиций</p>`;
+      }
+      const txList = document.getElementById("tx-list");
+      if (txList && typeof renderTxList === "function") txList.innerHTML = renderTxList(txRows, "Операций пока нет.");
+      const walletHistory = document.getElementById("wallet-history");
+      if (walletHistory && typeof renderTxList === "function") walletHistory.innerHTML = renderTxList(txRows, "Операций пока нет.");
     }
 
     async function previewQuote(card) {
@@ -1159,6 +1317,11 @@
     }
 
     function closeEvent() {
+      const panel = document.querySelector("[data-panel]:not([hidden])");
+      if (panel && panel.dataset.panel === "wallet") {
+        showTab("mine");
+        return;
+      }
       activeEventId = null;
       setTelegramBack(false);
       showTab(eventReturnTab || "feed");
@@ -1207,17 +1370,18 @@
       if (name === "event") return;
       if (name === "moderation" && !me?.is_admin) return;
       activeEventId = null;
-      setTelegramBack(false);
+      setTelegramBack(name === "wallet");
       if (name === "moderation") loadModeration().catch(e => showError(e.message));
       document.querySelectorAll("[data-panel]").forEach(p => {
         p.hidden = p.dataset.panel !== name;
       });
       document.querySelectorAll(".tab").forEach(t => {
-        t.classList.toggle("active", t.dataset.tab === name);
+        const tabName = name === "wallet" ? "mine" : name;
+        t.classList.toggle("active", t.dataset.tab === tabName);
       });
       showError("");
       if (name === "feed") loadMarkets().catch(e => showError(e.message));
-      if (name === "mine") {
+      if (name === "mine" || name === "wallet") {
         if (!me) {
           showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG);
           return;
@@ -1231,7 +1395,7 @@
       const view = panel && panel.dataset.panel;
       if (me && !authBlocked && view !== "mine") await refreshMe();
       if (view === "event" && activeEventId) await openEvent(activeEventId);
-      else if (view === "mine") await loadMine();
+      else if (view === "mine" || view === "wallet") await loadMine();
       else if (view === "moderation") await loadModeration();
       else await loadMarkets();
     }
@@ -1240,6 +1404,43 @@
       const btn = ev.target.closest("[data-tab]");
       if (btn) showTab(btn.dataset.tab);
     };
+
+    document.getElementById("balance-open").addEventListener("click", () => {
+      if (!me) { showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG); return; }
+      openWallet("deposit");
+    });
+    document.getElementById("profile-open").addEventListener("click", () => showTab("mine"));
+    document.getElementById("open-deposit").addEventListener("click", () => openWallet("deposit"));
+    document.getElementById("open-withdraw").addEventListener("click", () => openWallet("withdraw"));
+    document.getElementById("wallet-back").addEventListener("click", () => showTab("mine"));
+    document.getElementById("account-nav").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-account]");
+      if (btn) showAccountSection(btn.dataset.account);
+    });
+    document.getElementById("tx-filters").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-tx]");
+      if (!btn) return;
+      txFilter = btn.dataset.tx || "";
+      document.querySelectorAll("#tx-filters .chip").forEach(c => c.classList.toggle("on", c === btn));
+      loadMine().catch(e => showError(e.message));
+    });
+    document.getElementById("wallet-nets").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-net]");
+      if (btn) setWalletNet(btn.dataset.net);
+    });
+    document.getElementById("wallet-tabs").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-wtab]");
+      if (btn) showWalletTab(btn.dataset.wtab);
+    });
+    document.getElementById("withdraw-max").addEventListener("click", () => {
+      const input = document.getElementById("withdraw-amount");
+      if (input && me) input.value = Number(me.balance).toFixed(2);
+      previewWithdraw();
+    });
+    document.getElementById("withdraw-amount").addEventListener("input", previewWithdraw);
+    document.addEventListener("click", (ev) => {
+      if (ev.target.closest("#account-balance-card")) openWallet("deposit");
+    });
 
     document.getElementById("cat-filters").onclick = (ev) => {
       const btn = ev.target.closest("[data-cat]");
