@@ -49,9 +49,9 @@ function p2pCancelControls(m) {
 }
 
 function p2pStatusLabel(m) {
-  if (m.status === 'cancelled') return 'Отменено';
+  if (m.status === 'cancelled') return tt('status.cancelledOne', 'Отменено');
   if (typeof feedStatus === 'function') return feedStatus(m).text;
-  if (m.status === 'open') return 'Активно';
+  if (m.status === 'open') return tt('status.active', 'Активно');
   return statusLabel(m.status);
 }
 
@@ -77,13 +77,13 @@ function p2pCard(m) {
     ${m.share_token || m.visibility === 'unlisted' ? '<button type="button" class="ghost compact" data-act="share">' + escapeHtml(tt('share', 'Поделиться')) + '</button>' : ''}
     <div class="outcome-pair">
       <span class="out yes-acc">${escapeHtml(yes)}</span>
-      <span class="out-vs">или</span>
+      <span class="out-vs">${escapeHtml(tt('feed.or', 'или'))}</span>
       <span class="out no-acc">${escapeHtml(no)}</span>
     </div>
     ${m.status === 'pending' ? '<p class="muted">' + escapeHtml(tt('event.pending', 'На проверке. Рынок появится в ленте после одобрения. Залог не нужен.')) + '</p>' : ''}
-    ${m.status === 'rejected' ? `<p class="muted">Отклонено: ${escapeHtml(m.rejection_reason || '')}</p>` : ''}
-    ${cancelled ? `<p class="muted">Отменено: ${escapeHtml(m.cancellation_reason || '')}. Исполненные ставки и незакрытый остаток заявок возвращены без сервисного сбора.</p>` : ''}
-    ${!cancelled && m.winning_outcome ? `<p>Исход: ${escapeHtml(m.winning_outcome)} · выплаты зачислены</p>` : ''}
+    ${m.status === 'rejected' ? `<p class="muted">${escapeHtml(tt('event.rejected', 'Отклонено: {reason}', {reason: m.rejection_reason || ''}))}</p>` : ''}
+    ${cancelled ? `<p class="muted">${escapeHtml(tt('event.cancelled', 'Отменено: {reason}. Исполненные ставки и незакрытый остаток заявок возвращены без сервисного сбора.', {reason: m.cancellation_reason || ''}))}</p>` : ''}
+    ${!cancelled && m.winning_outcome ? `<p>${escapeHtml(tt('event.winner', 'Исход: {name} · выплаты зачислены', {name: m.winning_outcome}))}</p>` : ''}
     ${accepting ? `<div class="event-offers">
       <div class="event-offers-head">
         <span>${escapeHtml(tt('event.offers', 'Текущие предложения'))}</span>
@@ -114,8 +114,8 @@ function p2pCard(m) {
         <div class="p2p-book-full"></div>
       </details>` : ''}
     ${moderationActions(m)}
-    ${admin && m.status === 'open' ? '<button class="ghost" data-act="close">Стоп ставки</button>' : ''}
-    ${canResolve ? names.map((n,i)=>`<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(n)}">Рассчитать: ${escapeHtml(n)}</button>`).join('') : ''}
+    ${admin && m.status === 'open' ? '<button class="ghost" data-act="close">' + escapeHtml(tt('mod.close', 'Стоп ставки')) + '</button>' : ''}
+    ${canResolve ? names.map((n,i)=>`<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(n)}">${escapeHtml(tt('mod.resolve', 'Рассчитать: {name}', {name: n}))}</button>`).join('') : ''}
     ${p2pCancelControls(m)}
   </div>`;
 }
@@ -179,8 +179,8 @@ function p2pPlaceToast(result) {
 }
 
 function p2pOfferLine(name, best) {
-  if (!best) return '<b>' + escapeHtml(name) + '</b>: нет предложений';
-  return '<b>' + escapeHtml(name) + '</b>: до ' + fmtP2P(best.available) + ' · ' + Number(best.odds).toFixed(2);
+  if (!best) return '<b>' + escapeHtml(name) + '</b>: ' + escapeHtml(tt('book.noneLine', 'нет предложений'));
+  return '<b>' + escapeHtml(name) + '</b>: ' + tt('book.available', '{amt} доступно', {amt: 'до ' + fmtP2P(best.available)}) + ' · ' + Number(best.odds).toFixed(2);
 }
 
 function sameOffer(a, b) {
@@ -197,10 +197,9 @@ function bestOfferCell(name, best, mineBest, outcome, authenticated) {
   let mine = '';
   if (authenticated) {
     if (!mineBest) {
-      mine = '<span class="best-you">Доступно вам сейчас: нет предложений</span>';
+      mine = '<span class="best-you">' + escapeHtml(tt('book.youNone', 'Доступно вам сейчас: нет предложений')) + '</span>';
     } else if (!sameOffer(best, mineBest)) {
-      mine = '<span class="best-you">Доступно вам сейчас: ' + Number(mineBest.odds).toFixed(2) +
-        ' · ' + fmtP2P(mineBest.available) + '</span>';
+      mine = '<span class="best-you">' + escapeHtml(tt('book.youNow', 'Доступно вам сейчас: {odds} · {amt}', {odds: Number(mineBest.odds).toFixed(2), amt: fmtP2P(mineBest.available)})) + '</span>';
     }
   }
   const attrs = empty ? '' : ' data-prefill-outcome="' + outcome + '" data-prefill-odds="' + Number(best.odds) + '"';
@@ -216,13 +215,13 @@ function bestOfferCell(name, best, mineBest, outcome, authenticated) {
 function bookDepthTable(name, levels) {
   if (!levels || !levels.length) {
     return '<div class="depth-block"><div class="depth-name">' + escapeHtml(name) +
-      '</div><p class="muted">нет заявок</p></div>';
+      '</div><p class="muted">' + escapeHtml(tt('book.noOrders', 'нет заявок')) + '</p></div>';
   }
   const rows = levels.map(x =>
     '<tr><td class="num">' + Number(x.odds).toFixed(2) + '</td><td class="num">' + fmtP2P(x.available) + '</td></tr>'
   ).join('');
   return '<div class="depth-block"><div class="depth-name">' + escapeHtml(name) +
-    '</div><table class="book-table"><thead><tr><th>Коэф.</th><th>Доступно</th></tr></thead><tbody>' +
+    '</div><table class="book-table"><thead><tr><th>' + escapeHtml(tt('book.coef', 'Коэф.')) + '</th><th>' + escapeHtml(tt('book.availCol', 'Доступно')) + '</th></tr></thead><tbody>' +
     rows + '</tbody></table></div>';
 }
 
@@ -264,9 +263,9 @@ async function hydrateP2P(card) {
     return bestOfferCell(name, best, mine, i, authenticated);
   }).join('') + '</div>';
   const head = data.forming
-    ? '<p>Сделок ещё нет — рынок собирается из заявок игроков.</p>'
+    ? '<p>' + escapeHtml(tt('book.forming', 'Сделок ещё нет — рынок собирается из заявок игроков.')) + '</p>'
     : (data.last_prices
-      ? '<p>Последняя сделка: ' + data.last_prices.map((p,i)=>escapeHtml(names[i])+' · '+(1/p).toFixed(2)).join(' · ')+'</p>'
+      ? '<p>' + escapeHtml(tt('book.last', 'Последняя сделка: {line}', {line: data.last_prices.map((p,i)=>names[i]+' · '+(1/p).toFixed(2)).join(' · ')})) + '</p>'
       : '');
   root.classList.remove('muted');
   root.innerHTML = head + compact;
@@ -294,7 +293,7 @@ async function p2pQuote(card) {
   const button = card.querySelector('[data-act="p2p-ioc"]');
   if (button) {
     button.disabled = true;
-    button.textContent = 'Принять доступное';
+    button.textContent = tt('event.ioc', 'Принять доступное');
   }
   card.availableQuote = null;
   if (!me) { preview.textContent = OPEN_IN_TG; return; }
@@ -302,11 +301,11 @@ async function p2pQuote(card) {
     const terms = p2pTerms(card);
     const money = Number(terms.money);
     if (!money || money <= 0) {
-      preview.textContent = 'Введите сумму и коэффициент — покажем, что исполнится сразу, а что останется заявкой.';
+      preview.textContent = tt('event.previewHint', 'Введите сумму и коэффициент — покажем, что исполнится сразу, а что останется заявкой.');
       return;
     }
     if (Number(me.balance) < money) {
-      preview.textContent = 'Недостаточно средств. Доступно ' + fmtP2P(me.balance) + '.';
+      preview.textContent = tt('err.fundsAvail', 'Недостаточно средств. Доступно {amt}.', {amt: fmtP2P(me.balance)});
       return;
     }
     const payload = {outcome: terms.outcome, money: terms.money, odds: terms.odds};
@@ -320,7 +319,7 @@ async function p2pQuote(card) {
                              odds: Math.min(10000, Math.floor(available.worst_odds*1e6)/1e6)};
       if (button) {
         button.disabled = false;
-        button.textContent = 'Принять '+fmtP2P(available.matched)+' · не ниже '+card.availableQuote.odds.toFixed(4);
+        button.textContent = tt('event.iocLive', 'Принять {amt} · не ниже {odds}', {amt: fmtP2P(available.matched), odds: card.availableQuote.odds.toFixed(4)});
       }
     }
   } catch(e) {
@@ -333,7 +332,7 @@ async function p2pPlace(card, kind) {
   const terms = p2pTerms(card);
   const payload = {outcome: terms.outcome, money: terms.money, odds: terms.odds};
   if (Number(me.balance) < Number(terms.money)) {
-    throw new Error('Недостаточно средств. Доступно ' + fmtP2P(me.balance) + '.');
+    throw new Error(tt('err.fundsAvail', 'Недостаточно средств. Доступно {amt}.', {amt: fmtP2P(me.balance)}));
   }
   if (kind === 'ioc') {
     if (!card.availableQuote || card.availableQuote.terms !== JSON.stringify(payload)) throw new Error('Обновите предложение');
@@ -437,14 +436,14 @@ function p2pPositionParts(pos) {
 
 function p2pPositionHtml(pos) {
   const parts = p2pPositionParts(pos);
-  if (!parts.length) return '<p class="muted">Исполненных ставок по этому событию нет.</p>';
+  if (!parts.length) return '<p class="muted">' + escapeHtml(tt('pos.none', 'Исполненных ставок по этому событию нет.')) + '</p>';
   return parts.map(part =>
     `<div class="pos-line">
       <div class="pos-outcome">${escapeHtml(part.outcome)}</div>
       <dl class="money-list">
-        <dt>Поставлено</dt><dd>${fmtP2P(part.staked)}</dd>
-        <dt>Средний коэффициент</dt><dd>${Number(part.avgOdds).toFixed(2)}</dd>
-        <dt>Возможная выплата</dt><dd>${fmtP2P(part.payout)}</dd>
+        <dt>${escapeHtml(tt('pos.staked', 'Поставлено'))}</dt><dd>${fmtP2P(part.staked)}</dd>
+        <dt>${escapeHtml(tt('pos.avgOdds', 'Средний коэффициент'))}</dt><dd>${Number(part.avgOdds).toFixed(2)}</dd>
+        <dt>${escapeHtml(tt('pos.payout', 'Возможная выплата'))}</dt><dd>${fmtP2P(part.payout)}</dd>
       </dl>
     </div>`
   ).join('');
@@ -452,9 +451,17 @@ function p2pPositionHtml(pos) {
 
 async function loadModeration() {
   requireLogin();
-  if (!me.is_admin) throw new Error('Недостаточно прав');
+  if (!me.is_admin) throw new Error(tt('err.forbidden', 'Недостаточно прав'));
   const markets = await api('/moderation/markets');
   requireLogin();
   if (!me.is_admin) return;
-  document.getElementById('moderation-markets').innerHTML = markets.length ? markets.map(marketCard).join('') : '<div class="empty-state">Нет событий на проверке.</div>';
+  moderationMarkets = markets;
+  paintModeration();
+}
+
+function paintModeration() {
+  const root = document.getElementById('moderation-markets');
+  if (!root) return;
+  const markets = (typeof moderationMarkets !== 'undefined' && moderationMarkets) ? moderationMarkets : [];
+  root.innerHTML = markets.length ? markets.map(marketCard).join('') : '<div class="empty-state">' + escapeHtml(tt('mod.empty', 'Нет событий на проверке.')) + '</div>';
 }

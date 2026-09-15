@@ -119,7 +119,7 @@
       margin: 10px 0;
       color: var(--text);
     }
-    .feed-card { cursor: pointer; }
+    .feed-card { cursor: pointer; padding: 12px; margin: 8px 0; }
     .feed-card:active { background: var(--surface); }
     .feed-top {
       display: flex;
@@ -546,18 +546,58 @@
     .info-box p { margin: 0 0 6px; }
     .info-box p:last-child { margin-bottom: 0; }
     #top-creators-link { display: inline-block; margin: 4px 0 8px; font-weight: 700; color: var(--nav-active-fg); }
+    .top-preview {
+      display: flex; gap: 8px; overflow-x: auto; margin: 0 0 8px;
+      padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+    }
+    .top-chip {
+      flex: 0 0 auto; max-width: 170px;
+      border: 1px solid var(--line); border-radius: 12px;
+      padding: 8px 10px; background: var(--surface); cursor: pointer; text-align: left;
+    }
+    .top-chip .creator-rank { font-size: .72rem; }
+    .top-chip b { display: block; font-size: .86rem; margin: 2px 0; }
+    .top-chip .muted { font-size: .72rem; margin: 0; }
     .creator-row { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
     .creator-rank { font-weight: 800; color: var(--muted); min-width: 1.6em; }
+    .creator-full-row { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); gap: 8px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .creator-metrics { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 4px; font-size: .75rem; color: var(--muted); }
+    .creator-metrics b { color: var(--text); font-variant-numeric: tabular-nums; }
+    .stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 10px; }
+    .stat-chip {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+      padding: 10px 8px; text-align: center;
+    }
+    .stat-chip span { display: block; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .02em; }
+    .stat-chip b { display: block; font-size: 1.25rem; font-variant-numeric: tabular-nums; margin-top: 4px; }
+    .stat-chip.earnings { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; text-align: left; padding: 12px 14px; }
+    .stat-chip.earnings span { margin: 0; }
+    .stat-chip.earnings b { margin: 0; font-size: 1.15rem; color: var(--yes); }
+    .fee-line { margin: 8px 0 0; }
+    .fee-line summary {
+      list-style: none; cursor: pointer; color: var(--muted); font-size: .82rem; font-weight: 700;
+    }
+    .fee-line summary::-webkit-details-marker { display: none; }
+    .fee-line p { margin: 8px 0 0; color: var(--muted); font-size: .8rem; line-height: 1.4; }
     #feed-more { width: 100%; margin: 8px 0 16px; }
     .feed-creator { font-size: .78rem; color: var(--muted); margin: 6px 0 0; }
     .feed-creator button { background: none; border: 0; color: var(--nav-active-fg); font-weight: 700; min-height: 32px; padding: 0; width: auto; }
     .event-meta-line { color: var(--muted); font-size: .8rem; margin: 6px 0; }
-    .onboard { position: relative; padding-right: 40px; }
+    .onboard { position: relative; padding: 12px 40px 10px 14px; margin: 8px 0 10px; }
     .onboard-x {
-      position: absolute; top: 8px; right: 8px; width: 36px; min-height: 36px;
+      position: absolute; top: 4px; right: 4px; width: 36px; min-height: 36px;
       padding: 0; background: transparent; color: var(--muted); font-size: 1.2rem;
     }
-    .onboard p { margin: 6px 0; }
+    .onboard strong { display: block; font-size: 1rem; line-height: 1.3; }
+    .onboard .onboard-lead { margin: 4px 0 8px; font-size: .85rem; }
+    .onboard .row { margin-top: 0; }
+    .onboard .row button { min-height: 40px; font-size: .9rem; padding: 8px; }
+    .onboard-foot { margin: 8px 0 0; }
+    .onboard-foot button, .onboard-foot summary {
+      min-height: 28px; padding: 0; border: 0; background: none; color: var(--muted);
+      font-weight: 700; font-size: .78rem; cursor: pointer;
+    }
+    .onboard-foot p { margin: 6px 0 0; font-size: .75rem; color: var(--muted); }
     .help-card p { margin: 0 0 10px; }
     .lang-row { margin: 10px 0 4px; }
     .fees-box { margin-top: 12px; }
@@ -611,15 +651,16 @@
     <section data-panel="feed">
       <div class="card onboard" id="onboarding" hidden>
         <button type="button" class="onboard-x" id="onboard-dismiss" data-i18n-aria="onboard.close" aria-label="Закрыть">×</button>
-        <strong data-i18n="onboard.title">BetTON — P2P рынок прогнозов.</strong>
-        <p data-i18n="onboard.lead">Создавай события или находи готовые.</p>
-        <p data-i18n="onboard.zero">0% за создание и размещение заявки.</p>
-        <p data-i18n="onboard.fee">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+        <strong data-i18n="onboard.title">BetTON — P2P рынок прогнозов</strong>
+        <p class="onboard-lead" data-i18n="onboard.lead">Создавай события или находи готовые.</p>
         <div class="row">
           <button type="button" class="gold" id="onboard-feed" data-i18n="onboard.see">Посмотреть события</button>
           <button type="button" class="ghost" id="onboard-create" data-i18n="onboard.create">Создать событие</button>
         </div>
-        <p><button type="button" class="ghost compact" id="onboard-help" data-i18n="onboard.how">Как это работает</button></p>
+        <details class="onboard-foot">
+          <summary data-i18n="onboard.compact">Как это работает · Сбор 1% ⓘ</summary>
+          <p data-i18n="onboard.feeShort">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+        </details>
       </div>
       <div class="feed-toolbar">
         <div class="chips" id="sort-filters" role="group" aria-label="Сортировка">
@@ -645,8 +686,8 @@
           </select>
         </label>
       </div>
-      <a href="#creators" id="top-creators-link" class="muted" data-i18n="feed.topCreators">Лучшие авторы →</a>
-      <div id="top-creators"></div>
+      <a href="#top-creators-panel" id="top-creators-link" class="muted" data-i18n="feed.topCreators">Лучшие авторы →</a>
+      <div class="top-preview" id="top-creators-preview"></div>
       <div id="markets"></div>
       <button type="button" class="ghost" id="feed-more" hidden data-i18n="feed.more">Показать ещё</button>
     </section>
@@ -659,6 +700,14 @@
         <p data-i18n="help.fee">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя. Проигравшая ставка этот сбор не платит.</p>
         <p data-i18n="help.creatorShare">Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли. Автор не получает долю со своего собственного выигрыша.</p>
         <p data-i18n="help.cancel">Неисполненный остаток можно отменить — деньги вернутся на доступный баланс. Если событие отменят, ставки возвращаются без сервисного сбора.</p>
+      </div>
+    </section>
+
+    <section data-panel="top-creators" hidden>
+      <button type="button" class="back" id="top-creators-back" data-i18n="back.feed">← К ленте</button>
+      <div class="card">
+        <strong data-i18n="creators.title">TOP-10 авторов</strong>
+        <div id="top-creators-full"></div>
       </div>
     </section>
 
@@ -697,7 +746,7 @@
           <p data-i18n="create.how">Как работает событие?</p>
           <p data-i18n="create.feesP2p">Это P2P-рынок: коэффициенты задают сами пользователи, букмекера нет. Заявка резервирует сумму и ждёт встречную.</p>
           <p data-i18n="create.feesFee">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя.</p>
-          <p data-i18n="creator.shareCompact">Вознаграждение автору: 75% сервисного сбора</p>
+          <p data-i18n="creator.shareCompact">Вознаграждение автора — 75% сервисного сбора</p>
           <p data-i18n="creator.shareDetail">Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли.</p>
           <p data-i18n="creator.shareNote" title="Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя.">Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша.</p>
           <p data-i18n="create.feesExample">Пример: ставка 100 TON, выплата 180 TON, чистая прибыль 80 TON, сервисный сбор 0.80 TON. Проигравшая ставка не платит дополнительный сбор.</p>
@@ -872,25 +921,49 @@
       if (el) el.hidden = true;
     }
     function refreshDynamicLang() {
+      rerenderLiveUi();
+    }
+    function systemOutcomeNames() {
+      const names = [];
+      ["ru", "en", "zh"].forEach((lang) => {
+        const dict = I18N[lang] || {};
+        names.push(dict["outcome.yes"], dict["outcome.no"]);
+      });
+      return names.filter(Boolean);
+    }
+    function rerenderLiveUi() {
       paintCreateSubmit();
       if (createOutcomes && createOutcomes.length === 2) {
         const yes = tt("outcome.yes", "Да");
         const no = tt("outcome.no", "Нет");
-        const prevYes = I18N.ru["outcome.yes"];
-        const prevNo = I18N.ru["outcome.no"];
-        if (["Да", "Yes", "是", prevYes].indexOf(createOutcomes[0].name) >= 0) createOutcomes[0].name = yes;
-        if (["Нет", "No", "否", prevNo].indexOf(createOutcomes[1].name) >= 0) createOutcomes[1].name = no;
+        const yesNames = systemOutcomeNames();
+        if (yesNames.indexOf(createOutcomes[0].name) >= 0) createOutcomes[0].name = yes;
+        if (yesNames.indexOf(createOutcomes[1].name) >= 0) createOutcomes[1].name = no;
         if (typeof renderOutcomesEditor === "function") renderOutcomesEditor();
       }
+      if (typeof paintUser === "function") paintUser();
       if (typeof paintFeed === "function") paintFeed();
-      if (typeof loadTopCreators === "function") loadTopCreators().catch(() => {});
+      if (typeof paintTopCreators === "function") paintTopCreators();
       if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
       if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
-      const created = document.getElementById("mine-created");
-      if (created && !created.querySelector(".card")) {
-        created.innerHTML = '<div class="empty-state">' + escapeHtml(tt("account.emptyEvents", "Вы ещё не создавали события.")) + "</div>";
+      if (typeof paintMineFromCache === "function") paintMineFromCache();
+      if (typeof paintCreatorFromCache === "function") paintCreatorFromCache();
+      if (typeof paintModeration === "function") paintModeration();
+      const panel = document.querySelector("[data-panel]:not([hidden])");
+      const view = panel && panel.dataset.panel;
+      if (view === "event" && activeEventId && eventCache[activeEventId]) {
+        const root = document.getElementById("event-root");
+        if (root) {
+          root.innerHTML = marketCard(eventCache[activeEventId]);
+          const card = root.querySelector(".card");
+          if (card && typeof previewQuote === "function") previewQuote(card);
+        }
       }
+      const err = document.getElementById("error");
+      if (err && err.textContent) err.textContent = friendlyError(err.textContent);
+      if (typeof applyI18n === "function") applyI18n();
     }
+    window.onLangChange = refreshDynamicLang;
     const tg = window.Telegram && window.Telegram.WebApp;
     try {
       if (tg) {
@@ -934,6 +1007,11 @@
     let accountState = null;
     let txFilter = "";
     let txRows = [];
+    let mineState = { created: [], orders: [], positions: [], settlements: [], active: [] };
+    let topCreatorsRows = [];
+    let creatorProfileData = null;
+    let moderationMarkets = [];
+    let creatorReturnTab = "feed";
 
     function friendlyError(e) {
       const m = String(e || "");
@@ -970,7 +1048,7 @@
       if (unsafe && (unsafe.first_name || unsafe.username)) {
         return unsafe.first_name || unsafe.username;
       }
-      return (me && me.username) || "игрок";
+      return (me && me.username) || tt("player", "игрок");
     }
 
     function odds(p) {
@@ -983,12 +1061,12 @@
     function fmtTon(v) { return Number(v).toFixed(2) + " TON"; }
 
     function statusLabel(s) {
-      if (s === "pending") return "На модерации";
-      if (s === "rejected") return "Отклонено";
-      if (s === "open") return "Активно";
-      if (s === "closed") return "Приём завершён";
-      if (s === "cancelled") return "Отменено";
-      return "Завершено";
+      if (s === "pending") return tt("status.pending", "На модерации");
+      if (s === "rejected") return tt("status.rejected", "Отклонено");
+      if (s === "open") return tt("status.active", "Активно");
+      if (s === "closed") return tt("status.closedOne", "Приём завершён");
+      if (s === "cancelled") return tt("status.cancelledOne", "Отменено");
+      return tt("status.resolvedOne", "Завершено");
     }
 
     function formatCloseAt(value, now) {
@@ -1019,15 +1097,17 @@
       const names = marketOutcomes(m);
       if (m.mechanism === "p2p") {
         if (m.status === "cancelled") {
-          return m.cancellation_reason ? ("Отменено: " + m.cancellation_reason) : "Событие отменено, ставки возвращены";
+          return m.cancellation_reason
+            ? tt("sit.cancelledReason", "Отменено: {reason}", { reason: m.cancellation_reason })
+            : tt("sit.cancelled", "Событие отменено, ставки возвращены");
         }
-        if (m.status === "resolved" && m.winning_outcome) return "Исход: " + m.winning_outcome;
-        if (m.status === "pending") return "Ждёт проверки. Рынок появится после одобрения";
-        if (m.status === "rejected") return m.rejection_reason ? ("Отклонено: " + m.rejection_reason) : "Отклонено";
+        if (m.status === "resolved" && m.winning_outcome) return tt("sit.winner", "Исход: {name}", { name: m.winning_outcome });
+        if (m.status === "pending") return tt("sit.pending", "Ждёт проверки. Рынок появится после одобрения");
+        if (m.status === "rejected") return m.rejection_reason ? tt("event.rejected", "Отклонено: {reason}", { reason: m.rejection_reason }) : tt("sit.rejected", "Отклонено");
         if (m.status === "closed" || (m.status === "open" && !m.accepting_bets)) {
-          return "Новые заявки не принимаются";
+          return tt("sit.closed", "Новые заявки не принимаются");
         }
-        if ((m.pot || 0) > 0) return "Объём сделок " + fmtTon(m.pot);
+        if ((m.pot || 0) > 0) return tt("feed.deals", "Объём сделок {vol}", { vol: fmtTon(m.pot) });
         return "";
       }
       const prices = marketPrices(m);
@@ -1061,6 +1141,8 @@
 
     function feedBestOffersHtml(m) {
       if (m.mechanism !== "p2p" || !m.accepting_bets || !Array.isArray(m.best_offers)) return "";
+      const hasOffer = m.best_offers.some(off => off);
+      if (!hasOffer) return "";
       const names = marketOutcomes(m);
       return '<div class="feed-odds">' + [0, 1].map(i => {
         const off = m.best_offers[i];
@@ -1092,7 +1174,8 @@
       const creator = m.creator;
       const creatorHtml = creator ? `<div class="feed-creator">${escapeHtml(tt("feed.author", "Автор: "))}<button type="button" data-open-creator="${creator.id}">${escapeHtml(creator.telegram_username ? ("@" + creator.telegram_username) : creator.display_name)}</button></div>` : "";
       const act = m.activity;
-      const actHtml = (act && (act.volume_nano || act.unique_participants))
+      const hasAct = act && ((act.volume_nano && act.volume_nano > 0) || (act.unique_participants && act.unique_participants > 0) || (act.fills && act.fills > 0));
+      const actHtml = hasAct
         ? `<p class="muted situation">${escapeHtml(tt("feed.volume", "{volume} оборот · {people} участников", { volume: fmtTon(act.volume || 0), people: act.unique_participants || 0 }))}</p>`
         : (situation ? `<p class="muted situation">${escapeHtml(situation)}</p>` : "");
       if (typeof eventCache !== "undefined") eventCache[m.id] = m;
@@ -1141,9 +1224,9 @@
       const d = data && data.detail;
       if (status === 401) return AUTH_REOPEN;
       if (typeof d === "string") return d;
-      if (status === 403) return "Недостаточно прав";
-      if (status === 404) return "Не найдено";
-      return "Ошибка запроса";
+      if (status === 403) return tt("err.forbidden", "Недостаточно прав");
+      if (status === 404) return tt("err.notFound", "Не найдено");
+      return tt("err.request", "Ошибка запроса");
     }
 
     function isAuthReopenError(e) {
@@ -1283,44 +1366,44 @@
           <div class="pct">${fmtPct(prices[i] || 0)}</div>
         </div>`).join("");
       const buyBtns = names.map((name, i) =>
-        `<button class="${i === 1 ? "no" : "yes"}" data-act="buy" data-outcome="${i}">Поставить «${escapeHtml(name)}»</button>`
+        `<button class="${i === 1 ? "no" : "yes"}" data-act="buy" data-outcome="${i}">${escapeHtml(tt("event.buy", "Поставить «{name}»", {name: name}))}</button>`
       ).join("");
       const resolveBtns = names.map((name, i) =>
-        `<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(name)}">Рассчитать: ${escapeHtml(name)}</button>`
+        `<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(name)}">${escapeHtml(tt("mod.resolve", "Рассчитать: {name}", {name: name}))}</button>`
       ).join("");
       return `
         <div class="card event-card" data-id="${m.id}" data-status="${m.status}" data-open-market="${m.id}">
           <span class="status-pill status-${m.status === "resolved" ? "resolved" : (accepting ? "open" : "closed")}">${statusLabel(m.status)}</span>
           <div class="question">${escapeHtml(m.question)}</div>
-          ${m.creator ? `<p class="event-meta-line">Автор: <button type="button" class="ghost compact" data-open-creator="${m.creator.id}">${escapeHtml(m.creator.telegram_username ? ("@" + m.creator.telegram_username) : m.creator.display_name)}</button></p>` : ""}
-          <p class="muted event-deadline">${escapeHtml(typeof catLabel === "function" ? catLabel(m.category) : ((typeof CAT_LABEL !== "undefined" && CAT_LABEL[m.category]) || "Уникальное"))}${m.close_at ? " · " + escapeHtml(tt("feed.until", "до ")) + escapeHtml(formatCloseAt(m.close_at)) : ""} · банк ${fmtTon(m.pot || 0)}</p>
-          ${resolved && m.winning_outcome ? `<p>Исход: ${escapeHtml(m.winning_outcome)}</p>` : ""}
+          ${m.creator ? `<p class="event-meta-line">${escapeHtml(tt("feed.author", "Автор: "))}<button type="button" class="ghost compact" data-open-creator="${m.creator.id}">${escapeHtml(m.creator.telegram_username ? ("@" + m.creator.telegram_username) : m.creator.display_name)}</button></p>` : ""}
+          <p class="muted event-deadline">${escapeHtml(typeof catLabel === "function" ? catLabel(m.category) : ((typeof CAT_LABEL !== "undefined" && CAT_LABEL[m.category]) || tt("cat.unique", "Уникальное")))}${m.close_at ? " · " + escapeHtml(tt("feed.until", "до ")) + escapeHtml(formatCloseAt(m.close_at)) : ""} · ${escapeHtml(tt("event.bank", "банк {vol}", {vol: fmtTon(m.pot || 0)}))}</p>
+          ${resolved && m.winning_outcome ? `<p>${escapeHtml(tt("sit.winner", "Исход: {name}", {name: m.winning_outcome}))}</p>` : ""}
           ${moderationActions(m)}
-          ${m.status === "rejected" ? `<p class="muted">Отклонено: ${escapeHtml(m.rejection_reason || "")} · залог возвращён</p>` : ""}
+          ${m.status === "rejected" ? `<p class="muted">${escapeHtml(tt("event.rejectedLock", "Отклонено: {reason} · залог возвращён", {reason: m.rejection_reason || ""}))}</p>` : ""}
           <div class="odds">${oddsHtml}</div>
           ${accepting ? `
             <div class="event-bet">
-            <p class="event-bet-title">Ваша ставка</p>
-            <label>Сумма ставки TON</label>
+            <p class="event-bet-title">${escapeHtml(tt("event.yourBet", "Ваша ставка"))}</p>
+            <label>${escapeHtml(tt("event.betAmount", "Сумма ставки TON"))}</label>
             <input type="number" min="1" step="1" value="10" class="amount" inputmode="decimal"/>
-            <div class="preview" data-preview>Введите сумму — покажем доли и средний коэф</div>
+            <div class="preview" data-preview>${escapeHtml(tt("event.previewLegacy", "Введите сумму — покажем доли и средний коэф"))}</div>
             <div class="row" style="flex-wrap:wrap">${buyBtns}</div>
             </div>` : ""}
           ${canStop ? `
             <div class="row">
-              <button class="ghost" data-act="close">Стоп ставки</button>
+              <button class="ghost" data-act="close">${escapeHtml(tt("mod.close", "Стоп ставки"))}</button>
             </div>` : ""}
           ${canResolve ? `<div class="row" style="flex-wrap:wrap">${resolveBtns}</div>` : ""}
           ${canClaim ? `
-            <p class="muted" style="margin-top:8px">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+            <p class="muted" style="margin-top:8px">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>
             <div class="row">
-              <button class="gold" data-act="claim">Забрать выигрыш</button>
+              <button class="gold" data-act="claim">${escapeHtml(tt("event.claim", "Забрать выигрыш"))}</button>
             </div>` : ""}
           ${canResidual ? `
             <div class="row">
-              <button class="ghost" data-act="residual">Забрать остаток залога</button>
+              <button class="ghost" data-act="residual">${escapeHtml(tt("event.residual", "Забрать остаток залога"))}</button>
             </div>` : ""}
-          ${resolved && pos && pos.claimed && !isAuto ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · сервисный сбор " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+          ${resolved && pos && pos.claimed && !isAuto ? `<p class="muted">${escapeHtml(tt("event.claimed", "Выигрыш уже получен"))}${pos.tip_paid ? " · " + escapeHtml(tt("event.feePaid", "сервисный сбор {amt}", {amt: Number(pos.tip_paid).toFixed(2) + " TON"})) : ""}</p>` : ""}
         </div>`;
     }
 
@@ -1339,27 +1422,27 @@
       const st = typeof feedStatus === "function" ? feedStatus(m) : {key: m.status, text: statusLabel(m.status)};
       return `
         <div class="card" data-id="${m.id}" data-status="${m.status}" data-open-market="${m.id}">
-          <div class="kind-tag">${p2p ? "Исполненная ставка" : "Позиция"}</div>
+          <div class="kind-tag">${p2p ? escapeHtml(tt("pos.filledTag", "Исполненная ставка")) : escapeHtml(tt("pos.tag", "Позиция"))}</div>
           <div class="question">${escapeHtml(m.question)}</div>
           <div class="meta">
             <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
-            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${escapeHtml(m.winning_outcome)}</span>` : ""}
+            ${resolved && m.winning_outcome ? `<span class="pill">${escapeHtml(tt("pos.winner", "Исход: {name}", {name: m.winning_outcome}))}</span>` : ""}
           </div>
           ${lines}
           ${canClaim ? `
-            <p class="muted">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+            <p class="muted">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>
             <div class="row">
-              <button class="gold" data-act="claim">Забрать выигрыш</button>
+              <button class="gold" data-act="claim">${escapeHtml(tt("event.claim", "Забрать выигрыш"))}</button>
             </div>` : ""}
-          ${lost ? `<p class="muted">Проигрыш</p>` : ""}
-          ${resolved && !lost && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · сервисный сбор " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+          ${lost ? `<p class="muted">${escapeHtml(tt("pos.loss", "Проигрыш"))}</p>` : ""}
+          ${resolved && !lost && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">${escapeHtml(tt("event.claimed", "Выигрыш уже получен"))}${pos.tip_paid ? " · " + escapeHtml(tt("event.feePaid", "сервисный сбор {amt}", {amt: Number(pos.tip_paid).toFixed(2) + " TON"})) : ""}</p>` : ""}
         </div>`;
     }
 
     function historyResultLine(s) {
       const voided = s.settlement_kind === "void";
       const result = Number(s.result || 0);
-      if (voided) return {text: "Возврат " + fmtTon(s.credited), cls: "void"};
+      if (voided) return {text: tt("hist.refund", "Возврат {amt}", {amt: fmtTon(s.credited)}), cls: "void"};
       if (result > 0.0001) return {text: "+" + fmtTon(result), cls: "win"};
       if (result < -0.0001) return {text: fmtTon(result), cls: "loss"};
       if (s.is_loss) return {text: "-" + fmtTon(s.stakes_total || 0), cls: "loss"};
@@ -1370,39 +1453,39 @@
       const voided = s.settlement_kind === "void";
       const loss = !voided && !!s.is_loss;
       const when = s.resolved_at ? escapeHtml(formatCloseAt(s.resolved_at)) : "";
-      const chosen = (s.chosen_outcomes && s.chosen_outcomes.length)
-        ? s.chosen_outcomes.map(escapeHtml).join(", ")
-        : "нет ставок";
+      const chosenText = (s.chosen_outcomes && s.chosen_outcomes.length)
+        ? s.chosen_outcomes.join(", ")
+        : tt("hist.noBets", "нет ставок");
       const tip = Number(s.tip || 0);
       const result = historyResultLine(s);
       const creatorBits = (s.lock_ton > 0 || s.residual_returned > 0)
-        ? `<p class="muted">залог ${fmtTon(s.lock_ton)} · возврат остатка ${fmtTon(s.residual_returned)}</p>`
+        ? `<p class="muted">${escapeHtml(tt("hist.lock", "залог {lock} · возврат остатка {rest}", {lock: fmtTon(s.lock_ton), rest: fmtTon(s.residual_returned)}))}</p>`
         : "";
       if (voided) {
         return `
         <div class="card history-card history-void" data-id="${s.market_id}">
-          <div class="kind-tag">Итог события</div>
+          <div class="kind-tag">${escapeHtml(tt("hist.tag", "Итог события"))}</div>
           <div class="question">${escapeHtml(s.question)}</div>
-          <p class="void-banner">Событие отменено · средства возвращены</p>
-          <p class="muted">Ваш исход: ${chosen}</p>
-          <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}</p>
-          <p class="muted">исполненные ставки ${fmtTon(s.payout)} · остаток заявки ${fmtTon(s.residual_returned)}</p>
-          ${tip > 0 ? `<p class="muted">Сервисный сбор ${fmtTon(tip)}</p>` : ""}
+          <p class="void-banner">${escapeHtml(tt("hist.voidBanner", "Событие отменено · средства возвращены"))}</p>
+          <p class="muted">${escapeHtml(tt("hist.yourOutcome", "Ваш исход: {name}", {name: chosenText}))}</p>
+          <p class="muted">${escapeHtml(tt("hist.stakesPayout", "Сумма ставок {stakes} · выплата {payout}", {stakes: fmtTon(s.stakes_total), payout: fmtTon(s.payout)}))}</p>
+          <p class="muted">${escapeHtml(tt("hist.filledRest", "исполненные ставки {payout} · остаток заявки {rest}", {payout: fmtTon(s.payout), rest: fmtTon(s.residual_returned)}))}</p>
+          ${tip > 0 ? `<p class="muted">${escapeHtml(tt("hist.fee", "Сервисный сбор {amt}", {amt: fmtTon(tip)}))}</p>` : ""}
           <p class="history-result void">${escapeHtml(result.text)}</p>
         </div>`;
       }
       const hasStake = Number(s.stakes_total || 0) > 0.0001;
       return `
         <div class="card history-card" data-id="${s.market_id}">
-          <div class="kind-tag">Итог события</div>
+          <div class="kind-tag">${escapeHtml(tt("hist.tag", "Итог события"))}</div>
           <div class="question">${escapeHtml(s.question)}</div>
           <div class="meta">
-            ${hasStake ? `<span class="status-pill ${loss ? "status-cancelled" : "status-open"}">${loss ? "Проигрыш" : "Выигрыш"}</span>` : `<span class="pill">Расчёт</span>`}
+            ${hasStake ? `<span class="status-pill ${loss ? "status-cancelled" : "status-open"}">${escapeHtml(loss ? tt("hist.loss", "Проигрыш") : tt("hist.win", "Выигрыш"))}</span>` : `<span class="pill">${escapeHtml(tt("hist.settle", "Расчёт"))}</span>`}
             ${when ? `<span class="pill">${when}</span>` : ""}
           </div>
-          <p>Ваш исход: ${chosen}</p>
-          <p>Победивший исход: ${escapeHtml(s.winning_outcome || "")}</p>
-          <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}${tip > 0 ? " · Сервисный сбор " + fmtTon(tip) : ""}</p>
+          <p>${escapeHtml(tt("hist.yourOutcome", "Ваш исход: {name}", {name: chosenText}))}</p>
+          <p>${escapeHtml(tt("hist.winning", "Победивший исход: {name}", {name: s.winning_outcome || ""}))}</p>
+          <p class="muted">${escapeHtml(tt("hist.stakesPayout", "Сумма ставок {stakes} · выплата {payout}", {stakes: fmtTon(s.stakes_total), payout: fmtTon(s.payout)}))}${tip > 0 ? " · " + escapeHtml(tt("hist.fee", "Сервисный сбор {amt}", {amt: fmtTon(tip)})) : ""}</p>
           <p class="history-result ${result.cls}">${escapeHtml(result.text)}</p>
           ${creatorBits}
         </div>`;
@@ -1438,25 +1521,117 @@
     }
 
     async function loadTopCreators() {
-      const root = document.getElementById("top-creators");
-      if (!root) return;
-      const rows = await api("/creators/top?limit=10").catch(() => []);
-      if (!rows.length) { root.innerHTML = ""; return; }
-      root.innerHTML = rows.map(row => `
-        <div class="creator-row" data-open-creator="${row.id}">
-          <div><span class="creator-rank">#${row.rank}</span> ${escapeHtml(row.telegram_username ? ("@" + row.telegram_username) : row.display_name)}</div>
-          <div class="muted">${escapeHtml(tt("creator.compact", "{markets} соб. · {volume}", { markets: row.markets_created, volume: fmtTon(row.volume || 0) }))}</div>
-        </div>`).join("");
+      topCreatorsRows = await api("/creators/top?limit=10").catch(() => []);
+      paintTopCreators();
     }
 
-    async function openCreator(userId) {
-      eventReturnTab = document.querySelector("[data-panel]:not([hidden])")?.dataset.panel || "feed";
-      document.querySelectorAll("[data-panel]").forEach(p => { p.hidden = p.dataset.panel !== "creator"; });
+    function creatorHandle(row) {
+      return row.telegram_username ? ("@" + row.telegram_username) : (row.display_name || "");
+    }
+
+    function paintTopCreators() {
+      const preview = document.getElementById("top-creators-preview");
+      const full = document.getElementById("top-creators-full");
+      const rows = topCreatorsRows || [];
+      if (preview) {
+        preview.innerHTML = rows.slice(0, 3).map(row => `
+          <button type="button" class="top-chip" data-open-creator="${row.id}">
+            <span class="creator-rank">#${row.rank}</span>
+            <b>${escapeHtml(creatorHandle(row))}</b>
+            <span class="muted">${escapeHtml(fmtTon(row.volume || 0))}</span>
+          </button>`).join("");
+      }
+      if (full) {
+        if (!rows.length) {
+          full.innerHTML = '<div class="empty-state">' + escapeHtml(tt("creators.empty", "Пока нет авторов с публичной активностью.")) + "</div>";
+        } else {
+          full.innerHTML = rows.map(row => `
+            <div class="creator-full-row" data-open-creator="${row.id}">
+              <span class="creator-rank">#${row.rank}</span>
+              <div>
+                <b>${escapeHtml(creatorHandle(row))}</b>
+                <div class="creator-metrics">
+                  <span>${escapeHtml(tt("creators.volume", "оборот"))} <b>${escapeHtml(fmtTon(row.volume || 0))}</b></span>
+                  <span>${escapeHtml(tt("creators.fills", "ставки"))} <b>${escapeHtml(String(row.fills || 0))}</b></span>
+                  <span>${escapeHtml(tt("creators.people", "участники"))} <b>${escapeHtml(String(row.unique_participants || 0))}</b></span>
+                  <span>${escapeHtml(tt("creators.markets", "события"))} <b>${escapeHtml(String(row.markets_created || 0))}</b></span>
+                </div>
+              </div>
+            </div>`).join("");
+        }
+      }
+    }
+
+    function showTopCreators() {
+      creatorReturnTab = "feed";
+      document.querySelectorAll("[data-panel]").forEach(p => { p.hidden = p.dataset.panel !== "top-creators"; });
       document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === "feed"));
       setTelegramBack(true);
+      paintTopCreators();
+      if (!topCreatorsRows.length) loadTopCreators().catch(() => {});
+    }
+
+    function paintAccountOverview() {
+      const overview = document.getElementById("account-overview");
+      if (!overview) return;
+      const created = (mineState.created || []).length;
+      const orders = (mineState.orders || []).length;
+      const positions = (mineState.active || []).length;
+      const earningsNano = accountState && accountState.creator_earnings_nano;
+      const earningsHtml = (earningsNano != null)
+        ? `<div class="stat-chip earnings"><span>${escapeHtml(tt("account.creatorIncome", "Доход автора"))}</span><b>${escapeHtml(fmtTon(accountState.creator_earnings || 0))}</b></div>`
+        : "";
+      overview.innerHTML = `
+        <div class="stat-grid">
+          <div class="stat-chip"><span>${escapeHtml(tt("account.statEvents", "События"))}</span><b>${created}</b></div>
+          <div class="stat-chip"><span>${escapeHtml(tt("account.statOrders", "Заявки"))}</span><b>${orders}</b></div>
+          <div class="stat-chip"><span>${escapeHtml(tt("account.statPositions", "Позиции"))}</span><b>${positions}</b></div>
+          ${earningsHtml}
+        </div>
+        <details class="fee-line">
+          <summary>${escapeHtml(tt("creator.shareLine", "Вознаграждение автора — 75% сервисного сбора ⓘ"))}</summary>
+          <p>${escapeHtml(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли."))}</p>
+        </details>`;
+    }
+
+    function paintMineFromCache() {
+      const created = mineState.created || [];
+      const orders = mineState.orders || [];
+      const active = mineState.active || [];
+      const settlements = mineState.settlements || [];
+      const positions = mineState.positions || [];
+      const createdRoot = document.getElementById("mine-created");
+      const betsRoot = document.getElementById("mine-bets");
+      const resultsRoot = document.getElementById("mine-results");
+      const ordersRoot = document.getElementById("mine-orders");
+      if (ordersRoot && typeof renderMineOrders === "function") ordersRoot.innerHTML = renderMineOrders(orders);
+      if (createdRoot) {
+        createdRoot.innerHTML = created.length
+          ? created.map(m => marketCard(m)).join("")
+          : '<div class="empty-state">' + escapeHtml(tt("account.emptyEvents", "Вы ещё не создавали события.")) + "</div>";
+      }
+      if (betsRoot) {
+        betsRoot.innerHTML = active.length
+          ? active.map(positionCard).join("")
+          : '<div class="empty-state">' + escapeHtml(tt("account.emptyBets", "У вас пока нет исполненных ставок.")) + "</div>";
+      }
+      if (resultsRoot) {
+        const legacy = positions.filter(p => p.market && p.market.status === "resolved" && p.market.settlement_kind !== "auto");
+        resultsRoot.innerHTML = settlements.length || legacy.length
+          ? settlements.map(settlementCard).join("") + legacy.map(positionCard).join("")
+          : '<div class="empty-state">' + escapeHtml(tt("account.emptyHistory", "Завершённых событий пока нет.")) + "</div>";
+      }
+      paintAccountOverview();
+      const txList = document.getElementById("tx-list");
+      if (txList && typeof renderTxList === "function") txList.innerHTML = renderTxList(txRows, tt("account.emptyTx", "Операций пока нет."));
+      const walletHistory = document.getElementById("wallet-history");
+      if (walletHistory && typeof renderTxList === "function") walletHistory.innerHTML = renderTxList(txRows, tt("account.emptyTx", "Операций пока нет."));
+    }
+
+    function paintCreatorFromCache() {
       const root = document.getElementById("creator-root");
-      root.innerHTML = '<p class="loading-state">' + escapeHtml(tt("creator.loading", "Загружаем профиль…")) + "</p>";
-      const data = await api("/creators/" + userId);
+      const data = creatorProfileData;
+      if (!root || !data || !data.creator) return;
       const c = data.creator;
       const mine = me && me.id === c.id;
       root.innerHTML = `
@@ -1468,10 +1643,22 @@
         </div>
         <p class="muted">${escapeHtml(tt("creator.stats", "{markets} событий · {volume} оборот · {fills} ставок · {people} участников", { markets: c.markets_created, volume: fmtTon(c.volume || 0), fills: c.fills, people: c.unique_participants }))}</p>
         <p class="muted">${escapeHtml(tt("creator.active", "Активных: {active} · Завершённых: {done}", { active: c.active_markets, done: c.completed_markets }))}</p>
-        ${mine ? '<p class="muted">' + escapeHtml(tt("creator.shareCompact", "Вознаграждение автору: 75% сервисного сбора")) + "</p><p class=\"muted\">" + escapeHtml(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли.")) + "</p><p class=\"muted\">" + escapeHtml(tt("creator.shareNote", "Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша.")) + "</p>" : ""}
         ${mine ? '<div class="row"><button type="button" class="gold" id="creator-wallet">' + escapeHtml(tt("creator.wallet", "Кошелёк")) + '</button><button type="button" class="ghost" id="creator-account">' + escapeHtml(tt("creator.profile", "Мой профиль")) + "</button></div>" : ""}
         <h2>${escapeHtml(tt("creator.events", "События автора"))}</h2>
         ${(data.markets || []).map(feedCard).join("") || ('<div class="empty-state">' + escapeHtml(tt("creator.empty", "Публичных событий пока нет.")) + "</div>")}`;
+    }
+
+    async function openCreator(userId) {
+      const current = document.querySelector("[data-panel]:not([hidden])");
+      creatorReturnTab = (current && current.dataset.panel) || "feed";
+      if (creatorReturnTab !== "top-creators") eventReturnTab = creatorReturnTab;
+      document.querySelectorAll("[data-panel]").forEach(p => { p.hidden = p.dataset.panel !== "creator"; });
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === "feed"));
+      setTelegramBack(true);
+      const root = document.getElementById("creator-root");
+      root.innerHTML = '<p class="loading-state">' + escapeHtml(tt("creator.loading", "Загружаем профиль…")) + "</p>";
+      creatorProfileData = await api("/creators/" + userId);
+      paintCreatorFromCache();
     }
 
     async function loadMine() {
@@ -1496,38 +1683,44 @@
       for (const p of positions) myPositions[p.market_id] = p;
       accountState = account && !Array.isArray(account) ? account : null;
       txRows = Array.isArray(transactions) ? transactions : [];
-      if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
-      if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
-      document.getElementById("mine-orders").innerHTML = renderMineOrders(orders);
       const created = markets.filter(m => m.creator_id === me.id);
       if (typeof rememberShareToken === "function") created.forEach(rememberShareToken);
-      const createdRoot = document.getElementById("mine-created");
-      const betsRoot = document.getElementById("mine-bets");
-      const resultsRoot = document.getElementById("mine-results");
-      createdRoot.innerHTML = created.length
-        ? created.map(m => marketCard(m)).join("")
-        : '<div class="empty-state">' + escapeHtml(tt("account.emptyEvents", "Вы ещё не создавали события.")) + "</div>";
       const active = positions.filter(p => p.market && p.market.status !== "resolved" && p.market.status !== "cancelled");
-      betsRoot.innerHTML = active.length
-        ? active.map(positionCard).join("")
-        : '<div class="empty-state">' + escapeHtml(tt("account.emptyBets", "У вас пока нет исполненных ставок.")) + "</div>";
-      const legacy = positions.filter(p => p.market && p.market.status === "resolved"
-        && p.market.settlement_kind !== "auto");
-      resultsRoot.innerHTML = settlements.length || legacy.length
-        ? settlements.map(settlementCard).join("") + legacy.map(positionCard).join("")
-        : '<div class="empty-state">' + escapeHtml(tt("account.emptyHistory", "Завершённых событий пока нет.")) + "</div>";
-      const overview = document.getElementById("account-overview");
-      if (overview) {
-        overview.innerHTML = `<p class="muted">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>
-          <p class="muted">${escapeHtml(tt("creator.shareCompact", "Вознаграждение автору: 75% сервисного сбора"))}</p>
-          <p class="muted">${escapeHtml(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли."))}</p>
-          <p class="muted">${escapeHtml(tt("creator.shareNote", "Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша."))}</p>
-          <p class="muted">${created.length} · ${orders.length} · ${active.length}</p>`;
-      }
-      const txList = document.getElementById("tx-list");
-      if (txList && typeof renderTxList === "function") txList.innerHTML = renderTxList(txRows, tt("account.emptyTx", "Операций пока нет."));
-      const walletHistory = document.getElementById("wallet-history");
-      if (walletHistory && typeof renderTxList === "function") walletHistory.innerHTML = renderTxList(txRows, tt("account.emptyTx", "Операций пока нет."));
+      mineState = { created, orders, positions, settlements, active };
+      if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
+      if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
+      paintMineFromCache();
+    }
+
+    async function loadMine() {
+      requireLogin();
+      await refreshMe();
+      requireLogin();
+      const userId = me.id;
+      const kind = (typeof txFilter === "string") ? txFilter : "";
+      const txQuery = kind ? ("?kind=" + encodeURIComponent(kind)) : "";
+      const [markets, positions, settlements, orders, account, transactions] = await Promise.all([
+        api("/users/" + userId + "/markets"),
+        api("/users/" + userId + "/positions"),
+        api("/users/" + userId + "/settlements"),
+        api("/users/" + userId + "/orders"),
+        api("/users/" + userId + "/account").catch(() => null),
+        api("/users/" + userId + "/transactions" + txQuery).catch(() => [])
+      ]);
+      await refreshMe();
+      requireLogin();
+      if (me.id !== userId) return;
+      myPositions = {};
+      for (const p of positions) myPositions[p.market_id] = p;
+      accountState = account && !Array.isArray(account) ? account : null;
+      txRows = Array.isArray(transactions) ? transactions : [];
+      const created = markets.filter(m => m.creator_id === me.id);
+      if (typeof rememberShareToken === "function") created.forEach(rememberShareToken);
+      const active = positions.filter(p => p.market && p.market.status !== "resolved" && p.market.status !== "cancelled");
+      mineState = { created, orders, positions, settlements, active };
+      if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
+      if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
+      paintMineFromCache();
     }
 
     async function previewQuote(card) {
@@ -1536,7 +1729,7 @@
       if (!preview) return;
       const money = Number(card.querySelector(".amount")?.value || 0);
       if (!money || money <= 0) {
-        preview.textContent = "Введите сумму — покажем доли и средний коэф";
+        preview.textContent = tt("event.previewLegacy", "Введите сумму — покажем доли и средний коэф");
         return;
       }
       const buttons = [...card.querySelectorAll("button[data-act='buy']")];
@@ -1584,6 +1777,14 @@
         return;
       }
       if (panel && panel.dataset.panel === "creator") {
+        if (creatorReturnTab === "top-creators") {
+          showTopCreators();
+          return;
+        }
+        showTab(creatorReturnTab === "create" || creatorReturnTab === "mine" ? creatorReturnTab : "feed");
+        return;
+      }
+      if (panel && panel.dataset.panel === "top-creators") {
         showTab("feed");
         return;
       }
@@ -1643,7 +1844,7 @@
       if (name === "event") return;
       if (name === "moderation" && !me?.is_admin) return;
       activeEventId = null;
-      setTelegramBack(name === "wallet" || name === "help" || name === "creator");
+      setTelegramBack(name === "wallet" || name === "help" || name === "creator" || name === "top-creators");
       if (name === "moderation") loadModeration().catch(e => showError(e.message));
       document.querySelectorAll("[data-panel]").forEach(p => {
         p.hidden = p.dataset.panel !== name;
@@ -1651,7 +1852,7 @@
       document.querySelectorAll(".tab").forEach(t => {
         let mapped = name;
         if (name === "wallet") mapped = "mine";
-        else if (name === "creator") mapped = "feed";
+        else if (name === "creator" || name === "top-creators") mapped = "feed";
         else if (name === "help") mapped = (eventReturnTab === "create" || eventReturnTab === "mine") ? eventReturnTab : "feed";
         t.classList.toggle("active", t.dataset.tab === mapped);
       });
@@ -1737,20 +1938,27 @@
     document.getElementById("feed-more").onclick = () => loadMarkets({ append: true }).catch(e => showError(e.message));
     document.getElementById("top-creators-link").onclick = (ev) => {
       ev.preventDefault();
-      document.getElementById("top-creators")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      showTopCreators();
     };
+    document.getElementById("top-creators-back").onclick = () => showTab("feed");
+    document.getElementById("top-creators-preview").addEventListener("click", (ev) => {
+      const open = ev.target.closest("[data-open-creator]");
+      if (open) openCreator(Number(open.dataset.openCreator)).catch(e => showError(e.message));
+    });
+    document.getElementById("top-creators-full").addEventListener("click", (ev) => {
+      const open = ev.target.closest("[data-open-creator]");
+      if (open) openCreator(Number(open.dataset.openCreator)).catch(e => showError(e.message));
+    });
     document.getElementById("creator-back").onclick = () => showTab("feed");
     document.getElementById("help-back").onclick = () => showTab(eventReturnTab || "feed");
     document.getElementById("onboard-dismiss").onclick = dismissOnboarding;
     document.getElementById("onboard-feed").onclick = () => { dismissOnboarding(); showTab("feed"); };
     document.getElementById("onboard-create").onclick = () => { dismissOnboarding(); showTab("create"); };
-    document.getElementById("onboard-help").onclick = () => { dismissOnboarding(); openHelp(); };
     document.getElementById("profile-help").onclick = openHelp;
     document.getElementById("lang-switch").onclick = (ev) => {
       const btn = ev.target.closest("[data-lang]");
       if (!btn) return;
       setLang(btn.dataset.lang);
-      refreshDynamicLang();
     };
     document.getElementById("creator-root").addEventListener("click", (ev) => {
       if (ev.target.id === "creator-wallet") { openWallet("deposit"); return; }

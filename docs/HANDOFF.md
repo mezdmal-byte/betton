@@ -102,12 +102,16 @@ Mobile-first; desktop `--app-max` 720/1080/1200, лента 2 колонки с 
 ### Demo seeder
 
 ```
-python scripts/seed_demo_markets.py --count 100 --database-url sqlite:///./betton-demo.db
+python scripts/seed_demo_markets.py --count 100 --database-url sqlite:///./betton.db --allow-local-demo --demo-tag vasily
 ```
 
-Hard guard: отказывает Render env, production-like host, и `betton.db` без `--allow-local-demo`. Localhost/CI PostgreSQL или явный demo sqlite — можно. Не запускать на Render.
+Перед seed seeder делает timestamped backup SQLite (`backups/betton-YYYYMMDD-HHMMSS.db`), если файл существует. `--demo-tag vasily` идемпотентен: повтор не создаёт вторую сотню. Не удаляет существующих Telegram-пользователей и ручные рынки. Hard guard без изменений: Render env, production-like host, `betton.db` без `--allow-local-demo`. Не запускать на Render.
 
-### Tests / CI
+### Vasily UX + demo polish
+
+Компактный profile dashboard (stats + read-only «Доход автора» из существующих `OP_TIP` journal credits автора). Fee-эссе только в Help/`<details>`. Onboarding ~одна карточка. Лента: TOP-3 preview, отдельная панель TOP-10. `setLang` полностью rerender текущий UI; UGC не переводится. Словарь RU/EN/ZH с key parity.
+
+## Tests / CI
 
 Новые: `test_profile_creators.py`, `test_history.py`, `test_wallet_ui.py`, `test_feed.py`, `test_private_markets.py`, `test_i18n.py`, `test_demo_seed.py`. SQLite full suite. PostgreSQL job: journal + integer money + migration + E2E + profile/private/feed/seed. sqlite job: `actions/setup-node`.
 

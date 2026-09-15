@@ -553,12 +553,15 @@ def list_markets_page(
         query = query.filter(Market.visibility == "public")
     if category:
         query = query.filter(Market.category == _normalize_category(category))
-    needle = (q or "").strip().lower()
+    needle = (q or "").strip()
     if needle:
-        pattern = f"%{needle}%"
+        raw = f"%{needle}%"
+        lowered = f"%{needle.lower()}%"
         query = query.filter(
-            (func.lower(Market.question).like(pattern))
-            | (func.lower(func.coalesce(Market.description, "")).like(pattern))
+            Market.question.like(raw)
+            | func.lower(Market.question).like(lowered)
+            | func.coalesce(Market.description, "").like(raw)
+            | func.lower(func.coalesce(Market.description, "")).like(lowered)
         )
     rows = query.order_by(Market.id.desc()).all()
     for market in rows:

@@ -113,10 +113,7 @@ function paintAccountHeader(account) {
         <span>${escapeHtml(tt("account.reserved", "В резерве"))} <b>${fmtTon(reserved)}</b></span>
         <span>${escapeHtml(tt("account.inPositions", "В исполненных позициях"))} <b>${fmtTon(positions)}</b></span>
       </div>
-    </div>
-    <p class="muted">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>
-    <p class="muted" title="${escapeHtml(tt("creator.shareNote", "Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша."))}">${escapeHtml(tt("creator.shareCompact", "Вознаграждение автору: 75% сервисного сбора"))}</p>
-    <p class="muted">${escapeHtml(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли."))}</p>`;
+    </div>`;
 }
 
 function paintWalletSummary(account) {
@@ -131,7 +128,9 @@ function paintWalletSummary(account) {
       <span>${escapeHtml(tt("account.reserved", "В резерве"))} <b>${fmtTon(reserved)}</b></span>
       <span>${escapeHtml(tt("account.inPositionsShort", "В позициях"))} <b>${fmtTon(positions)}</b></span>
     </div>
-  </div>`;
+    <p class="muted">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>
+    <p class="muted" title="${escapeHtml(tt("creator.shareNote", "Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша."))}">${escapeHtml(tt("creator.shareCompact", "Вознаграждение автору: 75% сервисного сбора"))}</p>
+    <p class="muted">${escapeHtml(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли."))}</p>`;
   const avail = document.getElementById("withdraw-available");
   if (avail) avail.textContent = me ? fmtTon(me.balance) : "—";
 }

@@ -101,5 +101,10 @@ def test_feed_ui_has_sort_pagination_and_creators():
     assert "Лучшие авторы" in text
     assert "async function openCreator" in text
     assert "async function loadTopCreators" in text
+    assert "function showTopCreators" in text
+    assert 'data-panel="top-creators"' in text
+    assert "top-creators-preview" in text
+    assert "top-creators-full" in text
+    assert "slice(0, 3)" in text
     assert "debounce" not in text.lower() or "280" in text
     assert "setTimeout(() => loadMarkets()" in text

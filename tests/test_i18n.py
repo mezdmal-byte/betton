@@ -20,10 +20,10 @@ def test_i18n_dictionaries_cover_ru_en_zh_and_fallback():
     assert "без комиссии" not in text.lower()
     assert "Service fee is 1%" in text
     assert "服务费仅为获胜者净利润的 1%" in text
-    assert "Вознаграждение автору: 75% сервисного сбора" in text
+    assert "Вознаграждение автора — 75% сервисного сбора" in text
     assert "Автор события получает 75% сервисного сбора" in text
-    assert "Creator reward: 75% of the service fee" in text
-    assert "作者奖励：服务费的 75%" in text
+    assert "Creator reward — 75% of the service fee" in text
+    assert "作者奖励 — 服务费的 75%" in text
     assert "Автор получает 1%" not in text
     assert "creator gets 1%" not in text.lower()
     html = HTML.read_text(encoding="utf-8")
@@ -38,14 +38,14 @@ def test_i18n_dictionaries_cover_ru_en_zh_and_fallback():
 
 def test_onboarding_has_honest_fee_copy_and_no_zero_fee_claim():
     html = HTML.read_text(encoding="utf-8")
-    assert 'id="onboarding"' in html
-    assert "BetTON — P2P рынок прогнозов." in html
-    assert "Создавай события или находи готовые." in html
-    assert "0% за создание и размещение заявки." in html
-    assert "Сервисный сбор — 1% только с чистой прибыли победителя." in html
-    assert "Посмотреть события" in html
-    assert "Создать событие" in html
-    assert "Как это работает" in html
+    onboard = html[html.index('id="onboarding"') : html.index('class="feed-toolbar"')]
+    assert "BetTON — P2P рынок прогнозов" in onboard
+    assert "Создавай события или находи готовые." in onboard
+    assert "Посмотреть события" in onboard
+    assert "Создать событие" in onboard
+    assert "Как это работает · Сбор 1% ⓘ" in onboard
+    assert "0% за создание и размещение заявки." not in onboard
+    assert "Автор события получает 75%" not in onboard
     assert "betton-onboard-v1" in html
     assert "без комиссии" not in html.lower()
     assert "без комиссий" not in html.lower()
@@ -60,7 +60,7 @@ def test_create_form_is_compact_with_expandable_fees():
     assert create.index("<details") < create.index("Пример: ставка 100 TON")
     assert 'data-vis="public"' in create
     assert 'data-vis="unlisted"' in create
-    assert "Вознаграждение автору: 75% сервисного сбора" in create
+    assert "Вознаграждение автора — 75% сервисного сбора" in create
     assert "Автор события получает 75% сервисного сбора" in create
     assert "Автор получает 1%" not in create
 
@@ -99,3 +99,90 @@ def test_bot_start_help_follow_language_code_with_en_fallback():
     assert unknown["start"] == TEXTS["en"]["start"]
     assert bot_lang(SimpleNamespace(from_user=SimpleNamespace(language_code="ru-RU"))) == "ru"
     assert HELP_TEXT == TEXTS["ru"]["help"]
+
+
+def _i18n_keys(source: str, lang: str) -> set[str]:
+    start = source.index(f"{lang}: {{")
+    depth = 0
+    end = None
+    for index, ch in enumerate(source[start:], start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = index
+                break
+    block = source[start:end]
+    return set(__import__("re").findall(r'"([^"]+)":\s*"', block))
+
+
+def test_i18n_key_parity_across_ru_en_zh():
+    text = I18N.read_text(encoding="utf-8")
+    ru = _i18n_keys(text, "ru")
+    en = _i18n_keys(text, "en")
+    zh = _i18n_keys(text, "zh")
+    assert ru
+    assert ru == en == zh
+
+
+def test_account_overview_rerenders_without_russian_after_lang_switch(tmp_path):
+    from tests.node_harness import run_node_script
+
+    html = HTML.read_text(encoding="utf-8")
+    i18n = I18N.read_text(encoding="utf-8")
+    start = html.index("function paintAccountOverview")
+    end = html.index("function paintMineFromCache")
+    overview_fn = html[start:end]
+    script = (
+        i18n
+        + r"""
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtTon(v) { return Number(v).toFixed(2) + ' TON'; }
+let accountState = { creator_earnings: 1.25, creator_earnings_nano: 1250000000 };
+let mineState = { created: [{id:1}], orders: [{id:1},{id:2},{id:3}], active: [] };
+let overviewHtml = '';
+global.document = {
+  documentElement: { lang: 'ru' },
+  querySelectorAll() { return []; },
+  getElementById(id) {
+    if (id !== 'account-overview') return null;
+    return { set innerHTML(v) { overviewHtml = v; }, get innerHTML() { return overviewHtml; } };
+  }
+};
+"""
+        + overview_fn
+        + r"""
+setLang('ru', false);
+paintAccountOverview();
+const ru = overviewHtml;
+setLang('zh', false);
+paintAccountOverview();
+const zh = overviewHtml;
+setLang('en', false);
+paintAccountOverview();
+const en = overviewHtml;
+const data = { ru, zh, en };
+if (typeof process !== 'undefined' && process.stdout) process.stdout.write(JSON.stringify(data));
+"""
+    )
+    proc = run_node_script(script, tmp_path, name="i18n_overview.js")
+    if proc is None:
+        import pytest
+        pytest.skip("Node.js required for live i18n rerender")
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+    import json
+    data = json.loads(proc.stdout)
+    assert "События" in data["ru"]
+    assert "Заявки" in data["ru"]
+    assert "Позиции" in data["ru"]
+    assert "Вознаграждение автора" in data["ru"]
+    assert not __import__("re").search(r"[А-Яа-яЁё]", data["zh"])
+    assert not __import__("re").search(r"[А-Яа-яЁё]", data["en"])
+    assert "Creator earnings" in data["en"] or "earnings" in data["en"].lower()
+    assert "1.25 TON" in data["zh"]
+    assert "События" not in data["zh"]
+    assert "События" not in data["en"]
+    assert "Заявки" not in data["en"]

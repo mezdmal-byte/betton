@@ -192,6 +192,49 @@ def test_public_creator_profile_and_top_ranking(client: TestClient, monkeypatch)
     assert by_id[m1["id"]]["activity"]["fills"] == 1
 
 
+def test_account_creator_earnings_are_read_only_ledger_tips(client: TestClient, monkeypatch):
+    admin, ah = _admin_local(client, monkeypatch)
+    maker, hm = _login(client, username="earnmaker", first_name="Maker")
+    a, ha = _login(client)
+    b, hb = _login(client)
+    created = client.post(
+        "/markets",
+        headers=hm,
+        json={
+            "question": "Creator earnings from existing tip journal?",
+            "outcomes": ["Да", "Нет"],
+            "close_at": (datetime.now(timezone.utc) + timedelta(hours=3)).isoformat(),
+        },
+    )
+    assert created.status_code == 200, created.text
+    mid = created.json()["id"]
+    assert client.post(f"/markets/{mid}/approve", headers=ah).status_code == 200
+    submit(client, mid, ha, 0, 100, 2)
+    submit(client, mid, hb, 1, 100, 2)
+    assert client.post(f"/markets/{mid}/close", headers=ah).status_code == 200
+    resolved = client.post(f"/markets/{mid}/resolve", headers=ah, json={"winning_outcome": 0})
+    assert resolved.status_code == 200, resolved.text
+
+    maker_acc = client.get(f"/users/{maker['id']}/account", headers=hm).json()
+    winner_acc = client.get(f"/users/{a['id']}/account", headers=ha).json()
+    assert maker_acc["creator_earnings_nano"] > 0
+    assert maker_acc["creator_earnings"] == pytest.approx(maker_acc["creator_earnings_nano"] / 1_000_000_000)
+    assert winner_acc["creator_earnings_nano"] == 0
+    from app.services.p2p_ledger import OP_TIP
+    from app.models import P2PMoneyEntry
+
+    db = SessionLocal()
+    try:
+        tips = (
+            db.query(P2PMoneyEntry)
+            .filter(P2PMoneyEntry.op_type == OP_TIP, P2PMoneyEntry.to_user_id == maker["id"])
+            .all()
+        )
+        assert sum(row.amount for row in tips) == maker_acc["creator_earnings_nano"]
+    finally:
+        db.close()
+
+
 def _admin_local(client: TestClient, monkeypatch):
     from tests.test_markets_api import _admin
 

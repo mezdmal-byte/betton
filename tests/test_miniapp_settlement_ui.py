@@ -228,7 +228,7 @@ def test_load_mine_refreshes_balance_and_keeps_legacy_results(unauthorized, tmp_
     if not node_bin():
         pytest.skip("Node.js required to execute async loadMine regression")
     html = HTML.read_text(encoding="utf-8")
-    load_mine = html[html.index("async function loadMine()") : html.index("async function previewQuote")]
+    load_mine = html[html.index("function paintAccountOverview") : html.index("async function previewQuote")]
     script = r'''
 const assert = require('node:assert/strict');
 const CAT_LABEL = {unique: "Уникальное"};

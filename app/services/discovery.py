@@ -8,10 +8,11 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Market, MarketStatus, P2PFill, P2POrder, Position, User
+from app.models import Market, MarketStatus, P2PFill, P2PMoneyEntry, P2POrder, Position, User
 from app.money import as_ton, to_nano
 from app.schemas import AccountOut, CreatorBriefOut, CreatorStatsOut, MarketActivityOut
 from app.services import market_service as legacy
+from app.services import p2p_ledger as ledger
 
 PUBLIC_STATUSES = (
     MarketStatus.open,
@@ -256,6 +257,21 @@ def get_creator_profile(db: Session, user_id: int) -> tuple[CreatorStatsOut, lis
     return _stats_out(user, raw), markets
 
 
+def creator_earnings_nano(db: Session, user_id: int) -> int:
+    """Sum existing creator tip credits from the P2P journal. Read-only; does not move funds."""
+    total = (
+        db.query(func.coalesce(func.sum(P2PMoneyEntry.amount), 0))
+        .join(Market, Market.id == P2PMoneyEntry.market_id)
+        .filter(
+            P2PMoneyEntry.op_type == ledger.OP_TIP,
+            P2PMoneyEntry.to_user_id == int(user_id),
+            Market.creator_id == int(user_id),
+        )
+        .scalar()
+    )
+    return _as_int(total)
+
+
 def account_summary(db: Session, user: User) -> AccountOut:
     reserved_nano = _as_int(
         db.query(func.coalesce(func.sum(P2POrder.remaining), 0))
@@ -293,6 +309,7 @@ def account_summary(db: Session, user: User) -> AccountOut:
                 costs = [float(pos.cost_yes or 0), float(pos.cost_no or 0)]
             in_positions_nano += to_nano(sum(float(x or 0) for x in costs))
     balance_nano = int(user.balance_nano or 0)
+    earnings_nano = creator_earnings_nano(db, user.id)
     return AccountOut(
         id=user.id,
         username=user.username,
@@ -307,6 +324,8 @@ def account_summary(db: Session, user: User) -> AccountOut:
         reserved_nano=reserved_nano,
         in_positions=as_ton(in_positions_nano) if in_positions_nano else 0.0,
         in_positions_nano=in_positions_nano,
+        creator_earnings=as_ton(earnings_nano) if earnings_nano else 0.0,
+        creator_earnings_nano=earnings_nano,
     )
 
 

@@ -62,6 +62,8 @@ class AccountOut(BaseModel):
     reserved_nano: int
     in_positions: float
     in_positions_nano: int
+    creator_earnings: float = 0.0
+    creator_earnings_nano: int = 0
 
 
 class CreatorStatsOut(BaseModel):

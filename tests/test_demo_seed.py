@@ -75,3 +75,82 @@ def test_seed_creates_requested_count_and_useful_states(client: TestClient, monk
     page = client.get("/markets", params={"limit": 5, "offset": 0})
     assert page.status_code == 200
     assert len(page.json()) <= 5
+
+
+def test_seed_is_idempotent_for_the_same_demo_tag(client: TestClient, monkeypatch):
+    seed = _seed_mod()
+    monkeypatch.setattr(settings, "admin_telegram_id", 9_000_001)
+    from app.models import Market, User
+
+    with SessionLocal() as db:
+        planted = User(username="real-telegram-tester", telegram_id=1_234_567, balance=1000)
+        db.add(planted)
+        db.commit()
+        planted_id = planted.id
+        first = seed.seed_markets(db, count=16, demo_tag="idemp")
+        second = seed.seed_markets(db, count=16, demo_tag="idemp")
+        tagged = db.query(Market).filter(Market.description.like("%DEMO[idemp]%")).count()
+        still = db.get(User, planted_id)
+    assert first["created"] == 16
+    assert second["created"] == 0
+    assert second["skipped"] == 16
+    assert tagged == 16
+    assert still is not None
+    assert still.telegram_id == 1_234_567
+    assert still.username == "real-telegram-tester"
+
+
+def test_seed_100_markets_varied_odds_volumes_and_states(client: TestClient, monkeypatch):
+    seed = _seed_mod()
+    monkeypatch.setattr(settings, "admin_telegram_id", 9_000_001)
+    from app.models import Market, P2POrder
+    from app.services.p2p_service import PRICE
+
+    with SessionLocal() as db:
+        summary = seed.seed_markets(db, count=100, demo_tag="full100")
+        markets = db.query(Market).filter(Market.description.like("%DEMO[full100]%")).all()
+        orders = db.query(P2POrder).all()
+        creators = {m.creator_id for m in markets}
+        cats = {}
+        for m in markets:
+            cats[m.category] = cats.get(m.category, 0) + 1
+        odds = sorted({round(PRICE / row.price, 2) for row in orders})
+        volumes = [int(m.pot_nano or 0) for m in markets]
+    assert summary["count"] == 100
+    assert summary["created"] == 100
+    assert len(markets) == 100
+    assert len(creators) >= 8
+    assert cats.get("sport") == 35
+    assert cats.get("politics") == 30
+    assert cats.get("unique") == 35
+    assert summary["unlisted"] >= 3
+    assert summary["pending"] >= 3
+    statuses = {m.status.value for m in markets}
+    assert "open" in statuses
+    assert "closed" in statuses
+    assert "resolved" in statuses
+    assert "cancelled" in statuses
+    assert "pending" in statuses
+    assert len(odds) >= 6
+    assert any(k <= 1.5 for k in odds)
+    assert any(k >= 3.0 for k in odds)
+    assert max(volumes) > min(v for v in volumes if v > 0) * 5
+    listed = client.get("/markets", params={"sort": "popular"}).json()
+    newest = client.get("/markets", params={"sort": "new"}).json()
+    assert listed and newest
+    assert [m["id"] for m in listed[:5]] != [m["id"] for m in newest[:5]]
+    top = client.get("/creators/top?limit=10").json()
+    assert len(top) >= 3
+    assert len(top) <= 10
+    vols = [row["volume_nano"] for row in top]
+    assert vols == sorted(vols, reverse=True)
+    assert len(set(vols)) >= 2
+
+
+def test_seed_safety_guards_source_unchanged():
+    source = (ROOT / "scripts" / "seed_demo_markets.py").read_text(encoding="utf-8")
+    assert "Refusing to seed: Render environment detected." in source
+    assert "production-like database host" in source
+    assert "without --allow-local-demo" in source
+    assert "RENDER_SERVICE_ID" in source
+    assert "onrender.com" in source
