@@ -15,7 +15,7 @@ if str(ROOT) not in sys.path:
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
 
 from app.config import settings
@@ -65,13 +65,25 @@ def mini_app_url() -> str:
     return settings.webapp_base() + "/"
 
 
-def mini_app_keyboard() -> InlineKeyboardMarkup:
+def share_webapp_url(token: str) -> str:
+    return settings.webapp_base().rstrip("/") + "/?share=" + token
+
+
+def start_payload_token(payload: str | None) -> str | None:
+    text = (payload or "").strip()
+    if text.startswith("market_"):
+        token = text[7:].strip()
+        return token or None
+    return None
+
+
+def mini_app_keyboard(url: str | None = None, label: str = "Открыть BetTON") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Открыть BetTON",
-                    web_app=WebAppInfo(url=mini_app_url()),
+                    text=label,
+                    web_app=WebAppInfo(url=url or mini_app_url()),
                 )
             ]
         ]
@@ -79,7 +91,15 @@ def mini_app_keyboard() -> InlineKeyboardMarkup:
 
 
 @dp.message(CommandStart())
-async def cmd_start(message: Message) -> None:
+async def cmd_start(message: Message, command: CommandObject | None = None) -> None:
+    payload = command.args if command is not None else None
+    token = start_payload_token(payload)
+    if token:
+        await message.answer(
+            START_TEXT,
+            reply_markup=mini_app_keyboard(share_webapp_url(token), "Открыть событие"),
+        )
+        return
     await message.answer(START_TEXT, reply_markup=mini_app_keyboard())
 
 

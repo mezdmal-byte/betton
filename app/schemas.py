@@ -90,6 +90,7 @@ class MarketCreate(BaseModel):
     close_at: datetime
     target_odds: Optional[list[float]] = None
     target_probs: Optional[list[float]] = None
+    visibility: Literal["public", "unlisted"] = "public"
 
 
 class QuoteRequest(BaseModel):
@@ -176,6 +177,8 @@ class MarketOut(BaseModel):
     best_offers: Optional[list[Optional[BestOfferOut]]] = None
     creator: Optional[CreatorBriefOut] = None
     activity: Optional[MarketActivityOut] = None
+    visibility: str = "public"
+    share_token: Optional[str] = None
 
     class Config:
         from_attributes = True

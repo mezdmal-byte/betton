@@ -110,6 +110,8 @@ class Market(Base):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     settlement_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(16), default="public", server_default="public")
+    share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     # full = journal from market creation; incomplete = existed before the journal.
     p2p_journal_coverage: Mapped[str] = mapped_column(
         String(16), default="not_applicable", server_default="not_applicable"

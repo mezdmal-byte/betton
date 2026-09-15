@@ -53,11 +53,14 @@ function p2pCard(m) {
   const close = (typeof formatCloseAt === 'function')
     ? formatCloseAt(m.close_at)
     : String(m.close_at || '').replace('T', ' ').slice(0, 16);
-  return `<div class="card event-card" data-id="${m.id}" data-status="${m.status}" data-mechanism="p2p">
+  return `<div class="card event-card" data-id="${m.id}" data-status="${m.status}" data-mechanism="p2p" data-share-token="${escapeHtml(m.share_token || '')}">
     <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
+    ${(m.visibility === 'unlisted') ? '<span class="status-pill status-wait">Приватное</span>' : ''}
+    ${(m.visibility === 'unlisted') ? '<p class="muted">Тип: По ссылке</p>' : '<p class="muted">Тип: Публичное</p>'}
     <div class="question">${escapeHtml(m.question)}</div>
     ${close ? `<p class="muted event-deadline">Приём заявок до ${escapeHtml(close)}</p>` : ''}
     ${m.creator ? `<p class="event-meta-line">Автор: <button type="button" class="ghost compact" data-open-creator="${m.creator.id}">${escapeHtml(m.creator.telegram_username ? ('@' + m.creator.telegram_username) : m.creator.display_name)}</button></p>` : ''}
+    ${m.share_token || m.visibility === 'unlisted' ? '<button type="button" class="ghost compact" data-act="share">Поделиться</button>' : ''}
     <div class="outcome-pair">
       <span class="out yes-acc">${escapeHtml(yes)}</span>
       <span class="out-vs">или</span>

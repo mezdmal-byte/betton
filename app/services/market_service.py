@@ -293,7 +293,7 @@ def _probs_from_create(
     return [1.0 / n] * n
 
 
-def market_to_out(market: Market, best_offers=None, creator=None, activity=None) -> MarketOut:
+def market_to_out(market: Market, best_offers=None, creator=None, activity=None, include_share_token=False) -> MarketOut:
     names = market_outcomes(market)
     q = _quantities(market)
     p = prices(q, market.b) if market.mechanism != "p2p" else []
@@ -334,6 +334,8 @@ def market_to_out(market: Market, best_offers=None, creator=None, activity=None)
         best_offers=best_offers,
         creator=creator,
         activity=activity if activity is not None else MarketActivityOut(),
+        visibility=getattr(market, "visibility", None) or "public",
+        share_token=market.share_token if include_share_token else None,
     )
 
 

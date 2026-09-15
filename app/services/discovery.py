@@ -310,7 +310,7 @@ def account_summary(db: Session, user: User) -> AccountOut:
     )
 
 
-def attach_market_views(db: Session, markets: list[Market]) -> list:
+def attach_market_views(db: Session, markets: list[Market], include_share_token: bool = False) -> list:
     from app.services import p2p_service
 
     offers = p2p_service.best_offers_map(db, markets)
@@ -322,6 +322,7 @@ def attach_market_views(db: Session, markets: list[Market]) -> list:
             best_offers=offers.get(market.id),
             creator=creators.get(market.creator_id),
             activity=activity.get(market.id),
+            include_share_token=include_share_token,
         )
         for market in markets
     ]

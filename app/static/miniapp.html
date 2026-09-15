@@ -628,6 +628,11 @@
         <label>Два исхода</label>
         <div id="outcomes-editor"></div>
         <p class="muted">Событие появится в ленте после проверки. Залог не нужен: цену задают заявки игроков, а не букмекер.</p>
+        <label>Тип события</label>
+        <div class="chips" id="create-visibility">
+          <button type="button" class="chip on" data-vis="public">Публичное</button>
+          <button type="button" class="chip" data-vis="unlisted">По ссылке</button>
+        </div>
         <p class="muted">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя.</p>
         <p class="muted">Пример: ставка 100 TON, выплата 180 TON, чистая прибыль 80 TON, сервисный сбор 0.80 TON. Проигравшая ставка не платит дополнительный сбор.</p>
         <label>Конец приёма заявок</label>
@@ -771,6 +776,8 @@
     let feedSearchTimer = null;
     let feedMarkets = [];
     let createCategory = "unique";
+    let createVisibility = "public";
+    let botUsername = "";
     const quoteTimers = {};
     let myPositions = {};
     let createOutcomes = [
@@ -1434,8 +1441,9 @@
       showError("");
       try {
         let m = preloaded || eventCache[id];
+        const unlisted = m && m.visibility === "unlisted";
         const canFetch = !m || (m.status !== "pending" && m.status !== "rejected");
-        if (canFetch) {
+        if (canFetch && !unlisted) {
           try {
             m = await api("/markets/" + id);
             eventCache[id] = m;
@@ -1443,6 +1451,8 @@
             if (!preloaded && !eventCache[id]) throw e;
             m = preloaded || eventCache[id];
           }
+        } else if (m) {
+          eventCache[id] = m;
         }
         if (!m) throw new Error("Событие недоступно.");
         root.innerHTML = marketCard(m);
@@ -1571,6 +1581,12 @@
       feedSearchTimer = setTimeout(() => loadMarkets().catch(e => showError(e.message)), 280);
     });
 
+    document.getElementById("create-visibility").onclick = (ev) => {
+      const btn = ev.target.closest("[data-vis]");
+      if (!btn) return;
+      createVisibility = btn.dataset.vis || "public";
+      document.querySelectorAll("#create-visibility .chip").forEach(c => c.classList.toggle("on", c === btn));
+    };
     document.getElementById("create-cats").onclick = (ev) => {
       const btn = ev.target.closest("[data-cat]");
       if (!btn) return;
@@ -1605,6 +1621,7 @@
             description: "",
             outcomes: names,
             mechanism: "p2p",
+            visibility: createVisibility,
             close_at: closeDate.toISOString(),
 
           })
@@ -1612,7 +1629,7 @@
         document.getElementById("question").value = "";
         createOutcomes = [{ name: "Да", k: 2 }, { name: "Нет", k: 2 }];
         renderOutcomesEditor();
-        toast("Событие отправлено на проверку");
+        toast(createVisibility === "unlisted" ? "Приватное событие открыто по ссылке" : "Событие отправлено на проверку");
         await refreshMe();
         showTab("mine");
       } catch (e) { showError(e.message); }
@@ -1667,6 +1684,31 @@
       showError("");
       try {
         requireLogin();
+        if (btn.dataset.act === "share") {
+          const token = card.dataset.shareToken;
+          const uname = (typeof botUsername === "string" ? botUsername : "").replace(/^@/, "");
+          const link = (uname && token) ? ("https://t.me/" + uname + "?start=market_" + token) : "";
+          const qEl = card.querySelector(".question");
+          const shareText = qEl ? qEl.textContent : "BetTON";
+          try {
+            if (link && tg && typeof tg.openTelegramLink === "function") {
+              tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent(shareText));
+            }
+          } catch (e) { /* WebView без openTelegramLink */ }
+          try {
+            if (link && navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(link);
+              toast("Ссылка скопирована");
+            } else if (link) {
+              toast(link);
+            } else {
+              toast("Ссылка появится после настройки имени бота", true);
+            }
+          } catch (e) {
+            toast(link || "Не удалось скопировать ссылку", !link);
+          }
+          return;
+        }
         if (btn.dataset.act === "p2p-refresh") { await hydrateP2P(card); return; }
         if (btn.dataset.act === "p2p-limit" || btn.dataset.act === "p2p-ioc") {
           if (card.submitting) return;
@@ -1828,6 +1870,23 @@
           return;
         }
         await auth();
+        try {
+          const health = await fetch("/health").then(r => r.json());
+          botUsername = (health && health.bot_username) ? String(health.bot_username).replace(/^@/, "") : "";
+        } catch (e) { botUsername = ""; }
+        const params = new URLSearchParams(location.search);
+        let share = (params.get("share") || "").trim();
+        if (!share && tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+          const sp = String(tg.initDataUnsafe.start_param);
+          share = sp.indexOf("market_") === 0 ? sp.slice(7) : sp;
+        }
+        if (share && me) {
+          try {
+            const shared = await api("/markets/share/" + encodeURIComponent(share));
+            eventCache[shared.id] = shared;
+            await openEvent(shared.id, shared);
+          } catch (e) { showError(e.message); }
+        }
         await loadMarkets();
       } catch (e) { showError(e.message); }
     })();

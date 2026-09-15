@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
-from app.models import MarketStatus, User
+from app.models import Market, MarketStatus, User
 from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
     AccountOut,
@@ -162,7 +162,11 @@ def mini_app():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "webapp": settings.webapp_base()}
+    return {
+        "status": "ok",
+        "webapp": settings.webapp_base(),
+        "bot_username": (settings.telegram_bot_username or "").lstrip("@"),
+    }
 
 
 @app.post("/webhook")
@@ -253,7 +257,7 @@ def list_created_markets_endpoint(
 ):
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
-    return discovery.attach_market_views(db, market_service.list_created_markets(db, user_id))
+    return discovery.attach_market_views(db, market_service.list_created_markets(db, user_id), include_share_token=True)
 
 
 @app.get("/moderation/markets", response_model=list[MarketOut])
@@ -278,7 +282,8 @@ def create_market_endpoint(
     db: Session = Depends(get_db),
 ):
     if market_in.mechanism == "p2p":
-        return market_service.market_to_out(p2p_service.create_market(db, current_user.id, market_in))
+        created = p2p_service.create_market(db, current_user.id, market_in)
+        return discovery.attach_market_views(db, [created], include_share_token=True)[0]
     market = market_service.create_market(
         db,
         creator_id=current_user.id,
@@ -318,10 +323,31 @@ def list_markets_endpoint(
     return _markets_to_out(db, rows)
 
 
+@app.get("/markets/share/{share_token}", response_model=MarketOut)
+def resolve_share_market(
+    share_token: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = current_user
+    token = (share_token or "").strip()
+    if not token or len(token) < 8:
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market = db.query(Market).filter(Market.share_token == token).one_or_none()
+    if market is None or market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    if market_service._maybe_auto_close(db, market):
+        db.commit()
+        db.refresh(market)
+    return discovery.attach_market_views(db, [market], include_share_token=True)[0]
+
+
 @app.get("/markets/{market_id}", response_model=MarketOut)
 def get_market_endpoint(market_id: int, db: Session = Depends(get_db)):
     market = market_service.get_market(db, market_id)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    if (getattr(market, "visibility", None) or "public") == "unlisted":
         raise HTTPException(status_code=404, detail="Рынок не найден")
     return discovery.attach_market_views(db, [market])[0]
 
