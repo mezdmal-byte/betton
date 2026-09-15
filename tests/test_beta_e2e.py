@@ -469,9 +469,9 @@ def test_beta_e2e_partial_cancel_full_resolve(client, monkeypatch, tmp_path):
         "cancelledOrder": cancelled_row,
         "fullOrder": fa,
     })
-    assert ui["restingStatus"] == "Ожидает контрагента"
+    assert ui["restingStatus"] == "Ждёт исполнения"
     assert "Отменить остаток" in ui["restingCard"]
-    assert "Ожидает контрагента" in ui["restingMine"]
+    assert "Ждёт исполнения" in ui["restingMine"]
     assert ui["partialStatusA"] == "Частично исполнена"
     assert "Частично исполнена" in ui["partialMineA"]
     assert any("Исполнится сейчас" in line for line in ui["preview"])
@@ -489,6 +489,7 @@ def test_beta_e2e_partial_cancel_full_resolve(client, monkeypatch, tmp_path):
     assert "Забрать выигрыш" not in ui["resolvedPosB"]
     assert "Исход: Да" in ui["eventResolved"] or "Да" in ui["feedResolved"]
     assert "Оставить заявку" not in ui["eventResolved"]
+    assert "Разместить заявку" not in ui["eventResolved"]
     assert me_a["balance"] == pytest.approx(1069.3)
     assert me_b["balance"] == pytest.approx(930)
 
@@ -579,7 +580,8 @@ def test_beta_e2e_void_partial_and_full(client, monkeypatch, tmp_path):
     assert "Возврат 105.00 TON" in ui["historyVoid"]
     assert "Забрать выигрыш" not in ui["eventVoid"]
     assert "Оставить заявку" not in ui["eventVoid"]
-    assert "Отменено" in ui["eventVoid"]
+    assert "Разместить заявку" not in ui["eventVoid"]
+    assert "Отменено" in ui["eventVoid"] or "Событие отменено" in ui["eventVoid"]
     assert "Источник не подтвердился" in ui["feedVoid"] or "Отменено" in ui["feedVoid"]
 
 

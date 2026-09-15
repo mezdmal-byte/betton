@@ -36,9 +36,9 @@ def test_expired_session_on_positions_clears_ui():
     assert "applyUnauthorized();" in api_fn
     assert "throw new Error(AUTH_REOPEN)" in api_fn
     assert "if (isAuthReopenError(e)) throw e" in positions_fn
-    assert "me ? fmtTon(me.balance) : \"—\"" in paint_fn
+    assert "fmtTon(me.balance)" in paint_fn
     assert "createBtn.disabled = !me" in paint_fn
-    assert "me && me.is_admin" in paint_fn
+    assert "auth-block" in apply_fn
 
     me = {"id": 7, "is_admin": True, "balance": 1000.0}
     my_positions = {9: {"market_id": 9}}
@@ -52,7 +52,7 @@ def test_expired_session_on_positions_clears_ui():
         nonlocal who, balance, create_disabled
         admin = me and me.get("is_admin")
         who = "Ada" + ('<span class="admin-mark">админ</span>' if admin else "")
-        balance = f"{me['balance']:.2f} TON" if me else "—"
+        balance = f"{me['balance']:.2f} TON" if me else ""
         create_disabled = not me
 
     def apply_unauthorized():
@@ -84,6 +84,6 @@ def test_expired_session_on_positions_clears_ui():
     assert me is None
     assert my_positions == {}
     assert error == AUTH_REOPEN
-    assert balance == "—"
+    assert balance == ""
     assert create_disabled is True
     assert "админ" not in who

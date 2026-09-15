@@ -62,6 +62,9 @@ def ensure_schema() -> None:
                                      ('markets', 'lock_nano', market_cols)]:
             _add_column_if_missing(conn, table, name,
                 f'BIGINT CHECK ({name} BETWEEN 0 AND 9223372036854775807)', columns)
+        _add_column_if_missing(conn, "users", "telegram_username", "VARCHAR(64)", user_cols)
+        _add_column_if_missing(conn, "users", "display_name", "VARCHAR(128)", user_cols)
+        _add_column_if_missing(conn, "users", "photo_url", "VARCHAR(1024)", user_cols)
         _add_column_if_missing(conn, "markets", "category", "VARCHAR(32) DEFAULT 'unique'", market_cols)
         _add_column_if_missing(conn, "markets", "outcomes", "TEXT", market_cols)
         _add_column_if_missing(conn, "markets", "q", "TEXT", market_cols)
@@ -78,6 +81,10 @@ def ensure_schema() -> None:
         _add_column_if_missing(conn, "markets", "cancelled_at", "TIMESTAMP", market_cols)
         _add_column_if_missing(conn, "markets", "cancelled_by", "INTEGER", market_cols)
         _add_column_if_missing(conn, "markets", "p2p_journal_coverage", "VARCHAR(16)", market_cols)
+        _add_column_if_missing(conn, "markets", "visibility", "VARCHAR(16) DEFAULT 'public'", market_cols)
+        _add_column_if_missing(conn, "markets", "share_token", "VARCHAR(64)", market_cols)
+        conn.execute(text("UPDATE markets SET visibility = 'public' WHERE visibility IS NULL"))
+        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_markets_share_token ON markets (share_token)"))
         conn.execute(
             text(
                 "UPDATE markets SET p2p_journal_coverage = 'incomplete' "

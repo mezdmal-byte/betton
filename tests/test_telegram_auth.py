@@ -141,6 +141,18 @@ def test_expired_auth_date_is_rejected(client: TestClient):
     _assert_unauthorized(res, init_data)
 
 
+def test_auth_ttl_remains_one_hour():
+    from app.telegram_auth import AUTH_MAX_AGE_SECONDS
+
+    assert AUTH_MAX_AGE_SECONDS == 3600
+
+
+def test_auth_date_within_ttl_is_accepted(client: TestClient):
+    init_data = make_init_data(92004, auth_date=int(time.time()) - 3599)
+    res = client.post("/auth/telegram", headers={"Authorization": f"tma {init_data}"})
+    assert res.status_code == 200, res.text
+
+
 def test_future_auth_date_is_rejected(client: TestClient):
     init_data = make_init_data(92002, auth_date=int(time.time()) + 60)
     res = client.post("/auth/telegram", headers={"Authorization": f"tma {init_data}"})

@@ -1,6 +1,7 @@
 from app.money import adjust_balance_nano, add_pot_nano
 """Binary, fully funded orders. Stakes use nanoTON integers; price ticks are 1e-6."""
 import math
+import secrets
 from collections import defaultdict
 from decimal import Decimal, InvalidOperation, ROUND_FLOOR
 
@@ -40,11 +41,18 @@ def create_market(db, user_id, req):
         raise HTTPException(400, 'Вопрос должен содержать от 8 до 512 символов')
     if legacy.as_utc(req.close_at) <= legacy.utcnow():
         raise HTTPException(400, 'Конец приёма не может быть в прошлом')
+    visibility = getattr(req, "visibility", None) or "public"
+    if visibility not in ("public", "unlisted"):
+        raise HTTPException(400, "Тип события: public или unlisted")
+    unlisted = visibility == "unlisted"
     market = Market(question=req.question.strip(), description=req.description or '',
                     creator_id=user_id, category=req.category, outcomes=names,
                     mechanism='p2p', b=1, q=[0, 0], q_yes=0, q_no=0,
                     lock_ton=0, pot=0, lock_returned=True,
-                    close_at=legacy._naive_utc(req.close_at), status=MarketStatus.pending,
+                    close_at=legacy._naive_utc(req.close_at),
+                    status=MarketStatus.open if unlisted else MarketStatus.pending,
+                    visibility=visibility,
+                    share_token=secrets.token_urlsafe(24) if unlisted else None,
                     p2p_journal_coverage=ledger.COVERAGE_FULL)
     db.add(market)
     db.commit()
@@ -89,9 +97,16 @@ def plan_matches(orders, amount, limit_price):
     return plan, remaining
 
 
-def preview(db, market_id, user_id, outcome, amount, odds):
+def _guard_unlisted(db, market, user_id=None, share_token=None):
+    from app.services import market_access
+    viewer = db.get(User, user_id) if user_id is not None else None
+    market_access.require_unlisted_access(market, viewer=viewer, share_token=share_token)
+
+
+def preview(db, market_id, user_id, outcome, amount, odds, share_token=None):
     market = legacy.get_market(db, market_id)
     require_p2p(market)
+    _guard_unlisted(db, market, user_id, share_token)
     legacy.require_accepting(market)
     idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
     atomic, tick = parse_terms(amount, odds)
@@ -123,7 +138,7 @@ def _finish_order(db, order):
         _refund(db, order, 'filled' if order.filled else 'cancelled', reason='remainder')
 
 
-def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
+def place(db, market_id, user_id, outcome, amount, odds, kind, request_id, share_token=None):
     atomic, tick = parse_terms(amount, odds)
     if kind not in ('limit', 'ioc') or not 8 <= len(request_id) <= 64:
         raise HTTPException(400, 'Некорректный тип или идентификатор заявки')
@@ -132,6 +147,7 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
     try:
         market = legacy._lock_market(db, market_id)
         require_p2p(market)
+        _guard_unlisted(db, market, user_id, share_token)
         idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
         existing = db.query(P2POrder).filter_by(user_id=user_id, request_id=request_id).first()
         if existing:
@@ -374,11 +390,12 @@ def best_offers_map(db, markets):
     return result
 
 
-def book(db, market_id, viewer_id=None):
+def book(db, market_id, viewer_id=None, share_token=None):
     market = legacy.get_market(db, market_id)
     require_p2p(market)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(404, 'Рынок не найден')
+    _guard_unlisted(db, market, viewer_id, share_token)
     orders = db.query(P2POrder).filter_by(market_id=market_id, status='open').all()
     accepting = legacy.is_accepting_bets(market)
     sides, queued = _accumulate_book(orders, accepting=accepting)

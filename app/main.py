@@ -3,7 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -12,13 +12,15 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
-from app.models import MarketStatus, User
+from app.models import Market, MarketStatus, User
 from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
+    AccountOut,
     BuySharesRequest,
     ClaimWinningsRequest,
     CloseMarketRequest,
     CollectResidualRequest,
+    CreatorStatsOut,
     CancelMarketRequest,
     MarketCreate,
     MarketOut,
@@ -31,9 +33,10 @@ from app.schemas import (
     OrderPreviewRequest,
     P2PReconciliationOut,
     SettlementOut,
+    TransactionOut,
     UserOut,
 )
-from app.services import market_service, p2p_service
+from app.services import discovery, history, market_access, market_service, p2p_service
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -159,7 +162,11 @@ def mini_app():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "webapp": settings.webapp_base()}
+    return {
+        "status": "ok",
+        "webapp": settings.webapp_base(),
+        "bot_username": (settings.telegram_bot_username or "").lstrip("@"),
+    }
 
 
 @app.post("/webhook")
@@ -191,6 +198,41 @@ def get_user_endpoint(user_id: int, current_user: User = Depends(get_current_use
     return current_user
 
 
+@app.get("/users/{user_id}/account", response_model=AccountOut)
+def get_account_endpoint(
+    user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return discovery.account_summary(db, current_user)
+
+
+@app.get("/users/{user_id}/transactions", response_model=list[TransactionOut])
+def list_transactions_endpoint(
+    user_id: int,
+    kind: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return history.list_transactions(db, user_id, kind=kind)
+
+
+@app.get("/creators/top", response_model=list[CreatorStatsOut])
+def top_creators_endpoint(limit: int = 10, db: Session = Depends(get_db)):
+    return discovery.list_top_creators(db, limit=limit)
+
+
+@app.get("/creators/{user_id}")
+def creator_profile_endpoint(user_id: int, db: Session = Depends(get_db)):
+    stats, markets = discovery.get_creator_profile(db, user_id)
+    return {
+        "creator": stats,
+        "markets": discovery.attach_market_views(db, markets),
+    }
+
+
 @app.get("/users/{user_id}/positions", response_model=list[PositionOut])
 def list_user_positions_endpoint(
     user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
@@ -215,12 +257,12 @@ def list_created_markets_endpoint(
 ):
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
-    return [market_service.market_to_out(m) for m in market_service.list_created_markets(db, user_id)]
+    return discovery.attach_market_views(db, market_service.list_created_markets(db, user_id), include_share_token=True)
 
 
 @app.get("/moderation/markets", response_model=list[MarketOut])
 def moderation_queue_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return [market_service.market_to_out(m) for m in market_service.list_pending_markets(db, current_user)]
+    return discovery.attach_market_views(db, market_service.list_pending_markets(db, current_user))
 
 
 @app.post("/markets/{market_id}/approve", response_model=MarketOut)
@@ -240,7 +282,8 @@ def create_market_endpoint(
     db: Session = Depends(get_db),
 ):
     if market_in.mechanism == "p2p":
-        return market_service.market_to_out(p2p_service.create_market(db, current_user.id, market_in))
+        created = p2p_service.create_market(db, current_user.id, market_in)
+        return discovery.attach_market_views(db, [created], include_share_token=True)[0]
     market = market_service.create_market(
         db,
         creator_id=current_user.id,
@@ -257,31 +300,77 @@ def create_market_endpoint(
 
 
 def _markets_to_out(db: Session, markets) -> list[MarketOut]:
-    offers = p2p_service.best_offers_map(db, markets)
-    return [market_service.market_to_out(m, best_offers=offers.get(m.id)) for m in markets]
+    return discovery.attach_market_views(db, markets)
 
 
 @app.get("/markets", response_model=list[MarketOut])
 def list_markets_endpoint(
+    response: Response,
     category: str | None = None,
     status: MarketStatus | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
     db: Session = Depends(get_db),
 ):
     cat = (category or "").strip() or None
-    return _markets_to_out(db, market_service.list_markets(db, category=cat, status=status))
+    query = (q or "").strip() or None
+    rows, total = market_service.list_markets_page(
+        db, category=cat, status=status, q=query, sort=sort, limit=limit, offset=offset
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return _markets_to_out(db, rows)
+
+
+@app.get("/markets/share/{share_token}", response_model=MarketOut)
+def resolve_share_market(
+    share_token: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = current_user
+    token = (share_token or "").strip()
+    if not token or len(token) < 8:
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market = db.query(Market).filter(Market.share_token == token).one_or_none()
+    if market is None or market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    if market_service._maybe_auto_close(db, market):
+        db.commit()
+        db.refresh(market)
+    return discovery.attach_market_views(db, [market], include_share_token=True)[0]
 
 
 @app.get("/markets/{market_id}", response_model=MarketOut)
-def get_market_endpoint(market_id: int, db: Session = Depends(get_db)):
+def get_market_endpoint(
+    market_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
     market = market_service.get_market(db, market_id)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(status_code=404, detail="Рынок не найден")
-    offers = p2p_service.best_offers_map(db, [market])
-    return market_service.market_to_out(market, best_offers=offers.get(market.id))
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    unlisted = (getattr(market, "visibility", None) or "public") == "unlisted"
+    return discovery.attach_market_views(db, [market], include_share_token=unlisted)[0]
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)
-def quote_endpoint(market_id: int, req: QuoteRequest, db: Session = Depends(get_db)):
+def quote_endpoint(
+    market_id: int,
+    req: QuoteRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    market = market_service.get_market(db, market_id)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
     return market_service.quote_buy(db, market_id, req.outcome, req.money)
 
 
@@ -289,9 +378,14 @@ def quote_endpoint(market_id: int, req: QuoteRequest, db: Session = Depends(get_
 def buy_shares_endpoint(
     market_id: int,
     req: BuySharesRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    market = market_service.get_market(db, market_id)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
     res = market_service.buy_shares(
         db,
         market_id=market_id,
@@ -388,23 +482,57 @@ def p2p_reconciliation_endpoint(
 @app.get("/markets/{market_id}/orderbook")
 def orderbook_endpoint(
     market_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
     viewer_id = current_user.id if current_user is not None else None
-    return p2p_service.book(db, market_id, viewer_id=viewer_id)
+    return p2p_service.book(
+        db,
+        market_id,
+        viewer_id=viewer_id,
+        share_token=market_access.share_token_from_request(request),
+    )
 
 
 @app.post("/markets/{market_id}/orders/quote")
-def order_quote_endpoint(market_id: int, req: OrderPreviewRequest,
-                         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return p2p_service.preview(db, market_id, current_user.id, req.outcome, req.money, req.odds)
+def order_quote_endpoint(
+    market_id: int,
+    req: OrderPreviewRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return p2p_service.preview(
+        db,
+        market_id,
+        current_user.id,
+        req.outcome,
+        req.money,
+        req.odds,
+        share_token=market_access.share_token_from_request(request),
+    )
 
 
 @app.post("/markets/{market_id}/orders")
-def place_order_endpoint(market_id: int, req: OrderRequest,
-                         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return p2p_service.place(db, market_id, current_user.id, req.outcome, req.money, req.odds, req.kind, req.request_id)
+def place_order_endpoint(
+    market_id: int,
+    req: OrderRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return p2p_service.place(
+        db,
+        market_id,
+        current_user.id,
+        req.outcome,
+        req.money,
+        req.odds,
+        req.kind,
+        req.request_id,
+        share_token=market_access.share_token_from_request(request),
+    )
 
 
 @app.post("/orders/{order_id}/cancel")

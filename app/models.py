@@ -43,6 +43,9 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True)
     username: Mapped[str] = mapped_column(String(64), unique=True)
+    telegram_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    display_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     balance_legacy: Mapped[float] = mapped_column('balance', Float, default=0.0)
     balance_nano: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -107,6 +110,8 @@ class Market(Base):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     settlement_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(16), default="public", server_default="public")
+    share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     # full = journal from market creation; incomplete = existed before the journal.
     p2p_journal_coverage: Mapped[str] = mapped_column(
         String(16), default="not_applicable", server_default="not_applicable"

@@ -41,14 +41,14 @@ def _browser_bin() -> Path | None:
 
 def test_live_polish_copy_and_nav_source():
     html = HTML.read_text(encoding="utf-8")
-    css = html[html.index("<style>") : html.index("</style>")]
+    css = HTML.with_name("ui.css").read_text(encoding="utf-8")
     p2p = P2P.read_text(encoding="utf-8")
     assert "#23001E" not in css
     assert "linear-gradient" not in css
     assert "--brand: #171717" in css
-    assert "--yes: #20A39E" in css
-    assert 'hidden>Проверка</button>' in html
-    assert 'hidden>Модерация</button>' not in html
+    assert "--yes: #20a39e" in css.lower()
+    assert 'data-tab="moderation"' not in html
+    assert "Модерация" not in html
     assert "flex-wrap: nowrap" in css
     assert "white-space: nowrap" in css[css.index(".tab {") : css.index(".tab.active")]
     assert "function formatCloseAt" in html
@@ -63,7 +63,7 @@ def test_live_polish_copy_and_nav_source():
     assert "function executableLiquidity" in p2p
     assert "available_to_me" in p2p
     assert "Доступно вам сейчас" in p2p
-    assert "Оставить заявку" in p2p
+    assert "Разместить заявку" in p2p
     assert 'class="gold"' in p2p
     assert "Сервисный сбор" in html
     assert "Сервисный сбор" in p2p
@@ -78,15 +78,10 @@ def test_live_polish_copy_and_nav_source():
 
 
 def _run_js(script: str, tmp_path: Path) -> dict:
-    node = shutil.which("node")
-    if node:
-        proc = subprocess.run(
-            [node, "-e", script],
-            capture_output=True,
-            text=True,
-            timeout=20,
-            encoding="utf-8",
-        )
+    from tests.node_harness import run_node_script
+
+    proc = run_node_script(script, tmp_path, name="live_polish.js")
+    if proc is not None:
         assert proc.returncode == 0, proc.stderr or proc.stdout
         return json.loads(proc.stdout)
     browser = _browser_bin()
@@ -211,8 +206,9 @@ if (typeof document !== 'undefined') {
     assert "11.00 TON" in data["two"]
     assert "2.00" in data["two"]
     assert "10.00 TON" in data["two"]
-    assert "Нет предложений" in data["empty"]
     assert "1.91" not in data["empty"]
+    assert "Нет предложений" in data["empty"]
+    assert "Пустой рынок?" in data["empty"]
     assert "Нет предложений" not in data["closed"]
     assert "Приём завершён" in data["closed"]
     assert "Сервисный сбор 0.80 TON" in data["win"]

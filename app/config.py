@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./betton.db"
     bot_token: str = ""
+    telegram_bot_username: str = ""
     mini_app_url: str = ""
     public_base_url: str = ""
     render_external_url: str = ""

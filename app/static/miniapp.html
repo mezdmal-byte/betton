@@ -5,602 +5,360 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
   <title>BetTON</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root {
-      --bg: #FFFFFF;
-      --surface: #F7F8FA;
-      --text: #171717;
-      --muted: #6B7280;
-      --yes: #20A39E;
-      --no: #EF5B5B;
-      --brand: #171717;
-      --yes-bg: #F2FBFA;
-      --no-bg: #FDF6F6;
-      --nav-active-bg: #ECF8F7;
-      --nav-active-fg: #0F766E;
-      --line: #E5E7EB;
-      --chip: #F7F8FA;
-      --input-bg: #FFFFFF;
-      --input-fg: #171717;
-      --input-ph: #6B7280;
-      --nav-h: 64px;
-      --shadow: none;
-    }
-    * { box-sizing: border-box; }
-    html { background: var(--surface); }
-    html, body { max-width: 100%; overflow-x: hidden; }
-    body {
-      margin: 0 auto;
-      max-width: 480px;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding-bottom: calc(var(--nav-h) + 28px + env(safe-area-inset-bottom) + var(--kb, 0px));
-      overflow-wrap: anywhere;
-    }
-    header {
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 4;
-      background: var(--bg);
-      border-bottom: 1px solid var(--line);
-    }
-    .brand {
-      margin: 0;
-      font-size: 1.05rem;
-      letter-spacing: .04em;
-      font-weight: 800;
-      color: var(--brand);
-    }
-    .brand-ton { color: var(--yes); }
-    .who {
-      color: var(--muted);
-      font-size: .75rem;
-      margin-top: 2px;
-      min-height: 0;
-    }
-    .who:empty { display: none; }
-    .admin-mark {
-      display: inline-block;
-      background: var(--surface);
-      color: var(--brand);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 1px 8px;
-      font-size: .68rem;
-      font-weight: 700;
-      letter-spacing: .03em;
-    }
-    .balance-wrap { text-align: right; }
-    .balance-label { color: var(--muted); font-size: .7rem; }
-    .balance { color: var(--brand); font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-    .tabs {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 0;
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(480px, 100%);
-      bottom: var(--kb, 0px);
-      background: var(--bg);
-      border-top: 1px solid var(--line);
-      padding: 4px 4px calc(6px + env(safe-area-inset-bottom));
-      z-index: 8;
-    }
-    .tab {
-      flex: 1 1 0;
-      min-width: 0;
-      min-height: 44px;
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: .8rem;
-      white-space: nowrap;
-      padding: 0 4px;
-    }
-    .tab.active { color: var(--nav-active-fg); background: var(--nav-active-bg); }
-    main { padding: 8px 16px 36px; }
-    .card {
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
-      margin: 10px 0;
-      color: var(--text);
-    }
-    .feed-card { cursor: pointer; }
-    .feed-card:active { background: var(--surface); }
-    .feed-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .feed-time { color: var(--muted); font-size: .75rem; text-align: right; min-width: 0; }
-    .outcome-pair {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 8px;
-      align-items: center;
-      margin: 12px 0 8px;
-    }
-    .out {
-      text-align: center;
-      font-weight: 700;
-      font-size: .9rem;
-      padding: 8px 6px;
-      border-radius: 12px;
-      background: var(--surface);
-      overflow-wrap: anywhere;
-    }
-    .out.yes-acc { color: var(--yes); background: var(--yes-bg); }
-    .out.no-acc { color: var(--no); background: var(--no-bg); }
-    .out-vs { color: var(--muted); font-size: .72rem; font-weight: 700; }
-    .situation { margin: 0; }
-    .question {
-      color: var(--text);
-      -webkit-text-fill-color: var(--text);
-      font-weight: 700;
-      font-size: 1.08rem;
-      line-height: 1.35;
-      overflow-wrap: anywhere;
-    }
-    .meta { color: var(--muted); font-size: .8rem; margin: 8px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .pill {
-      background: var(--surface);
-      border-radius: 999px;
-      padding: 3px 8px;
-    }
-    .status-pill {
-      display: inline-block;
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-size: .72rem;
-      font-weight: 700;
-      background: var(--surface);
-      color: var(--muted);
-    }
-    .status-open { color: var(--yes); background: var(--yes-bg); }
-    .status-wait { color: #8a6d3b; background: #fbf8f1; }
-    .status-closed { color: var(--muted); }
-    .status-resolved { color: var(--text); background: var(--surface); }
-    .status-cancelled, .status-rejected { color: var(--no); background: var(--no-bg); }
-    label { display: block; color: var(--muted); font-size: .8rem; margin: 8px 0 4px; }
-    input, select, textarea {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: var(--input-bg);
-      color: var(--input-fg);
-      -webkit-text-fill-color: var(--input-fg);
-      caret-color: var(--input-fg);
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 16px;
-      min-height: 44px;
-      color-scheme: light;
-    }
-    input::placeholder, textarea::placeholder {
-      color: var(--input-ph);
-      -webkit-text-fill-color: var(--input-ph);
-      opacity: 1;
-    }
-    button {
-      border: 0;
-      border-radius: 12px;
-      padding: 12px;
-      min-height: 44px;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    button:disabled { opacity: .45; }
-    .row { display: flex; gap: 8px; margin-top: 10px; }
-    .row > * { flex: 1; min-width: 0; }
-    .gold { background: var(--brand); color: #fff; }
-    .yes { background: var(--yes-bg); color: var(--yes); border: 1px solid var(--yes); }
-    .no { background: var(--no-bg); color: var(--no); border: 1px solid var(--no); }
-    .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
-    .muted { color: var(--muted); font-size: .85rem; line-height: 1.45; }
-    .err { color: var(--no); font-size: .85rem; min-height: 0; margin: 0 0 8px; }
-    .err:not(:empty) {
-      background: var(--no-bg);
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
-    .odds {
-      display: flex;
-      gap: 8px;
-      margin: 10px 0;
-      flex-wrap: wrap;
-    }
-    .odd {
-      flex: 1 1 0;
-      min-width: 0;
-      border-radius: 14px;
-      padding: 10px 8px;
-      text-align: center;
-      background: var(--surface);
-    }
-    .odd b { display: block; font-size: 1.35rem; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
-    .odd .kname { font-size: .85rem; font-weight: 800; overflow-wrap: anywhere; }
-    .odd .pct { color: var(--muted); font-size: .75rem; margin-top: 2px; }
-    .c0 .kname, .c0 b { color: var(--yes); }
-    .c1 .kname, .c1 b { color: var(--no); }
-    .c2 .kname, .c2 b { color: var(--brand); }
-    .preview { color: var(--muted); font-size: .8rem; min-height: 2.4em; margin-top: 8px; line-height: 1.35; }
-    .p2p-preview {
-      background: var(--bg);
-      border-radius: 12px;
-      padding: 12px 0 4px;
-      margin-top: 10px;
-      color: var(--text);
-      font-size: .85rem;
-      line-height: 1.45;
-    }
-    .p2p-preview p { margin: 0 0 8px; }
-    .p2p-preview p:last-child { margin-bottom: 0; }
-    .preview-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 12px;
-      margin: 0 0 8px;
-    }
-    .preview-row span { color: var(--muted); min-width: 0; }
-    .preview-row b { text-align: right; font-variant-numeric: tabular-nums; min-width: 0; }
-    .preview-note { margin: 8px 0 0; color: var(--muted); }
-    .preview-warn { color: var(--muted); }
-    .feed-toolbar { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; }
-    .feed-search-label, .feed-status-wrap { color: var(--muted); font-size: .8rem; font-weight: 700; }
-    .feed-status-wrap select { margin-top: 4px; }
-    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; }
-    .chip {
-      min-height: 32px;
-      padding: 0 10px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: var(--chip);
-      color: var(--muted);
-      font-size: .78rem;
-      font-weight: 700;
-    }
-    .chip.on { background: var(--brand); color: #fff; border-color: var(--brand); }
-    .side-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; }
-    .side-pick {
-      min-height: 48px;
-      border: 1px solid var(--line);
-      background: var(--bg);
-      color: var(--text);
-      font-weight: 800;
-      overflow-wrap: anywhere;
-    }
-    .side-pick.on-yes { background: var(--yes-bg); color: var(--yes); border-color: var(--yes); }
-    .side-pick.on-no { background: var(--no-bg); color: var(--no); border-color: var(--no); }
-    .p2p-side { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-    .p2p-form { position: relative; }
-    .event-card > .status-pill { margin-bottom: 8px; }
-    .event-deadline { margin: 6px 0 0; }
-    .event-offers { margin: 8px 0 4px; font-size: .82rem; }
-    .event-offers-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    button.compact {
-      min-height: 32px;
-      padding: 4px 10px;
-      font-size: .78rem;
-      width: auto;
-      flex: 0 0 auto;
-    }
-    .event-bet {
-      background: var(--surface);
-      border-radius: 16px;
-      padding: 14px;
-      margin: 12px 0 10px;
-    }
-    .event-bet-title { margin: 0 0 8px; font-weight: 800; color: var(--text); }
-    .event-bet .gold { min-height: 48px; }
-    .p2p-depth { margin-top: 4px; font-size: .82rem; }
-    .p2p-book { font-size: .85rem; margin: 0; }
-    .p2p-book p, .offer-line { margin: 4px 0; }
-    .best-board {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 8px 0 4px;
-    }
-    .best-cell {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      text-align: center;
-      gap: 2px;
-      min-height: 72px;
-      padding: 10px 8px;
-      border-radius: 14px;
-      background: var(--surface);
-      border: 1px solid transparent;
-      color: var(--text);
-      font-weight: 700;
-    }
-    .best-cell.yes-acc { background: var(--yes-bg); color: var(--yes); }
-    .best-cell.no-acc { background: var(--no-bg); color: var(--no); }
-    .best-cell[data-prefill-odds] { cursor: pointer; border-color: transparent; }
-    .best-cell[data-prefill-odds].yes-acc { border-color: rgba(32, 163, 158, .35); }
-    .best-cell[data-prefill-odds].no-acc { border-color: rgba(239, 91, 91, .35); }
-    .best-name { font-size: .8rem; font-weight: 800; }
-    .best-odds {
-      font-size: 1.45rem;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.15;
-    }
-    .best-vol { font-size: .72rem; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
-    .best-you { font-size: .68rem; color: var(--muted); font-weight: 600; margin-top: 4px; line-height: 1.3; }
-    .feed-odds {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 12px 0 8px;
-    }
-    .feed-odd {
-      text-align: center;
-      padding: 10px 6px;
-      border-radius: 14px;
-      background: var(--surface);
-    }
-    .feed-odd.yes-acc { background: var(--yes-bg); color: var(--yes); }
-    .feed-odd.no-acc { background: var(--no-bg); color: var(--no); }
-    .feed-odd-name { display: block; font-size: .78rem; font-weight: 800; }
-    .feed-odd-k {
-      display: block;
-      font-size: 1.35rem;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.2;
-      margin: 2px 0;
-    }
-    .feed-odd-vol { display: block; font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .book-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-variant-numeric: tabular-nums;
-      margin: 4px 0 10px;
-    }
-    .book-table th {
-      text-align: left;
-      font-size: .7rem;
-      font-weight: 700;
-      color: var(--muted);
-      padding: 4px 0;
-    }
-    .book-table td { padding: 4px 0; font-size: .85rem; color: var(--text); }
-    .book-table td.num, .book-table th:last-child, .book-table td:last-child { text-align: right; }
-    .depth-name { font-weight: 800; color: var(--text); margin: 8px 0 0; }
-    .p2p-odds, .p2p-money, .amount, .balance { font-variant-numeric: tabular-nums; }
-    .empty-state, .loading-state {
-      text-align: center;
-      padding: 36px 16px;
-      color: var(--muted);
-    }
-    .empty-state strong { display: block; color: var(--text); margin-bottom: 6px; }
-    .back {
-      background: transparent;
-      color: var(--brand);
-      border: 0;
-      min-height: 40px;
-      padding: 4px 0;
-      font-size: .9rem;
-    }
-    .toast {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(min(480px, 100%) - 32px);
-      bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom));
-      background: var(--yes-bg);
-      color: var(--nav-active-fg);
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-weight: 700;
-      display: none;
-      z-index: 9;
-      overflow-wrap: anywhere;
-    }
-    .toast.show { display: block; }
-    .toast.bad { background: var(--no-bg); color: var(--no); }
-    h2 { font-size: .95rem; margin: 18px 0 0; color: var(--brand); }
-    .mine-lede { margin: 8px 0 4px; }
-    .mine-group { margin: 8px 0 16px; }
-    .mine-group-title {
-      font-size: .95rem;
-      font-weight: 800;
-      margin: 0 0 6px;
-      overflow-wrap: anywhere;
-    }
-    .kind-tag {
-      display: inline-block;
-      font-size: .68rem;
-      font-weight: 800;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    .order-outcome, .pos-outcome { font-weight: 700; margin: 0 0 8px; }
-    .money-list {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-      gap: 4px 12px;
-      margin: 8px 0 10px;
-      font-size: .85rem;
-    }
-    .money-list dt { color: var(--muted); min-width: 0; }
-    .money-list dt.lead { font-weight: 700; color: var(--text); }
-    .money-list dd {
-      margin: 0;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      text-align: right;
-      min-width: 0;
-    }
-    .money-list dd.lead { font-size: 1.05rem; }
-    .order-card .ghost, .cancel-hint { width: 100%; margin-top: 8px; }
-    .pos-line {
-      background: var(--surface);
-      border-radius: 12px;
-      padding: 10px;
-      margin-top: 8px;
-    }
-    .history-void { background: #fbf8f1; }
-    .void-banner { font-weight: 700; color: #8a6d3b; margin: 8px 0; }
-    .history-result {
-      font-size: 1.15rem;
-      font-weight: 800;
-      margin: 8px 0 0;
-      font-variant-numeric: tabular-nums;
-    }
-    .history-result.win { color: var(--yes); }
-    .history-result.loss { color: var(--no); }
-    .history-result.void { color: #8a6d3b; }
-    .outcome-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 6px;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .outcome-row .pct { color: var(--muted); font-size: .8rem; text-align: right; }
-    .rm {
-      min-height: 40px;
-      padding: 0;
-      background: transparent;
-      color: var(--no);
-      border: 1px solid var(--line);
-    }
-    details { margin-top: 8px; color: var(--muted); }
-    [hidden] { display: none !important; }
-    @media (min-width: 481px) {
-      body { box-shadow: 0 0 0 1px var(--line); }
-    }
-  </style>
+  <link rel="stylesheet" href="/static/ui.css"/>
 </head>
 <body>
   <header>
-    <div>
-      <h1 class="brand">Bet<span class="brand-ton">TON</span></h1>
-      <div class="who" id="who"></div>
-    </div>
-    <div class="balance-wrap">
-      <div class="balance-label">Доступно</div>
-      <div class="balance" id="balance">—</div>
+    <h1 class="brand">Bet<span class="brand-ton">TON</span></h1>
+    <div class="header-right">
+      <div class="balance-wrap" id="balance-open" role="button" tabindex="0">
+        <div class="balance-label" data-i18n="header.available">Доступно</div>
+        <div class="balance" id="balance"><span class="skeleton" aria-hidden="true"></span></div>
+      </div>
+      <button type="button" class="avatar-btn" id="profile-open" data-i18n-aria="header.profile" aria-label="Профиль"></button>
     </div>
   </header>
   <main>
     <p class="err" id="error"></p>
 
     <section data-panel="feed">
-      <div class="feed-toolbar">
-        <label class="feed-search-label" for="feed-search">Поиск по вопросу</label>
-        <input id="feed-search" type="search" placeholder="Например, кто победит" enterkeyhint="search" autocomplete="off"/>
-        <div class="chips" id="cat-filters" role="group" aria-label="Категории">
-          <button class="chip on" data-cat="">Все</button>
-          <button class="chip" data-cat="sport">Спорт</button>
-          <button class="chip" data-cat="politics">Политика</button>
-          <button class="chip" data-cat="unique">Уникальное</button>
+      <div class="card onboard" id="onboarding" hidden>
+        <button type="button" class="onboard-x" id="onboard-dismiss" data-i18n-aria="onboard.close" aria-label="Закрыть">×</button>
+        <strong data-i18n="onboard.title">BetTON — P2P рынок прогнозов</strong>
+        <p class="onboard-lead" data-i18n="onboard.lead">Создавай события или находи готовые.</p>
+        <div class="row">
+          <button type="button" class="gold" id="onboard-feed" data-i18n="onboard.see">Посмотреть события</button>
+          <button type="button" class="ghost" id="onboard-create" data-i18n="onboard.create">Создать событие</button>
         </div>
-        <label class="feed-status-wrap" for="status-filter">Состояние
-          <select id="status-filter">
-            <option value="">Все</option>
-            <option value="open">Активные</option>
-            <option value="closed">Приём закрыт</option>
-            <option value="resolved">Завершены</option>
-            <option value="cancelled">Отменены</option>
-          </select>
-        </label>
+        <details class="onboard-foot">
+          <summary data-i18n="onboard.compact">Как это работает · Сбор 1% ⓘ</summary>
+          <p data-i18n="onboard.feeShort">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+        </details>
+      </div>
+      <div class="feed-toolbar">
+        <div class="search-wrap">
+          <span id="search-icon"></span>
+          <input id="feed-search" type="search" data-i18n-placeholder="feed.searchPh" placeholder="Поиск рынков, тем или авторов" enterkeyhint="search" autocomplete="off"/>
+        </div>
+        <div class="chips-row" id="sort-filters" role="group" aria-label="Сортировка">
+          <button type="button" class="chip on" data-sort="new" data-i18n="feed.new">Новые</button>
+          <button type="button" class="chip" data-sort="popular" data-i18n="feed.popular">Популярные</button>
+          <button type="button" class="chip" data-sort="closing" data-i18n="feed.closing">Скоро закроются</button>
+        </div>
+        <div class="cat-row">
+          <div class="chips" id="cat-filters" role="group" aria-label="Категории">
+            <button type="button" class="chip on" data-cat="" data-i18n="cat.all">Все</button>
+            <button type="button" class="chip" data-cat="sport" data-i18n="cat.sport">Спорт</button>
+            <button type="button" class="chip" data-cat="politics" data-i18n="cat.politics">Политика</button>
+            <button type="button" class="chip" data-cat="unique" data-i18n="cat.unique">Уникальное</button>
+          </div>
+          <button type="button" class="chip chip-icon" id="feed-filters-open" data-i18n-aria="feed.filters" aria-label="Фильтры"></button>
+        </div>
       </div>
       <div id="markets"></div>
+      <button type="button" class="ghost" id="feed-more" hidden data-i18n="feed.more">Показать ещё</button>
+    </section>
+
+    <section data-panel="help" hidden>
+      <button type="button" class="back" id="help-back" data-i18n="back.help">← Назад</button>
+      <div class="card help-card">
+        <strong data-i18n="help.title">Как это работает</strong>
+        <p data-i18n="help.p2p">Пользователи сами предлагают коэффициенты лимитными заявками. Букмекера нет: исполнение зависит от встречной заявки. Частичное исполнение — нормальная ситуация.</p>
+        <p data-i18n="help.fee">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя. Проигравшая ставка этот сбор не платит.</p>
+        <p data-i18n="help.creatorShare">Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли. Автор не получает долю со своего собственного выигрыша.</p>
+        <p data-i18n="help.cancel">Неисполненный остаток можно отменить — деньги вернутся на доступный баланс. Если событие отменят, ставки возвращаются без сервисного сбора.</p>
+      </div>
+    </section>
+
+    <section data-panel="top-creators" hidden>
+      <button type="button" class="back" id="top-creators-back" data-i18n="back.feed">← Рынки</button>
+      <div class="card">
+        <strong data-i18n="creators.title">TOP-10 авторов</strong>
+        <div id="top-creators-full"></div>
+      </div>
+    </section>
+
+    <section data-panel="creator" hidden>
+      <button type="button" class="back" id="creator-back" data-i18n="back.feed">← Рынки</button>
+      <div id="creator-root"></div>
     </section>
 
     <section data-panel="event" hidden>
-      <button type="button" class="back" id="event-back">← К ленте</button>
+      <button type="button" class="back" id="event-back" data-i18n="back.feed">← Рынки</button>
       <div id="event-root"></div>
     </section>
 
     <section data-panel="create" hidden>
       <div class="card">
-        <strong>Новое событие</strong>
-        <label>Вопрос</label>
-        <input id="question" maxlength="512" placeholder="Кто победит в матче?"/>
-        <label>Категория</label>
+        <strong data-i18n="create.title">Создать рынок</strong>
+        <label data-i18n="create.question">Вопрос</label>
+        <input id="question" maxlength="512" data-i18n-placeholder="create.questionPh" placeholder="Кто победит в матче?"/>
+        <label data-i18n="create.category">Категория</label>
         <div class="chips" id="create-cats">
-          <button type="button" class="chip" data-cat="sport">Спорт</button>
-          <button type="button" class="chip" data-cat="politics">Политика</button>
-          <button type="button" class="chip on" data-cat="unique">Уникальное</button>
+          <button type="button" class="chip" data-cat="sport" data-i18n="cat.sport">Спорт</button>
+          <button type="button" class="chip" data-cat="politics" data-i18n="cat.politics">Политика</button>
+          <button type="button" class="chip on" data-cat="unique" data-i18n="cat.unique">Уникальное</button>
         </div>
-        <label>Два исхода</label>
+        <label data-i18n="create.outcomes">Варианты исхода</label>
         <div id="outcomes-editor"></div>
-        <p class="muted">Событие появится в ленте после проверки. Залог не нужен: цену задают заявки игроков, а не букмекер.</p>
-        <p class="muted">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя.</p>
-        <p class="muted">Пример: ставка 100 TON, выплата 180 TON, чистая прибыль 80 TON, сервисный сбор 0.80 TON. Проигравшая ставка не платит дополнительный сбор.</p>
-        <label>Конец приёма заявок</label>
+        <label data-i18n="create.visibility">Кто может участвовать</label>
+        <div class="chips" id="create-visibility">
+          <button type="button" class="chip on" data-vis="public" data-i18n="create.public">Публичное</button>
+          <button type="button" class="chip" data-vis="unlisted" data-i18n="create.unlisted">По ссылке</button>
+        </div>
+        <label data-i18n="create.close">Дата и время закрытия</label>
         <input id="close-at" type="datetime-local" required/>
+        <details class="fees-box">
+          <summary data-i18n="create.feesSummary">Правила и сборы</summary>
+          <p data-i18n="create.how">Как работает событие?</p>
+          <p data-i18n="create.feesP2p">Это P2P-рынок: коэффициенты задают сами пользователи, букмекера нет. Заявка резервирует сумму и ждёт встречную.</p>
+          <p data-i18n="create.feesFee">0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+          <p data-i18n="creator.shareCompact">Вознаграждение автора — 75% сервисного сбора</p>
+          <p data-i18n="creator.shareDetail">Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли.</p>
+          <p data-i18n="creator.shareNote">Это не дополнительная комиссия: общий сбор остаётся 1% от чистой прибыли победителя. Автор не получает долю со своего собственного выигрыша.</p>
+          <p data-i18n="create.feesExample">Пример: ставка 100 TON, выплата 180 TON, чистая прибыль 80 TON, сервисный сбор 0.80 TON. Проигравшая ставка не платит дополнительный сбор.</p>
+          <p data-i18n="create.feesCancel">Если событие отменят, исполненные ставки и незакрытый остаток заявки вернутся без сервисного сбора.</p>
+          <p data-i18n="create.moderationNote">Публичное событие появится в ленте после проверки. Событие по ссылке открывается сразу и не показывается в общей ленте.</p>
+        </details>
         <div class="row">
-          <button class="gold" id="create">Отправить на проверку</button>
+          <button class="gold" id="create" data-i18n="create.submit">Отправить на проверку</button>
         </div>
       </div>
     </section>
 
     <section data-panel="mine" hidden>
-      <p class="mine-lede muted">В шапке — <b>доступно</b>. Ниже: что <b>в резерве</b> заявок, что уже <b>исполнено</b> и что <b>возвращено</b>.</p>
-      <h2>Мои заявки</h2>
-      <div id="mine-orders"><div class="empty-state">Активных заявок пока нет.</div></div>
-      <h2>Мои позиции</h2>
-      <div id="mine-bets"><div class="empty-state">У вас пока нет исполненных ставок.</div></div>
-      <h2>Созданные события</h2>
-      <div id="mine-created"><div class="empty-state">Вы ещё не создавали события.</div></div>
-      <h2>История</h2>
-      <div id="mine-results"><div class="empty-state">Завершённых событий пока нет.</div></div>
+      <div class="account-desktop">
+        <div class="account-aside">
+          <div id="account-header"></div>
+          <div class="row">
+            <button type="button" class="gold" id="open-deposit" data-i18n="account.deposit">Пополнить</button>
+            <button type="button" class="ghost" id="open-withdraw" data-i18n="account.withdraw">Вывести</button>
+          </div>
+          <div class="account-nav chips" id="account-nav" role="tablist">
+            <button type="button" class="chip on" data-account="positions" data-i18n="portfolio.positions">Позиции</button>
+            <button type="button" class="chip" data-account="orders" data-i18n="portfolio.orders">Заявки</button>
+            <button type="button" class="chip" data-account="history" data-i18n="portfolio.history">История</button>
+          </div>
+        </div>
+        <div class="account-main">
+          <div data-account-panel="overview" id="account-overview" hidden></div>
+          <div data-account-panel="events" hidden>
+            <h2 data-i18n="account.events">Мои события</h2>
+            <div id="mine-created"><div class="empty-state">Вы ещё не создавали события.</div></div>
+          </div>
+          <div data-account-panel="positions">
+            <div id="mine-bets"><div class="empty-state">Нет позиций</div></div>
+          </div>
+          <div data-account-panel="orders" hidden>
+            <div id="mine-orders"><div class="empty-state">Нет активных заявок</div></div>
+          </div>
+          <div data-account-panel="history" hidden>
+            <div class="chips" id="tx-filters">
+              <button type="button" class="chip on" data-tx="" data-i18n="tx.all">Все</button>
+              <button type="button" class="chip" data-tx="bets" data-i18n="tx.bets">Ставки</button>
+              <button type="button" class="chip" data-tx="wins" data-i18n="tx.wins">Выигрыши</button>
+              <button type="button" class="chip" data-tx="refunds" data-i18n="tx.refunds">Возвраты</button>
+              <button type="button" class="chip" data-tx="deposits" data-i18n="tx.deposits">Пополнения</button>
+              <button type="button" class="chip" data-tx="withdrawals" data-i18n="tx.withdrawals">Выводы</button>
+            </div>
+            <div id="tx-list"></div>
+            <div id="mine-results"></div>
+          </div>
+        </div>
+      </div>
     </section>
-    <section data-panel="moderation" hidden><h2>На проверке</h2><div id="moderation-markets"></div></section>
+
+    <section data-panel="profile" hidden>
+      <div id="profile-root">
+        <div id="profile-header"></div>
+      </div>
+    </section>
+
+    <section data-panel="wallet" hidden>
+      <div class="wallet-desktop">
+        <div class="account-aside">
+      <button type="button" class="back" id="wallet-back" data-i18n="back.portfolio">← Портфель</button>
+      <div id="wallet-summary"></div>
+      <div class="wallet-nets chips" id="wallet-nets">
+        <button type="button" class="chip on" data-net="ton">TON</button>
+        <button type="button" class="chip" data-net="solana">Solana</button>
+      </div>
+      <div class="wallet-tabs chips" id="wallet-tabs">
+        <button type="button" class="chip on" data-wtab="deposit" data-i18n="account.deposit">Пополнить</button>
+        <button type="button" class="chip" data-wtab="withdraw" data-i18n="account.withdraw">Вывести</button>
+        <button type="button" class="chip" data-wtab="history" data-i18n="account.history">История</button>
+      </div>
+        </div>
+        <div class="account-main">
+      <div class="wallet-panel" data-wpanel="deposit">
+        <label data-i18n="wallet.network">Сеть</label>
+        <p id="deposit-net-label">TON</p>
+        <label data-i18n="wallet.asset">Актив</label>
+        <p id="deposit-asset-label">TON</p>
+        <label data-i18n="wallet.depositAddress">Адрес пополнения</label>
+        <div class="info-box" id="deposit-address" data-i18n="wallet.addressPending">Адрес появится после подключения блокчейн-модуля</div>
+        <div class="qr-slot" data-i18n="wallet.qrHint">QR появится вместе с адресом</div>
+        <div class="info-box muted">
+          <p><span data-i18n="wallet.net">Сеть: </span><span id="deposit-net-info">TON</span></p>
+          <p data-i18n="wallet.minDeposit">Минимальное пополнение: будет определено при подключении</p>
+          <p data-i18n="wallet.confirmations">Число подтверждений: будет определено</p>
+          <p data-i18n="wallet.assetWarn">Отправляйте только актив выбранной сети. Другие токены могут быть потеряны.</p>
+        </div>
+        <button type="button" class="gold" id="deposit-cta" disabled data-i18n="wallet.getAddress">Получить адрес</button>
+        <p class="muted" data-i18n="wallet.depositNote">Блокчейн-пополнения пока не подключены. Сейчас используется тестовый баланс BetTON.</p>
+      </div>
+      <div class="wallet-panel" data-wpanel="withdraw" hidden>
+        <label data-i18n="wallet.network">Сеть</label>
+        <p id="withdraw-net-label">TON</p>
+        <label data-i18n="wallet.recipient">Адрес получателя</label>
+        <input id="withdraw-address" data-i18n-placeholder="wallet.recipientPh" placeholder="Адрес кошелька" autocomplete="off"/>
+        <label data-i18n="wallet.amount">Сумма</label>
+        <div class="row">
+          <input id="withdraw-amount" inputmode="decimal" placeholder="0.00"/>
+          <button type="button" class="ghost compact" id="withdraw-max">MAX</button>
+        </div>
+        <p class="muted"><span data-i18n="wallet.available">Доступно: </span><span id="withdraw-available"></span></p>
+        <p class="muted" data-i18n="wallet.fee">Комиссия сети: будет определена при подключении</p>
+        <p class="muted"><span data-i18n="wallet.receive">К получению: </span><span id="withdraw-receive"></span></p>
+        <button type="button" class="gold" id="withdraw-cta" disabled data-i18n="wallet.withdrawCta">Вывести</button>
+        <p class="muted" data-i18n="wallet.withdrawNote">Вывод будет доступен после подключения блокчейн-модуля.</p>
+      </div>
+      <div class="wallet-panel" data-wpanel="history" hidden>
+        <div id="wallet-history"></div>
+      </div>
+        </div>
+      </div>
+    </section>
+    <section data-panel="moderation" hidden>
+      <button type="button" class="back" id="moderation-back" data-i18n="back.help">← Назад</button>
+      <h2 data-i18n="moderation.title">На проверке</h2>
+      <div id="moderation-markets"></div>
+    </section>
   </main>
   <nav class="tabs">
-    <button class="tab active" data-tab="feed">Лента</button>
-    <button class="tab" data-tab="create">Создать</button>
-    <button class="tab" data-tab="mine">Мои</button>
-    <button class="tab" id="moderation-tab" data-tab="moderation" hidden>Проверка</button>
+    <button class="tab active" data-i18n="nav.feed" data-tab="feed">Рынки</button>
+    <button class="tab" data-i18n="nav.create" data-tab="create">Создать</button>
+    <button class="tab" data-i18n="nav.mine" data-tab="mine">Портфель</button>
   </nav>
   <div class="toast" id="toast"></div>
+  <div id="auth-block" class="auth-block" hidden>
+    <div class="auth-block-card">
+      <h2 data-i18n="auth.expiredTitle">Сессия закончилась</h2>
+      <p class="muted" data-i18n="auth.expiredBody">Чтобы безопасно продолжить работу, откройте BetTON заново через Telegram.</p>
+      <button type="button" class="gold" id="auth-reopen" data-i18n="auth.reopen">Закрыть BetTON</button>
+    </div>
+  </div>
+  <div id="filter-backdrop" class="sheet-backdrop" hidden></div>
+  <div id="feed-filters-sheet" class="sheet" hidden>
+    <h3 data-i18n="feed.filterTitle">Статус</h3>
+    <div class="chips" id="status-filters">
+      <button type="button" class="chip on" data-status="open" data-i18n="status.open">Активные</button>
+      <button type="button" class="chip" data-status="closed" data-i18n="status.closed">Приём закрыт</button>
+      <button type="button" class="chip" data-status="resolved" data-i18n="status.resolved">Завершены</button>
+      <button type="button" class="chip" data-status="cancelled" data-i18n="status.cancelled">Отменены</button>
+    </div>
+  </div>
 
+  <script src="/static/icons.js"></script>
+  <script src="/static/i18n.js"></script>
   <script src="/static/p2p.js"></script>
+  <script src="/static/account.js"></script>
   <script>
     const CAT_LABEL = { sport: "Спорт", politics: "Политика", unique: "Уникальное" };
     const OPEN_IN_TG = "Откройте BetTON через Telegram";
     const AUTH_REOPEN = "Сессия недействительна. Закройте Mini App и откройте его заново";
+    function catLabel(key) {
+      const map = { sport: "cat.sport", politics: "cat.politics", unique: "cat.unique" };
+      return tt(map[key] || "cat.unique", CAT_LABEL[key] || CAT_LABEL.unique);
+    }
+    function defaultOutcomes() {
+      return [
+        { name: tt("outcome.yes", "Да"), k: 2 },
+        { name: tt("outcome.no", "Нет"), k: 2 }
+      ];
+    }
+    function paintCreateSubmit() {
+      const btn = document.getElementById("create");
+      if (!btn) return;
+      btn.textContent = createVisibility === "unlisted"
+        ? tt("create.submitUnlisted", "Создать событие")
+        : tt("create.submit", "Отправить на проверку");
+    }
+    function openHelp() {
+      const current = document.querySelector("[data-panel]:not([hidden])");
+      const panel = current && current.dataset.panel;
+      if (panel && panel !== "help") {
+        helpReturnTab = panel;
+        helpReturnEventId = panel === "event" ? activeEventId : null;
+      }
+      showTab("help");
+    }
+    function onboardDismissed() {
+      try { return localStorage.getItem("betton-onboard-v1") === "1"; } catch (e) { return false; }
+    }
+    function showOnboarding() {
+      const el = document.getElementById("onboarding");
+      if (el) el.hidden = onboardDismissed();
+    }
+    function dismissOnboarding() {
+      try { localStorage.setItem("betton-onboard-v1", "1"); } catch (e) { /* private mode */ }
+      const el = document.getElementById("onboarding");
+      if (el) el.hidden = true;
+    }
+    function refreshDynamicLang() {
+      rerenderLiveUi();
+    }
+    function systemOutcomeNames() {
+      const names = [];
+      ["ru", "en", "zh"].forEach((lang) => {
+        const dict = I18N[lang] || {};
+        names.push(dict["outcome.yes"], dict["outcome.no"]);
+      });
+      return names.filter(Boolean);
+    }
+    function rerenderLiveUi() {
+      paintCreateSubmit();
+      if (createOutcomes && createOutcomes.length === 2) {
+        const yes = tt("outcome.yes", "Да");
+        const no = tt("outcome.no", "Нет");
+        const yesNames = systemOutcomeNames();
+        if (yesNames.indexOf(createOutcomes[0].name) >= 0) createOutcomes[0].name = yes;
+        if (yesNames.indexOf(createOutcomes[1].name) >= 0) createOutcomes[1].name = no;
+        if (typeof renderOutcomesEditor === "function") renderOutcomesEditor();
+      }
+      if (typeof paintUser === "function") paintUser();
+      if (typeof paintFeed === "function") paintFeed();
+      if (typeof paintTopCreators === "function") paintTopCreators();
+      if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
+      if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
+      if (typeof paintProfileHeader === "function") paintProfileHeader();
+      if (typeof paintMineFromCache === "function") paintMineFromCache();
+      if (typeof paintCreatorFromCache === "function") paintCreatorFromCache();
+      if (typeof paintModeration === "function") paintModeration();
+      const panel = document.querySelector("[data-panel]:not([hidden])");
+      const view = panel && panel.dataset.panel;
+      if (view === "event" && activeEventId && eventCache[activeEventId]) {
+        const root = document.getElementById("event-root");
+        if (root) {
+          root.innerHTML = marketCard(eventCache[activeEventId]);
+          const card = root.querySelector(".card");
+          if (card && eventPreselect != null && typeof applyBestOddsPrefill === "function") {
+            applyBestOddsPrefill(card, eventPreselect);
+          }
+          if (card && typeof previewQuote === "function") previewQuote(card);
+        }
+      }
+      const err = document.getElementById("error");
+      if (err && err.textContent) err.textContent = friendlyError(err.textContent);
+      if (typeof applyI18n === "function") applyI18n();
+      paintNavIcons();
+    }
+    window.onLangChange = refreshDynamicLang;
     const tg = window.Telegram && window.Telegram.WebApp;
     try {
       if (tg) {
         tg.ready();
         tg.expand();
-        // Не перекрашивать фон/карточки из themeParams: светлая тема Telegram
-        // делает название пари того же цвета, что и карточка.
       }
     } catch (e) { /* браузер без Telegram */ }
 
@@ -612,11 +370,19 @@
 
     let me = null;
     let authBlocked = false;
+    let authReady = false;
     let filterCategory = "";
-    let filterStatus = "";
+    let filterStatus = "open";
     let feedSearch = "";
+    let feedSort = "new";
+    let feedOffset = 0;
+    let feedTotal = 0;
+    const FEED_PAGE = 20;
+    let feedSearchTimer = null;
     let feedMarkets = [];
     let createCategory = "unique";
+    let createVisibility = "public";
+    let botUsername = "";
     const quoteTimers = {};
     let myPositions = {};
     let createOutcomes = [
@@ -626,19 +392,32 @@
 
     let activeEventId = null;
     let eventReturnTab = "feed";
-    const eventCache = {};
+    let eventCache = {};
+    let eventTradeMode = "simple";
+    let eventPreselect = null;
+    let helpReturnTab = "feed";
+    let helpReturnEventId = null;
+    let accountState = null;
+    let txFilter = "";
+    let txRows = [];
+    let mineState = { created: [], orders: [], positions: [], settlements: [], active: [] };
+    let topCreatorsRows = [];
+    let creatorProfileData = null;
+    let moderationMarkets = [];
+    let creatorReturnTab = "feed";
 
     function friendlyError(e) {
       const m = String(e || "");
       if (!m) return "";
       if (m === AUTH_REOPEN || m === OPEN_IN_TG) return m;
-      if (/nanoTON|nano/i.test(m)) return "Сумма слишком маленькая.";
-      if (m.includes("Недостаточно средств")) return "Недостаточно средств. Проверьте доступный баланс.";
-      if (m.includes("Приём ставок закрыт")) return "Приём заявок по этому событию завершён.";
-      if (m.includes("Рынок не найден") || m.includes("Не найдено")) return "Событие недоступно.";
-      if (m.includes("Некорректная денежная сумма")) return "Проверьте сумму заявки.";
-      if (m.includes("Сумма: 0.01")) return "Сумма от 0.01 TON, коэффициент от 1.00001 до 10000.";
-      if (m.includes("Обновите предложение")) return "Предложение устарело. Обновите расчёт и повторите.";
+      if (m === tt("err.authReopen", AUTH_REOPEN) || m === tt("err.openInTg", OPEN_IN_TG)) return m;
+      if (/nanoTON|nano/i.test(m)) return tt("err.tiny", "Сумма слишком маленькая.");
+      if (m.includes("Недостаточно средств") || m.toLowerCase().includes("not enough funds")) return tt("err.funds", "Недостаточно средств. Проверьте доступный баланс.");
+      if (m.includes("Приём ставок закрыт")) return tt("err.closed", "Приём заявок по этому событию завершён.");
+      if (m.includes("Рынок не найден") || m.includes("Не найдено")) return tt("err.missing", "Событие недоступно.");
+      if (m.includes("Некорректная денежная сумма")) return tt("err.amount", "Проверьте сумму заявки.");
+      if (m.includes("Сумма: 0.01")) return tt("err.range", "Сумма от 0.01 TON, коэффициент от 1.00001 до 10000.");
+      if (m.includes("Обновите предложение")) return tt("err.stale", "Предложение устарело. Обновите расчёт и повторите.");
       return m;
     }
 
@@ -656,11 +435,13 @@
     }
 
     function displayName() {
+      if (me && me.display_name) return me.display_name;
+      if (me && me.telegram_username) return "@" + me.telegram_username;
       const unsafe = inTelegram && tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
       if (unsafe && (unsafe.first_name || unsafe.username)) {
         return unsafe.first_name || unsafe.username;
       }
-      return (me && me.username) || "игрок";
+      return (me && me.username) || tt("player", "игрок");
     }
 
     function odds(p) {
@@ -670,15 +451,21 @@
 
     function fmtK(p) { return odds(p).toFixed(2); }
     function fmtPct(p) { return (p * 100).toFixed(1) + "%"; }
-    function fmtTon(v) { return Number(v).toFixed(2) + " TON"; }
+    function fmtTon(v) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "0.00 TON";
+      const parts = n.toFixed(2).split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      return parts.join(".") + " TON";
+    }
 
     function statusLabel(s) {
-      if (s === "pending") return "На модерации";
-      if (s === "rejected") return "Отклонено";
-      if (s === "open") return "Активно";
-      if (s === "closed") return "Приём завершён";
-      if (s === "cancelled") return "Отменено";
-      return "Завершено";
+      if (s === "pending") return tt("status.pending", "На модерации");
+      if (s === "rejected") return tt("status.rejected", "Отклонено");
+      if (s === "open") return tt("status.active", "Активно");
+      if (s === "closed") return tt("status.closedOne", "Приём завершён");
+      if (s === "cancelled") return tt("status.cancelledOne", "Отменено");
+      return tt("status.resolvedOne", "Завершено");
     }
 
     function formatCloseAt(value, now) {
@@ -691,33 +478,50 @@
       const ref = now instanceof Date ? now : new Date();
       const opts = { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" };
       if (d.getFullYear() !== ref.getFullYear()) opts.year = "numeric";
-      return d.toLocaleString("ru-RU", opts);
+      return d.toLocaleString((typeof localeTag === "function" ? localeTag() : "ru-RU"), opts);
+    }
+
+    function formatTimeLeft(value, now) {
+      if (!value) return "";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return formatCloseAt(value, now);
+      const ref = now instanceof Date ? now : new Date();
+      const ms = d.getTime() - ref.getTime();
+      if (ms <= 0) return tt("time.ended", "закрыто");
+      const mins = Math.max(1, Math.round(ms / 60000));
+      const hours = Math.floor(mins / 60);
+      const days = Math.floor(hours / 24);
+      if (days >= 1) return tt("time.dh", "{d} д {h} ч", { d: days, h: hours % 24 });
+      if (hours >= 1) return tt("time.h", "{h} ч", { h: hours });
+      return tt("time.m", "{m} мин", { m: mins });
     }
 
     function feedStatus(m) {
-      if (m.status === "pending") return { key: "wait", text: "На модерации" };
-      if (m.status === "rejected") return { key: "rejected", text: "Отклонено" };
-      if (m.status === "cancelled") return { key: "cancelled", text: "Отменено" };
-      if (m.status === "resolved") return { key: "resolved", text: "Завершено" };
+      if (m.status === "pending") return { key: "wait", text: tt("status.pending", "На модерации") };
+      if (m.status === "rejected") return { key: "rejected", text: tt("status.rejected", "Отклонено") };
+      if (m.status === "cancelled") return { key: "cancelled", text: tt("status.cancelledOne", "Отменено") };
+      if (m.status === "resolved") return { key: "resolved", text: tt("status.resolvedOne", "Завершено") };
       if (m.status === "closed" || (m.status === "open" && !m.accepting_bets)) {
-        return { key: "closed", text: "Приём завершён" };
+        return { key: "closed", text: tt("status.closedOne", "Приём завершён") };
       }
-      return { key: "open", text: "Активно" };
+      return { key: "open", text: tt("status.active", "Активно") };
     }
 
     function feedSituation(m) {
       const names = marketOutcomes(m);
       if (m.mechanism === "p2p") {
         if (m.status === "cancelled") {
-          return m.cancellation_reason ? ("Отменено: " + m.cancellation_reason) : "Событие отменено, ставки возвращены";
+          return m.cancellation_reason
+            ? tt("sit.cancelledReason", "Отменено: {reason}", { reason: m.cancellation_reason })
+            : tt("sit.cancelled", "Событие отменено, ставки возвращены");
         }
-        if (m.status === "resolved" && m.winning_outcome) return "Исход: " + m.winning_outcome;
-        if (m.status === "pending") return "Ждёт проверки. Рынок появится после одобрения";
-        if (m.status === "rejected") return m.rejection_reason ? ("Отклонено: " + m.rejection_reason) : "Отклонено";
+        if (m.status === "resolved" && m.winning_outcome) return tt("sit.winner", "Исход: {name}", { name: m.winning_outcome });
+        if (m.status === "pending") return tt("sit.pending", "Ждёт проверки. Рынок появится после одобрения");
+        if (m.status === "rejected") return m.rejection_reason ? tt("event.rejected", "Отклонено: {reason}", { reason: m.rejection_reason }) : tt("sit.rejected", "Отклонено");
         if (m.status === "closed" || (m.status === "open" && !m.accepting_bets)) {
-          return "Новые заявки не принимаются";
+          return tt("sit.closed", "Новые заявки не принимаются");
         }
-        if ((m.pot || 0) > 0) return "Объём сделок " + fmtTon(m.pot);
+        if ((m.pot || 0) > 0) return tt("feed.deals", "Объём сделок {vol}", { vol: fmtTon(m.pot) });
         return "";
       }
       const prices = marketPrices(m);
@@ -730,70 +534,111 @@
     function filterFeedMarkets(markets, query) {
       const q = String(query || "").trim().toLowerCase();
       if (!q) return (markets || []).slice();
-      return (markets || []).filter(m => String(m.question || "").toLowerCase().includes(q));
+      return (markets || []).filter(m => String(m.question || "").toLowerCase().includes(q)
+        || String(m.description || "").toLowerCase().includes(q));
+    }
+
+    function topCreatorsBlockHtml() {
+      const rows = (topCreatorsRows || []).slice(0, 3);
+      if (!rows.length) return "";
+      const medals = ["🥇", "🥈", "🥉"];
+      return `<section class="top-creators-block">
+        <div class="top-creators-head">
+          <strong>${escapeHtml(tt("feed.topCreators", "Лучшие авторы"))}</strong>
+          <button type="button" id="top-creators-link">${escapeHtml(tt("feed.topAll", "Все →"))}</button>
+        </div>
+        <div class="top-preview" id="top-creators-preview">${rows.map((row, i) => `
+          <button type="button" class="top-chip" data-open-creator="${row.id}">
+            <span><span class="creator-rank">${medals[i] || ("#" + row.rank)}</span> <b>${escapeHtml(creatorHandle(row))}</b></span>
+            <span class="muted">${escapeHtml(fmtTon(row.volume || 0))}</span>
+          </button>`).join("")}</div>
+      </section>`;
     }
 
     function paintFeed() {
       const root = document.getElementById("markets");
       if (!root) return;
       if (!feedMarkets.length) {
-        root.innerHTML = '<div class="empty-state"><strong>Пока нет событий</strong>Создайте вопрос в разделе «Создать». После проверки он появится в ленте.</div>';
+        root.innerHTML = '<div class="empty-state"><strong>' + escapeHtml(tt("feed.emptyTitle", "Пока нет событий")) +
+          "</strong>" + escapeHtml(tt("feed.emptyBody", "Создайте вопрос в разделе «Создать». После проверки он появится в ленте.")) + "</div>";
+        const more = document.getElementById("feed-more");
+        if (more) more.hidden = true;
         return;
       }
-      const shown = filterFeedMarkets(feedMarkets, feedSearch);
-      if (!shown.length) {
-        root.innerHTML = '<div class="empty-state"><strong>Ничего не найдено</strong>Попробуйте другой запрос или сбросьте поиск.</div>';
-        return;
+      const cards = feedMarkets.map(m => feedCard(m));
+      const preview = topCreatorsBlockHtml();
+      if (preview) {
+        const at = Math.min(6, cards.length);
+        cards.splice(at, 0, preview);
       }
-      root.innerHTML = shown.map(m => feedCard(m)).join("");
+      root.innerHTML = cards.join("");
+      const more = document.getElementById("feed-more");
+      if (more) more.hidden = feedMarkets.length >= feedTotal;
     }
 
     function feedBestOffersHtml(m) {
-      if (m.mechanism !== "p2p" || !m.accepting_bets || !Array.isArray(m.best_offers)) return "";
+      if (m.mechanism !== "p2p" || !m.accepting_bets) return "";
+      const offers = Array.isArray(m.best_offers) ? m.best_offers : [null, null];
       const names = marketOutcomes(m);
       return '<div class="feed-odds">' + [0, 1].map(i => {
-        const off = m.best_offers[i];
-        const name = names[i] || (i === 0 ? "Да" : "Нет");
+        const off = offers[i];
+        const name = names[i] || (i === 0 ? tt("outcome.yes", "Да") : tt("outcome.no", "Нет"));
         const cls = i === 0 ? "yes-acc" : "no-acc";
         if (!off) {
-          return '<div class="feed-odd ' + cls + '"><span class="feed-odd-name">' + escapeHtml(name) +
-            '</span><b class="feed-odd-k">—</b><span class="feed-odd-vol">Нет предложений</span></div>';
+          return '<button type="button" class="feed-odd ' + cls + '" data-open-market="' + m.id + '" data-preselect="' + i + '"><span class="feed-odd-name">' + escapeHtml(name) +
+            '</span><b class="feed-odd-k">—</b><span class="feed-odd-vol">' + escapeHtml(tt("feed.noOffers", "Нет предложений")) + "</span></button>";
         }
-        return '<div class="feed-odd ' + cls + '"><span class="feed-odd-name">' + escapeHtml(name) +
+        return '<button type="button" class="feed-odd ' + cls + '" data-open-market="' + m.id + '" data-preselect="' + i + '"><span class="feed-odd-name">' + escapeHtml(name) +
           '</span><b class="feed-odd-k">' + Number(off.odds).toFixed(2) +
-          '</b><span class="feed-odd-vol">' + escapeHtml(fmtTon(off.available)) + '</span></div>';
+          '</b><span class="feed-odd-vol">' + escapeHtml(fmtTon(off.available)) + "</span></button>";
       }).join("") + "</div>";
     }
 
     function feedCard(m) {
       const names = marketOutcomes(m);
       const st = feedStatus(m);
-      const yes = names[0] || "Да";
-      const no = names[1] || "Нет";
-      const close = formatCloseAt(m.close_at);
-      const situation = feedSituation(m);
+      const yes = names[0] || tt("outcome.yes", "Да");
+      const no = names[1] || tt("outcome.no", "Нет");
+      const left = formatTimeLeft(m.close_at);
+      const timeOrStatus = st.key === "open" ? left : st.text;
       const oddsHtml = feedBestOffersHtml(m);
       const pair = oddsHtml || `<div class="outcome-pair">
             <span class="out yes-acc">${escapeHtml(yes)}</span>
-            <span class="out-vs">или</span>
+            <span class="out-vs">${escapeHtml(tt("feed.or", "или"))}</span>
             <span class="out no-acc">${escapeHtml(no)}</span>
           </div>`;
+      const creator = m.creator;
+      const creatorHtml = creator
+        ? `<button type="button" data-open-creator="${creator.id}">${escapeHtml(creator.telegram_username ? ("@" + creator.telegram_username) : creator.display_name)}</button>`
+        : "";
+      const cat = typeof catLabel === "function"
+        ? catLabel(m.category)
+        : ((typeof CAT_LABEL !== "undefined" && CAT_LABEL[m.category]) || m.category || "");
+      const act = m.activity;
+      const volume = act && act.volume != null ? act.volume : (m.pot || 0);
+      const people = act && act.unique_participants != null ? act.unique_participants : 0;
       if (typeof eventCache !== "undefined") eventCache[m.id] = m;
       return `
         <article class="card feed-card" role="button" tabindex="0" data-open-market="${m.id}" data-id="${m.id}" data-status="${m.status}" data-mechanism="${escapeHtml(m.mechanism || "")}">
           <div class="feed-top">
-            <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
-            <span class="feed-time">${close ? ("до " + escapeHtml(close)) : ""}</span>
+            <span class="feed-cat">${escapeHtml(cat)}</span>
+            <span class="feed-time">${timeOrStatus ? ((st.key === "open" && typeof icon === "function" ? icon("clock", {size: 14}) + " " : "") + escapeHtml(timeOrStatus)) : ""}</span>
           </div>
           <div class="question">${escapeHtml(m.question)}</div>
+          <div class="feed-meta">
+            <div class="feed-meta-left feed-creator">${creatorHtml}</div>
+            <div class="feed-meta-right">
+              <span>${escapeHtml(fmtTon(volume))}</span>
+              <span>${escapeHtml(String(people))}</span>
+            </div>
+          </div>
           ${pair}
-          ${situation ? `<p class="muted situation">${escapeHtml(situation)}</p>` : ""}
         </article>`;
     }
 
     function marketOutcomes(m) {
       if (m.outcomes && m.outcomes.length) return m.outcomes;
-      return ["Да", "Нет"];
+      return ["Да", "Нет"].map((_, i) => i === 0 ? tt("outcome.yes", "Да") : tt("outcome.no", "Нет"));
     }
 
     function marketPrices(m) {
@@ -823,9 +668,9 @@
       const d = data && data.detail;
       if (status === 401) return AUTH_REOPEN;
       if (typeof d === "string") return d;
-      if (status === 403) return "Недостаточно прав";
-      if (status === 404) return "Не найдено";
-      return "Ошибка запроса";
+      if (status === 403) return tt("err.forbidden", "Недостаточно прав");
+      if (status === 404) return tt("err.notFound", "Не найдено");
+      return tt("err.request", "Ошибка запроса");
     }
 
     function isAuthReopenError(e) {
@@ -837,13 +682,37 @@
       me = null;
       myPositions = {};
       paintUser();
-      for (const id of ["mine-created", "mine-bets", "mine-results", "mine-orders", "moderation-markets"]) document.getElementById(id).innerHTML = "";
+      for (const id of ["mine-created", "mine-bets", "mine-results", "mine-orders", "moderation-markets", "account-header", "tx-list", "wallet-history", "account-overview", "profile-header"]) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = "";
+      }
+      const block = document.getElementById("auth-block");
+      if (block) block.hidden = false;
       showError(AUTH_REOPEN);
+    }
+
+    let eventShareById = {};
+
+    function rememberShareToken(m) {
+      if (m && m.id && m.share_token) eventShareById[m.id] = m.share_token;
+    }
+
+    function shareHeadersFor(path) {
+      const match = String(path || "").match(/^\/markets\/(\d+)(?:\/|$)/);
+      if (!match) return {};
+      const token = eventShareById[Number(match[1])];
+      if (!token) return {};
+      return { "X-Market-Share-Token": token };
     }
 
     async function api(path, options) {
       options = options || {};
-      const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+      const shareHeaders = typeof shareHeadersFor === "function" ? shareHeadersFor(path) : {};
+      const headers = Object.assign(
+        { "Content-Type": "application/json" },
+        shareHeaders,
+        options.headers || {}
+      );
       const initData = getInitData();
       if (initData) headers["Authorization"] = "tma " + initData;
       const res = await fetch(path, Object.assign({}, options, { headers }));
@@ -857,12 +726,18 @@
     }
 
     function paintUser() {
-      const admin = me && me.is_admin;
-      document.getElementById("moderation-tab").hidden = !admin;
-      document.getElementById("who").innerHTML = admin ? '<span class="admin-mark">админ</span>' : "";
-      document.getElementById("balance").textContent = me ? fmtTon(me.balance) : "—";
-      const lock = document.getElementById("lock");
-      if (lock && me) lock.max = String(me.balance);
+      const avatar = document.getElementById("profile-open");
+      const balance = document.getElementById("balance");
+      if (!authReady && inTelegram && !authBlocked) {
+        if (balance) balance.innerHTML = '<span class="skeleton" aria-hidden="true"></span>';
+      } else if (me) {
+        if (balance) balance.textContent = fmtTon(me.balance);
+      } else if (balance) {
+        balance.textContent = "";
+      }
+      if (avatar) {
+        avatar.innerHTML = (typeof avatarHtml === "function" && me) ? avatarHtml("avatar") : "";
+      }
       const createBtn = document.getElementById("create");
       if (createBtn) createBtn.disabled = !me;
     }
@@ -877,6 +752,7 @@
         throw new Error(inTelegram ? AUTH_REOPEN : OPEN_IN_TG);
       }
       me = await api("/auth/telegram", { method: "POST", body: "{}" });
+      authReady = true;
       paintUser();
     }
 
@@ -910,7 +786,7 @@
 
     function renderOutcomesEditor() {
       document.getElementById("outcomes-editor").innerHTML = createOutcomes.map((o,i) =>
-        `<input class="oname" data-i="${i}" value="${escapeHtml(o.name)}" placeholder="Исход ${i+1}"/>`).join("");
+        `<input class="oname" data-i="${i}" value="${escapeHtml(o.name)}" placeholder="${escapeHtml(tt("create.outcomePh", "Исход {n}", {n: i + 1}))}"/>`).join("");
     }
     function syncOutcomesFromDom() {
       document.querySelectorAll("#outcomes-editor .oname").forEach(input => {
@@ -919,7 +795,7 @@
     }
 
     function marketCard(m) {
-      if (m.mechanism === "p2p") return p2pCard(m);
+      if (m.mechanism === "p2p") return p2pCard(m, eventTradeMode);
       const names = marketOutcomes(m);
       const prices = marketPrices(m);
       const accepting = !!m.accepting_bets;
@@ -939,43 +815,43 @@
           <div class="pct">${fmtPct(prices[i] || 0)}</div>
         </div>`).join("");
       const buyBtns = names.map((name, i) =>
-        `<button class="${i === 1 ? "no" : "yes"}" data-act="buy" data-outcome="${i}">Поставить «${escapeHtml(name)}»</button>`
+        `<button class="${i === 1 ? "no" : "yes"}" data-act="buy" data-outcome="${i}">${escapeHtml(tt("event.buy", "Поставить «{name}»", {name: name}))}</button>`
       ).join("");
       const resolveBtns = names.map((name, i) =>
-        `<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(name)}">Рассчитать: ${escapeHtml(name)}</button>`
+        `<button class="ghost" data-act="resolve" data-outcome="${i}" data-label="${escapeHtml(name)}">${escapeHtml(tt("mod.resolve", "Рассчитать: {name}", {name: name}))}</button>`
       ).join("");
       return `
         <div class="card event-card" data-id="${m.id}" data-status="${m.status}" data-open-market="${m.id}">
           <span class="status-pill status-${m.status === "resolved" ? "resolved" : (accepting ? "open" : "closed")}">${statusLabel(m.status)}</span>
           <div class="question">${escapeHtml(m.question)}</div>
-          <p class="muted event-deadline">${escapeHtml(CAT_LABEL[m.category] || "Уникальное")}${m.close_at ? " · до " + escapeHtml(formatCloseAt(m.close_at)) : ""} · банк ${fmtTon(m.pot || 0)}</p>
-          ${resolved && m.winning_outcome ? `<p>Исход: ${escapeHtml(m.winning_outcome)}</p>` : ""}
+          ${m.creator ? `<p class="event-meta-line">${escapeHtml(tt("feed.author", "Автор: "))}<button type="button" class="ghost compact" data-open-creator="${m.creator.id}">${escapeHtml(m.creator.telegram_username ? ("@" + m.creator.telegram_username) : m.creator.display_name)}</button></p>` : ""}
+          <p class="muted event-deadline">${escapeHtml(typeof catLabel === "function" ? catLabel(m.category) : ((typeof CAT_LABEL !== "undefined" && CAT_LABEL[m.category]) || tt("cat.unique", "Уникальное")))}${m.close_at ? " · " + escapeHtml(formatTimeLeft(m.close_at)) : ""}</p>
+          ${resolved && m.winning_outcome ? `<p>${escapeHtml(tt("sit.winner", "Исход: {name}", {name: m.winning_outcome}))}</p>` : ""}
           ${moderationActions(m)}
-          ${m.status === "rejected" ? `<p class="muted">Отклонено: ${escapeHtml(m.rejection_reason || "")} · залог возвращён</p>` : ""}
+          ${m.status === "rejected" ? `<p class="muted">${escapeHtml(tt("event.rejectedLock", "Отклонено: {reason} · залог возвращён", {reason: m.rejection_reason || ""}))}</p>` : ""}
           <div class="odds">${oddsHtml}</div>
           ${accepting ? `
             <div class="event-bet">
-            <p class="event-bet-title">Ваша ставка</p>
-            <label>Сумма ставки TON</label>
+            <label>${escapeHtml(tt("event.betAmount", "Сумма ставки TON"))}</label>
             <input type="number" min="1" step="1" value="10" class="amount" inputmode="decimal"/>
-            <div class="preview" data-preview>Введите сумму — покажем доли и средний коэф</div>
+            <div class="preview" data-preview>${escapeHtml(tt("event.previewLegacy", "Введите сумму — покажем доли и средний коэф"))}</div>
             <div class="row" style="flex-wrap:wrap">${buyBtns}</div>
             </div>` : ""}
           ${canStop ? `
             <div class="row">
-              <button class="ghost" data-act="close">Стоп ставки</button>
+              <button class="ghost" data-act="close">${escapeHtml(tt("mod.close", "Стоп ставки"))}</button>
             </div>` : ""}
           ${canResolve ? `<div class="row" style="flex-wrap:wrap">${resolveBtns}</div>` : ""}
           ${canClaim ? `
-            <p class="muted" style="margin-top:8px">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+            <p class="muted" style="margin-top:8px">${escapeHtml(tt("account.fee", "Сервисный сбор — 1% только с чистой прибыли победителя."))}</p>
             <div class="row">
-              <button class="gold" data-act="claim">Забрать выигрыш</button>
+              <button class="gold" data-act="claim">${escapeHtml(tt("event.claim", "Забрать выигрыш"))}</button>
             </div>` : ""}
           ${canResidual ? `
             <div class="row">
-              <button class="ghost" data-act="residual">Забрать остаток залога</button>
+              <button class="ghost" data-act="residual">${escapeHtml(tt("event.residual", "Забрать остаток залога"))}</button>
             </div>` : ""}
-          ${resolved && pos && pos.claimed && !isAuto ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · сервисный сбор " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
+          ${resolved && pos && pos.claimed && !isAuto ? `<p class="muted">${escapeHtml(tt("event.claimed", "Выигрыш уже получен"))}${pos.tip_paid ? " · " + escapeHtml(tt("event.feePaid", "сервисный сбор {amt}", {amt: Number(pos.tip_paid).toFixed(2) + " TON"})) : ""}</p>` : ""}
         </div>`;
     }
 
@@ -991,30 +867,37 @@
       const winningIndex = names.indexOf(m.winning_outcome);
       const lost = resolved && winningIndex >= 0 && Number(shares[winningIndex] || 0) <= 0;
       const canClaim = resolved && m.settlement_kind !== "auto" && !pos.claimed && !lost && shares.some(x => x > 0);
-      const st = typeof feedStatus === "function" ? feedStatus(m) : {key: m.status, text: statusLabel(m.status)};
+      let result = "";
+      if (resolved && p2p) {
+        const parts = p2pPositionParts(pos);
+        const winPart = parts.find(p => p.outcome === m.winning_outcome);
+        if (winPart) {
+          const pnl = Number(winPart.payout || 0) - Number(winPart.staked || 0);
+          result = `<p class="history-result win">${escapeHtml(tt("market.yourWin", "Выигрыш {amt}", {amt: fmtTon(Math.max(0, pnl))}))}</p>`;
+        } else if (lost || parts.length) {
+          const stake = parts.reduce((s, p) => s + Number(p.staked || 0), 0);
+          result = `<p class="history-result loss">${escapeHtml(tt("market.yourLoss", "Проигрыш {amt}", {amt: fmtTon(stake)}))}</p>`;
+        }
+      } else if (resolved && !p2p) {
+        if (lost) result = `<p class="history-result loss">${escapeHtml(tt("hist.loss", "Проигрыш"))}</p>`;
+        else if (pos.claimed) result = `<p class="muted">${escapeHtml(tt("event.claimed", "Выигрыш уже получен"))}</p>`;
+      }
       return `
         <div class="card" data-id="${m.id}" data-status="${m.status}" data-open-market="${m.id}">
-          <div class="kind-tag">${p2p ? "Исполненная ставка" : "Позиция"}</div>
           <div class="question">${escapeHtml(m.question)}</div>
-          <div class="meta">
-            <span class="status-pill status-${st.key}">${escapeHtml(st.text)}</span>
-            ${resolved && m.winning_outcome ? `<span class="pill">Исход: ${escapeHtml(m.winning_outcome)}</span>` : ""}
-          </div>
           ${lines}
+          ${result}
           ${canClaim ? `
-            <p class="muted">Сервисный сбор — 1% только с чистой прибыли победителя.</p>
             <div class="row">
-              <button class="gold" data-act="claim">Забрать выигрыш</button>
+              <button class="gold" data-act="claim">${escapeHtml(tt("event.claim", "Забрать выигрыш"))}</button>
             </div>` : ""}
-          ${lost ? `<p class="muted">Проигрыш</p>` : ""}
-          ${resolved && !lost && pos.claimed && m.settlement_kind !== "auto" ? `<p class="muted">Выигрыш уже получен${pos.tip_paid ? " · сервисный сбор " + Number(pos.tip_paid).toFixed(2) + " TON" : ""}</p>` : ""}
         </div>`;
     }
 
     function historyResultLine(s) {
       const voided = s.settlement_kind === "void";
       const result = Number(s.result || 0);
-      if (voided) return {text: "Возврат " + fmtTon(s.credited), cls: "void"};
+      if (voided) return {text: tt("hist.refund", "Возврат {amt}", {amt: fmtTon(s.credited)}), cls: "void"};
       if (result > 0.0001) return {text: "+" + fmtTon(result), cls: "win"};
       if (result < -0.0001) return {text: fmtTon(result), cls: "loss"};
       if (s.is_loss) return {text: "-" + fmtTon(s.stakes_total || 0), cls: "loss"};
@@ -1025,55 +908,182 @@
       const voided = s.settlement_kind === "void";
       const loss = !voided && !!s.is_loss;
       const when = s.resolved_at ? escapeHtml(formatCloseAt(s.resolved_at)) : "";
-      const chosen = (s.chosen_outcomes && s.chosen_outcomes.length)
-        ? s.chosen_outcomes.map(escapeHtml).join(", ")
-        : "нет ставок";
+      const chosenText = (s.chosen_outcomes && s.chosen_outcomes.length)
+        ? s.chosen_outcomes.join(", ")
+        : tt("hist.noBets", "нет ставок");
       const tip = Number(s.tip || 0);
       const result = historyResultLine(s);
       const creatorBits = (s.lock_ton > 0 || s.residual_returned > 0)
-        ? `<p class="muted">залог ${fmtTon(s.lock_ton)} · возврат остатка ${fmtTon(s.residual_returned)}</p>`
+        ? `<p class="muted">${escapeHtml(tt("hist.lock", "залог {lock} · возврат остатка {rest}", {lock: fmtTon(s.lock_ton), rest: fmtTon(s.residual_returned)}))}</p>`
         : "";
       if (voided) {
         return `
         <div class="card history-card history-void" data-id="${s.market_id}">
-          <div class="kind-tag">Итог события</div>
+          <div class="kind-tag">${escapeHtml(tt("hist.tag", "Итог события"))}</div>
           <div class="question">${escapeHtml(s.question)}</div>
-          <p class="void-banner">Событие отменено · средства возвращены</p>
-          <p class="muted">Ваш исход: ${chosen}</p>
-          <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}</p>
-          <p class="muted">исполненные ставки ${fmtTon(s.payout)} · остаток заявки ${fmtTon(s.residual_returned)}</p>
-          ${tip > 0 ? `<p class="muted">Сервисный сбор ${fmtTon(tip)}</p>` : ""}
+          <p class="void-banner">${escapeHtml(tt("hist.voidBanner", "Событие отменено · средства возвращены"))}</p>
+          <p class="muted">${escapeHtml(tt("hist.yourOutcome", "Ваш исход: {name}", {name: chosenText}))}</p>
+          <p class="muted">${escapeHtml(tt("hist.stakesPayout", "Сумма ставок {stakes} · выплата {payout}", {stakes: fmtTon(s.stakes_total), payout: fmtTon(s.payout)}))}</p>
+          <p class="muted">${escapeHtml(tt("hist.filledRest", "исполненные ставки {payout} · остаток заявки {rest}", {payout: fmtTon(s.payout), rest: fmtTon(s.residual_returned)}))}</p>
+          ${tip > 0 ? `<p class="muted">${escapeHtml(tt("hist.fee", "Сервисный сбор {amt}", {amt: fmtTon(tip)}))}</p>` : ""}
           <p class="history-result void">${escapeHtml(result.text)}</p>
         </div>`;
       }
       const hasStake = Number(s.stakes_total || 0) > 0.0001;
       return `
         <div class="card history-card" data-id="${s.market_id}">
-          <div class="kind-tag">Итог события</div>
+          <div class="kind-tag">${escapeHtml(tt("hist.tag", "Итог события"))}</div>
           <div class="question">${escapeHtml(s.question)}</div>
           <div class="meta">
-            ${hasStake ? `<span class="status-pill ${loss ? "status-cancelled" : "status-open"}">${loss ? "Проигрыш" : "Выигрыш"}</span>` : `<span class="pill">Расчёт</span>`}
+            ${hasStake ? `<span class="status-pill ${loss ? "status-cancelled" : "status-open"}">${escapeHtml(loss ? tt("hist.loss", "Проигрыш") : tt("hist.win", "Выигрыш"))}</span>` : `<span class="pill">${escapeHtml(tt("hist.settle", "Расчёт"))}</span>`}
             ${when ? `<span class="pill">${when}</span>` : ""}
           </div>
-          <p>Ваш исход: ${chosen}</p>
-          <p>Победивший исход: ${escapeHtml(s.winning_outcome || "")}</p>
-          <p class="muted">Сумма ставок ${fmtTon(s.stakes_total)} · выплата ${fmtTon(s.payout)}${tip > 0 ? " · Сервисный сбор " + fmtTon(tip) : ""}</p>
+          <p>${escapeHtml(tt("hist.yourOutcome", "Ваш исход: {name}", {name: chosenText}))}</p>
+          <p>${escapeHtml(tt("hist.winning", "Победивший исход: {name}", {name: s.winning_outcome || ""}))}</p>
+          <p class="muted">${escapeHtml(tt("hist.stakesPayout", "Сумма ставок {stakes} · выплата {payout}", {stakes: fmtTon(s.stakes_total), payout: fmtTon(s.payout)}))}${tip > 0 ? " · " + escapeHtml(tt("hist.fee", "Сервисный сбор {amt}", {amt: fmtTon(tip)})) : ""}</p>
           <p class="history-result ${result.cls}">${escapeHtml(result.text)}</p>
           ${creatorBits}
         </div>`;
     }
 
-    async function loadMarkets() {
+    async function loadMarkets(opts) {
+      opts = opts || {};
       await loadPositionsMap();
+      const append = !!opts.append;
+      if (!append) feedOffset = 0;
       const qs = new URLSearchParams();
       if (filterCategory) qs.set("category", filterCategory);
       if (filterStatus) qs.set("status", filterStatus);
-      const q = qs.toString();
+      if (feedSearch) qs.set("q", feedSearch);
+      if (feedSort) qs.set("sort", feedSort);
+      qs.set("limit", String(FEED_PAGE));
+      qs.set("offset", String(append ? feedOffset : 0));
       const root = document.getElementById("markets");
-      root.innerHTML = '<p class="loading-state">Загружаем события…</p>';
-      const markets = await api("/markets" + (q ? "?" + q : ""));
-      feedMarkets = markets || [];
+      if (!append) root.innerHTML = '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>';
+      const headers = getInitData() ? { Authorization: "tma " + getInitData() } : {};
+      const creatorsPromise = append ? Promise.resolve(topCreatorsRows) : api("/creators/top?limit=10").catch(() => []);
+      const res = await fetch("/markets?" + qs.toString(), { headers });
+      if (res.status === 401) {
+        applyUnauthorized();
+        throw new Error(AUTH_REOPEN);
+      }
+      const markets = await res.json().catch(() => []);
+      if (!append) topCreatorsRows = await creatorsPromise;
+      feedTotal = Number(res.headers.get("X-Total-Count") || (markets && markets.length) || 0);
+      feedMarkets = append ? feedMarkets.concat(markets || []) : (markets || []);
+      feedOffset = feedMarkets.length;
       paintFeed();
+    }
+
+    async function loadTopCreators() {
+      topCreatorsRows = await api("/creators/top?limit=10").catch(() => []);
+      paintTopCreators();
+    }
+
+    function creatorHandle(row) {
+      return row.telegram_username ? ("@" + row.telegram_username) : (row.display_name || "");
+    }
+
+    function paintTopCreators() {
+      const full = document.getElementById("top-creators-full");
+      const rows = topCreatorsRows || [];
+      if (full) {
+        if (!rows.length) {
+          full.innerHTML = '<div class="empty-state">' + escapeHtml(tt("creators.empty", "Пока нет авторов с публичной активностью.")) + "</div>";
+        } else {
+          full.innerHTML = rows.map(row => `
+            <div class="creator-full-row" data-open-creator="${row.id}">
+              <span class="creator-rank">#${row.rank}</span>
+              <div>
+                <b>${escapeHtml(creatorHandle(row))}</b>
+                <div class="creator-metrics">
+                  <span>${escapeHtml(tt("creators.volume", "оборот"))} <b>${escapeHtml(fmtTon(row.volume || 0))}</b></span>
+                  <span>${escapeHtml(tt("creators.fills", "ставки"))} <b>${escapeHtml(String(row.fills || 0))}</b></span>
+                  <span>${escapeHtml(tt("creators.people", "участники"))} <b>${escapeHtml(String(row.unique_participants || 0))}</b></span>
+                  <span>${escapeHtml(tt("creators.markets", "события"))} <b>${escapeHtml(String(row.markets_created || 0))}</b></span>
+                </div>
+              </div>
+            </div>`).join("");
+        }
+      }
+    }
+
+    function showTopCreators() {
+      creatorReturnTab = "feed";
+      document.querySelectorAll("[data-panel]").forEach(p => { p.hidden = p.dataset.panel !== "top-creators"; });
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === "feed"));
+      setTelegramBack(true);
+      paintTopCreators();
+      if (!topCreatorsRows.length) loadTopCreators().catch(() => {});
+    }
+
+    function paintMineFromCache() {
+      const created = mineState.created || [];
+      const orders = mineState.orders || [];
+      const active = mineState.active || [];
+      const createdRoot = document.getElementById("mine-created");
+      const betsRoot = document.getElementById("mine-bets");
+      const resultsRoot = document.getElementById("mine-results");
+      const ordersRoot = document.getElementById("mine-orders");
+      if (ordersRoot && typeof renderMineOrders === "function") ordersRoot.innerHTML = renderMineOrders(orders);
+      if (createdRoot) {
+        createdRoot.innerHTML = created.length
+          ? created.map(m => marketCard(m)).join("")
+          : '<div class="empty-state">' + escapeHtml(tt("account.emptyEvents", "Вы ещё не создавали события.")) + "</div>";
+      }
+      if (betsRoot) {
+        betsRoot.innerHTML = active.length
+          ? active.map(positionCard).join("")
+          : '<div class="empty-state"><strong>' + escapeHtml(tt("empty.positionsTitle", "Нет позиций")) + "</strong>" +
+            escapeHtml(tt("empty.positionsBody", "Исполненные ставки появятся здесь.")) +
+            '<div><button type="button" class="gold" data-go-feed="1">' + escapeHtml(tt("empty.findMarket", "Найти рынок")) + "</button></div></div>";
+      }
+      if (resultsRoot) {
+        const settlements = mineState.settlements || [];
+        const positions = mineState.positions || [];
+        const legacy = positions.filter(p => p.market && p.market.status === "resolved" && p.market.settlement_kind !== "auto");
+        resultsRoot.innerHTML = settlements.length || legacy.length
+          ? settlements.map(settlementCard).join("") + legacy.map(positionCard).join("")
+          : "";
+      }
+      if (typeof paintAccountOverview === "function") paintAccountOverview();
+      const txList = document.getElementById("tx-list");
+      if (txList && typeof renderTxList === "function") txList.innerHTML = renderTxList(txRows, tt("empty.historyBody", "Операции по ставкам и выплатам появятся здесь."));
+      const walletHistory = document.getElementById("wallet-history");
+      if (walletHistory && typeof renderTxList === "function") walletHistory.innerHTML = renderTxList(txRows, tt("account.emptyTx", "Операций пока нет."));
+    }
+
+    function paintCreatorFromCache() {
+      const root = document.getElementById("creator-root");
+      const data = creatorProfileData;
+      if (!root || !data || !data.creator) return;
+      const c = data.creator;
+      const mine = me && me.id === c.id;
+      root.innerHTML = `
+        <div class="profile-hero"><span class="avatar">${escapeHtml((c.display_name || "?").slice(0, 2).toUpperCase())}</span>
+          <div>
+            <div class="profile-name">${escapeHtml(c.display_name || "")}</div>
+            <div class="profile-handle">${escapeHtml(c.telegram_username ? ("@" + c.telegram_username) : "")}</div>
+          </div>
+        </div>
+        <p class="muted">${escapeHtml(tt("creator.stats", "{markets} событий · {volume} оборот · {fills} ставок · {people} участников", { markets: c.markets_created, volume: fmtTon(c.volume || 0), fills: c.fills, people: c.unique_participants }))}</p>
+        <p class="muted">${escapeHtml(tt("creator.active", "Активных: {active} · Завершённых: {done}", { active: c.active_markets, done: c.completed_markets }))}</p>
+        ${mine ? '<div class="row"><button type="button" class="gold" id="creator-wallet">' + escapeHtml(tt("creator.wallet", "Кошелёк")) + '</button><button type="button" class="ghost" id="creator-account">' + escapeHtml(tt("creator.profile", "Мой профиль")) + "</button></div>" : ""}
+        <h2>${escapeHtml(tt("creator.events", "События автора"))}</h2>
+        ${(data.markets || []).map(feedCard).join("") || ('<div class="empty-state">' + escapeHtml(tt("creator.empty", "Публичных событий пока нет.")) + "</div>")}`;
+    }
+
+    async function openCreator(userId) {
+      const current = document.querySelector("[data-panel]:not([hidden])");
+      creatorReturnTab = (current && current.dataset.panel) || "feed";
+      if (creatorReturnTab !== "top-creators") eventReturnTab = creatorReturnTab;
+      document.querySelectorAll("[data-panel]").forEach(p => { p.hidden = p.dataset.panel !== "creator"; });
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === "feed"));
+      setTelegramBack(true);
+      const root = document.getElementById("creator-root");
+      root.innerHTML = '<p class="loading-state">' + escapeHtml(tt("creator.loading", "Загружаем профиль…")) + "</p>";
+      creatorProfileData = await api("/creators/" + userId);
+      paintCreatorFromCache();
     }
 
     async function loadMine() {
@@ -1081,34 +1091,31 @@
       await refreshMe();
       requireLogin();
       const userId = me.id;
-      const [markets, positions, settlements, orders] = await Promise.all([
+      const kind = (typeof txFilter === "string") ? txFilter : "";
+      const txQuery = kind ? ("?kind=" + encodeURIComponent(kind)) : "";
+      const [markets, positions, settlements, orders, account, transactions] = await Promise.all([
         api("/users/" + userId + "/markets"),
         api("/users/" + userId + "/positions"),
         api("/users/" + userId + "/settlements"),
-        api("/users/" + userId + "/orders")
+        api("/users/" + userId + "/orders"),
+        api("/users/" + userId + "/account").catch(() => null),
+        api("/users/" + userId + "/transactions" + txQuery).catch(() => [])
       ]);
       await refreshMe();
       requireLogin();
       if (me.id !== userId) return;
       myPositions = {};
       for (const p of positions) myPositions[p.market_id] = p;
-      document.getElementById("mine-orders").innerHTML = renderMineOrders(orders);
+      accountState = account && !Array.isArray(account) ? account : null;
+      txRows = Array.isArray(transactions) ? transactions : [];
       const created = markets.filter(m => m.creator_id === me.id);
-      const createdRoot = document.getElementById("mine-created");
-      const betsRoot = document.getElementById("mine-bets");
-      const resultsRoot = document.getElementById("mine-results");
-      createdRoot.innerHTML = created.length
-        ? created.map(m => feedCard(m)).join("")
-        : '<div class="empty-state">Вы ещё не создавали события.</div>';
+      if (typeof rememberShareToken === "function") created.forEach(rememberShareToken);
       const active = positions.filter(p => p.market && p.market.status !== "resolved" && p.market.status !== "cancelled");
-      betsRoot.innerHTML = active.length
-        ? active.map(positionCard).join("")
-        : '<div class="empty-state">У вас пока нет исполненных ставок.</div>';
-      const legacy = positions.filter(p => p.market && p.market.status === "resolved"
-        && p.market.settlement_kind !== "auto");
-      resultsRoot.innerHTML = settlements.length || legacy.length
-        ? settlements.map(settlementCard).join("") + legacy.map(positionCard).join("")
-        : '<div class="empty-state">Завершённых событий пока нет.</div>';
+      mineState = { created, orders, positions, settlements, active };
+      if (typeof paintAccountHeader === "function") paintAccountHeader(accountState);
+      if (typeof paintWalletSummary === "function") paintWalletSummary(accountState);
+      if (typeof paintProfileHeader === "function") paintProfileHeader();
+      paintMineFromCache();
     }
 
     async function previewQuote(card) {
@@ -1117,7 +1124,7 @@
       if (!preview) return;
       const money = Number(card.querySelector(".amount")?.value || 0);
       if (!money || money <= 0) {
-        preview.textContent = "Введите сумму — покажем доли и средний коэф";
+        preview.textContent = tt("event.previewLegacy", "Введите сумму — покажем доли и средний коэф");
         return;
       }
       const buttons = [...card.querySelectorAll("button[data-act='buy']")];
@@ -1159,45 +1166,101 @@
     }
 
     function closeEvent() {
+      const panel = document.querySelector("[data-panel]:not([hidden])");
+      if (panel && panel.dataset.panel === "event" && eventTradeMode === "advanced" && activeEventId) {
+        eventTradeMode = "simple";
+        openEvent(activeEventId);
+        return;
+      }
+      if (panel && panel.dataset.panel === "wallet") {
+        showTab("mine");
+        return;
+      }
+      if (panel && panel.dataset.panel === "profile") {
+        showTab("feed");
+        return;
+      }
+      if (panel && panel.dataset.panel === "moderation") {
+        showTab("profile");
+        return;
+      }
+      if (panel && panel.dataset.panel === "creator") {
+        if (creatorReturnTab === "top-creators") {
+          showTopCreators();
+          return;
+        }
+        showTab(creatorReturnTab === "create" || creatorReturnTab === "mine" || creatorReturnTab === "profile" ? creatorReturnTab : "feed");
+        return;
+      }
+      if (panel && panel.dataset.panel === "top-creators") {
+        showTab("feed");
+        return;
+      }
+      if (panel && panel.dataset.panel === "help") {
+        if (helpReturnTab === "event" && helpReturnEventId) {
+          openEvent(helpReturnEventId);
+          return;
+        }
+        if (helpReturnTab === "top-creators") {
+          showTopCreators();
+          return;
+        }
+        showTab(helpReturnTab === "create" || helpReturnTab === "mine" || helpReturnTab === "profile" || helpReturnTab === "wallet" || helpReturnTab === "moderation" ? helpReturnTab : "feed");
+        return;
+      }
       activeEventId = null;
+      eventTradeMode = "simple";
+      eventPreselect = null;
       setTelegramBack(false);
       showTab(eventReturnTab || "feed");
     }
 
-    async function openEvent(id, preloaded) {
+    async function openEvent(id, preloaded, opts) {
+      opts = opts || {};
       const current = document.querySelector("[data-panel]:not([hidden])");
-      if (current && current.dataset.panel && current.dataset.panel !== "event") {
+      if (current && current.dataset.panel && current.dataset.panel !== "event" && current.dataset.panel !== "help") {
         eventReturnTab = current.dataset.panel;
       }
+      if (opts.mode) eventTradeMode = opts.mode;
+      if (opts.preselect != null) eventPreselect = Number(opts.preselect);
       activeEventId = id;
       document.querySelectorAll("[data-panel]").forEach(p => {
         p.hidden = p.dataset.panel !== "event";
       });
       document.querySelectorAll(".tab").forEach(t => {
-        t.classList.toggle("active", t.dataset.tab === (eventReturnTab || "feed"));
+        t.classList.toggle("active", t.dataset.tab === (eventReturnTab === "create" || eventReturnTab === "mine" ? eventReturnTab : "feed"));
       });
       setTelegramBack(true);
       const root = document.getElementById("event-root");
-      root.innerHTML = '<p class="loading-state">Загружаем событие…</p>';
+      const back = document.getElementById("event-back");
+      if (back) back.textContent = eventTradeMode === "advanced" ? tt("back.market", "← К рынку") : tt("back.feed", "← Рынки");
+      root.innerHTML = '<p class="loading-state">' + escapeHtml(tt("event.loading", "Загружаем событие…")) + "</p>";
       showError("");
       try {
         let m = preloaded || eventCache[id];
+        rememberShareToken(m);
         const canFetch = !m || (m.status !== "pending" && m.status !== "rejected");
         if (canFetch) {
           try {
             m = await api("/markets/" + id);
             eventCache[id] = m;
+            rememberShareToken(m);
           } catch (e) {
             if (!preloaded && !eventCache[id]) throw e;
             m = preloaded || eventCache[id];
           }
+        } else if (m) {
+          eventCache[id] = m;
         }
         if (!m) throw new Error("Событие недоступно.");
         root.innerHTML = marketCard(m);
         const card = root.querySelector(".card");
-        if (card) await previewQuote(card);
+        if (card && eventPreselect != null && typeof applyBestOddsPrefill === "function") {
+          applyBestOddsPrefill(card, eventPreselect);
+        }
+        if (card && typeof previewQuote === "function") await previewQuote(card);
       } catch (e) {
-        root.innerHTML = '<div class="empty-state"><strong>Не удалось открыть событие</strong>' +
+        root.innerHTML = '<div class="empty-state"><strong>' + escapeHtml(tt("event.openFail", "Не удалось открыть событие")) + "</strong>" +
           escapeHtml(friendlyError(e.message)) + "</div>";
         showError(e.message);
       }
@@ -1207,17 +1270,23 @@
       if (name === "event") return;
       if (name === "moderation" && !me?.is_admin) return;
       activeEventId = null;
-      setTelegramBack(false);
+      eventTradeMode = "simple";
+      if (name !== "help") eventPreselect = null;
+      setTelegramBack(name === "wallet" || name === "help" || name === "creator" || name === "top-creators" || name === "profile" || name === "moderation");
       if (name === "moderation") loadModeration().catch(e => showError(e.message));
       document.querySelectorAll("[data-panel]").forEach(p => {
         p.hidden = p.dataset.panel !== name;
       });
       document.querySelectorAll(".tab").forEach(t => {
-        t.classList.toggle("active", t.dataset.tab === name);
+        let mapped = name;
+        if (name === "wallet" || name === "profile") mapped = name === "wallet" ? "mine" : "feed";
+        else if (name === "creator" || name === "top-creators") mapped = "feed";
+        else if (name === "help" || name === "moderation") mapped = (eventReturnTab === "create" || eventReturnTab === "mine") ? eventReturnTab : "feed";
+        t.classList.toggle("active", t.dataset.tab === mapped);
       });
       showError("");
       if (name === "feed") loadMarkets().catch(e => showError(e.message));
-      if (name === "mine") {
+      if (name === "mine" || name === "wallet" || name === "profile") {
         if (!me) {
           showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG);
           return;
@@ -1231,15 +1300,95 @@
       const view = panel && panel.dataset.panel;
       if (me && !authBlocked && view !== "mine") await refreshMe();
       if (view === "event" && activeEventId) await openEvent(activeEventId);
-      else if (view === "mine") await loadMine();
+      else if (view === "mine" || view === "wallet" || view === "profile") await loadMine();
       else if (view === "moderation") await loadModeration();
       else await loadMarkets();
+    }
+
+    function paintNavIcons() {
+      const labels = {
+        feed: [typeof icon === "function" ? icon("markets", {size: 22}) : "", tt("nav.feed", "Рынки")],
+        create: [typeof icon === "function" ? icon("plus", {size: 22}) : "", tt("nav.create", "Создать")],
+        mine: [typeof icon === "function" ? icon("portfolio", {size: 22}) : "", tt("nav.mine", "Портфель")]
+      };
+      document.querySelectorAll(".tab").forEach(btn => {
+        const pair = labels[btn.dataset.tab];
+        if (pair) btn.innerHTML = pair[0] + "<span>" + pair[1] + "</span>";
+      });
+      const searchIcon = document.getElementById("search-icon");
+      if (searchIcon && typeof icon === "function") searchIcon.innerHTML = icon("search", {size: 18});
+      const filterBtn = document.getElementById("feed-filters-open");
+      if (filterBtn && typeof icon === "function") filterBtn.innerHTML = icon("filter", {size: 18});
+    }
+
+    function setFilterSheet(open) {
+      document.getElementById("filter-backdrop").hidden = !open;
+      document.getElementById("feed-filters-sheet").hidden = !open;
     }
 
     document.querySelector(".tabs").onclick = (ev) => {
       const btn = ev.target.closest("[data-tab]");
       if (btn) showTab(btn.dataset.tab);
     };
+
+    document.getElementById("balance-open").addEventListener("click", () => {
+      if (!me) { showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG); return; }
+      showTab("mine");
+    });
+    document.getElementById("profile-open").addEventListener("click", () => {
+      if (!me) { showError(inTelegram ? AUTH_REOPEN : OPEN_IN_TG); return; }
+      showTab("profile");
+    });
+    document.getElementById("open-deposit").addEventListener("click", () => openWallet("deposit"));
+    document.getElementById("open-withdraw").addEventListener("click", () => openWallet("withdraw"));
+    document.getElementById("wallet-back").addEventListener("click", () => showTab("mine"));
+    document.getElementById("moderation-back").addEventListener("click", () => showTab("profile"));
+    document.getElementById("account-nav").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-account]");
+      if (btn) showAccountSection(btn.dataset.account);
+    });
+    document.getElementById("tx-filters").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-tx]");
+      if (!btn) return;
+      txFilter = btn.dataset.tx || "";
+      document.querySelectorAll("#tx-filters .chip").forEach(c => c.classList.toggle("on", c === btn));
+      loadMine().catch(e => showError(e.message));
+    });
+    document.getElementById("wallet-nets").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-net]");
+      if (btn) setWalletNet(btn.dataset.net);
+    });
+    document.getElementById("wallet-tabs").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-wtab]");
+      if (btn) showWalletTab(btn.dataset.wtab);
+    });
+    document.getElementById("withdraw-max").addEventListener("click", () => {
+      const input = document.getElementById("withdraw-amount");
+      if (input && me) input.value = Number(me.balance).toFixed(2);
+      previewWithdraw();
+    });
+    document.getElementById("withdraw-amount").addEventListener("input", previewWithdraw);
+    document.addEventListener("click", (ev) => {
+      if (ev.target.closest("#account-balance-card")) openWallet("deposit");
+      if (ev.target.closest("#portfolio-earnings")) {
+        ev.preventDefault();
+        toast(tt("creator.shareDetail", "Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли."));
+      }
+      if (ev.target.closest("[data-go-feed]")) showTab("feed");
+    });
+
+    document.getElementById("profile-root").addEventListener("click", (ev) => {
+      const lang = ev.target.closest("[data-lang]");
+      if (lang) { setLang(lang.dataset.lang); return; }
+      if (ev.target.closest("#profile-help")) { openHelp(); return; }
+      const act = ev.target.closest("[data-profile-act]");
+      if (!act) return;
+      const name = act.dataset.profileAct;
+      if (name === "public" && me) openCreator(me.id).catch(e => showError(e.message));
+      if (name === "events") { showTab("mine"); showAccountSection("events"); document.querySelectorAll("[data-account-panel]").forEach(p => { p.hidden = p.getAttribute("data-account-panel") !== "events"; }); }
+      if (name === "earnings") openHelp();
+      if (name === "moderation") showTab("moderation");
+    });
 
     document.getElementById("cat-filters").onclick = (ev) => {
       const btn = ev.target.closest("[data-cat]");
@@ -1249,16 +1398,56 @@
       loadMarkets().catch(e => showError(e.message));
     };
 
-    document.getElementById("status-filter").onchange = (ev) => {
-      filterStatus = ev.target.value;
+    document.getElementById("sort-filters").onclick = (ev) => {
+      const btn = ev.target.closest("[data-sort]");
+      if (!btn) return;
+      feedSort = btn.dataset.sort || "new";
+      document.querySelectorAll("#sort-filters .chip").forEach(c => c.classList.toggle("on", c === btn));
+      loadMarkets().catch(e => showError(e.message));
+    };
+
+    document.getElementById("feed-more").onclick = () => loadMarkets({ append: true }).catch(e => showError(e.message));
+    document.getElementById("top-creators-back").onclick = () => showTab("feed");
+    document.getElementById("top-creators-full").addEventListener("click", (ev) => {
+      const open = ev.target.closest("[data-open-creator]");
+      if (open) openCreator(Number(open.dataset.openCreator)).catch(e => showError(e.message));
+    });
+    document.getElementById("creator-back").onclick = () => closeEvent();
+    document.getElementById("help-back").onclick = () => closeEvent();
+    document.getElementById("onboard-dismiss").onclick = dismissOnboarding;
+    document.getElementById("onboard-feed").onclick = () => { dismissOnboarding(); showTab("feed"); };
+    document.getElementById("onboard-create").onclick = () => { dismissOnboarding(); showTab("create"); };
+    document.getElementById("creator-root").addEventListener("click", (ev) => {
+      if (ev.target.id === "creator-wallet") { openWallet("deposit"); return; }
+      if (ev.target.id === "creator-account") { showTab("profile"); return; }
+      const open = ev.target.closest("[data-open-creator]");
+      if (open) openCreator(Number(open.dataset.openCreator)).catch(e => showError(e.message));
+    });
+
+    document.getElementById("feed-filters-open").onclick = () => setFilterSheet(true);
+    document.getElementById("filter-backdrop").onclick = () => setFilterSheet(false);
+    document.getElementById("status-filters").onclick = (ev) => {
+      const btn = ev.target.closest("[data-status]");
+      if (!btn) return;
+      filterStatus = btn.dataset.status || "open";
+      document.querySelectorAll("#status-filters .chip").forEach(c => c.classList.toggle("on", c === btn));
+      setFilterSheet(false);
       loadMarkets().catch(e => showError(e.message));
     };
 
     document.getElementById("feed-search").addEventListener("input", (ev) => {
       feedSearch = ev.target.value;
-      paintFeed();
+      clearTimeout(feedSearchTimer);
+      feedSearchTimer = setTimeout(() => loadMarkets().catch(e => showError(e.message)), 280);
     });
 
+    document.getElementById("create-visibility").onclick = (ev) => {
+      const btn = ev.target.closest("[data-vis]");
+      if (!btn) return;
+      createVisibility = btn.dataset.vis || "public";
+      document.querySelectorAll("#create-visibility .chip").forEach(c => c.classList.toggle("on", c === btn));
+      paintCreateSubmit();
+    };
     document.getElementById("create-cats").onclick = (ev) => {
       const btn = ev.target.closest("[data-cat]");
       if (!btn) return;
@@ -1272,19 +1461,17 @@
         requireLogin();
         syncOutcomesFromDom();
         const question = document.getElementById("question").value.trim();
-
         const closeLocal = document.getElementById("close-at").value;
-        if (question.length < 8) throw new Error("Вопрос слишком короткий");
-        if (!closeLocal) throw new Error("Укажите время конца приёма");
+        if (question.length < 8) throw new Error(tt("create.qShort", "Вопрос слишком короткий"));
+        if (!closeLocal) throw new Error(tt("create.needClose", "Укажите время конца приёма"));
         const closeDate = new Date(closeLocal);
         if (Number.isNaN(closeDate.getTime()) || closeDate.getTime() <= Date.now()) {
-          throw new Error("Конец приёма не может быть в прошлом");
+          throw new Error(tt("create.closePast", "Конец приёма не может быть в прошлом"));
         }
-
         const names = createOutcomes.map(o => o.name.trim());
-        if (names.some(n => !n)) throw new Error("Заполните названия исходов");
+        if (names.some(n => !n)) throw new Error(tt("create.needOutcomes", "Заполните названия исходов"));
         const uniq = new Set(names.map(n => n.toLowerCase()));
-        if (uniq.size !== names.length) throw new Error("Имена исходов должны быть уникальными");
+        if (uniq.size !== names.length) throw new Error(tt("create.uniqOutcomes", "Имена исходов должны быть уникальными"));
         await api("/markets", {
           method: "POST",
           body: JSON.stringify({
@@ -1293,34 +1480,65 @@
             description: "",
             outcomes: names,
             mechanism: "p2p",
+            visibility: createVisibility,
             close_at: closeDate.toISOString(),
-
           })
         });
         document.getElementById("question").value = "";
-        createOutcomes = [{ name: "Да", k: 2 }, { name: "Нет", k: 2 }];
+        createOutcomes = defaultOutcomes();
         renderOutcomesEditor();
-        toast("Событие отправлено на проверку");
+        toast(createVisibility === "unlisted" ? tt("create.toastUnlisted", "Приватное событие открыто по ссылке") : tt("create.toastPublic", "Событие отправлено на проверку"));
         await refreshMe();
-        showTab("mine");
+        showTab("profile");
       } catch (e) { showError(e.message); }
     };
 
+    document.getElementById("auth-reopen").onclick = () => {
+      try {
+        if (tg && typeof tg.close === "function") {
+          tg.close();
+          return;
+        }
+      } catch (e) { /* no telegram close */ }
+      toast(tt("auth.expiredBody", "Чтобы безопасно продолжить работу, откройте BetTON заново через Telegram."), true);
+    };
+
     async function onCardClick(ev) {
+      if (ev.target.closest("#top-creators-link")) {
+        ev.preventDefault();
+        showTopCreators();
+        return;
+      }
+      const creatorBtn = ev.target.closest("[data-open-creator]");
+      if (creatorBtn) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await openCreator(Number(creatorBtn.dataset.openCreator));
+        return;
+      }
+      const amt = ev.target.closest("[data-amt]");
+      if (amt) {
+        const card = amt.closest(".card");
+        const input = card && card.querySelector(".p2p-money");
+        if (input) input.value = amt.dataset.amt;
+        card.querySelectorAll("[data-amt]").forEach(b => b.classList.toggle("on", b === amt));
+        if (typeof p2pQuote === "function") p2pQuote(card);
+        return;
+      }
+      const simple = ev.target.closest("[data-simple-outcome]");
+      if (simple) {
+        const card = simple.closest(".card");
+        eventPreselect = Number(simple.dataset.simpleOutcome);
+        if (typeof applyBestOddsPrefill === "function") applyBestOddsPrefill(card, eventPreselect);
+        if (typeof p2pQuote === "function") p2pQuote(card);
+        return;
+      }
       const pick = ev.target.closest(".side-pick");
       if (pick) {
         const card = pick.closest(".card");
         if (!card) return;
-        if (typeof applyBestOddsPrefill === "function") {
-          applyBestOddsPrefill(card, pick.dataset.outcome);
-        } else {
-          const select = card.querySelector(".p2p-side");
-          if (select) select.value = pick.dataset.outcome;
-          card.querySelectorAll(".side-pick").forEach(btn => {
-            btn.classList.toggle("on-yes", btn === pick && Number(pick.dataset.outcome) === 0);
-            btn.classList.toggle("on-no", btn === pick && Number(pick.dataset.outcome) === 1);
-          });
-        }
+        eventPreselect = Number(pick.dataset.outcome);
+        if (typeof applyBestOddsPrefill === "function") applyBestOddsPrefill(card, eventPreselect);
         if (typeof p2pQuote === "function") p2pQuote(card);
         return;
       }
@@ -1329,30 +1547,79 @@
         const card = best.closest(".card");
         if (!card) return;
         ev.preventDefault();
+        eventPreselect = Number(best.dataset.prefillOutcome);
         if (typeof applyBestOddsPrefill === "function") {
-          applyBestOddsPrefill(card, best.dataset.prefillOutcome, best.dataset.prefillOdds);
+          applyBestOddsPrefill(card, eventPreselect, best.dataset.prefillOdds);
         }
         if (typeof p2pQuote === "function") p2pQuote(card);
         return;
       }
       const open = ev.target.closest("[data-open-market]");
       if (open && !ev.target.closest("button[data-act], button[data-cancel-order], textarea, input, select")) {
-        await openEvent(Number(open.dataset.openMarket));
+        const pre = ev.target.closest("[data-preselect]");
+        await openEvent(Number(open.dataset.openMarket), null, { preselect: pre ? Number(pre.dataset.preselect) : undefined });
         return;
       }
       const btn = ev.target.closest("button[data-act]");
       if (!btn) return;
       const card = btn.closest(".card");
+      if (!card) return;
       const id = card.dataset.id;
       const amount = Number(card.querySelector(".amount")?.value || 0);
       showError("");
       try {
+        if (btn.dataset.act === "open-help") {
+          openHelp();
+          return;
+        }
+        if (btn.dataset.act === "open-advanced" || btn.dataset.fallback === "advanced") {
+          eventTradeMode = "advanced";
+          await openEvent(Number(id), eventCache[id], { mode: "advanced" });
+          return;
+        }
+        if (btn.dataset.act === "odds-inc" || btn.dataset.act === "odds-dec") {
+          const input = card.querySelector(".p2p-odds");
+          const n = Number(input.value || 2);
+          input.value = String(Math.max(1.01, Math.round((n + (btn.dataset.act === "odds-inc" ? 0.01 : -0.01)) * 100) / 100));
+          if (typeof p2pQuote === "function") p2pQuote(card);
+          return;
+        }
         requireLogin();
+        if (btn.dataset.act === "share") {
+          const token = card.dataset.shareToken;
+          const uname = (typeof botUsername === "string" ? botUsername : "").replace(/^@/, "");
+          const link = (uname && token) ? ("https://t.me/" + uname + "?start=market_" + token) : "";
+          const qEl = card.querySelector(".question");
+          const shareText = qEl ? qEl.textContent : "BetTON";
+          try {
+            if (link && tg && typeof tg.openTelegramLink === "function") {
+              tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent(shareText));
+            }
+          } catch (e) { /* WebView без openTelegramLink */ }
+          try {
+            if (link && navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(link);
+              toast(tt("share.copied", "Ссылка скопирована"));
+            } else if (link) {
+              toast(link);
+            } else {
+              toast(tt("share.needBot", "Ссылка появится после настройки имени бота"), true);
+            }
+          } catch (e) {
+            toast(link || tt("share.fail", "Не удалось скопировать ссылку"), !link);
+          }
+          return;
+        }
         if (btn.dataset.act === "p2p-refresh") { await hydrateP2P(card); return; }
-        if (btn.dataset.act === "p2p-limit" || btn.dataset.act === "p2p-ioc") {
+        if (btn.dataset.act === "p2p-limit" || btn.dataset.act === "p2p-ioc" || btn.dataset.act === "p2p-simple") {
+          if (btn.dataset.act === "p2p-simple" && btn.dataset.fallback === "advanced") {
+            eventTradeMode = "advanced";
+            await openEvent(Number(id), eventCache[id], { mode: "advanced" });
+            return;
+          }
           if (card.submitting) return;
           card.submitting = true;
-          try { await p2pPlace(card, btn.dataset.act === "p2p-ioc" ? "ioc" : "limit"); }
+          try { await p2pPlace(card, btn.dataset.act === "p2p-limit" ? "limit" : "ioc"); }
           finally { card.submitting = false; }
         } else if (btn.dataset.act === "approve" || btn.dataset.act === "reject") {
           const reason = card.querySelector(".reject-reason").value.trim();
@@ -1432,6 +1699,7 @@
         } catch(e) { showError(e.message); }
         return;
       }
+      if (ev.target.closest("[data-go-feed]")) { showTab("feed"); return; }
       const open = ev.target.closest("[data-open-market]");
       if (open) openEvent(Number(open.dataset.openMarket));
     };
@@ -1443,24 +1711,11 @@
         clearTimeout(card.quoteTimer);
         card.quoteVersion = (card.quoteVersion || 0)+1;
         card.availableQuote = null;
-        const ioc = card.querySelector('[data-act="p2p-ioc"]');
+        const ioc = card.querySelector('[data-act="p2p-ioc"], [data-act="p2p-simple"]');
         if (ioc) ioc.disabled = true;
         card.quoteTimer = setTimeout(() => p2pQuote(card), 250);
       });
     }
-
-    document.getElementById("markets").addEventListener("input", (ev) => {
-      if (!ev.target.classList.contains("amount")) return;
-      scheduleQuote(ev.target.closest(".card"));
-    });
-    document.getElementById("markets").addEventListener("change", (ev) => {
-      if (!ev.target.classList.contains("amount")) return;
-      scheduleQuote(ev.target.closest(".card"));
-    });
-    document.getElementById("mine-created").addEventListener("input", (ev) => {
-      if (!ev.target.classList.contains("amount")) return;
-      scheduleQuote(ev.target.closest(".card"));
-    });
 
     document.getElementById("event-root").addEventListener("input", (ev) => {
       if (!ev.target.classList.contains("amount")) return;
@@ -1483,6 +1738,14 @@
       }, 120);
     });
 
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      const card = ev.target.closest(".feed-card");
+      if (!card) return;
+      ev.preventDefault();
+      openEvent(Number(card.dataset.openMarket)).catch(e => showError(e.message));
+    });
+
     try {
       const vv = window.visualViewport;
       if (vv) {
@@ -1499,17 +1762,47 @@
     (async () => {
       try {
         setTelegramBack(false);
+        setLang(detectLang(telegramLangCode()), false);
+        paintNavIcons();
+        showOnboarding();
+        paintCreateSubmit();
+        createOutcomes = defaultOutcomes();
         document.getElementById("close-at").value = defaultCloseAt();
         renderOutcomesEditor();
         if (!inTelegram) {
+          authReady = true;
           document.getElementById("create").disabled = true;
           showError(OPEN_IN_TG);
+          paintUser();
           await loadMarkets();
           return;
         }
         await auth();
+        try {
+          const health = await fetch("/health").then(r => r.json());
+          botUsername = (health && health.bot_username) ? String(health.bot_username).replace(/^@/, "") : "";
+        } catch (e) { botUsername = ""; }
+        const params = new URLSearchParams(location.search);
+        let share = (params.get("share") || "").trim();
+        if (!share && tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+          const sp = String(tg.initDataUnsafe.start_param);
+          share = sp.indexOf("market_") === 0 ? sp.slice(7) : sp;
+        }
+        if (share && me) {
+          try {
+            const shared = await api("/markets/share/" + encodeURIComponent(share));
+            eventCache[shared.id] = shared;
+            rememberShareToken(shared);
+            await openEvent(shared.id, shared);
+          } catch (e) { showError(e.message); }
+        }
         await loadMarkets();
-      } catch (e) { showError(e.message); }
+      } catch (e) {
+        authReady = true;
+        paintUser();
+        showError(e.message);
+        if (isAuthReopenError(e) || String(e.message) === AUTH_REOPEN) applyUnauthorized();
+      }
     })();
   </script>
 </body>
