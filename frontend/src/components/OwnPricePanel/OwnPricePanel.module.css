@@ -133,3 +133,10 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+.empty {
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+  font-size: 13px;
+  color: var(--color-text-disabled);
+}

@@ -1,5 +1,5 @@
 import { ChevronLeft } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Avatar } from '../components/Avatar/Avatar'
 import { Button } from '../components/Button/Button'
 import { IconButton } from '../components/IconButton/IconButton'
@@ -29,6 +29,8 @@ export type MarketDetailScreenProps = {
   onOwnPrice?: () => void
   onPlace?: () => void
   onRetry?: () => void
+  banner?: ReactNode
+  extra?: ReactNode
 }
 
 export function MarketDetailScreen({
@@ -44,6 +46,8 @@ export function MarketDetailScreen({
   onOwnPrice,
   onPlace,
   onRetry,
+  banner,
+  extra,
 }: MarketDetailScreenProps) {
   const [side, setSide] = useState<OutcomeSide>(selectedSide)
   const [range, setRange] = useState('1d')
@@ -131,6 +135,7 @@ export function MarketDetailScreen({
       </header>
       <div className={styles.body}>
         <h1 className={styles.question}>{market.question}</h1>
+        {banner}
         <div className={styles.creatorRow}>
           <Avatar initials={market.creator.initials} name={market.creator.displayName} size="sm" />
           <span>@{market.creator.handle}</span>
@@ -174,6 +179,7 @@ export function MarketDetailScreen({
           <p>{market.description}</p>
           {market.resolution ? <p>{market.resolution}</p> : null}
         </section>
+        {extra}
       </div>
       <div className={styles.actions}>
         <Button variant="secondary" disabled={actionsOff} onClick={onOwnPrice}>

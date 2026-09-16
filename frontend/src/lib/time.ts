@@ -21,6 +21,8 @@ export function formatTimeLeft(
   if (status === 'resolved') return 'Итог'
   if (status === 'cancelled') return 'Отмена'
   if (status === 'closed') return 'Приём завершён'
+  if (status === 'pending') return 'На проверке'
+  if (status === 'rejected') return 'Отклонено'
   const date = parseDate(closeAt)
   if (!date) return ''
   const ms = date.getTime() - now.getTime()

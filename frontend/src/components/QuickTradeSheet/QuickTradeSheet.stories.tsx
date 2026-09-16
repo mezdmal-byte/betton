@@ -63,5 +63,5 @@ export const StaleQuote: Story = {
 }
 
 export const InsufficientBalance: Story = {
-  args: { state: 'insufficient-balance', amount: 500 },
+  args: { state: 'insufficient-balance', amount: 500, availableTon: 1240 },
 }

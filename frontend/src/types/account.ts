@@ -4,6 +4,7 @@ export type PortfolioTab = 'positions' | 'orders' | 'history'
 
 export type PositionFixture = {
   id: string
+  marketId: number
   question: string
   outcomeLabel: string
   amountTon: number
@@ -13,11 +14,15 @@ export type PositionFixture = {
 
 export type OrderFixture = {
   id: string
+  marketId: number
   question: string
   outcomeLabel: string
   odds: number
   remainingTon: number
+  amountTon: number
+  filledTon: number
   status: string
+  canCancel: boolean
 }
 
 export type HistoryFixture = {
@@ -36,8 +41,8 @@ export type AccountFixture = {
   inPositionsTon: number
   inOrdersTon: number
   creatorIncomeTon: number
-  eventsCreated: number
-  createdVolumeTon: number
+  eventsCreated: number | null
+  createdVolumeTon: number | null
   isAdmin: boolean
   photoUrl?: string
 }

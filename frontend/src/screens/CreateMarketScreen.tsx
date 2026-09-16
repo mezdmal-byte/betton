@@ -16,10 +16,10 @@ const CATEGORIES = [
   { id: 'other', label: 'Другое' },
 ] as const
 
-const VISIBILITY: Array<{ id: VisibilityId; label: string }> = [
+const VISIBILITY: Array<{ id: VisibilityId; label: string; disabled?: boolean }> = [
   { id: 'public', label: 'Публичное' },
   { id: 'unlisted', label: 'По ссылке' },
-  { id: 'private', label: 'Приватное' },
+  { id: 'private', label: 'Приватное', disabled: true },
 ]
 
 export type CreateMarketScreenProps = {
@@ -28,6 +28,13 @@ export type CreateMarketScreenProps = {
   pickerOpen?: boolean
   onBack?: () => void
   submitDisabled?: boolean
+  submitting?: boolean
+  errorMessage?: string | null
+  closeAtLabel?: string
+  closeAtLocal?: string
+  onCloseAtChange?: (localValue: string) => void
+  onSubmit?: (draft: CreateMarketDraft) => void
+  visibilityNote?: string | null
 }
 
 export function CreateMarketScreen({
@@ -36,13 +43,22 @@ export function CreateMarketScreen({
   pickerOpen = false,
   onBack,
   submitDisabled = false,
+  submitting = false,
+  errorMessage = null,
+  closeAtLabel,
+  closeAtLocal,
+  onCloseAtChange,
+  onSubmit,
+  visibilityNote = 'Приватное недоступно в preview: backend принимает только public и unlisted.',
 }: CreateMarketScreenProps) {
   const [question, setQuestion] = useState(draft.question)
   const [category, setCategory] = useState(draft.category)
   const [outcomeA, setOutcomeA] = useState(draft.outcomeA)
   const [outcomeB, setOutcomeB] = useState(draft.outcomeB)
   const [closeAt] = useState(draft.closeAt)
-  const [visibility, setVisibility] = useState<VisibilityId>(draft.visibility)
+  const [visibility, setVisibility] = useState<VisibilityId>(
+    draft.visibility === 'private' ? 'public' : draft.visibility,
+  )
   const [description, setDescription] = useState(draft.description)
   const [feeExpanded, setFeeExpanded] = useState(feeOpen)
   const [picker, setPicker] = useState(pickerOpen)
@@ -108,9 +124,11 @@ export function CreateMarketScreen({
         <DateTimeField
           id="create-close"
           label="Закрытие"
-          value={closeAt}
+          value={closeAtLabel ?? closeAt}
+          pickerValue={closeAtLocal}
           open={picker}
           onOpenChange={setPicker}
+          onPickerChange={onCloseAtChange}
         />
 
         <section className={styles.section}>
@@ -123,12 +141,17 @@ export function CreateMarketScreen({
                 key={item.id}
                 compact
                 selected={item.id === visibility}
-                onClick={() => setVisibility(item.id)}
+                disabled={item.disabled}
+                onClick={() => {
+                  if (item.disabled) return
+                  setVisibility(item.id)
+                }}
               >
-                {item.label}
+                {item.disabled ? `${item.label} · нет` : item.label}
               </Chip>
             ))}
           </div>
+          {visibilityNote ? <p className={styles.visibilityNote}>{visibilityNote}</p> : null}
         </section>
 
         <TextField
@@ -164,8 +187,24 @@ export function CreateMarketScreen({
         </div>
       </div>
       <div className={styles.actions}>
-        <Button fullWidth disabled={submitDisabled}>
-          Создать событие
+        {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+        <Button
+          fullWidth
+          disabled={submitDisabled || submitting}
+          loading={submitting}
+          onClick={() =>
+            onSubmit?.({
+              question,
+              category,
+              outcomeA,
+              outcomeB,
+              closeAt: closeAtLabel ?? closeAt,
+              visibility,
+              description,
+            })
+          }
+        >
+          {submitting ? 'Создаём…' : 'Создать событие'}
         </Button>
       </div>
     </div>

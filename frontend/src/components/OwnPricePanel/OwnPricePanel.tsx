@@ -5,7 +5,7 @@ import { IconButton } from '../IconButton/IconButton'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
 import { OrderBookRow } from '../OrderBookRow/OrderBookRow'
 import { availableAtOdds, splitFill } from '../../lib/fill'
-import { formatInteger, formatOdds, formatTon } from '../../lib/format'
+import { formatInteger, formatOdds, formatTon, formatTonFull } from '../../lib/format'
 import type { OrderBookLevel, OutcomeSide, RecentTrade } from '../../types/market'
 import styles from './OwnPricePanel.module.css'
 
@@ -21,6 +21,13 @@ export type OwnPricePanelProps = {
   onSelectSide?: (side: OutcomeSide) => void
   onOddsChange?: (odds: number) => void
   onAmountChange?: (amount: number) => void
+  onSubmit?: () => void
+  matchedTon?: number | null
+  restTon?: number | null
+  submitting?: boolean
+  disabled?: boolean
+  errorMessage?: string | null
+  availableTon?: number | null
 }
 
 export function OwnPricePanel({
@@ -35,10 +42,19 @@ export function OwnPricePanel({
   onSelectSide,
   onOddsChange,
   onAmountChange,
+  onSubmit,
+  matchedTon = null,
+  restTon = null,
+  submitting = false,
+  disabled = false,
+  errorMessage = null,
+  availableTon = null,
 }: OwnPricePanelProps) {
   const maxAvailable = Math.max(...book.map((level) => level.availableTon), 1)
   const selectedLabel = selectedSide === 'a' ? outcomeALabel : outcomeBLabel
-  const { matched, rest } = splitFill(amount, availableAtOdds(book, odds))
+  const localSplit = splitFill(amount, availableAtOdds(book, odds))
+  const matched = matchedTon ?? localSplit.matched
+  const rest = restTon ?? localSplit.rest
 
   return (
     <div className={styles.root}>
@@ -86,6 +102,13 @@ export function OwnPricePanel({
       <AmountInput
         value={String(amount)}
         onChange={(value) => onAmountChange?.(Number(value) || 0)}
+        error={
+          errorMessage
+            ? errorMessage
+            : availableTon != null && amount > availableTon
+              ? `Недостаточно средств · доступно ${formatTonFull(availableTon)}`
+              : undefined
+        }
       />
 
       <div className={styles.summary}>
@@ -99,33 +122,41 @@ export function OwnPricePanel({
         </div>
       </div>
 
-      <Button fullWidth>Разместить заявку</Button>
+      <Button fullWidth loading={submitting} disabled={disabled || submitting} onClick={onSubmit}>
+        {submitting ? 'Размещаем…' : 'Разместить заявку'}
+      </Button>
 
       <section className={styles.book}>
         <div className={styles.bookHead}>
           <span>Коэффициент</span>
           <span>Доступно</span>
         </div>
-        {book.map((level, index) => (
-          <OrderBookRow
-            key={level.odds}
-            level={level}
-            maxAvailable={maxAvailable}
-            active={index === 0}
-          />
-        ))}
+        {book.length === 0 ? (
+          <p className={styles.empty}>Нет заявок в стакане.</p>
+        ) : (
+          book.map((level, index) => (
+            <OrderBookRow
+              key={level.odds}
+              level={level}
+              maxAvailable={maxAvailable}
+              active={index === 0}
+            />
+          ))
+        )}
       </section>
 
-      <section className={styles.trades}>
-        <h3>Недавние сделки</h3>
-        {trades.map((trade) => (
-          <div key={`${trade.odds}-${trade.timeAgo}`} className={styles.trade}>
-            <span className={styles.tradeOdds}>{formatOdds(trade.odds)}</span>
-            <span className={styles.tradeAmount}>{formatTon(trade.amountTon)}</span>
-            <span className={styles.tradeTime}>{trade.timeAgo}</span>
-          </div>
-        ))}
-      </section>
+      {trades.length > 0 ? (
+        <section className={styles.trades}>
+          <h3>Недавние сделки</h3>
+          {trades.map((trade) => (
+            <div key={`${trade.odds}-${trade.timeAgo}`} className={styles.trade}>
+              <span className={styles.tradeOdds}>{formatOdds(trade.odds)}</span>
+              <span className={styles.tradeAmount}>{formatTon(trade.amountTon)}</span>
+              <span className={styles.tradeTime}>{trade.timeAgo}</span>
+            </div>
+          ))}
+        </section>
+      ) : null}
     </div>
   )
 }

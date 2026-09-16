@@ -7,7 +7,9 @@ export type DateTimeFieldProps = {
   label: string
   value: string
   open?: boolean
+  pickerValue?: string
   onOpenChange?: (open: boolean) => void
+  onPickerChange?: (value: string) => void
   id?: string
 }
 
@@ -20,7 +22,9 @@ export function DateTimeField({
   label,
   value,
   open,
+  pickerValue,
   onOpenChange,
+  onPickerChange,
   id = 'datetime',
 }: DateTimeFieldProps) {
   const [internalOpen, setInternalOpen] = useState(false)
@@ -62,6 +66,17 @@ export function DateTimeField({
               <span>Время</span>
               <b>{time}</b>
             </div>
+          ) : null}
+          {onPickerChange ? (
+            <label className={styles.nativeRow}>
+              <span>Дата и время</span>
+              <input
+                className={styles.native}
+                type="datetime-local"
+                value={pickerValue ?? ''}
+                onChange={(event) => onPickerChange(event.target.value)}
+              />
+            </label>
           ) : null}
         </div>
       ) : null}

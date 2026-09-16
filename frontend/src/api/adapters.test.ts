@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyPersonalizedExecutableQuotes,
+  buildCreateMarketPayload,
+  backendVisibilityOrUnavailable,
+  isAdminAccount,
   mapApiCategoryToLabel,
   mapCreator,
   mapMarketOut,
+  mapOpenOrder,
+  mapOrderPreview,
+  mapPlaceResult,
+  mapPositions,
+  mapTransaction,
   mapUiCategoryToApi,
   mapUiSortToApi,
+  moneyForOrder,
 } from './adapters'
 import type { MarketOut } from './types'
 
@@ -184,5 +193,207 @@ describe('available_to_me executable quotes', () => {
     })
     expect(personalized.outcomeA).toEqual({ label: 'Да', odds: null, liquidityTon: null })
     expect(personalized.outcomeB).toEqual({ label: 'Нет', odds: null, liquidityTon: null })
+  })
+})
+
+describe('LMSR markets', () => {
+  it('does not treat LMSR prices as P2P best_offers', () => {
+    const view = mapMarketOut(
+      market({
+        mechanism: 'lmsr',
+        best_offers: [{ odds: 1.82, available: 320 }, { odds: 2.18, available: 190 }],
+      }),
+      now,
+    )
+    expect(view.mechanism).toBe('lmsr')
+    expect(view.outcomeA).toEqual({ label: 'Да', odds: null, liquidityTon: null })
+    expect(view.outcomeB).toEqual({ label: 'Нет', odds: null, liquidityTon: null })
+  })
+})
+
+describe('preview mapping', () => {
+  it('maps backend requested matched/remaining/payout without inventing fills', () => {
+    const preview = mapOrderPreview({
+      limit_odds: 1.82,
+      requested: { matched: 40, remaining: 60, payout: 72.8, average_odds: 1.82, worst_odds: 1.82 },
+      available: { matched: 40, remaining: 60, payout: 72.8, worst_odds: 1.8 },
+    })
+    expect(preview.matchedTon).toBe(40)
+    expect(preview.remainingTon).toBe(60)
+    expect(preview.payoutTon).toBe(72.8)
+    expect(preview.availableWorstOdds).toBe(1.8)
+  })
+
+  it('maps a zero match as no immediate fill', () => {
+    const preview = mapOrderPreview({
+      limit_odds: 2,
+      requested: { matched: 0, remaining: 100, payout: 0 },
+      available: { matched: 0, remaining: 100, payout: 0 },
+    })
+    expect(preview.matchedTon).toBe(0)
+    expect(preview.remainingTon).toBe(100)
+  })
+})
+
+describe('place result mapping', () => {
+  it('keeps backend filled/remaining/refunded as the source of truth', () => {
+    const result = mapPlaceResult({
+      id: 9,
+      market_id: 42,
+      outcome: 0,
+      odds: 1.8,
+      amount: 100,
+      remaining: 0,
+      filled: 40,
+      refunded: 60,
+      kind: 'ioc',
+      status: 'filled',
+      request_id: 'aaaaaaaa',
+    })
+    expect(result.filledTon).toBe(40)
+    expect(result.remainingTon).toBe(0)
+    expect(result.refundedTon).toBe(60)
+    expect(result.requestId).toBe('aaaaaaaa')
+  })
+})
+
+describe('orders adapter', () => {
+  it('maps open remainder and hides filled orders from the active list', () => {
+    const open = mapOpenOrder({
+      id: 3,
+      market_id: 42,
+      outcome: 0,
+      odds: 1.9,
+      amount: 100,
+      remaining: 40,
+      filled: 60,
+      refunded: 0,
+      kind: 'limit',
+      status: 'open',
+      request_id: 'bbbbbbbb',
+      question: 'Спартак обыграет Зенит?',
+      outcome_name: 'Да',
+    })
+    expect(open).toMatchObject({
+      remainingTon: 40,
+      filledTon: 60,
+      status: 'Частично исполнена',
+      canCancel: true,
+      outcomeLabel: 'Да',
+    })
+    expect(
+      mapOpenOrder({
+        id: 4,
+        market_id: 42,
+        outcome: 0,
+        odds: 1.9,
+        amount: 100,
+        remaining: 0,
+        filled: 100,
+        refunded: 0,
+        kind: 'limit',
+        status: 'filled',
+        request_id: 'cccccccc',
+      }),
+    ).toBeNull()
+  })
+})
+
+describe('positions adapter', () => {
+  it('maps staked cost and potential payout from backend vectors', () => {
+    const rows = mapPositions({
+      market_id: 42,
+      shares: [178, 0],
+      costs: [100, 0],
+      claimed: false,
+      tip_paid: 0,
+      market: market(),
+    })
+    expect(rows).toEqual([
+      {
+        id: '42-0',
+        marketId: 42,
+        question: 'Спартак обыграет Зенит?',
+        outcomeLabel: 'Да',
+        amountTon: 100,
+        avgOdds: 1.78,
+        potentialPayoutTon: 178,
+      },
+    ])
+  })
+})
+
+describe('history adapter', () => {
+  it('maps transaction type onto frozen action labels', () => {
+    const row = mapTransaction({
+      id: 'reserve:1',
+      type: 'reserve',
+      market_id: 42,
+      question: 'Спартак обыграет Зенит?',
+      created_at: '2026-09-16T12:00:00.000Z',
+      amount_nano: -100_000_000_000,
+      amount: -100,
+      display_nano: -100_000_000_000,
+      display_amount: -100,
+    })
+    expect(row.action).toBe('Заявка создана')
+    expect(row.amountTon).toBe(-100)
+  })
+})
+
+describe('create market payload', () => {
+  it('sends P2P public/unlisted values the backend already supports', () => {
+    const closeAt = new Date('2026-09-20T17:00:00.000Z')
+    const payload = buildCreateMarketPayload({
+      question: 'Спартак обыграет Зенит?',
+      category: 'other',
+      outcomeA: 'Да',
+      outcomeB: 'Нет',
+      closeAt,
+      visibility: 'unlisted',
+      description: 'По протоколу.',
+    })
+    expect(payload).toEqual({
+      mechanism: 'p2p',
+      question: 'Спартак обыграет Зенит?',
+      description: 'По протоколу.',
+      category: 'unique',
+      outcomes: ['Да', 'Нет'],
+      close_at: closeAt.toISOString(),
+      visibility: 'unlisted',
+    })
+  })
+
+  it('does not send UI-only private visibility', () => {
+    expect(backendVisibilityOrUnavailable('private')).toEqual({ value: 'public', unsupported: true })
+    expect(backendVisibilityOrUnavailable('unlisted')).toEqual({ value: 'unlisted', unsupported: false })
+  })
+
+  it('preserves unlisted share token from the backend response', () => {
+    const view = mapMarketOut(
+      market({
+        visibility: 'unlisted',
+        share_token: 'share-token-abc',
+      }),
+      now,
+    )
+    expect(view.shareToken).toBe('share-token-abc')
+    expect(view.visibility).toBe('unlisted')
+  })
+})
+
+describe('admin visibility', () => {
+  it('shows admin from backend is_admin and hides it otherwise', () => {
+    expect(isAdminAccount({ is_admin: true })).toBe(true)
+    expect(isAdminAccount({ isAdmin: true })).toBe(true)
+    expect(isAdminAccount({ is_admin: false })).toBe(false)
+    expect(isAdminAccount(null)).toBe(false)
+  })
+})
+
+describe('money payload', () => {
+  it('serializes TON without inventing extra dust', () => {
+    expect(moneyForOrder(100)).toBe('100')
+    expect(moneyForOrder(10.5)).toBe('10.5')
   })
 })

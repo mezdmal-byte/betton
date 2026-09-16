@@ -1,28 +1,40 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { mapAccountOut } from '../api/adapters'
+import { getHealth } from '../api/account'
 import { getMarketByShare } from '../api/markets'
-import { rememberShareToken } from '../api/share'
+import { queryKeys } from '../api/query'
+import { copyShareLink, rememberShareToken, telegramShareUrl } from '../api/share'
 import { COPY } from '../lib/constants'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
-import { CreateMarketScreen } from '../screens/CreateMarketScreen'
-import { PortfolioScreen } from '../screens/PortfolioScreen'
-import { ProfileScreen } from '../screens/ProfileScreen'
 import { bootTelegramWebApp, hasTelegramInitData, readShareTokenFromContext } from '../telegram/webapp'
 import type { AccountFixture } from '../types/account'
-import type { MarketFixture } from '../types/market'
+import type { MarketFixture, OutcomeSide } from '../types/market'
+import type { MarketOut } from '../api/types'
+import { ConnectedCreateMarketScreen } from './ConnectedCreateMarketScreen'
 import { ConnectedMarketDetailScreen } from './ConnectedMarketDetailScreen'
 import { ConnectedMarketsScreen } from './ConnectedMarketsScreen'
 import type { FeedViewState } from './ConnectedMarketsScreen'
+import { ConnectedModerationScreen } from './ConnectedModerationScreen'
+import { ConnectedMyMarketsScreen } from './ConnectedMyMarketsScreen'
+import { ConnectedOwnPriceScreen } from './ConnectedOwnPriceScreen'
+import { ConnectedPortfolioScreen } from './ConnectedPortfolioScreen'
+import { ConnectedProfileScreen } from './ConnectedProfileScreen'
+import { CreateMarketResult } from './CreateMarketResult'
 import { useAccount, useAuthExpired, useSession } from './session'
 import styles from './ConnectedApp.module.css'
 
 type Route =
   | { name: 'markets' }
   | { name: 'create' }
+  | { name: 'create-result'; market: MarketOut }
   | { name: 'portfolio' }
   | { name: 'profile'; from: 'markets' | 'create' | 'portfolio' | 'detail' }
   | { name: 'detail'; marketId: number }
+  | { name: 'own-price'; marketId: number; side: OutcomeSide }
+  | { name: 'moderation' }
+  | { name: 'my-markets' }
 
 const GUEST_ACCOUNT: AccountFixture = {
   displayName: 'Гость',
@@ -32,8 +44,8 @@ const GUEST_ACCOUNT: AccountFixture = {
   inPositionsTon: 0,
   inOrdersTon: 0,
   creatorIncomeTon: 0,
-  eventsCreated: 0,
-  createdVolumeTon: 0,
+  eventsCreated: null,
+  createdVolumeTon: null,
   isAdmin: false,
 }
 
@@ -49,6 +61,10 @@ export function ConnectedApp() {
   const session = useSession(hasInitData)
   const authExpired = useAuthExpired()
   const accountQuery = useAccount(session.user?.id)
+  const healthQuery = useQuery({
+    queryKey: queryKeys.health,
+    queryFn: getHealth,
+  })
 
   useEffect(() => {
     bootTelegramWebApp()
@@ -90,12 +106,21 @@ export function ConnectedApp() {
   }
 
   const openProfile = () => {
-    const from = route.name === 'profile' ? route.from : route.name === 'detail' ? 'detail' : route.name
+    const from =
+      route.name === 'profile'
+        ? route.from
+        : route.name === 'detail' || route.name === 'own-price'
+          ? 'detail'
+          : route.name === 'create' || route.name === 'create-result'
+            ? 'create'
+            : route.name === 'portfolio'
+              ? 'portfolio'
+              : 'markets'
     setRoute({ name: 'profile', from })
   }
 
-  const openMarket = (market: MarketFixture) => {
-    const id = Number(market.id)
+  const openMarket = (market: MarketFixture | number) => {
+    const id = typeof market === 'number' ? market : Number(market.id)
     if (!Number.isFinite(id)) return
     setRoute({ name: 'detail', marketId: id })
   }
@@ -119,6 +144,10 @@ export function ConnectedApp() {
     )
   }
 
+  const availableTon = mappedAccount?.availableTon ?? 0
+  const isAdmin = Boolean(mappedAccount?.isAdmin)
+  const botUsername = healthQuery.data?.bot_username
+
   return (
     <div className={styles.root}>
       {route.name === 'markets' ? (
@@ -126,36 +155,93 @@ export function ConnectedApp() {
           account={account}
           accountState={accountState}
           personalized={hasInitData}
+          userId={session.user?.id}
+          availableTon={availableTon}
           feedView={feedView}
           onFeedViewChange={setFeedView}
           onNavChange={goTab}
           onProfileClick={openProfile}
           onSelectMarket={openMarket}
+          onOwnPrice={(marketId, side) => setRoute({ name: 'own-price', marketId, side })}
         />
       ) : null}
       {route.name === 'create' ? (
-        <CreateMarketScreen onBack={() => setRoute({ name: 'markets' })} submitDisabled />
+        <ConnectedCreateMarketScreen
+          enabled={accountState === 'ready'}
+          onBack={() => setRoute({ name: 'markets' })}
+          onCreated={(market) => setRoute({ name: 'create-result', market })}
+        />
+      ) : null}
+      {route.name === 'create-result' ? (
+        <CreateMarketResult
+          market={route.market}
+          shareLink={telegramShareUrl(botUsername, route.market.share_token)}
+          onOpen={() => {
+            if (route.market.status === 'pending') setRoute({ name: 'my-markets' })
+            else setRoute({ name: 'detail', marketId: route.market.id })
+          }}
+          onBack={() => setRoute({ name: 'markets' })}
+          onCopy={() => {
+            void copyShareLink(telegramShareUrl(botUsername, route.market.share_token))
+          }}
+        />
       ) : null}
       {route.name === 'portfolio' ? (
-        <PortfolioScreen
-          account={mappedAccount ?? GUEST_ACCOUNT}
+        <ConnectedPortfolioScreen
+          userId={session.user?.id}
+          mappedAccount={mappedAccount}
           accountState={accountState}
-          positions={[]}
-          orders={[]}
-          history={[]}
           onNavChange={goTab}
           onProfileClick={openProfile}
+          onSelectMarket={(marketId) => setRoute({ name: 'detail', marketId })}
         />
       ) : null}
       {route.name === 'profile' ? (
-        <ProfileScreen
+        <ConnectedProfileScreen
           account={mappedAccount ?? GUEST_ACCOUNT}
           accountState={accountState === 'ready' ? 'ready' : 'unauthenticated'}
+          userId={session.user?.id}
           onBack={closeProfile}
+          onMenu={(id) => {
+            if (id === 'events') setRoute({ name: 'my-markets' })
+            else if (id === 'moderation' && isAdmin) setRoute({ name: 'moderation' })
+            else if (id === 'wallet') setRoute({ name: 'portfolio' })
+          }}
+        />
+      ) : null}
+      {route.name === 'my-markets' ? (
+        <ConnectedMyMarketsScreen
+          userId={session.user?.id}
+          onBack={() => setRoute({ name: 'profile', from: 'markets' })}
+          onOpenMarket={(marketId) => setRoute({ name: 'detail', marketId })}
+        />
+      ) : null}
+      {route.name === 'moderation' ? (
+        <ConnectedModerationScreen
+          enabled={isAdmin}
+          onBack={() => setRoute({ name: 'profile', from: 'markets' })}
+          onOpenMarket={(marketId) => setRoute({ name: 'detail', marketId })}
         />
       ) : null}
       {route.name === 'detail' ? (
-        <ConnectedMarketDetailScreen marketId={route.marketId} onBack={() => setRoute({ name: 'markets' })} />
+        <ConnectedMarketDetailScreen
+          marketId={route.marketId}
+          isAdmin={isAdmin}
+          userId={session.user?.id}
+          availableTon={availableTon}
+          onBack={() => setRoute({ name: 'markets' })}
+          onOwnPrice={(side) => setRoute({ name: 'own-price', marketId: route.marketId, side })}
+        />
+      ) : null}
+      {route.name === 'own-price' ? (
+        <ConnectedOwnPriceScreen
+          marketId={route.marketId}
+          initialSide={route.side}
+          availableTon={availableTon}
+          userId={session.user?.id}
+          onBack={() => setRoute({ name: 'detail', marketId: route.marketId })}
+          onPlaced={() => setRoute({ name: 'detail', marketId: route.marketId })}
+        />
       ) : null}
     </div>
   )

@@ -1,52 +1,122 @@
 # BetTON React UI
 
-Design v1 is frozen. `feature/react-api-readonly` connects the accepted screens to the existing FastAPI backend for **read-only** product flows. Storybook stays fixture-driven and offline.
+Design v1 is frozen. `feature/react-full-preview` connects the accepted screens to **existing** FastAPI write+read endpoints for a Telegram showcase under `/v2/`. Storybook stays fixture-driven and offline.
+
+The legacy Mini App remains at `/`. Do not treat this preview as a replacement.
 
 ```bash
 npm install
-npm run dev
-npm run storybook
+npm run build
 npm test
-npm run test:visual
+npm run storybook
 ```
 
-## Local QA (do not change the user database)
+## Production preview path
 
-Terminal 1 — existing FastAPI app on port 8000:
+Vite `base` is `/v2/`. FastAPI serves `frontend/dist` at `/v2/` from the same process as the legacy Mini App.
 
-```bash
-# from repo root, with the project venv and .env already configured
-.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+/       = legacy Mini App (rollback)
+/v2/    = React preview
 ```
 
-Terminal 2 — React Vite app (proxies `/markets`, `/auth`, `/users`, `/health` to that server):
+Runtime is FastAPI + built static assets + the existing Cloudflare tunnel. Do not keep a Vite dev server running as production.
+
+### Build
 
 ```bash
 cd frontend
-copy .env.example .env
-npm run dev
+npm install
+npm run build
 ```
 
-Open the Vite URL (default `http://127.0.0.1:5173`). Do not put Cloudflare tunnel URLs or Telegram `initData` in committed files.
+### Always-on launcher
 
-### Checks
+From the repo root, after a DB backup if you will place real orders:
 
-1. Public Markets feed loads from `GET /markets`.
-2. **Новые / Популярные / Скоро** request `sort=new|popular|closing`.
-3. Categories: Все omits `category`; Спорт → `sport`; Политика → `politics`; Другое → `unique`.
-4. Search sends `q=`.
-5. P2P cards use `best_offers` for quotes/liquidity.
-6. Markets without a best offer render the existing no-liquidity state.
-7. Opening a card loads `GET /markets/{id}` (and `GET /markets/{id}/orderbook` for P2P, read-only).
-8. Ordinary browser has no Telegram `initData`: header balance is `—`, never fixture `1.2K TON`.
-9. Telegram Mini App sends `Authorization: tma <initData>` from `window.Telegram.WebApp.initData` and `POST /auth/telegram`.
-10. After auth, header balance comes from `GET /users/{id}/account` (`balance_nano`).
+```bat
+start-betton-always-on.bat
+```
 
-Unlisted share links use `?share=` / Telegram `start_param` and `X-Market-Share-Token`, matching the existing Mini App. Share resolve (`GET /markets/share/{token}`) still requires Telegram auth.
+The launcher builds `frontend/dist` only when the build is missing or older than `frontend/src`. Then it starts uvicorn + cloudflared with the existing watchdog.
 
-Quick Trade / Create / Own Price CTAs are visual or disabled in this pass. They must not POST orders or create markets.
+Open:
 
-## Known limitation: legacy LMSR
+- legacy Mini App: `<public-base>/`
+- React preview: `<public-base>/v2/`
 
-The existing backend may still expose `mechanism="lmsr"` markets. The React adapter is P2P-oriented and uses `best_offers` / `available_to_me`. That is not LMSR parity. Do not treat missing P2P offers as a reason to invent AMM odds or fake liquidity. An explicit LMSR compatibility decision is deferred.
+Do not commit tunnel URLs.
 
+## LMSR compatibility
+
+Old `mechanism="lmsr"` markets are **not** rendered as P2P books. React does not invent AMM odds or `best_offers`. Opening an LMSR market shows an explicit compatibility state and a button to the legacy Mini App at `/`.
+
+P2P is the primary new-product path in this preview.
+
+## Wired existing endpoints
+
+- `POST /auth/telegram`
+- `GET /users/{id}/account|positions|orders|transactions|settlements|markets`
+- `GET /markets`, `GET /markets/{id}`, `GET /markets/share/{token}`
+- `GET /markets/{id}/orderbook`
+- `POST /markets/{id}/orders/quote`
+- `POST /markets/{id}/orders`
+- `POST /orders/{id}/cancel`
+- `POST /markets`
+- `GET /moderation/markets`
+- `POST /markets/{id}/approve|reject|close|resolve|cancel`
+- `GET /creators/{id}`
+- `GET /health`
+
+Auth remains `Authorization: tma <initData>`. Unlisted access remains `X-Market-Share-Token` / `?share=` / Telegram `start_param`.
+
+## Manual QA (Telegram `/v2/`)
+
+Before write-QA: back up the live SQLite/Postgres file. Tests never use that DB.
+
+AUTH
+
+- real Telegram auth
+- header balance from account
+- expired session overlay
+
+FEED
+
+- search / filter / sort
+- market detail
+- LMSR card opens compatibility, not fake P2P quotes
+
+QUICK TRADE
+
+- no liquidity
+- full fill
+- partial fill (backend preview)
+- stale quote
+- insufficient balance
+- success; balance refreshes from backend (no optimistic money)
+
+OWN PRICE
+
+- create resting limit
+- partial immediate + remainder from backend preview
+- cancel remainder from Portfolio with confirmation
+
+PORTFOLIO
+
+- positions / orders / history
+- empty / loading / error
+
+CREATE
+
+- public P2P → pending moderation state
+- unlisted P2P → returned share token preserved
+- open unlisted via share token
+
+ADMIN
+
+- moderation only if `is_admin`
+- approve / reject / close / resolve / void where backend already allows
+
+ROLLBACK
+
+- `/` still serves the legacy Mini App throughout

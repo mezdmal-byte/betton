@@ -25,4 +25,8 @@ describe('closed and locked markets', () => {
     expect(marketOutcomeQuoteState(marketResolved, 'a', 'a')).toBe('winner')
     expect(marketOutcomeQuoteState(marketResolved, 'b', 'a')).toBe('resolved-loser')
   })
+
+  it('does not treat LMSR markets as P2P-tradable', () => {
+    expect(marketIsTradable({ ...marketYesNo, mechanism: 'lmsr' })).toBe(false)
+  })
 })

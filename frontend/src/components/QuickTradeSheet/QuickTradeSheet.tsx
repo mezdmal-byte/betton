@@ -1,7 +1,7 @@
 import { X } from 'lucide-react'
 import { AMOUNT_PRESETS, FEE_COPY } from '../../lib/constants'
 import { splitFill } from '../../lib/fill'
-import { formatInteger, formatOdds, formatPayout, formatTon } from '../../lib/format'
+import { formatInteger, formatOdds, formatPayout, formatTon, formatTonFull } from '../../lib/format'
 import { outcomeIsExecutable } from '../../lib/quote'
 import type { MarketFixture, OutcomeSide } from '../../types/market'
 import { AmountInput } from '../AmountInput/AmountInput'
@@ -18,6 +18,8 @@ export type QuickTradeState =
   | 'processing'
   | 'stale-quote'
   | 'insufficient-balance'
+  | 'success'
+  | 'error'
 
 export type QuickTradeSheetProps = {
   market: MarketFixture
@@ -29,8 +31,14 @@ export type QuickTradeSheetProps = {
   onClose?: () => void
   onOwnPrice?: () => void
   onRefreshQuote?: () => void
+  onPlace?: () => void
   demoMode?: boolean
   quotesLoading?: boolean
+  availableTon?: number | null
+  previewMatchedTon?: number | null
+  previewRestTon?: number | null
+  previewPayoutTon?: number | null
+  errorMessage?: string | null
 }
 
 function outcomeOf(market: MarketFixture, side: OutcomeSide) {
@@ -47,15 +55,23 @@ export function QuickTradeSheet({
   onClose,
   onOwnPrice,
   onRefreshQuote,
+  onPlace,
   demoMode = false,
   quotesLoading = false,
+  availableTon = null,
+  previewMatchedTon = null,
+  previewRestTon = null,
+  previewPayoutTon = null,
+  errorMessage = null,
 }: QuickTradeSheetProps) {
   const selected = outcomeOf(market, selectedSide)
   const other = outcomeOf(market, selectedSide === 'a' ? 'b' : 'a')
   const executable = !quotesLoading && outcomeIsExecutable(selected)
   const noLiquidity = !quotesLoading && (state === 'no-liquidity' || !executable)
   const stale = state === 'stale-quote'
-  const { matched, rest } = splitFill(amount, selected.liquidityTon)
+  const localSplit = splitFill(amount, selected.liquidityTon)
+  const matched = previewMatchedTon ?? localSplit.matched
+  const rest = previewRestTon ?? localSplit.rest
   const canPlace =
     !demoMode &&
     !quotesLoading &&
@@ -63,17 +79,25 @@ export function QuickTradeSheet({
     !stale &&
     state !== 'insufficient-balance' &&
     state !== 'processing' &&
-    state !== 'no-liquidity'
-  const payout = quotesLoading || !executable || stale ? '—' : formatPayout(amount, selected.odds as number)
+    state !== 'no-liquidity' &&
+    state !== 'success'
+  const payout =
+    quotesLoading || !executable || stale
+      ? '—'
+      : previewPayoutTon != null
+        ? formatTon(previewPayoutTon)
+        : formatPayout(amount, selected.odds as number)
   const cta = demoMode
     ? 'Ставки пока недоступны'
     : state === 'processing'
       ? 'Ставим…'
-      : stale
-        ? 'Обновить предложение'
-        : noLiquidity
-          ? 'Нет ликвидности'
-          : `Поставить ${amount} TON`
+      : state === 'success'
+        ? 'Исполнено'
+        : stale
+          ? 'Обновить предложение'
+          : noLiquidity
+            ? 'Нет ликвидности'
+            : `Поставить ${amount} TON`
 
   return (
     <section className={styles.sheet} aria-label="Быстрая ставка">
@@ -86,6 +110,8 @@ export function QuickTradeSheet({
       </header>
 
       {stale ? <p className={styles.banner}>Коэффициент изменился. Обновите предложение.</p> : null}
+      {state === 'success' ? <p className={styles.banner}>Заявка обработана. Баланс обновлён с сервера.</p> : null}
+      {state === 'error' && errorMessage ? <p className={styles.banner}>{errorMessage}</p> : null}
       {state === 'partial' && executable ? (
         <p className={styles.note}>
           Сейчас доступно {formatTon(selected.liquidityTon)}. Исполнится {formatInteger(matched)}{' '}
@@ -124,7 +150,9 @@ export function QuickTradeSheet({
         value={String(amount)}
         onChange={(value) => onAmountChange?.(Number(value) || 0)}
         error={
-          state === 'insufficient-balance' ? 'Недостаточно средств · доступно 1 240 TON' : undefined
+          state === 'insufficient-balance'
+            ? `Недостаточно средств · доступно ${formatTonFull(availableTon)}`
+            : undefined
         }
       />
 
@@ -150,7 +178,7 @@ export function QuickTradeSheet({
         fullWidth
         loading={!demoMode && state === 'processing'}
         disabled={demoMode || (stale ? false : !canPlace)}
-        onClick={demoMode ? undefined : stale ? onRefreshQuote : undefined}
+        onClick={demoMode ? undefined : stale ? onRefreshQuote : onPlace}
       >
         {cta}
       </Button>

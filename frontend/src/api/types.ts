@@ -44,6 +44,7 @@ export type MarketOut = {
   visibility?: string
   share_token?: string | null
   cancellation_reason?: string | null
+  rejection_reason?: string | null
 }
 
 export type UserOut = {
@@ -102,4 +103,128 @@ export type MarketsPage = {
   total: number
   limit: number
   offset: number
+}
+
+export type OrderPreviewStats = {
+  matched: number
+  remaining: number
+  payout: number
+  average_odds?: number | null
+  worst_odds?: number | null
+}
+
+export type OrderPreviewOut = {
+  limit_odds: number
+  requested: OrderPreviewStats
+  available: OrderPreviewStats
+}
+
+export type OrderKind = 'limit' | 'ioc'
+
+export type OrderPlaceBody = {
+  outcome: number
+  money: string | number
+  odds: string | number
+  kind: OrderKind
+  request_id: string
+}
+
+export type OrderPreviewBody = {
+  outcome: number
+  money: string | number
+  odds: string | number
+}
+
+export type OrderOut = {
+  id: number
+  market_id: number
+  outcome: number
+  odds: number
+  amount: number
+  remaining: number
+  filled: number
+  refunded: number
+  kind: string
+  status: string
+  request_id: string
+  created_at?: string | null
+  question?: string
+  outcome_name?: string
+}
+
+export type PositionOut = {
+  market_id: number
+  shares: number[]
+  costs: number[]
+  shares_yes?: number
+  shares_no?: number
+  cost_yes?: number
+  cost_no?: number
+  claimed: boolean
+  tip_paid: number
+  market: MarketOut
+}
+
+export type TransactionOut = {
+  id: string
+  type: string
+  market_id?: number | null
+  question?: string
+  created_at?: string | null
+  amount_nano: number
+  amount: number
+  display_nano: number
+  display_amount: number
+  informational?: boolean
+}
+
+export type SettlementOut = {
+  market_id: number
+  question: string
+  winning_outcome: string
+  chosen_outcomes: string[]
+  stakes_total: number
+  payout: number
+  tip: number
+  credited: number
+  result: number
+  resolved_at?: string | null
+  settlement_kind?: string | null
+  cancellation_reason?: string | null
+}
+
+export type CreatorStatsOut = {
+  id: number
+  display_name: string
+  telegram_username?: string | null
+  photo_url?: string | null
+  rank?: number | null
+  markets_created: number
+  volume: number
+  volume_nano: number
+  fills: number
+  unique_participants: number
+  active_markets: number
+  completed_markets: number
+}
+
+export type CreatorProfileOut = {
+  creator: CreatorStatsOut
+  markets: MarketOut[]
+}
+
+export type CreateMarketBody = {
+  mechanism: 'p2p'
+  question: string
+  description: string
+  category: string
+  outcomes: string[]
+  close_at: string
+  visibility: 'public' | 'unlisted'
+}
+
+export type HealthOut = {
+  status: string
+  webapp?: string
+  bot_username?: string
 }

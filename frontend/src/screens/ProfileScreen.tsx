@@ -19,12 +19,14 @@ export type ProfileScreenProps = {
   account?: AccountFixture
   onBack?: () => void
   accountState?: 'ready' | 'unauthenticated'
+  onMenu?: (id: string) => void
 }
 
 export function ProfileScreen({
   account = accountUser,
   onBack,
   accountState = 'ready',
+  onMenu,
 }: ProfileScreenProps) {
   const menu = [
     { id: 'public', label: 'Публичный профиль' },
@@ -60,11 +62,11 @@ export function ProfileScreen({
         <dl className={styles.metrics}>
           <div>
             <dt>События</dt>
-            <dd>{formatInteger(account.eventsCreated)}</dd>
+            <dd>{account.eventsCreated == null ? '—' : formatInteger(account.eventsCreated)}</dd>
           </div>
           <div>
             <dt>Оборот</dt>
-            <dd>{formatTon(account.createdVolumeTon)}</dd>
+            <dd>{account.createdVolumeTon == null ? '—' : formatTon(account.createdVolumeTon)}</dd>
           </div>
           <div>
             <dt>Доход автора</dt>
@@ -79,7 +81,7 @@ export function ProfileScreen({
           {menu
             .filter((item) => item.id !== 'help')
             .map((item) => (
-              <button key={item.id} type="button" className={styles.menuItem}>
+              <button key={item.id} type="button" className={styles.menuItem} onClick={() => onMenu?.(item.id)}>
                 <span>{item.label}</span>
                 <ChevronRight size={18} strokeWidth={1.8} aria-hidden="true" />
               </button>

@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
@@ -40,6 +41,37 @@ from app.services import discovery, history, market_access, market_service, p2p_
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+REACT_DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+
+class ReactPreviewStatic(StaticFiles):
+    """Serve the Vite production build under /v2/ without replacing legacy /."""
+
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code == 404 and not Path(path).suffix:
+                return await super().get_response("index.html", scope)
+            raise
+
+
+def mount_react_preview(application: FastAPI, dist_dir: Path | None = None) -> None:
+    """Host frontend/dist at /v2/. Does not mount over /, /static/, or API routes."""
+    root = REACT_DIST_DIR if dist_dir is None else dist_dir
+    index = root / "index.html"
+    if not index.is_file():
+        @application.get("/v2", include_in_schema=False)
+        @application.get("/v2/", include_in_schema=False)
+        @application.get("/v2/{rest:path}", include_in_schema=False)
+        def react_preview_unbuilt(rest: str = ""):
+            _ = rest
+            raise HTTPException(
+                status_code=503,
+                detail="React preview is not built. From frontend/ run: npm run build",
+            )
+        return
+    application.mount("/v2", ReactPreviewStatic(directory=str(root), html=True), name="v2")
 
 
 def _maybe_bot():
@@ -545,3 +577,6 @@ def list_orders_endpoint(user_id: int, current_user: User = Depends(get_current_
     if user_id != current_user.id:
         raise HTTPException(403, "Недостаточно прав")
     return p2p_service.list_orders(db, user_id)
+
+
+mount_react_preview(app)

@@ -6,12 +6,12 @@ import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
 import type { AccountOut } from '../api/types'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
-import { QuickTradeSheet } from '../components/QuickTradeSheet/QuickTradeSheet'
-import { marketIsTradable, outcomeIsExecutable } from '../lib/quote'
+import { marketIsP2P, marketIsTradable } from '../lib/quote'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { MarketsScreen } from '../screens/MarketsScreen'
 import overlayStyles from '../screens/QuickTradeScreen.module.css'
 import type { MarketFixture, OutcomeSide } from '../types/market'
+import { ConnectedQuickTradeSheet } from './ConnectedQuickTrade'
 
 export type FeedViewState = {
   query: string
@@ -23,22 +23,28 @@ export type ConnectedMarketsScreenProps = {
   account?: AccountOut | null
   accountState: 'ready' | 'loading' | 'unauthenticated'
   personalized: boolean
+  userId?: number
+  availableTon?: number
   feedView: FeedViewState
   onFeedViewChange: (next: FeedViewState) => void
   onNavChange: (id: NavId) => void
   onProfileClick: () => void
   onSelectMarket: (market: MarketFixture) => void
+  onOwnPrice: (marketId: number, side: OutcomeSide) => void
 }
 
 export function ConnectedMarketsScreen({
   account,
   accountState,
   personalized,
+  userId,
+  availableTon = 0,
   feedView,
   onFeedViewChange,
   onNavChange,
   onProfileClick,
   onSelectMarket,
+  onOwnPrice,
 }: ConnectedMarketsScreenProps) {
   const [trade, setTrade] = useState<{ market: MarketFixture; side: OutcomeSide; amount: number } | null>(
     null,
@@ -86,12 +92,13 @@ export function ConnectedMarketsScreen({
   const bookQuery = useQuery({
     queryKey: [...queryKeys.orderbook(tradeMarketId), tradeShare, 'quick-trade'],
     queryFn: () => getOrderbook(tradeMarketId, tradeShare),
-    enabled: Boolean(trade && personalized && Number.isFinite(tradeMarketId)),
+    enabled: Boolean(trade && personalized && Number.isFinite(tradeMarketId) && marketIsP2P(trade.market)),
   })
 
   const quotesLoading = Boolean(trade && personalized && bookQuery.isPending)
   const sheetMarket = useMemo(() => {
     if (!trade) return null
+    if (!marketIsP2P(trade.market)) return trade.market
     if (!personalized) return trade.market
     if (bookQuery.isPending) {
       return {
@@ -103,16 +110,6 @@ export function ConnectedMarketsScreen({
     if (bookQuery.isSuccess) return applyPersonalizedExecutableQuotes(trade.market, bookQuery.data)
     return applyPersonalizedExecutableQuotes(trade.market, { available_to_me: [[], []] })
   }, [bookQuery.data, bookQuery.isPending, bookQuery.isSuccess, personalized, trade])
-
-  const selectedOutcome = sheetMarket
-    ? trade?.side === 'a'
-      ? sheetMarket.outcomeA
-      : sheetMarket.outcomeB
-    : null
-  const tradeState =
-    !quotesLoading && sheetMarket && selectedOutcome && !outcomeIsExecutable(selectedOutcome)
-      ? 'no-liquidity'
-      : 'normal'
 
   const feedState =
     feed.isPending && markets.length === 0
@@ -135,7 +132,10 @@ export function ConnectedMarketsScreen({
         onCategoryChange={(category) => onFeedViewChange({ ...feedView, category })}
         onSelectMarket={onSelectMarket}
         onSelectOutcome={(market, side) => {
-          if (!marketIsTradable(market)) return
+          if (!marketIsTradable(market) || !marketIsP2P(market)) {
+            onSelectMarket(market)
+            return
+          }
           setTrade({ market, side, amount: 100 })
         }}
         onNavChange={onNavChange}
@@ -154,16 +154,22 @@ export function ConnectedMarketsScreen({
       />
       {trade && sheetMarket ? (
         <div className={overlayStyles.overlay}>
-          <QuickTradeSheet
+          <ConnectedQuickTradeSheet
             market={sheetMarket}
             selectedSide={trade.side}
             amount={trade.amount}
-            state={tradeState}
-            demoMode
+            availableTon={availableTon}
+            userId={userId}
             quotesLoading={quotesLoading}
             onSelectSide={(side) => setTrade({ ...trade, side })}
             onAmountChange={(amount) => setTrade({ ...trade, amount })}
             onClose={() => setTrade(null)}
+            onOwnPrice={() => {
+              const id = Number(trade.market.id)
+              const side = trade.side
+              setTrade(null)
+              if (Number.isFinite(id)) onOwnPrice(id, side)
+            }}
           />
         </div>
       ) : null}

@@ -50,7 +50,12 @@ export type PortfolioScreenProps = {
   history?: HistoryFixture[]
   onNavChange?: (id: NavId) => void
   onProfileClick?: () => void
+  onCancelOrder?: (order: OrderFixture) => void
+  onSelectMarket?: (marketId: number) => void
   accountState?: 'ready' | 'loading' | 'unauthenticated'
+  listState?: 'ready' | 'loading' | 'error'
+  onRetry?: () => void
+  cancellingOrderId?: string | null
 }
 
 export function PortfolioScreen({
@@ -61,7 +66,12 @@ export function PortfolioScreen({
   history = portfolioHistory,
   onNavChange,
   onProfileClick,
+  onCancelOrder,
+  onSelectMarket,
   accountState = 'ready',
+  listState = 'ready',
+  onRetry,
+  cancellingOrderId = null,
 }: PortfolioScreenProps) {
   const [currentTab, setCurrentTab] = useState<PortfolioTab>(tab)
   const items =
@@ -114,23 +124,40 @@ export function PortfolioScreen({
           onChange={(id) => setCurrentTab(id as PortfolioTab)}
           ariaLabel="Портфель"
         />
-        {items.length === 0 ? (
+        {listState === 'loading' ? (
+          <StatusMessage tone="loading" title="Загрузка">
+            Обновляем данные.
+          </StatusMessage>
+        ) : listState === 'error' ? (
+          <>
+            <StatusMessage tone="error" title="Не удалось загрузить">
+              Проверьте соединение и попробуйте снова.
+            </StatusMessage>
+            {onRetry ? (
+              <Button variant="secondary" onClick={onRetry}>
+                Повторить
+              </Button>
+            ) : null}
+          </>
+        ) : items.length === 0 ? (
           <StatusMessage title={EMPTY[currentTab].title}>{EMPTY[currentTab].body}</StatusMessage>
         ) : currentTab === 'positions' ? (
           <ul className={styles.list}>
             {positions.map((item) => (
               <li key={item.id} className={styles.row}>
-                <p className={styles.question}>{item.question}</p>
-                <p className={styles.meta}>
-                  {item.outcomeLabel}
-                  <span>{formatTonFull(item.amountTon)}</span>
-                </p>
-                <p className={styles.detail}>
-                  Средний коэффициент {formatOdds(item.avgOdds)}
-                </p>
-                <p className={styles.detail}>
-                  Потенциальная выплата {formatTonFull(item.potentialPayoutTon)}
-                </p>
+                <button type="button" className={styles.rowButton} onClick={() => onSelectMarket?.(item.marketId)}>
+                  <p className={styles.question}>{item.question}</p>
+                  <p className={styles.meta}>
+                    {item.outcomeLabel}
+                    <span>{formatTonFull(item.amountTon)}</span>
+                  </p>
+                  <p className={styles.detail}>
+                    Средний коэффициент {formatOdds(item.avgOdds)}
+                  </p>
+                  <p className={styles.detail}>
+                    Потенциальная выплата {formatTonFull(item.potentialPayoutTon)}
+                  </p>
+                </button>
               </li>
             ))}
           </ul>
@@ -145,9 +172,16 @@ export function PortfolioScreen({
                 </p>
                 <div className={styles.orderFoot}>
                   <span className={styles.status}>{item.status}</span>
-                  <Button variant="ghost" size="md">
-                    Отменить
-                  </Button>
+                  {item.canCancel ? (
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      disabled={cancellingOrderId === item.id}
+                      onClick={() => onCancelOrder?.(item)}
+                    >
+                      {cancellingOrderId === item.id ? 'Отменяем…' : 'Отменить'}
+                    </Button>
+                  ) : null}
                 </div>
               </li>
             ))}

@@ -1,6 +1,6 @@
 export type OutcomeSide = 'a' | 'b'
 
-export type MarketStatus = 'open' | 'closing' | 'closed' | 'resolved' | 'cancelled'
+export type MarketStatus = 'open' | 'closing' | 'closed' | 'resolved' | 'cancelled' | 'pending' | 'rejected'
 
 export type OutcomeQuoteState =
   | 'default'
@@ -39,6 +39,11 @@ export type MarketFixture = {
   description: string
   resolution: string
   closeLabel: string
+  mechanism?: string
+  visibility?: string
+  shareToken?: string | null
+  acceptingBets?: boolean
+  rejectionReason?: string | null
 }
 
 export type OrderBookLevel = {

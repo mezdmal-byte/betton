@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_DEV_PROXY_TARGET || 'http://127.0.0.1:8000'
 
   return {
+    base: '/v2/',
     plugins: [react()],
     resolve: {
       alias: {
@@ -20,6 +21,8 @@ export default defineConfig(({ mode }) => {
         '/users': proxyTarget,
         '/health': proxyTarget,
         '/creators': proxyTarget,
+        '/orders': proxyTarget,
+        '/moderation': proxyTarget,
       },
     },
   }

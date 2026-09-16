@@ -95,3 +95,16 @@
   background: var(--color-canvas);
   border-top: 1px solid var(--color-border-faint);
 }
+
+.visibilityNote,
+.error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.error {
+  color: var(--color-warning);
+  padding-bottom: var(--space-8);
+}
