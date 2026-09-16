@@ -1,0 +1,22 @@
+.root {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.item {
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+}
+
+.active {
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
