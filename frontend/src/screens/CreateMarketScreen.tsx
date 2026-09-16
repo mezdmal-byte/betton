@@ -1,7 +1,8 @@
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Info } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../components/Button/Button'
 import { Chip } from '../components/Chip/Chip'
+import { DateTimeField } from '../components/DateTimeField/DateTimeField'
 import { IconButton } from '../components/IconButton/IconButton'
 import { TextField } from '../components/TextField/TextField'
 import { defaultCreateDraft } from '../fixtures/account'
@@ -23,16 +24,24 @@ const VISIBILITY: Array<{ id: VisibilityId; label: string }> = [
 
 export type CreateMarketScreenProps = {
   draft?: CreateMarketDraft
+  feeOpen?: boolean
+  pickerOpen?: boolean
 }
 
-export function CreateMarketScreen({ draft = defaultCreateDraft }: CreateMarketScreenProps) {
+export function CreateMarketScreen({
+  draft = defaultCreateDraft,
+  feeOpen = false,
+  pickerOpen = false,
+}: CreateMarketScreenProps) {
   const [question, setQuestion] = useState(draft.question)
   const [category, setCategory] = useState(draft.category)
   const [outcomeA, setOutcomeA] = useState(draft.outcomeA)
   const [outcomeB, setOutcomeB] = useState(draft.outcomeB)
-  const [closeAt, setCloseAt] = useState(draft.closeAt)
+  const [closeAt] = useState(draft.closeAt)
   const [visibility, setVisibility] = useState<VisibilityId>(draft.visibility)
   const [description, setDescription] = useState(draft.description)
+  const [feeExpanded, setFeeExpanded] = useState(feeOpen)
+  const [picker, setPicker] = useState(pickerOpen)
 
   return (
     <div className={styles.screen}>
@@ -53,8 +62,10 @@ export function CreateMarketScreen({ draft = defaultCreateDraft }: CreateMarketS
         />
 
         <section className={styles.section}>
-          <span className={styles.sectionLabel}>Категория</span>
-          <div className={styles.pills} role="group" aria-label="Категория">
+          <span className={styles.sectionLabel} id="create-category-label">
+            Категория
+          </span>
+          <div className={styles.pills} role="group" aria-labelledby="create-category-label">
             {CATEGORIES.map((item) => (
               <Chip
                 key={item.id}
@@ -69,8 +80,10 @@ export function CreateMarketScreen({ draft = defaultCreateDraft }: CreateMarketS
         </section>
 
         <section className={styles.section}>
-          <span className={styles.sectionLabel}>Исходы</span>
-          <div className={styles.outcomes}>
+          <span className={styles.sectionLabel} id="create-outcomes-label">
+            Исходы
+          </span>
+          <div className={styles.outcomes} role="group" aria-labelledby="create-outcomes-label">
             <TextField
               id="create-outcome-a"
               className={styles.outcomeA}
@@ -88,16 +101,19 @@ export function CreateMarketScreen({ draft = defaultCreateDraft }: CreateMarketS
           </div>
         </section>
 
-        <TextField
+        <DateTimeField
           id="create-close"
           label="Закрытие"
           value={closeAt}
-          onChange={setCloseAt}
+          open={picker}
+          onOpenChange={setPicker}
         />
 
         <section className={styles.section}>
-          <span className={styles.sectionLabel}>Видимость</span>
-          <div className={styles.pills} role="group" aria-label="Видимость">
+          <span className={styles.sectionLabel} id="create-visibility-label">
+            Видимость
+          </span>
+          <div className={styles.pills} role="group" aria-labelledby="create-visibility-label">
             {VISIBILITY.map((item) => (
               <Chip
                 key={item.id}
@@ -122,8 +138,25 @@ export function CreateMarketScreen({ draft = defaultCreateDraft }: CreateMarketS
         />
 
         <div className={styles.fee}>
-          <p>{CREATOR_SHARE_COMPACT}</p>
-          <p>{CREATOR_SHARE_DETAIL}</p>
+          <div className={styles.feeRow}>
+            <p id="creator-fee-compact">{CREATOR_SHARE_COMPACT}</p>
+            <IconButton
+              label={
+                feeExpanded
+                  ? 'Скрыть объяснение вознаграждения автору'
+                  : 'Подробнее о вознаграждении автору'
+              }
+              size="md"
+              aria-expanded={feeExpanded}
+              aria-controls="creator-fee-detail"
+              onClick={() => setFeeExpanded((current) => !current)}
+            >
+              <Info size={16} strokeWidth={1.8} />
+            </IconButton>
+          </div>
+          {feeExpanded ? (
+            <p id="creator-fee-detail">{CREATOR_SHARE_DETAIL}</p>
+          ) : null}
         </div>
       </div>
       <div className={styles.actions}>

@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   min-height: var(--header-height);
-  padding: var(--space-8) var(--page-padding);
+  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
 }
 
 .brand {
@@ -155,21 +155,3 @@
   font-variant-numeric: tabular-nums;
 }
 
-.empty {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-32) 0;
-}
-
-.empty strong {
-  font-size: 16px;
-  font-weight: var(--font-weight-semibold);
-}
-
-.empty p {
-  margin: 0;
-  font-size: 13px;
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
-}

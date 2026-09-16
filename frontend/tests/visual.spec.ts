@@ -50,3 +50,22 @@ test.describe('layout 430x932', () => {
     })
   }
 })
+
+const LONG_CONTENT = [
+  'screens-markets--long-content',
+  'screens-marketdetail--long-content',
+  'screens-createmarket--long-content',
+  'screens-createmarket--keyboard',
+  'screens-profile--long-handle',
+] as const
+
+test.describe('long content overflow', () => {
+  for (const id of LONG_CONTENT) {
+    test(`${id} does not overflow`, async ({ page }) => {
+      await page.setViewportSize({ width: 430, height: 932 })
+      const shell = await openStory(page, id)
+      const overflow = await shell.evaluate((node) => node.scrollWidth > node.clientWidth + 1)
+      expect(overflow, `${id} should not overflow horizontally`).toBe(false)
+    })
+  }
+})

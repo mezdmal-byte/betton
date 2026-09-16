@@ -54,6 +54,11 @@
   --touch-preferred: 48px;
   --nav-height: 64px;
   --header-height: 56px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --pad-header-top: max(var(--space-8), var(--safe-top));
+  --pad-bar-bottom: max(var(--space-16), var(--safe-bottom));
+  --pad-nav-bottom: max(8px, var(--safe-bottom));
 
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
   --font-weight-regular: 400;

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Avatar } from '../components/Avatar/Avatar'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import { Button } from '../components/Button/Button'
+import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { Tabs } from '../components/Tabs/Tabs'
 import {
   accountUser,
@@ -97,10 +98,7 @@ export function PortfolioScreen({
           ariaLabel="Портфель"
         />
         {items.length === 0 ? (
-          <div className={styles.empty}>
-            <strong>{EMPTY[currentTab].title}</strong>
-            <p>{EMPTY[currentTab].body}</p>
-          </div>
+          <StatusMessage title={EMPTY[currentTab].title}>{EMPTY[currentTab].body}</StatusMessage>
         ) : currentTab === 'positions' ? (
           <ul className={styles.list}>
             {positions.map((item) => (

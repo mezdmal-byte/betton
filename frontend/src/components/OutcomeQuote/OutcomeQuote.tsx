@@ -55,6 +55,7 @@ export function OutcomeQuote({
       )}
       data-side={side}
       data-state={resolvedState}
+      aria-pressed={resolvedState === 'selected' || undefined}
       disabled={isDisabled}
       {...rest}
     >

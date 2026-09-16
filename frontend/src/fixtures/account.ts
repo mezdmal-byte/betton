@@ -5,7 +5,7 @@ import type {
   OrderFixture,
   PositionFixture,
 } from '../types/account'
-import { currentUser } from './markets'
+import { currentUser, marketLongQuestion } from './markets'
 
 export const accountUser: AccountFixture = {
   displayName: currentUser.displayName,
@@ -30,7 +30,7 @@ export const defaultCreateDraft: CreateMarketDraft = {
   category: 'sport',
   outcomeA: 'Да',
   outcomeB: 'Нет',
-  closeAt: '20 сен 2026, 20:00',
+  closeAt: '20 сен 2026 · 20:00',
   visibility: 'public',
   description: '',
 }
@@ -40,7 +40,7 @@ export const teamCreateDraft: CreateMarketDraft = {
   category: 'sport',
   outcomeA: 'Спартак',
   outcomeB: 'ЦСКА',
-  closeAt: '21 сен 2026, 18:00',
+  closeAt: '21 сен 2026 · 18:00',
   visibility: 'public',
   description: 'Победитель матча в основное время. Овертайм не учитывается.',
 }
@@ -50,7 +50,7 @@ export const privateCreateDraft: CreateMarketDraft = {
   category: 'sport',
   outcomeA: 'Да',
   outcomeB: 'Нет',
-  closeAt: '20 сен 2026, 20:00',
+  closeAt: '20 сен 2026 · 20:00',
   visibility: 'private',
   description: 'Победит команда, забившая больше голов в основное время. Ничья считается исходом «Нет».',
 }
@@ -116,3 +116,21 @@ export const portfolioHistory: HistoryFixture[] = [
     time: '3 дн. назад',
   },
 ]
+
+export const longCreateDraft: CreateMarketDraft = {
+  question: marketLongQuestion.question,
+  category: 'sport',
+  outcomeA: marketLongQuestion.outcomeA.label,
+  outcomeB: marketLongQuestion.outcomeB.label,
+  closeAt: '20 сен 2026 · 20:00',
+  visibility: 'public',
+  description: `${marketLongQuestion.description} ${marketLongQuestion.resolution} Ничья в основное время относится к исходу «Нет».`,
+}
+
+export const longHandleUser: AccountFixture = {
+  ...accountUser,
+  displayName: 'Александр Александрович',
+  handle: 'aleksandr.aleksandrovich',
+  initials: 'АА',
+}
+

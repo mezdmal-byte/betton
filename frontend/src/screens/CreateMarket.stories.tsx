@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { PhoneShell } from '../layouts/PhoneShell'
-import { privateCreateDraft, teamCreateDraft } from '../fixtures/account'
+import { longCreateDraft, privateCreateDraft, teamCreateDraft } from '../fixtures/account'
 import { CreateMarketScreen } from './CreateMarketScreen'
 
 const meta = {
@@ -35,6 +35,30 @@ export const Private: Story = {
   render: () => (
     <PhoneShell>
       <CreateMarketScreen draft={privateCreateDraft} />
+    </PhoneShell>
+  ),
+}
+
+export const FeeOpen: Story = {
+  render: () => (
+    <PhoneShell>
+      <CreateMarketScreen feeOpen />
+    </PhoneShell>
+  ),
+}
+
+export const LongContent: Story = {
+  render: () => (
+    <PhoneShell>
+      <CreateMarketScreen draft={longCreateDraft} />
+    </PhoneShell>
+  ),
+}
+
+export const Keyboard: Story = {
+  render: () => (
+    <PhoneShell height={508}>
+      <CreateMarketScreen />
     </PhoneShell>
   ),
 }

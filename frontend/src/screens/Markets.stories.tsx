@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { PhoneShell } from '../layouts/PhoneShell'
+import { marketLongLabels, marketLongQuestion } from '../fixtures/markets'
 import { MarketsScreen } from './MarketsScreen'
 
 const meta = {
@@ -18,6 +19,14 @@ export const Default: Story = {
   render: () => (
     <PhoneShell>
       <MarketsScreen />
+    </PhoneShell>
+  ),
+}
+
+export const LongContent: Story = {
+  render: () => (
+    <PhoneShell>
+      <MarketsScreen markets={[marketLongQuestion, marketLongLabels]} />
     </PhoneShell>
   ),
 }

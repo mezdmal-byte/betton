@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { PhoneShell } from '../layouts/PhoneShell'
+import { marketLongQuestion } from '../fixtures/markets'
 import { MarketDetailScreen } from './MarketDetailScreen'
 
 const meta = {
@@ -26,6 +27,14 @@ export const SideB: Story = {
   render: () => (
     <PhoneShell>
       <MarketDetailScreen selectedSide="b" />
+    </PhoneShell>
+  ),
+}
+
+export const LongContent: Story = {
+  render: () => (
+    <PhoneShell>
+      <MarketDetailScreen market={marketLongQuestion} />
     </PhoneShell>
   ),
 }

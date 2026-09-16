@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { PhoneShell } from '../layouts/PhoneShell'
-import { adminUser } from '../fixtures/account'
+import { adminUser, longHandleUser } from '../fixtures/account'
 import { ProfileScreen } from './ProfileScreen'
 
 const meta = {
@@ -27,6 +27,14 @@ export const Admin: Story = {
   render: () => (
     <PhoneShell>
       <ProfileScreen account={adminUser} />
+    </PhoneShell>
+  ),
+}
+
+export const LongHandle: Story = {
+  render: () => (
+    <PhoneShell>
+      <ProfileScreen account={longHandleUser} />
     </PhoneShell>
   ),
 }

@@ -10,7 +10,7 @@
   align-items: center;
   gap: var(--space-8);
   min-height: var(--header-height);
-  padding: var(--space-8) var(--page-padding);
+  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
 }
 
 .header strong {
@@ -65,7 +65,24 @@
   gap: var(--space-4);
 }
 
-.fee p {
+.feeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--touch-min);
+}
+
+.feeRow p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.fee > p {
   margin: 0;
   font-size: 12px;
   font-weight: var(--font-weight-regular);
@@ -74,6 +91,7 @@
 }
 
 .actions {
-  padding: var(--space-12) var(--page-padding) var(--space-16);
+  padding: var(--space-12) var(--page-padding) var(--pad-bar-bottom);
   background: var(--color-canvas);
+  border-top: 1px solid var(--color-border-faint);
 }
