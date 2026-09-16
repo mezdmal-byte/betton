@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyPersonalizedExecutableQuotes,
   mapApiCategoryToLabel,
   mapCreator,
   mapMarketOut,
@@ -108,6 +109,26 @@ describe('MarketOut → UI market', () => {
     expect(view.outcomeA).toEqual({ label: 'Да', odds: null, liquidityTon: null })
     expect(view.outcomeB).toEqual({ label: 'Нет', odds: null, liquidityTon: null })
   })
+
+  it('maps backend closed to closed, not open/cancelled/resolved', () => {
+    const view = mapMarketOut(
+      market({
+        status: 'closed',
+        accepting_bets: false,
+        best_offers: [
+          { odds: 1.82, available: 320 },
+          { odds: 2.18, available: 190 },
+        ],
+      }),
+      now,
+    )
+    expect(view.status).toBe('closed')
+    expect(view.status).not.toBe('open')
+    expect(view.status).not.toBe('cancelled')
+    expect(view.status).not.toBe('resolved')
+    expect(view.timeLeft).toBe('Приём завершён')
+    expect(view.closeLabel).toBe('Приём завершён')
+  })
 })
 
 describe('creator fallback', () => {
@@ -117,5 +138,51 @@ describe('creator fallback', () => {
       displayName: 'Автор',
       initials: 'АВ',
     })
+  })
+})
+
+describe('available_to_me executable quotes', () => {
+  const view = mapMarketOut(market(), now)
+
+  it('uses available_to_me, not the larger aggregate book', () => {
+    const personalized = applyPersonalizedExecutableQuotes(view, {
+      sides: [
+        [
+          { odds: 1.4, available: 500 },
+          { odds: 1.5, available: 200 },
+        ],
+        [{ odds: 2.5, available: 400 }],
+      ],
+      available_to_me: [[{ odds: 1.82, available: 40 }], [{ odds: 2.18, available: 10 }]],
+    })
+    expect(personalized.outcomeA).toEqual({ label: 'Да', odds: 1.82, liquidityTon: 40 })
+    expect(personalized.outcomeB).toEqual({ label: 'Нет', odds: 2.18, liquidityTon: 10 })
+    expect(personalized.outcomeA.liquidityTon).toBeLessThan(500)
+  })
+
+  it('maps empty available_to_me to no liquidity on both sides', () => {
+    const personalized = applyPersonalizedExecutableQuotes(view, {
+      sides: [[{ odds: 1.4, available: 500 }], [{ odds: 2.5, available: 400 }]],
+      available_to_me: [[], []],
+    })
+    expect(personalized.outcomeA).toEqual({ label: 'Да', odds: null, liquidityTon: null })
+    expect(personalized.outcomeB).toEqual({ label: 'Нет', odds: null, liquidityTon: null })
+  })
+
+  it('maps available_to_me side A and B independently', () => {
+    const personalized = applyPersonalizedExecutableQuotes(view, {
+      sides: [[{ odds: 1.4, available: 500 }], [{ odds: 2.5, available: 400 }]],
+      available_to_me: [[{ odds: 1.6, available: 12 }], []],
+    })
+    expect(personalized.outcomeA).toEqual({ label: 'Да', odds: 1.6, liquidityTon: 12 })
+    expect(personalized.outcomeB).toEqual({ label: 'Нет', odds: null, liquidityTon: null })
+  })
+
+  it('does not fall back to aggregate sides when available_to_me is absent', () => {
+    const personalized = applyPersonalizedExecutableQuotes(view, {
+      sides: [[{ odds: 1.4, available: 500 }], [{ odds: 2.5, available: 400 }]],
+    })
+    expect(personalized.outcomeA).toEqual({ label: 'Да', odds: null, liquidityTon: null })
+    expect(personalized.outcomeB).toEqual({ label: 'Нет', odds: null, liquidityTon: null })
   })
 })

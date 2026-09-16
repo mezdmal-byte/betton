@@ -1,3 +1,4 @@
+import { markAuthExpired } from './authExpiry'
 import { getTelegramInitData } from '../telegram/webapp'
 
 export const SHARE_TOKEN_HEADER = 'X-Market-Share-Token'
@@ -134,6 +135,9 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   if (!res.ok) {
     const detail = await readDetail(res)
     const code = codeForStatus(res.status)
+    if (res.status === 401 && (authInitData ?? '').trim()) {
+      markAuthExpired()
+    }
     throw new ApiError(messageForStatus(res.status, detail), {
       status: res.status,
       code,

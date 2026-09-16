@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { isAuthExpiredFlag, resetAuthExpired, subscribeAuthExpired } from './authExpiry'
 import { ApiError, apiRequest, buildRequestHeaders, parseTotalCount } from './client'
 
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  resetAuthExpired()
 })
 
 describe('auth headers', () => {
@@ -75,5 +77,41 @@ describe('401 mapping', () => {
 
     expect(error).toBeInstanceOf(ApiError)
     expect(error).toMatchObject({ status: 401, code: 'auth-expired' })
+  })
+
+  it('promotes any TMA-authenticated 401 into a single global expiry flag', async () => {
+    const seen: number[] = []
+    const unsubscribe = subscribeAuthExpired(() => seen.push(1))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(JSON.stringify({ detail: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+
+    await apiRequest('/users/1/account', { initData: 'tma-init' }).catch(() => undefined)
+    await apiRequest('/markets/9/orderbook', { initData: 'tma-init' }).catch(() => undefined)
+
+    expect(isAuthExpiredFlag()).toBe(true)
+    expect(seen).toEqual([1])
+    unsubscribe()
+  })
+
+  it('does not expire the session when a request had no initData', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(JSON.stringify({ detail: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+
+    await apiRequest('/markets/9', { initData: null }).catch(() => undefined)
+    expect(isAuthExpiredFlag()).toBe(false)
   })
 })

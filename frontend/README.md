@@ -45,3 +45,8 @@ Open the Vite URL (default `http://127.0.0.1:5173`). Do not put Cloudflare tunne
 Unlisted share links use `?share=` / Telegram `start_param` and `X-Market-Share-Token`, matching the existing Mini App. Share resolve (`GET /markets/share/{token}`) still requires Telegram auth.
 
 Quick Trade / Create / Own Price CTAs are visual or disabled in this pass. They must not POST orders or create markets.
+
+## Known limitation: legacy LMSR
+
+The existing backend may still expose `mechanism="lmsr"` markets. The React adapter is P2P-oriented and uses `best_offers` / `available_to_me`. That is not LMSR parity. Do not treat missing P2P offers as a reason to invent AMM odds or fake liquidity. An explicit LMSR compatibility decision is deferred.
+

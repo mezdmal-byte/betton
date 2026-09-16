@@ -2,7 +2,7 @@ import type { AccountFixture } from '../types/account'
 import type { CreatorFixture, MarketFixture, MarketStatus, OutcomeFixture } from '../types/market'
 import { nanoToTon } from '../lib/money'
 import { formatTimeLeft, isClosingSoon } from '../lib/time'
-import type { AccountOut, BestOfferDto, CreatorBriefDto, MarketOut, UserOut } from './types'
+import type { AccountOut, BestOfferDto, CreatorBriefDto, MarketOut, OrderbookLevelDto, OrderbookOut, UserOut } from './types'
 
 export const UI_SORT_TO_API = {
   new: 'new',
@@ -76,6 +76,7 @@ function outcomeLabel(outcomes: string[] | undefined, index: number): string {
 function mapStatus(dto: MarketOut, now: Date): MarketStatus {
   if (dto.status === 'cancelled') return 'cancelled'
   if (dto.status === 'resolved') return 'resolved'
+  if (dto.status === 'closed') return 'closed'
   if (dto.status === 'open' && dto.accepting_bets !== false && isClosingSoon(dto.close_at, now)) {
     return 'closing'
   }
@@ -97,7 +98,7 @@ export function mapMarketOut(dto: MarketOut, now: Date = new Date()): MarketFixt
   let closeLabel = `Закроется через ${timeLeft}`
   if (dto.status === 'resolved') closeLabel = 'Завершено'
   else if (dto.status === 'cancelled') closeLabel = 'Отменено'
-  else if (timeLeft === 'закрыто' || dto.status === 'closed' || dto.accepting_bets === false) {
+  else if (dto.status === 'closed' || timeLeft === 'Приём завершён' || timeLeft === 'закрыто') {
     closeLabel = 'Приём завершён'
   }
 
@@ -160,5 +161,26 @@ export function mapAccountOut(dto: AccountOut): AccountFixture & { photoUrl?: st
     creatorIncomeTon: nanoToTon(dto.creator_earnings_nano ?? 0),
     eventsCreated: 0,
     createdVolumeTon: 0,
+  }
+}
+
+export function executableOutcomeFromLevels(
+  label: string,
+  levels: OrderbookLevelDto[] | null | undefined,
+): OutcomeFixture {
+  const top = Array.isArray(levels) && levels.length > 0 ? levels[0] : undefined
+  if (!top) return { label, odds: null, liquidityTon: null }
+  return mapOffer(label, { odds: top.odds, available: top.available })
+}
+
+export function applyPersonalizedExecutableQuotes(
+  market: MarketFixture,
+  book: Partial<Pick<OrderbookOut, 'available_to_me' | 'sides'>>,
+): MarketFixture {
+  const mine = book.available_to_me
+  return {
+    ...market,
+    outcomeA: executableOutcomeFromLevels(market.outcomeA.label, mine?.[0]),
+    outcomeB: executableOutcomeFromLevels(market.outcomeB.label, mine?.[1]),
   }
 }

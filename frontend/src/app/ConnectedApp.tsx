@@ -13,7 +13,8 @@ import type { AccountFixture } from '../types/account'
 import type { MarketFixture } from '../types/market'
 import { ConnectedMarketDetailScreen } from './ConnectedMarketDetailScreen'
 import { ConnectedMarketsScreen } from './ConnectedMarketsScreen'
-import { useAccount, useSession } from './session'
+import type { FeedViewState } from './ConnectedMarketsScreen'
+import { useAccount, useAuthExpired, useSession } from './session'
 import styles from './ConnectedApp.module.css'
 
 type Route =
@@ -40,7 +41,13 @@ export function ConnectedApp() {
   const [hasInitData, setHasInitData] = useState(() => hasTelegramInitData())
   const [route, setRoute] = useState<Route>({ name: 'markets' })
   const [shareToken, setShareToken] = useState<string | null>(null)
+  const [feedView, setFeedView] = useState<FeedViewState>({
+    query: '',
+    sort: 'new',
+    category: 'all',
+  })
   const session = useSession(hasInitData)
+  const authExpired = useAuthExpired()
   const accountQuery = useAccount(session.user?.id)
 
   useEffect(() => {
@@ -100,7 +107,7 @@ export function ConnectedApp() {
     else setRoute({ name: 'markets' })
   }
 
-  if (session.isExpired) {
+  if (session.isExpired || authExpired) {
     return (
       <div className={styles.root}>
         <div className={styles.overlay}>
@@ -118,6 +125,9 @@ export function ConnectedApp() {
         <ConnectedMarketsScreen
           account={account}
           accountState={accountState}
+          personalized={hasInitData}
+          feedView={feedView}
+          onFeedViewChange={setFeedView}
           onNavChange={goTab}
           onProfileClick={openProfile}
           onSelectMarket={openMarket}

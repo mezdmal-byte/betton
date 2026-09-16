@@ -30,6 +30,7 @@ export type QuickTradeSheetProps = {
   onOwnPrice?: () => void
   onRefreshQuote?: () => void
   demoMode?: boolean
+  quotesLoading?: boolean
 }
 
 function outcomeOf(market: MarketFixture, side: OutcomeSide) {
@@ -47,21 +48,23 @@ export function QuickTradeSheet({
   onOwnPrice,
   onRefreshQuote,
   demoMode = false,
+  quotesLoading = false,
 }: QuickTradeSheetProps) {
   const selected = outcomeOf(market, selectedSide)
   const other = outcomeOf(market, selectedSide === 'a' ? 'b' : 'a')
-  const executable = outcomeIsExecutable(selected)
-  const noLiquidity = state === 'no-liquidity' || !executable
+  const executable = !quotesLoading && outcomeIsExecutable(selected)
+  const noLiquidity = !quotesLoading && (state === 'no-liquidity' || !executable)
   const stale = state === 'stale-quote'
   const { matched, rest } = splitFill(amount, selected.liquidityTon)
   const canPlace =
     !demoMode &&
+    !quotesLoading &&
     executable &&
     !stale &&
     state !== 'insufficient-balance' &&
     state !== 'processing' &&
     state !== 'no-liquidity'
-  const payout = !executable || stale ? '—' : formatPayout(amount, selected.odds as number)
+  const payout = quotesLoading || !executable || stale ? '—' : formatPayout(amount, selected.odds as number)
   const cta = demoMode
     ? 'Ставки пока недоступны'
     : state === 'processing'
@@ -98,7 +101,7 @@ export function QuickTradeSheet({
           liquidity={market.outcomeA.liquidityTon}
           side="a"
           density="compact"
-          state={selectedSide === 'a' ? 'selected' : 'default'}
+          state={quotesLoading ? 'loading' : selectedSide === 'a' ? 'selected' : 'default'}
           onClick={() => onSelectSide?.('a')}
         />
         <OutcomeQuote
@@ -107,14 +110,14 @@ export function QuickTradeSheet({
           liquidity={market.outcomeB.liquidityTon}
           side="b"
           density="compact"
-          state={selectedSide === 'b' ? 'selected' : 'default'}
+          state={quotesLoading ? 'loading' : selectedSide === 'b' ? 'selected' : 'default'}
           onClick={() => onSelectSide?.('b')}
         />
       </div>
 
       <p className={styles.liquidity}>
-        Доступно {executable ? formatTon(selected.liquidityTon) : '—'} · {other.label}{' '}
-        {formatOdds(other.odds)}
+        Доступно {quotesLoading ? '…' : executable ? formatTon(selected.liquidityTon) : '—'} · {other.label}{' '}
+        {quotesLoading ? '—' : formatOdds(other.odds)}
       </p>
 
       <AmountInput

@@ -1,7 +1,15 @@
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { authTelegram, getAccount } from '../api/account'
+import { isAuthExpiredFlag, subscribeAuthExpired } from '../api/authExpiry'
 import { isAuthExpired } from '../api/client'
 import { queryKeys } from '../api/query'
+
+export function useAuthExpired(): boolean {
+  const [expired, setExpired] = useState(isAuthExpiredFlag)
+  useEffect(() => subscribeAuthExpired(() => setExpired(true)), [])
+  return expired
+}
 
 export function useSession(hasInitData: boolean) {
   const query = useQuery({

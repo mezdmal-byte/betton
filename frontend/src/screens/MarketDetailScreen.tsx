@@ -10,6 +10,7 @@ import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { chartSpartakA, chartSpartakB, marketYesNo } from '../fixtures/markets'
 import { COPY } from '../lib/constants'
 import { formatInteger, formatTon } from '../lib/format'
+import { marketIsLocked, marketOutcomeQuoteState } from '../lib/quote'
 import type { ChartPoint, MarketFixture, OutcomeSide } from '../types/market'
 import styles from './MarketDetailScreen.module.css'
 
@@ -50,8 +51,11 @@ export function MarketDetailScreen({
   const selected = activeSide === 'a' ? market.outcomeA : market.outcomeB
   const series = activeSide === 'a' ? chartSeriesA : chartSeriesB
   const currentOdds = selected.odds ?? series[series.length - 1]?.odds ?? 0
+  const locked = marketIsLocked(market)
+  const actionsOff = actionsDisabled || locked
 
   const chooseSide = (next: OutcomeSide) => {
+    if (locked) return
     if (onSelectSide) onSelectSide(next)
     else setSide(next)
   }
@@ -140,7 +144,7 @@ export function MarketDetailScreen({
             odds={market.outcomeA.odds}
             liquidity={market.outcomeA.liquidityTon}
             side="a"
-            state={activeSide === 'a' ? 'selected' : 'default'}
+            state={marketOutcomeQuoteState(market, 'a', locked ? null : activeSide)}
             onClick={() => chooseSide('a')}
           />
           <OutcomeQuote
@@ -148,7 +152,7 @@ export function MarketDetailScreen({
             odds={market.outcomeB.odds}
             liquidity={market.outcomeB.liquidityTon}
             side="b"
-            state={activeSide === 'b' ? 'selected' : 'default'}
+            state={marketOutcomeQuoteState(market, 'b', locked ? null : activeSide)}
             onClick={() => chooseSide('b')}
           />
         </div>
@@ -172,10 +176,10 @@ export function MarketDetailScreen({
         </section>
       </div>
       <div className={styles.actions}>
-        <Button variant="secondary" disabled={actionsDisabled} onClick={onOwnPrice}>
+        <Button variant="secondary" disabled={actionsOff} onClick={onOwnPrice}>
           Своя цена
         </Button>
-        <Button disabled={actionsDisabled} onClick={onPlace}>
+        <Button disabled={actionsOff} onClick={onPlace}>
           Поставить
         </Button>
       </div>

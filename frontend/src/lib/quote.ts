@@ -1,4 +1,4 @@
-import type { OutcomeFixture, OutcomeQuoteState } from '../types/market'
+import type { MarketFixture, OutcomeFixture, OutcomeQuoteState, OutcomeSide } from '../types/market'
 
 const PRESERVED_STATES: ReadonlyArray<OutcomeQuoteState> = [
   'loading',
@@ -16,6 +16,29 @@ export function hasExecutableQuote(
 
 export function outcomeIsExecutable(outcome: OutcomeFixture): boolean {
   return hasExecutableQuote(outcome.odds, outcome.liquidityTon)
+}
+
+export function marketIsLocked(market: Pick<MarketFixture, 'status'>): boolean {
+  return market.status === 'closed' || market.status === 'cancelled' || market.status === 'resolved'
+}
+
+export function marketIsTradable(market: Pick<MarketFixture, 'status'>): boolean {
+  return !marketIsLocked(market)
+}
+
+export function marketOutcomeQuoteState(
+  market: MarketFixture,
+  side: OutcomeSide,
+  selectedSide: OutcomeSide | null,
+): OutcomeQuoteState {
+  if (market.status === 'resolved') {
+    return market.resolvedSide === side ? 'winner' : 'resolved-loser'
+  }
+  if (market.status === 'cancelled' || market.status === 'closed') return 'disabled'
+  const outcome = side === 'a' ? market.outcomeA : market.outcomeB
+  if (!outcomeIsExecutable(outcome)) return 'no-liquidity'
+  if (selectedSide === side) return 'selected'
+  return 'default'
 }
 
 export function resolveOutcomeQuoteState({

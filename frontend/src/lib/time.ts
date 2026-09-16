@@ -20,6 +20,7 @@ export function formatTimeLeft(
 ): string {
   if (status === 'resolved') return 'Итог'
   if (status === 'cancelled') return 'Отмена'
+  if (status === 'closed') return 'Приём завершён'
   const date = parseDate(closeAt)
   if (!date) return ''
   const ms = date.getTime() - now.getTime()
