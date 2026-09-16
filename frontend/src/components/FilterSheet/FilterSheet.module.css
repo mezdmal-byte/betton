@@ -35,9 +35,20 @@
 }
 
 .pills {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-8);
+}
+
+.chip {
+  width: 100%;
+  height: auto;
+  min-height: var(--touch-min);
+  padding: var(--space-8) var(--space-12);
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .actions {

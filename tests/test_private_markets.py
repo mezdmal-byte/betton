@@ -171,6 +171,14 @@ def test_health_exposes_bot_username(client: TestClient, monkeypatch):
     monkeypatch.setattr(settings, "telegram_bot_username", "@SobakaPesBot")
     health = client.get("/health").json()
     assert health["bot_username"] == "SobakaPesBot"
+    assert health["webapp"]
+
+
+def test_health_bot_username_may_be_empty(client: TestClient, monkeypatch):
+    monkeypatch.setattr(settings, "telegram_bot_username", "")
+    health = client.get("/health").json()
+    assert "bot_username" in health
+    assert health["bot_username"] == ""
 
 
 def test_private_share_ui_boot_and_create_chips():

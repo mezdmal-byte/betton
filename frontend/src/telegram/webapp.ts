@@ -43,6 +43,8 @@ export type TelegramWebApp = {
   themeParams?: TelegramThemeParams
   onEvent?: (event: string, callback: () => void) => void
   offEvent?: (event: string, callback: () => void) => void
+  openTelegramLink?: (url: string) => void
+  openLink?: (url: string) => void
   BackButton?: TelegramBackButton
   HapticFeedback?: TelegramHapticFeedback
   setHeaderColor?: (color: string) => void

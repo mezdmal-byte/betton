@@ -30,7 +30,5 @@
 .compact {
   min-height: var(--touch-min);
   padding: 0 var(--space-8);
-  font-size: 12px;
-  flex: 1 1 0;
-  min-width: 0;
+  font-size: 13px;
 }

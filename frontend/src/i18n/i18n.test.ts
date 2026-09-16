@@ -40,3 +40,16 @@ describe('language selection', () => {
     expect(translate('en', 'account.fee')).toContain('1%')
   })
 })
+
+describe('history timestamps', () => {
+  it('reformats the same ISO instant for RU/EN/ZH without refetch', async () => {
+    const { formatHistoryTime } = await import('../lib/time')
+    const iso = '2026-09-16T12:00:00.000Z'
+    const ru = formatHistoryTime(iso, 'ru')
+    const en = formatHistoryTime(iso, 'en')
+    const zh = formatHistoryTime(iso, 'zh')
+    expect(ru).not.toBe(en)
+    expect(zh).toBeTruthy()
+    expect(en).not.toBe(iso)
+  })
+})

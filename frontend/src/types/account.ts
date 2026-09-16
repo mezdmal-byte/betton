@@ -32,6 +32,7 @@ export type HistoryFixture = {
   actionKey?: string
   amountTon: number
   time: string
+  createdAt?: string
 }
 
 export type AccountFixture = {

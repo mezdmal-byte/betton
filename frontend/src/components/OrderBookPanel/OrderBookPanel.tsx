@@ -11,6 +11,7 @@ export type OrderBookPanelProps = {
   sideB: OrderBookLevel[]
   state?: 'ready' | 'loading' | 'error' | 'empty'
   hint?: string
+  onRetry?: () => void
 }
 
 export function OrderBookPanel({
@@ -20,6 +21,7 @@ export function OrderBookPanel({
   sideB,
   state = 'ready',
   hint,
+  onRetry,
 }: OrderBookPanelProps) {
   const t = useT()
   if (state === 'loading') {
@@ -30,7 +32,16 @@ export function OrderBookPanel({
     )
   }
   if (state === 'error') {
-    return <StatusMessage tone="error" title={t('book.error')} />
+    return (
+      <div className={styles.errorBlock}>
+        <StatusMessage tone="error" title={t('book.error')} />
+        {onRetry ? (
+          <button type="button" className={styles.retry} onClick={onRetry}>
+            {t('retry')}
+          </button>
+        ) : null}
+      </div>
+    )
   }
 
   return (
@@ -47,8 +58,9 @@ function OutcomeBook({ label, levels }: { label: string; levels: OrderBookLevel[
   const maxAvailable = Math.max(...levels.map((level) => level.availableTon), 1)
   return (
     <div className={styles.side}>
+      <strong className={styles.sideTitle}>{label}</strong>
       <div className={styles.head}>
-        <strong>{label}</strong>
+        <span>{t('book.coef')}</span>
         <span>{t('book.availCol')}</span>
       </div>
       {levels.length === 0 ? (

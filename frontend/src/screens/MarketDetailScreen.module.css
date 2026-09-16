@@ -2,15 +2,22 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   background: var(--color-canvas);
 }
 
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: var(--space-8);
   min-height: var(--header-height);
   padding: var(--pad-header-top) var(--page-padding) var(--space-8);
+  background: var(--color-canvas);
 }
 
 .meta {
@@ -24,12 +31,12 @@
 
 .body {
   display: flex;
-  flex: 1;
+  flex: 1 0 auto;
   min-height: 0;
   flex-direction: column;
   gap: var(--space-12);
-  padding: 0 var(--page-padding) var(--space-16);
-  overflow: auto;
+  padding: 0 var(--page-padding) calc(var(--action-bar-space) + var(--space-16) + var(--tg-bottom));
+  overflow: visible;
 }
 
 .question {
@@ -61,11 +68,16 @@
   gap: var(--space-8);
 }
 
+.retryBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
 .info {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
-  padding-bottom: var(--space-8);
 }
 
 .info h2 {
@@ -79,9 +91,13 @@
   font-weight: var(--font-weight-regular);
   line-height: 1.45;
   color: var(--color-text-primary);
+  overflow-wrap: anywhere;
 }
 
 .actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-8);

@@ -4,7 +4,7 @@ import { mapAccountOut } from '../api/adapters'
 import { getHealth } from '../api/account'
 import { getMarketByShare } from '../api/markets'
 import { queryKeys } from '../api/query'
-import { copyShareLink, rememberShareToken, telegramShareUrl } from '../api/share'
+import { marketShareUrl, rememberShareToken } from '../api/share'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useI18n } from '../i18n'
@@ -141,6 +141,7 @@ export function ConnectedApp() {
   const availableTon = mappedAccount?.availableTon ?? 0
   const isAdmin = Boolean(mappedAccount?.isAdmin)
   const botUsername = healthQuery.data?.bot_username
+  const webapp = healthQuery.data?.webapp
 
   return (
     <div className={styles.root}>
@@ -157,6 +158,7 @@ export function ConnectedApp() {
           onProfileClick={openProfile}
           onSelectMarket={openMarket}
           onCreatorClick={(market) => openCreator(market.creator.id ?? market.creatorId)}
+          onTopCreatorClick={openCreator}
           onOwnPrice={(marketId, side) => push({ name: 'own-price', marketId, side })}
         />
       ) : null}
@@ -170,15 +172,18 @@ export function ConnectedApp() {
       {route.name === 'create-result' ? (
         <CreateMarketResult
           market={route.market}
-          shareLink={telegramShareUrl(botUsername, route.market.share_token)}
+          shareLink={marketShareUrl({
+            shareToken: route.market.share_token,
+            botUsername,
+            webapp,
+          })}
           onOpen={() => {
+            if (route.market.share_token) rememberShareToken(route.market.id, route.market.share_token)
             if (route.market.status === 'pending') push({ name: 'my-markets' })
             else push({ name: 'detail', marketId: route.market.id })
           }}
           onBack={back}
-          onCopy={() => {
-            void copyShareLink(telegramShareUrl(botUsername, route.market.share_token))
-          }}
+          onToFeed={() => goTab('markets')}
         />
       ) : null}
       {route.name === 'portfolio' ? (
@@ -204,6 +209,7 @@ export function ConnectedApp() {
             else if (id === 'moderation' && isAdmin) push({ name: 'moderation' })
             else if (id === 'wallet') push({ name: 'wallet', tab: 'deposit' })
             else if (id === 'help') push({ name: 'help' })
+            else if (id === 'history') push({ name: 'history' })
             else if (id === 'public' && session.user?.id) openCreator(session.user.id)
           }}
         />
@@ -223,6 +229,20 @@ export function ConnectedApp() {
         />
       ) : null}
       {route.name === 'help' ? <HelpScreen onBack={back} /> : null}
+      {route.name === 'history' ? (
+        <ConnectedPortfolioScreen
+          userId={session.user?.id}
+          mappedAccount={mappedAccount}
+          accountState={accountState}
+          variant="history"
+          onBack={back}
+          onNavChange={goTab}
+          onProfileClick={openProfile}
+          onSelectMarket={(marketId) => push({ name: 'detail', marketId })}
+          onDeposit={() => push({ name: 'wallet', tab: 'deposit' })}
+          onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })}
+        />
+      ) : null}
       {route.name === 'wallet' ? (
         <WalletScreen
           account={mappedAccount}
@@ -245,6 +265,7 @@ export function ConnectedApp() {
           userId={session.user?.id}
           availableTon={availableTon}
           botUsername={botUsername}
+          webapp={webapp}
           onBack={back}
           onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })}
           onCreatorClick={(creatorId) => openCreator(creatorId)}

@@ -20,6 +20,11 @@
   color: var(--color-text-secondary);
 }
 
+.titleRow span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .titleRow b {
   color: var(--color-text-primary);
   font-size: 18px;

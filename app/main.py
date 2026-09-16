@@ -43,6 +43,15 @@ from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 REACT_DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+_bot_username_resolved = ""
+
+
+def _configured_bot_username() -> str:
+    return (settings.telegram_bot_username or "").lstrip("@").strip()
+
+
+def public_bot_username() -> str:
+    return _configured_bot_username() or _bot_username_resolved
 
 
 class ReactPreviewStatic(StaticFiles):
@@ -84,8 +93,27 @@ def _maybe_bot():
         return None, None
 
 
+async def _cache_bot_username() -> None:
+    global _bot_username_resolved
+    configured = _configured_bot_username()
+    if configured:
+        _bot_username_resolved = configured
+        return
+    if not settings.is_public_https():
+        return
+    bot, _dp = _maybe_bot()
+    if bot is None:
+        return
+    try:
+        me = await bot.get_me()
+        _bot_username_resolved = (getattr(me, "username", None) or "").lstrip("@")
+    except Exception:
+        logging.getLogger(__name__).warning("Could not resolve Telegram bot username from getMe")
+
+
 async def setup_webhook_task():
     await asyncio.sleep(1)
+    await _cache_bot_username()
     bot, _dp = _maybe_bot()
     if bot is None or not settings.is_public_https():
         print("Webhook пропущен: нужен BOT_TOKEN и публичный HTTPS (MINI_APP_URL / RENDER_EXTERNAL_URL).")
@@ -198,7 +226,7 @@ def health():
     return {
         "status": "ok",
         "webapp": settings.webapp_base(),
-        "bot_username": (settings.telegram_bot_username or "").lstrip("@"),
+        "bot_username": public_bot_username(),
     }
 
 

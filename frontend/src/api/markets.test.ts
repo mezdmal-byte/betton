@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildMarketsQuery, listMarkets } from './markets'
+import { buildMarketsQuery, getMarketTrades, listMarkets } from './markets'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -51,5 +51,16 @@ describe('listMarkets', () => {
     expect(page.total).toBe(41)
     expect(page.items).toHaveLength(1)
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+})
+
+describe('getMarketTrades', () => {
+  it('treats an empty fill list as success', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toBe('/markets/7/trades')
+      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(getMarketTrades(7)).resolves.toEqual([])
   })
 })

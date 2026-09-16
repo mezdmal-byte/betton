@@ -423,9 +423,10 @@ def _trade_out(fill: P2PFill) -> dict:
     maker_odds = (PRICE / maker_tick) if maker_tick else 0.0
     taker_odds = (PRICE / taker_tick) if taker_tick else 0.0
     created = fill.created_at
+    created_at = created.isoformat() if created is not None and hasattr(created, 'isoformat') else None
     return dict(
         id=fill.id,
-        created_at=created.isoformat() if created is not None else None,
+        created_at=created_at,
         maker_outcome=int(fill.maker_outcome),
         taker_outcome=1 - int(fill.maker_outcome),
         maker_odds=maker_odds,
@@ -448,10 +449,11 @@ def list_trades(db, market_id, viewer_id=None, share_token=None, limit=100):
     fills = (
         db.query(P2PFill)
         .filter_by(market_id=market_id)
-        .order_by(P2PFill.id.asc())
+        .order_by(P2PFill.id.desc())
         .limit(cap)
         .all()
     )
+    fills.reverse()
     return [_trade_out(fill) for fill in fills]
 
 

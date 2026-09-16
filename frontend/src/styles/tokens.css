@@ -59,6 +59,8 @@
   --pad-header-top: max(var(--space-8), var(--safe-top));
   --pad-bar-bottom: max(var(--space-16), var(--safe-bottom));
   --pad-nav-bottom: max(8px, var(--safe-bottom));
+  --tg-bottom: var(--tg-safe-area-inset-bottom, var(--safe-bottom));
+  --action-bar-space: calc(var(--touch-min) + var(--space-12) + var(--pad-bar-bottom));
 
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
   --font-weight-regular: 400;

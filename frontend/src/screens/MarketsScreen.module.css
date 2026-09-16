@@ -69,3 +69,34 @@
   gap: var(--space-8);
   padding-bottom: var(--space-8);
 }
+
+.creators {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.creatorsTitle {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.creatorRow {
+  display: flex;
+  gap: var(--space-8);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.creatorChip {
+  flex: 0 0 auto;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+}

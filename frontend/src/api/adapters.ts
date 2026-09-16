@@ -247,6 +247,15 @@ const TX_ACTION: Record<string, string> = {
   withdraw: 'Вывод',
 }
 
+export function mapTopCreator(dto: CreatorStatsOut): { id: number; displayName: string; handle: string } {
+  const handle = (dto.telegram_username || '').replace(/^@/, '').trim()
+  return {
+    id: dto.id,
+    displayName: dto.display_name,
+    handle: handle || dto.display_name,
+  }
+}
+
 export function mapCreatorStats(
   dto: CreatorStatsOut | null | undefined,
 ): Pick<AccountFixture, 'eventsCreated' | 'createdVolumeTon'> {
@@ -364,18 +373,14 @@ export function mapPositions(dto: PositionOut): PositionFixture[] {
 }
 
 export function mapTransaction(dto: TransactionOut): HistoryFixture {
-  const created = dto.created_at ? new Date(dto.created_at) : null
-  const time =
-    created && !Number.isNaN(created.getTime())
-      ? created.toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-      : '—'
   return {
     id: dto.id,
     question: dto.question || (dto.market_id ? `Событие #${dto.market_id}` : 'Операция'),
     action: TX_ACTION[dto.type] || dto.type,
     actionKey: dto.type,
     amountTon: Number(dto.display_amount),
-    time,
+    createdAt: dto.created_at ?? undefined,
+    time: dto.created_at ?? '—',
   }
 }
 

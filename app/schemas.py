@@ -267,7 +267,7 @@ class MarketTradeOut(BaseModel):
     """Read-only executed P2P fill. Odds come from the stored fill price tick."""
 
     id: int
-    created_at: Optional[datetime] = None
+    created_at: Optional[str] = None
     maker_outcome: int
     taker_outcome: int
     maker_odds: float

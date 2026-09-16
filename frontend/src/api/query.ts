@@ -23,6 +23,7 @@ export const queryKeys = {
   creator: (userId: number) => ['creators', userId] as const,
   moderation: ['moderation', 'markets'] as const,
   health: ['health'] as const,
+  topCreators: ['creators', 'top'] as const,
   markets: (input: { sort: string; category: string; q: string; status?: string | null }) =>
     ['markets', input.sort, input.category, input.q, input.status ?? 'open'] as const,
   market: (marketId: number | string) => ['markets', String(marketId)] as const,

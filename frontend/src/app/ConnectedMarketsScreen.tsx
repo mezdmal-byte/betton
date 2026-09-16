@@ -1,7 +1,8 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { applyPersonalizedExecutableQuotes, mapAccountOut, mapMarketOut, mapUiStatusToApi } from '../api/adapters'
+import { applyPersonalizedExecutableQuotes, mapAccountOut, mapMarketOut, mapTopCreator, mapUiStatusToApi } from '../api/adapters'
 import { getOrderbook, listMarkets } from '../api/markets'
+import { listTopCreators } from '../api/account'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
 import type { AccountOut } from '../api/types'
@@ -34,6 +35,7 @@ export type ConnectedMarketsScreenProps = {
   onProfileClick: () => void
   onSelectMarket: (market: MarketFixture) => void
   onCreatorClick?: (market: MarketFixture) => void
+  onTopCreatorClick?: (userId: number) => void
   onOwnPrice: (marketId: number, side: OutcomeSide) => void
 }
 
@@ -49,6 +51,7 @@ export function ConnectedMarketsScreen({
   onProfileClick,
   onSelectMarket,
   onCreatorClick,
+  onTopCreatorClick,
   onOwnPrice,
 }: ConnectedMarketsScreenProps) {
   const { locale } = useI18n()
@@ -68,6 +71,15 @@ export function ConnectedMarketsScreen({
       photoUrl: mapped.photoUrl,
     }
   }, [account])
+
+  const topCreatorsQuery = useQuery({
+    queryKey: queryKeys.topCreators,
+    queryFn: () => listTopCreators(5),
+  })
+  const topCreators = useMemo(
+    () => (topCreatorsQuery.data ?? []).map(mapTopCreator),
+    [topCreatorsQuery.data],
+  )
 
   const feed = useInfiniteQuery({
     queryKey: queryKeys.markets({
@@ -167,6 +179,8 @@ export function ConnectedMarketsScreen({
         onLoadMore={() => {
           void feed.fetchNextPage()
         }}
+        topCreators={topCreators}
+        onTopCreatorClick={onTopCreatorClick}
       />
       <FilterSheet
         open={filtersOpen}

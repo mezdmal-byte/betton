@@ -18,6 +18,7 @@ export type Route =
   | { name: 'public-profile'; userId: number }
   | { name: 'help' }
   | { name: 'wallet'; tab: WalletTab }
+  | { name: 'history' }
 
 export const TOP_LEVEL_ROUTES: ReadonlySet<Route['name']> = new Set(['markets', 'create', 'portfolio'])
 

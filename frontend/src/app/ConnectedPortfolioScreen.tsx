@@ -34,6 +34,8 @@ export type ConnectedPortfolioScreenProps = {
   onSelectMarket: (marketId: number) => void
   onDeposit?: () => void
   onWithdraw?: () => void
+  onBack?: () => void
+  variant?: 'tab' | 'history'
 }
 
 export function ConnectedPortfolioScreen({
@@ -45,6 +47,8 @@ export function ConnectedPortfolioScreen({
   onSelectMarket,
   onDeposit,
   onWithdraw,
+  onBack,
+  variant = 'tab',
 }: ConnectedPortfolioScreenProps) {
   const t = useT()
   const queryClient = useQueryClient()
@@ -107,11 +111,14 @@ export function ConnectedPortfolioScreen({
       history={accountState === 'unauthenticated' ? [] : history}
       listState={listState}
       cancellingOrderId={cancellingOrderId}
+      tab={variant === 'history' ? 'history' : undefined}
       onNavChange={onNavChange}
       onProfileClick={onProfileClick}
       onSelectMarket={onSelectMarket}
       onDeposit={onDeposit}
       onWithdraw={onWithdraw}
+      onBack={onBack}
+      variant={variant}
       onRetry={() => {
         void positionsQuery.refetch()
         void ordersQuery.refetch()

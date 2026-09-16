@@ -15,6 +15,13 @@ export function isClosingSoon(closeAt: string | null | undefined, now: Date = ne
   return delta > 0 && delta <= CLOSING_SOON_MS
 }
 
+export function formatHistoryTime(value: string | null | undefined, locale: Locale = 'ru'): string {
+  const date = parseDate(value)
+  if (!date) return (value || '').trim() || '—'
+  const tag = locale === 'ru' ? 'ru-RU' : locale === 'zh' ? 'zh-CN' : 'en-US'
+  return date.toLocaleString(tag, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
 export function formatTimeLeft(
   closeAt: string | null | undefined,
   now: Date = new Date(),

@@ -56,7 +56,7 @@ export function FilterSheet({ open, status, onClose, onApply }: FilterSheetProps
           {STATUS_FILTERS.map((item) => (
             <Chip
               key={item.id}
-              compact
+              className={styles.chip}
               selected={draft === item.id}
               onClick={() => setDraft(item.id)}
             >

@@ -47,6 +47,8 @@ export type MarketsScreenProps = {
   hasMore?: boolean
   loadingMore?: boolean
   onLoadMore?: () => void
+  topCreators?: Array<{ id: number; displayName: string; handle: string }>
+  onTopCreatorClick?: (userId: number) => void
 }
 
 export function MarketsScreen({
@@ -72,6 +74,8 @@ export function MarketsScreen({
   hasMore = false,
   loadingMore = false,
   onLoadMore,
+  topCreators = [],
+  onTopCreatorClick,
 }: MarketsScreenProps) {
   const t = useT()
   const [internalQuery, setInternalQuery] = useState(query)
@@ -119,6 +123,23 @@ export function MarketsScreen({
           onCategoryChange={onCategoryChange ?? setInternalCategory}
           onFiltersClick={onFiltersClick}
         />
+        {topCreators.length > 0 ? (
+          <section className={styles.creators} aria-label={t('feed.topCreators')}>
+            <span className={styles.creatorsTitle}>{t('feed.topCreators')}</span>
+            <div className={styles.creatorRow}>
+              {topCreators.map((creator) => (
+                <button
+                  key={creator.id}
+                  type="button"
+                  className={styles.creatorChip}
+                  onClick={() => onTopCreatorClick?.(creator.id)}
+                >
+                  {creator.handle ? `@${creator.handle}` : creator.displayName}
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
         <div className={styles.feed}>
           {feedState === 'loading' ? (
             <StatusMessage tone="loading" title={t('loading')}>

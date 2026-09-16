@@ -334,9 +334,19 @@ try {
     }
 
     Write-Section "BetTON is READY"
+    $head = (& git rev-parse HEAD 2>$null | Select-Object -First 1)
+    $branch = (& git branch --show-current 2>$null | Select-Object -First 1)
+    Write-Host "Git branch:          $branch"
+    Write-Host "Git HEAD:            $head"
     Write-Host "Mini App (legacy /): $currentUrl/"
     Write-Host "React preview /v2/:  $currentUrl/v2/"
     Write-Host "Health:              $currentUrl/health"
+    $botName = Read-EnvValue $EnvFile "TELEGRAM_BOT_USERNAME"
+    if ([string]::IsNullOrWhiteSpace($botName)) {
+        Write-Host "TELEGRAM_BOT_USERNAME: (empty; React share uses /v2/?share= fallback)"
+    } else {
+        Write-Host "TELEGRAM_BOT_USERNAME: $botName"
+    }
     Write-Host ""
     Write-Host "KEEP THIS WINDOW OPEN."
     Write-Host "The same trycloudflare URL is kept while cloudflared stays alive."

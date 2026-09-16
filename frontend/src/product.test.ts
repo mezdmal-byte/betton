@@ -56,3 +56,10 @@ describe('orderbook and trade history adapters', () => {
     expect(mapTradesToChartPoints([], 1)).toEqual([])
   })
 })
+
+describe('filter chip layout contract', () => {
+  it('keeps five status filters for the two-column sheet', async () => {
+    const { STATUS_FILTERS } = await import('./components/FilterSheet/FilterSheet')
+    expect(STATUS_FILTERS.map((item) => item.id)).toEqual(['all', 'open', 'closed', 'resolved', 'cancelled'])
+  })
+})

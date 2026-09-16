@@ -21,6 +21,7 @@ const myMarkets: Route = { name: 'my-markets' }
 const detail: Route = { name: 'detail', marketId: 42 }
 const ownPrice: Route = { name: 'own-price', marketId: 42, side: 'a' }
 const help: Route = { name: 'help' }
+const history: Route = { name: 'history' }
 
 describe('navigation stack', () => {
   it('returns to the actual previous screen, not always Markets', () => {
@@ -30,6 +31,7 @@ describe('navigation stack', () => {
 
     const mine = pushRoute(pushRoute(pushRoute([markets], profile), myMarkets), detail)
     expect(currentRoute(goBack(mine))).toEqual(myMarkets)
+    expect(currentRoute(goBack(goBack(mine)))).toEqual(profile)
 
     const fromDetail = pushRoute(pushRoute([markets], detail), ownPrice)
     expect(currentRoute(goBack(fromDetail))).toEqual(detail)
@@ -37,6 +39,11 @@ describe('navigation stack', () => {
     const helpFlow = pushRoute(pushRoute(pushRoute([portfolio], profile), help), help)
     expect(currentRoute(goBack(pushRoute(pushRoute([portfolio], profile), help)))).toEqual(profile)
     expect(helpFlow.length).toBeGreaterThan(0)
+
+    const historyFlow = pushRoute(pushRoute([markets], profile), history)
+    expect(currentRoute(goBack(historyFlow))).toEqual(profile)
+    expect(showTelegramBackButton(history)).toBe(true)
+    expect(showTelegramBackButton(portfolio)).toBe(false)
   })
 
   it('resets to a top-level tab without leftover secondary screens', () => {
@@ -47,9 +54,16 @@ describe('navigation stack', () => {
   })
 
   it('replaces wallet tab in place and hides Telegram Back on roots', () => {
-    const stack = pushRoute(pushRoute([markets], profile), walletDeposit)
-    const switched = pushRoute(stack, walletWithdraw)
-    expect(switched).toEqual([markets, profile, walletWithdraw])
+    const fromProfile = pushRoute(pushRoute([markets], profile), walletDeposit)
+    const switchedFromProfile = pushRoute(fromProfile, walletWithdraw)
+    expect(switchedFromProfile).toEqual([markets, profile, walletWithdraw])
+    expect(currentRoute(goBack(switchedFromProfile))).toEqual(profile)
+
+    const fromPortfolio = pushRoute([portfolio], walletWithdraw)
+    const switchedFromPortfolio = pushRoute(fromPortfolio, walletDeposit)
+    expect(switchedFromPortfolio).toEqual([portfolio, walletDeposit])
+    expect(currentRoute(goBack(switchedFromPortfolio))).toEqual(portfolio)
+
     expect(showTelegramBackButton(detail)).toBe(true)
     expect(showTelegramBackButton(markets)).toBe(false)
     expect(sameRoute(detail, { name: 'detail', marketId: 41 })).toBe(false)

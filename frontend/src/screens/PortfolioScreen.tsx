@@ -1,7 +1,9 @@
+import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { Avatar } from '../components/Avatar/Avatar'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import { Button } from '../components/Button/Button'
+import { IconButton } from '../components/IconButton/IconButton'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { Tabs } from '../components/Tabs/Tabs'
 import {
@@ -11,7 +13,8 @@ import {
   portfolioPositions,
 } from '../fixtures/account'
 import { formatOdds, formatTon, formatTonFull } from '../lib/format'
-import { isMessageKey, useT } from '../i18n'
+import { formatHistoryTime } from '../lib/time'
+import { isMessageKey, useI18n, useT } from '../i18n'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import type {
   AccountFixture,
@@ -34,6 +37,8 @@ export type PortfolioScreenProps = {
   onSelectMarket?: (marketId: number) => void
   onDeposit?: () => void
   onWithdraw?: () => void
+  onBack?: () => void
+  variant?: 'tab' | 'history'
   accountState?: 'ready' | 'loading' | 'unauthenticated'
   listState?: 'ready' | 'loading' | 'error'
   onRetry?: () => void
@@ -52,13 +57,17 @@ export function PortfolioScreen({
   onSelectMarket,
   onDeposit,
   onWithdraw,
+  onBack,
+  variant = 'tab',
   accountState = 'ready',
   listState = 'ready',
   onRetry,
   cancellingOrderId = null,
 }: PortfolioScreenProps) {
   const t = useT()
-  const [currentTab, setCurrentTab] = useState<PortfolioTab>(tab)
+  const { locale } = useI18n()
+  const [currentTab, setCurrentTab] = useState<PortfolioTab>(variant === 'history' ? 'history' : tab)
+  const hideNav = variant === 'history'
   const items =
     currentTab === 'positions' ? positions : currentTab === 'orders' ? orders : history
   const emptyCopy = {
@@ -69,17 +78,25 @@ export function PortfolioScreen({
 
   return (
     <div className={styles.screen}>
-      <header className={styles.header}>
-        <h1 className={styles.brand}>
-          Bet<span>TON</span>
-        </h1>
-        <Avatar
-          initials={account.initials}
-          name={account.displayName}
-          src={account.photoUrl}
-          size="md"
-          onClick={onProfileClick}
-        />
+      <header className={hideNav ? `${styles.header} ${styles.headerSecondary}` : styles.header}>
+        {hideNav ? (
+          <IconButton label={t('back')} size="md" onClick={onBack}>
+            <ChevronLeft size={22} />
+          </IconButton>
+        ) : (
+          <h1 className={styles.brand}>
+            Bet<span>TON</span>
+          </h1>
+        )}
+        {hideNav ? <strong>{t('profile.history')}</strong> : (
+          <Avatar
+            initials={account.initials}
+            name={account.displayName}
+            src={account.photoUrl}
+            size="md"
+            onClick={onProfileClick}
+          />
+        )}
       </header>
       <div className={styles.body}>
         <section className={styles.hero}>
@@ -193,13 +210,13 @@ export function PortfolioScreen({
                   {historyAction(item, t)}
                   <span className={styles.amount}>{formatSigned(item.amountTon)}</span>
                 </p>
-                <p className={styles.time}>{item.time}</p>
+                <p className={styles.time}>{formatHistoryTime(item.createdAt ?? item.time, locale)}</p>
               </li>
             ))}
           </ul>
         )}
       </div>
-      <BottomNavigation active="portfolio" onChange={onNavChange} />
+      {hideNav ? null : <BottomNavigation active="portfolio" onChange={onNavChange} />}
     </div>
   )
 }

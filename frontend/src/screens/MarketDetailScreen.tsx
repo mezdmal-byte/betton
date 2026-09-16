@@ -42,6 +42,9 @@ export type MarketDetailScreenProps = {
   onCreatorClick?: () => void
   onShare?: () => void
   shareAvailable?: boolean
+  showMarketDataSwitch?: boolean
+  onRetryTrades?: () => void
+  onRetryBook?: () => void
   banner?: ReactNode
   extra?: ReactNode
 }
@@ -68,6 +71,9 @@ export function MarketDetailScreen({
   onCreatorClick,
   onShare,
   shareAvailable = false,
+  showMarketDataSwitch = false,
+  onRetryTrades,
+  onRetryBook,
   banner,
   extra,
 }: MarketDetailScreenProps) {
@@ -84,8 +90,9 @@ export function MarketDetailScreen({
     : (selected.odds ?? series[series.length - 1]?.odds ?? 0)
   const locked = marketIsLocked(market)
   const actionsOff = actionsDisabled || locked
-  const showBook = orderbookA != null || orderbookB != null || orderbookState != null
-  const activePane = onPaneChange ? (pane ?? 'chart') : localPane
+  const showSwitch = showMarketDataSwitch || orderbookA != null || orderbookB != null || orderbookState != null
+  const activePane = pane ?? localPane
+  const resolutionBits = [market.description, market.resolution].map((text) => (text || '').trim()).filter(Boolean)
 
   const chooseSide = (next: OutcomeSide) => {
     if (locked) return
@@ -206,10 +213,11 @@ export function MarketDetailScreen({
             onClick={() => chooseSide('b')}
           />
         </div>
-        {showBook ? (
+        {showSwitch ? (
           <Tabs
+            equal
             items={[
-              { id: 'chart', label: t('event.chart') },
+              { id: 'chart', label: t('event.tradesTitleShort') },
               { id: 'book', label: t('event.book') },
             ]}
             value={activePane}
@@ -218,16 +226,27 @@ export function MarketDetailScreen({
               if (onPaneChange) onPaneChange(next)
               else setLocalPane(next)
             }}
-            ariaLabel={t('event.chart')}
+            ariaLabel={t('event.tradesTitleShort')}
           />
         ) : null}
-        {(!showBook || activePane === 'chart') && liveHistory ? (
+        {(!showSwitch || activePane === 'chart') && liveHistory ? (
           tradeHistoryState === 'loading' ? (
             <StatusMessage tone="loading" title={t('loading')}>
               {t('loading.body')}
             </StatusMessage>
           ) : tradeHistoryState === 'error' ? (
-            <StatusMessage tone="error" title={t('event.tradesError')} />
+            <div className={styles.retryBlock}>
+              <StatusMessage tone="error" title={t('event.tradesError')} />
+              {onRetryTrades ? (
+                <Button variant="secondary" onClick={onRetryTrades}>
+                  {t('retry')}
+                </Button>
+              ) : onRetry ? (
+                <Button variant="secondary" onClick={onRetry}>
+                  {t('retry')}
+                </Button>
+              ) : null}
+            </div>
           ) : tradeHistoryState === 'empty' || series.length === 0 ? (
             <StatusMessage tone="empty" title={t('event.tradesEmpty')} />
           ) : (
@@ -240,7 +259,7 @@ export function MarketDetailScreen({
             />
           )
         ) : null}
-        {(!showBook || activePane === 'chart') && !liveHistory ? (
+        {(!showSwitch || activePane === 'chart') && !liveHistory ? (
           priceHistoryAvailable ? (
             <>
               <RangeSelector value={range} onChange={setRange} />
@@ -255,7 +274,7 @@ export function MarketDetailScreen({
             <StatusMessage tone="empty" title={t('event.tradesEmpty')} />
           )
         ) : null}
-        {showBook && activePane === 'book' ? (
+        {showSwitch && activePane === 'book' ? (
           <OrderBookPanel
             outcomeALabel={market.outcomeA.label}
             outcomeBLabel={market.outcomeB.label}
@@ -263,13 +282,17 @@ export function MarketDetailScreen({
             sideB={orderbookB ?? []}
             state={orderbookState === 'loading' || orderbookState === 'error' ? orderbookState : 'ready'}
             hint={t('book.depthHint')}
+            onRetry={onRetryBook ?? onRetry}
           />
         ) : null}
-        <section className={styles.info}>
-          <h2>{t('event.how')}</h2>
-          <p>{market.description}</p>
-          {market.resolution ? <p>{market.resolution}</p> : null}
-        </section>
+        {resolutionBits.length > 0 ? (
+          <section className={styles.info}>
+            <h2>{t('event.how')}</h2>
+            {resolutionBits.map((text) => (
+              <p key={text}>{text}</p>
+            ))}
+          </section>
+        ) : null}
         {extra}
       </div>
       <div className={styles.actions}>

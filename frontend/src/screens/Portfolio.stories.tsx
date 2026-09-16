@@ -54,6 +54,14 @@ export const Empty: Story = {
   ),
 }
 
+export const HistoryFromProfile: Story = {
+  render: () => (
+    <PhoneShell>
+      <PortfolioScreen variant="history" tab="history" onBack={() => undefined} />
+    </PhoneShell>
+  ),
+}
+
 export const Wide430: Story = {
   parameters: { viewport: { defaultViewport: 'phone430' } },
   render: () => (

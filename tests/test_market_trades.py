@@ -79,3 +79,16 @@ def test_trades_obey_unlisted_share_access(client, monkeypatch):
     creator = client.get(f"/markets/{mid}/trades", headers=ha)
     assert creator.status_code == 200
     _ = a
+
+
+def test_trades_latest_window_is_chronological(client, monkeypatch):
+    _admin, _ah, _a, ha, _b, hb, mid = ready(client, monkeypatch)
+    for _ in range(3):
+        assert submit(client, mid, ha, 0, 20, 2.0).status_code == 200
+        assert submit(client, mid, hb, 1, 20, 2.0).status_code == 200
+    all_rows = client.get(f"/markets/{mid}/trades").json()
+    assert len(all_rows) >= 3
+    window = client.get(f"/markets/{mid}/trades", params={"limit": 2}).json()
+    assert len(window) == 2
+    assert [row["id"] for row in window] == [row["id"] for row in all_rows[-2:]]
+    assert window[0]["id"] < window[1]["id"]

@@ -27,6 +27,14 @@ const preview: Preview = {
     },
     viewport: {
       viewports: {
+        phone320: {
+          name: '320×700',
+          styles: { width: '320px', height: '700px' },
+        },
+        phone360: {
+          name: '360×800',
+          styles: { width: '360px', height: '800px' },
+        },
         phone390: {
           name: '390×844',
           styles: { width: '390px', height: '844px' },

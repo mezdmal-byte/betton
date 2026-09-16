@@ -6,6 +6,20 @@
   scrollbar-width: none;
 }
 
+.equal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  overflow: visible;
+}
+
+.equal .tab {
+  white-space: normal;
+  line-height: 1.2;
+  text-align: center;
+  padding: 0 var(--space-4) var(--space-8);
+}
+
 .list::-webkit-scrollbar {
   display: none;
 }
