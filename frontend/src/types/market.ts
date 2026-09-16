@@ -63,4 +63,5 @@ export type UserFixture = {
   handle: string
   initials: string
   availableTon: number
+  photoUrl?: string
 }

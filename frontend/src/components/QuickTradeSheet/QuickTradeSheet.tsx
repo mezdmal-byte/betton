@@ -29,6 +29,7 @@ export type QuickTradeSheetProps = {
   onClose?: () => void
   onOwnPrice?: () => void
   onRefreshQuote?: () => void
+  demoMode?: boolean
 }
 
 function outcomeOf(market: MarketFixture, side: OutcomeSide) {
@@ -45,6 +46,7 @@ export function QuickTradeSheet({
   onClose,
   onOwnPrice,
   onRefreshQuote,
+  demoMode = false,
 }: QuickTradeSheetProps) {
   const selected = outcomeOf(market, selectedSide)
   const other = outcomeOf(market, selectedSide === 'a' ? 'b' : 'a')
@@ -53,10 +55,16 @@ export function QuickTradeSheet({
   const stale = state === 'stale-quote'
   const { matched, rest } = splitFill(amount, selected.liquidityTon)
   const canPlace =
-    executable && !stale && state !== 'insufficient-balance' && state !== 'processing' && state !== 'no-liquidity'
+    !demoMode &&
+    executable &&
+    !stale &&
+    state !== 'insufficient-balance' &&
+    state !== 'processing' &&
+    state !== 'no-liquidity'
   const payout = !executable || stale ? '—' : formatPayout(amount, selected.odds as number)
-  const cta =
-    state === 'processing'
+  const cta = demoMode
+    ? 'Ставки пока недоступны'
+    : state === 'processing'
       ? 'Ставим…'
       : stale
         ? 'Обновить предложение'
@@ -137,13 +145,20 @@ export function QuickTradeSheet({
 
       <Button
         fullWidth
-        loading={state === 'processing'}
-        disabled={stale ? false : !canPlace}
-        onClick={stale ? onRefreshQuote : undefined}
+        loading={!demoMode && state === 'processing'}
+        disabled={demoMode || (stale ? false : !canPlace)}
+        onClick={demoMode ? undefined : stale ? onRefreshQuote : undefined}
       >
         {cta}
       </Button>
-      <Button variant="ghost" size="md" fullWidth className={styles.ownPrice} onClick={onOwnPrice}>
+      <Button
+        variant="ghost"
+        size="md"
+        fullWidth
+        className={styles.ownPrice}
+        disabled={demoMode}
+        onClick={demoMode ? undefined : onOwnPrice}
+      >
         Своя цена →
       </Button>
       <p className={styles.fee}>{FEE_COPY}</p>

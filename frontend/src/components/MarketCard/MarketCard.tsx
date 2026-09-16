@@ -10,6 +10,7 @@ export type MarketCardProps = {
   market: MarketFixture
   selectedSide?: OutcomeSide | null
   onSelectOutcome?: (side: OutcomeSide) => void
+  onOpen?: () => void
 }
 
 function quoteState(market: MarketFixture, side: OutcomeSide, selectedSide: OutcomeSide | null): OutcomeQuoteState {
@@ -23,12 +24,12 @@ function quoteState(market: MarketFixture, side: OutcomeSide, selectedSide: Outc
   return 'default'
 }
 
-export function MarketCard({ market, selectedSide = null, onSelectOutcome }: MarketCardProps) {
+export function MarketCard({ market, selectedSide = null, onSelectOutcome, onOpen }: MarketCardProps) {
   const locked = market.status === 'resolved' || market.status === 'cancelled'
 
   return (
     <article className={styles.card} data-status={market.status}>
-      <header className={styles.meta}>
+      <header className={styles.meta} onClick={onOpen}>
         <span className={styles.category}>{market.category}</span>
         <span className={styles.dot}>·</span>
         <span className={cx(styles.time, market.status === 'closing' && styles.closing)}>
@@ -39,8 +40,10 @@ export function MarketCard({ market, selectedSide = null, onSelectOutcome }: Mar
           <span className={cx(styles.badge, styles.cancelled)}>Отмена</span>
         ) : null}
       </header>
-      <h2 className={styles.question}>{market.question}</h2>
-      <div className={styles.creatorRow}>
+      <h2 className={styles.question} onClick={onOpen}>
+        {market.question}
+      </h2>
+      <div className={styles.creatorRow} onClick={onOpen}>
         <Avatar initials={market.creator.initials} name={market.creator.displayName} size="sm" />
         <span className={styles.handle}>@{market.creator.handle}</span>
         <span className={styles.stats}>

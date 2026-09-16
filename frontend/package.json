@@ -7,12 +7,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.103.1",
     "lucide-react": "^0.525.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
@@ -28,6 +31,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "storybook": "^8.6.14",
     "typescript": "~5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^5.0.1"
   }
 }

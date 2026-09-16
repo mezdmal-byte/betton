@@ -1,13 +1,16 @@
-import { PhoneShell } from './layouts/PhoneShell'
-import { MarketsScreen } from './screens/MarketsScreen'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ConnectedApp } from './app/ConnectedApp'
+import { createQueryClient } from './api/query'
 import styles from './App.module.css'
+
+const queryClient = createQueryClient()
 
 export default function App() {
   return (
-    <div className={styles.preview}>
-      <PhoneShell>
-        <MarketsScreen />
-      </PhoneShell>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <div className={styles.app}>
+        <ConnectedApp />
+      </div>
+    </QueryClientProvider>
   )
 }

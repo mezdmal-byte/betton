@@ -26,12 +26,16 @@ export type CreateMarketScreenProps = {
   draft?: CreateMarketDraft
   feeOpen?: boolean
   pickerOpen?: boolean
+  onBack?: () => void
+  submitDisabled?: boolean
 }
 
 export function CreateMarketScreen({
   draft = defaultCreateDraft,
   feeOpen = false,
   pickerOpen = false,
+  onBack,
+  submitDisabled = false,
 }: CreateMarketScreenProps) {
   const [question, setQuestion] = useState(draft.question)
   const [category, setCategory] = useState(draft.category)
@@ -46,7 +50,7 @@ export function CreateMarketScreen({
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <IconButton label="Назад" size="md">
+        <IconButton label="Назад" size="md" onClick={onBack}>
           <ChevronLeft size={22} />
         </IconButton>
         <strong>Создать событие</strong>
@@ -160,7 +164,9 @@ export function CreateMarketScreen({
         </div>
       </div>
       <div className={styles.actions}>
-        <Button fullWidth>Создать событие</Button>
+        <Button fullWidth disabled={submitDisabled}>
+          Создать событие
+        </Button>
       </div>
     </div>
   )

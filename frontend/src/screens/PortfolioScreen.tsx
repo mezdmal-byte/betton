@@ -11,6 +11,7 @@ import {
   portfolioPositions,
 } from '../fixtures/account'
 import { formatOdds, formatTon, formatTonFull } from '../lib/format'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import type {
   AccountFixture,
   HistoryFixture,
@@ -47,6 +48,9 @@ export type PortfolioScreenProps = {
   positions?: PositionFixture[]
   orders?: OrderFixture[]
   history?: HistoryFixture[]
+  onNavChange?: (id: NavId) => void
+  onProfileClick?: () => void
+  accountState?: 'ready' | 'loading' | 'unauthenticated'
 }
 
 export function PortfolioScreen({
@@ -55,6 +59,9 @@ export function PortfolioScreen({
   positions = portfolioPositions,
   orders = portfolioOrders,
   history = portfolioHistory,
+  onNavChange,
+  onProfileClick,
+  accountState = 'ready',
 }: PortfolioScreenProps) {
   const [currentTab, setCurrentTab] = useState<PortfolioTab>(tab)
   const items =
@@ -66,25 +73,35 @@ export function PortfolioScreen({
         <h1 className={styles.brand}>
           Bet<span>TON</span>
         </h1>
-        <Avatar initials={account.initials} name={account.displayName} size="md" />
+        <Avatar
+          initials={account.initials}
+          name={account.displayName}
+          src={account.photoUrl}
+          size="md"
+          onClick={onProfileClick}
+        />
       </header>
       <div className={styles.body}>
         <section className={styles.hero}>
           <span>Доступно</span>
-          <strong>{formatTonFull(account.availableTon)}</strong>
+          <strong>
+            {accountState === 'unauthenticated' || accountState === 'loading'
+              ? '—'
+              : formatTonFull(account.availableTon)}
+          </strong>
         </section>
         <dl className={styles.metrics}>
           <div>
             <dt>В позициях</dt>
-            <dd>{formatTon(account.inPositionsTon)}</dd>
+            <dd>{accountState === 'ready' ? formatTon(account.inPositionsTon) : '—'}</dd>
           </div>
           <div>
             <dt>В заявках</dt>
-            <dd>{formatTon(account.inOrdersTon)}</dd>
+            <dd>{accountState === 'ready' ? formatTon(account.inOrdersTon) : '—'}</dd>
           </div>
           <div>
             <dt>Доход автора</dt>
-            <dd>{formatTon(account.creatorIncomeTon)}</dd>
+            <dd>{accountState === 'ready' ? formatTon(account.creatorIncomeTon) : '—'}</dd>
           </div>
         </dl>
         <div className={styles.actions}>
@@ -150,7 +167,7 @@ export function PortfolioScreen({
           </ul>
         )}
       </div>
-      <BottomNavigation active="portfolio" />
+      <BottomNavigation active="portfolio" onChange={onNavChange} />
     </div>
   )
 }
