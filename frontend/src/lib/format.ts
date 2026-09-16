@@ -17,6 +17,11 @@ export function formatInteger(value: number): string {
   return String(Math.round(value))
 }
 
+export function formatTonFull(amount: number | null | undefined): string {
+  if (amount == null || Number.isNaN(amount)) return '—'
+  return `${new Intl.NumberFormat('ru-RU').format(Math.round(amount))} TON`
+}
+
 export function formatPayout(amount: number, odds: number): string {
   return `${formatInteger(amount * odds)} TON`
 }

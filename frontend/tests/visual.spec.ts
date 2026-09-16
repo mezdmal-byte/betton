@@ -5,6 +5,9 @@ const SCREENS = [
   ['screens-quicktrade--default', 'quicktrade'],
   ['screens-marketdetail--default', 'marketdetail'],
   ['screens-ownprice--default', 'ownprice'],
+  ['screens-createmarket--default', 'createmarket'],
+  ['screens-portfolio--default', 'portfolio'],
+  ['screens-profile--default', 'profile'],
 ] as const
 
 async function openStory(page: import('@playwright/test').Page, id: string) {

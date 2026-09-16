@@ -6,6 +6,7 @@ export type MarketChartProps = {
   series: ChartPoint[]
   currentOdds: number
   outcomeLabel?: string
+  volumeTon?: number
 }
 
 const WIDTH = 358
@@ -25,14 +26,13 @@ function stepLine(points: Array<{ x: number; y: number }>): string {
   return path
 }
 
-export function MarketChart({ series, currentOdds, outcomeLabel }: MarketChartProps) {
+export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon }: MarketChartProps) {
   const plotWidth = WIDTH - PAD_LEFT - PAD_RIGHT
   const plotBottom = PAD_TOP + PLOT_HEIGHT
   const minOdds = Math.min(...series.map((point) => point.odds), currentOdds)
   const maxOdds = Math.max(...series.map((point) => point.odds), currentOdds)
   const oddsSpan = Math.max(maxOdds - minOdds, 0.2)
   const maxVolume = Math.max(...series.map((point) => point.volume), 1)
-  const last = series[series.length - 1] ?? { t: 0, odds: currentOdds, volume: 0 }
 
   const mapped = series.map((point, index) => {
     const x =
@@ -55,7 +55,9 @@ export function MarketChart({ series, currentOdds, outcomeLabel }: MarketChartPr
           <span>{title}</span>
           <b>{formatOdds(currentOdds)}</b>
         </div>
-        <span className={styles.volumeLabel}>Объём {formatTon(last.volume)}</span>
+        {volumeTon != null ? (
+          <span className={styles.volumeLabel}>Объём {formatTon(volumeTon)}</span>
+        ) : null}
       </div>
       <svg
         className={styles.svg}

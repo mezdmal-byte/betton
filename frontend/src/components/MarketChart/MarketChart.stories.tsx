@@ -10,6 +10,7 @@ const meta = {
     series: chartSpartakA,
     currentOdds: 1.82,
     outcomeLabel: 'Да',
+    volumeTon: 1800,
   },
   decorators: [
     (Story) => (
@@ -30,5 +31,6 @@ export const SideB: Story = {
     series: chartSpartakB,
     currentOdds: 2.18,
     outcomeLabel: 'Нет',
+    volumeTon: 1800,
   },
 }
