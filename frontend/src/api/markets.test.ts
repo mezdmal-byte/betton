@@ -15,6 +15,9 @@ describe('markets query string', () => {
     expect(newest.get('limit')).toBe('20')
     expect(newest.get('offset')).toBe('0')
 
+    const allStatus = new URLSearchParams(buildMarketsQuery({ sort: 'new', category: 'all', status: null }))
+    expect(allStatus.get('status')).toBeNull()
+
     const popular = new URLSearchParams(buildMarketsQuery({ sort: 'popular', category: 'sport' }))
     expect(popular.get('sort')).toBe('popular')
     expect(popular.get('category')).toBe('sport')

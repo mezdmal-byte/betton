@@ -1,9 +1,15 @@
+import { createElement } from 'react'
 import type { Preview } from '@storybook/react'
+import { I18nProvider } from '../src/i18n'
 import '../src/styles/tokens.css'
 import '../src/styles/reset.css'
 import '../src/styles/global.css'
 
 const preview: Preview = {
+  decorators: [
+    (Story) =>
+      createElement(I18nProvider, { initialLocale: 'ru' }, createElement(Story)),
+  ],
   parameters: {
     layout: 'centered',
     controls: {

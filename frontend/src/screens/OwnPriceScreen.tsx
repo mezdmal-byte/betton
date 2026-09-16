@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { IconButton } from '../components/IconButton/IconButton'
 import { OwnPricePanel } from '../components/OwnPricePanel/OwnPricePanel'
 import { marketYesNo, orderBookA, orderBookB, recentTrades } from '../fixtures/markets'
+import { useT } from '../i18n'
 import type { MarketFixture, OrderBookLevel, OutcomeSide, RecentTrade } from '../types/market'
 import styles from './OwnPriceScreen.module.css'
 
@@ -24,6 +25,7 @@ export type OwnPriceScreenProps = {
   disabled?: boolean
   errorMessage?: string | null
   availableTon?: number | null
+  success?: boolean
 }
 
 export function OwnPriceScreen({
@@ -44,7 +46,9 @@ export function OwnPriceScreen({
   disabled = false,
   errorMessage = null,
   availableTon = null,
+  success = false,
 }: OwnPriceScreenProps) {
+  const t = useT()
   const [side, setSide] = useState<OutcomeSide>(selectedSide ?? 'a')
   const [localOdds, setLocalOdds] = useState(odds ?? market.outcomeA.odds ?? 1.82)
   const [localAmount, setLocalAmount] = useState(amount ?? 100)
@@ -56,10 +60,10 @@ export function OwnPriceScreen({
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <IconButton label="Назад" size="md" onClick={onBack}>
+        <IconButton label={t('back')} size="md" onClick={onBack}>
           <ChevronLeft size={22} />
         </IconButton>
-        <strong>Своя цена</strong>
+        <strong>{t('advanced.title')}</strong>
       </header>
       <div className={styles.body}>
         <OwnPricePanel
@@ -77,6 +81,7 @@ export function OwnPriceScreen({
           disabled={disabled}
           errorMessage={errorMessage}
           availableTon={availableTon}
+          success={success}
           onSelectSide={(next) => {
             if (onSelectSide) onSelectSide(next)
             else {

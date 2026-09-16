@@ -13,6 +13,7 @@ import type { MarketOut } from '../api/types'
 import { Button } from '../components/Button/Button'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { TextField } from '../components/TextField/TextField'
+import { useT } from '../i18n'
 import { invalidateAfterTrade } from './invalidate'
 
 export function AdminMarketPanel({
@@ -22,6 +23,7 @@ export function AdminMarketPanel({
   market: MarketOut
   userId?: number
 }) {
+  const t = useT()
   const queryClient = useQueryClient()
   const [reason, setReason] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -38,26 +40,30 @@ export function AdminMarketPanel({
   })
 
   const p2p = (market.mechanism ?? 'p2p') === 'p2p'
-  const names = market.outcomes?.length ? market.outcomes : ['Да', 'Нет']
+  const names = market.outcomes?.length ? market.outcomes : [t('outcome.yes'), t('outcome.no')]
 
   return (
     <section>
-      <StatusMessage title="Модерация">Только существующие admin-действия backend.</StatusMessage>
-      {errorMessage ? <StatusMessage tone="error" title="Ошибка">{errorMessage}</StatusMessage> : null}
+      <StatusMessage title={t('moderation.title')}>{t('mod.hint')}</StatusMessage>
+      {errorMessage ? (
+        <StatusMessage tone="error" title={t('error')}>
+          {errorMessage}
+        </StatusMessage>
+      ) : null}
       {market.status === 'pending' ? (
         <>
           <Button fullWidth onClick={() => run.mutate(() => approveMarket(market.id))}>
-            Одобрить
+            {t('mod.approve')}
           </Button>
-          <TextField id="admin-reject" label="Причина отклонения" value={reason} onChange={setReason} />
+          <TextField id="admin-reject" label={t('mod.reasonPh')} value={reason} onChange={setReason} />
           <Button variant="secondary" fullWidth onClick={() => run.mutate(() => rejectMarket(market.id, reason.trim()))}>
-            Отклонить
+            {t('mod.reject')}
           </Button>
         </>
       ) : null}
       {market.status === 'open' ? (
         <Button variant="secondary" fullWidth onClick={() => run.mutate(() => closeMarket(market.id))}>
-          Стоп ставки
+          {t('mod.close')}
         </Button>
       ) : null}
       {market.status === 'closed'
@@ -68,27 +74,24 @@ export function AdminMarketPanel({
               fullWidth
               onClick={() => run.mutate(() => resolveMarket(market.id, index))}
             >
-              Рассчитать: {name}
+              {t('mod.resolve', { name })}
             </Button>
           ))
         : null}
       {p2p && (market.status === 'open' || market.status === 'closed') ? (
         <>
-          <TextField id="admin-void" label="Причина отмены события" value={reason} onChange={setReason} />
+          <TextField id="admin-void" label={t('mod.cancelPh')} value={reason} onChange={setReason} />
           <Button
             variant="secondary"
             fullWidth
             onClick={() => {
-              if (
-                typeof window !== 'undefined' &&
-                !window.confirm('Все ставки по событию будут возвращены. Сервисный сбор не удерживается')
-              ) {
+              if (typeof window !== 'undefined' && !window.confirm(t('mod.voidConfirm'))) {
                 return
               }
               run.mutate(() => voidMarket(market.id, reason.trim()))
             }}
           >
-            Отменить событие
+            {t('mod.cancel')}
           </Button>
         </>
       ) : null}

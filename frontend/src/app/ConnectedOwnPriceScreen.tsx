@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { mapMarketOut, mapOrderBookLevels, mapOrderPreview, moneyForOrder } from '../api/adapters'
+import { mapMarketOut, mapOrderBookLevels, mapOrderPreview, mapTradesToRecent, moneyForOrder } from '../api/adapters'
 import { isApiError } from '../api/client'
 import { isInsufficientBalanceError } from '../api/errors'
 import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
-import { getMarket, getOrderbook } from '../api/markets'
+import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
 import { placeOrder, previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
-import { COPY } from '../lib/constants'
+import { hapticNotification } from '../telegram/webapp'
+import { useT, useI18n } from '../i18n'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { OwnPriceScreen } from '../screens/OwnPriceScreen'
 import type { OutcomeSide } from '../types/market'
@@ -21,7 +22,6 @@ export type ConnectedOwnPriceScreenProps = {
   availableTon: number
   userId?: number
   onBack: () => void
-  onPlaced?: () => void
 }
 
 export function ConnectedOwnPriceScreen({
@@ -30,14 +30,16 @@ export function ConnectedOwnPriceScreen({
   availableTon,
   userId,
   onBack,
-  onPlaced,
 }: ConnectedOwnPriceScreenProps) {
+  const t = useT()
+  const { locale } = useI18n()
   const queryClient = useQueryClient()
   const keys = useRef(new IdempotencyKeys())
   const [side, setSide] = useState<OutcomeSide>(initialSide)
   const [odds, setOdds] = useState(1.9)
   const [amount, setAmount] = useState(100)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const initializedOdds = useRef(false)
   const shareToken = shareTokenFor(marketId)
 
@@ -55,8 +57,13 @@ export function ConnectedOwnPriceScreen({
     queryFn: () => getOrderbook(marketId, shareToken),
     enabled: marketQuery.data?.mechanism === 'p2p',
   })
+  const tradesQuery = useQuery({
+    queryKey: [...queryKeys.trades(marketId), shareToken],
+    queryFn: () => getMarketTrades(marketId, shareToken),
+    enabled: marketQuery.data?.mechanism === 'p2p',
+  })
 
-  const market = marketQuery.data ? mapMarketOut(marketQuery.data) : undefined
+  const market = marketQuery.data ? mapMarketOut(marketQuery.data, new Date(), locale) : undefined
   const outcome = side === 'a' ? 0 : 1
   const money = moneyForOrder(amount)
   const debouncedMoney = useDebouncedValue(money, 280)
@@ -83,6 +90,7 @@ export function ConnectedOwnPriceScreen({
 
   const preview = previewQuery.data ? mapOrderPreview(previewQuery.data) : null
   const book = mapOrderBookLevels(bookQuery.data?.sides?.[outcome])
+  const trades = mapTradesToRecent(tradesQuery.data, outcome)
   const insufficient = amount > availableTon
 
   const mutation = useMutation({
@@ -105,21 +113,23 @@ export function ConnectedOwnPriceScreen({
     },
     onSuccess: () => {
       invalidateAfterTrade(queryClient, { userId, marketId })
-      onPlaced?.()
+      hapticNotification('success')
+      setSuccess(true)
     },
     onError: (error) => {
+      hapticNotification('error')
       if (isInsufficientBalanceError(error)) {
-        setErrorMessage(`Недостаточно средств. Доступно ${availableTon} TON.`)
+        setErrorMessage(t('err.fundsAvail', { amt: `${availableTon}` }))
         return
       }
-      setErrorMessage(error instanceof Error ? error.message : 'Не удалось разместить заявку')
+      setErrorMessage(error instanceof Error ? error.message : t('err.place'))
     },
   })
 
   if (marketQuery.isPending) {
     return (
-      <StatusMessage tone="loading" title={COPY.marketsLoadingTitle}>
-        {COPY.marketsLoadingBody}
+      <StatusMessage tone="loading" title={t('loading')}>
+        {t('loading.body')}
       </StatusMessage>
     )
   }
@@ -127,8 +137,8 @@ export function ConnectedOwnPriceScreen({
   if (!market || marketQuery.isError) {
     const forbidden = isApiError(marketQuery.error) && marketQuery.error.code === 'forbidden'
     return (
-      <StatusMessage tone="error" title={forbidden ? COPY.marketForbiddenTitle : COPY.marketsErrorTitle}>
-        {forbidden ? COPY.marketForbiddenBody : COPY.marketsErrorBody}
+      <StatusMessage tone="error" title={forbidden ? t('err.forbidden') : t('err.request')}>
+        {forbidden ? t('err.forbiddenBody') : t('err.requestBody')}
       </StatusMessage>
     )
   }
@@ -141,13 +151,14 @@ export function ConnectedOwnPriceScreen({
       odds={odds}
       amount={amount}
       book={book}
-      trades={[]}
+      trades={trades}
       matchedTon={preview?.matchedTon ?? null}
       restTon={preview?.remainingTon ?? null}
       submitting={mutation.isPending}
-      disabled={insufficient || !userId || mutation.isPending}
+      disabled={insufficient || !userId || mutation.isPending || success}
       errorMessage={errorMessage}
       availableTon={availableTon}
+      success={success}
       onSelectSide={setSide}
       onOddsChange={(next) => setOdds(Math.max(1.01, Math.round(next * 100) / 100))}
       onAmountChange={setAmount}

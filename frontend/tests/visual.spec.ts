@@ -36,6 +36,18 @@ test.describe('visual 390x844', () => {
   }
 })
 
+test.describe('visual 390x844 dark', () => {
+  for (const [id, name] of SCREENS) {
+    test(`${name} dark`, async ({ page }) => {
+      const shell = await openStory(page, id)
+      await page.evaluate(() => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+      })
+      await expect(shell).toHaveScreenshot(`${name}-390-dark.png`)
+    })
+  }
+})
+
 test.describe('layout 430x932', () => {
   for (const [id, name] of SCREENS) {
     test(`${name} does not overflow`, async ({ page }) => {

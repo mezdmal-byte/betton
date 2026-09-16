@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import {
   classifyIocPlacement,
-  IOC_REQUOTE_MESSAGE,
   mapOrderPreview,
   moneyForOrder,
   type IocPlacementResult,
@@ -17,6 +16,8 @@ import type { QuickTradeState } from '../components/QuickTradeSheet/QuickTradeSh
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { outcomeIsExecutable } from '../lib/quote'
 import type { MarketFixture, OutcomeSide } from '../types/market'
+import { hapticNotification } from '../telegram/webapp'
+import { useT } from '../i18n'
 import { invalidateAfterTrade } from './invalidate'
 
 type Props = {
@@ -44,6 +45,7 @@ export function ConnectedQuickTradeSheet({
   onClose,
   onOwnPrice,
 }: Props) {
+  const t = useT()
   const queryClient = useQueryClient()
   const keys = useRef(new IdempotencyKeys())
   const [state, setState] = useState<QuickTradeState>('normal')
@@ -127,10 +129,10 @@ export function ConnectedQuickTradeSheet({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (limitOdds == null) throw new Error('Обновите предложение')
+      if (limitOdds == null) throw new Error(t('err.stale'))
       const live = await previewOrder(marketId, { outcome, money, odds: limitOdds }, shareToken)
       const mapped = mapOrderPreview(live)
-      if (mapped.matchedTon <= 0) throw new Error('Обновите предложение')
+      if (mapped.matchedTon <= 0) throw new Error(t('err.stale'))
       const odds = iocOddsFromPreview(mapped.availableWorstOdds, limitOdds)
       const fingerprint = orderFingerprint({
         marketId,
@@ -158,22 +160,25 @@ export function ConnectedQuickTradeSheet({
       const placed = classifyIocPlacement(order)
       if (placed.kind === 'empty') {
         setPlaceResult(null)
-        setErrorMessage(IOC_REQUOTE_MESSAGE)
+        setErrorMessage(t('err.stale'))
         setState('stale-quote')
+        hapticNotification('warning')
         void previewQuery.refetch()
         return
       }
       setPlaceResult(placed)
       setErrorMessage(null)
       setState('success')
+      hapticNotification('success')
     },
     onError: (error) => {
+      hapticNotification('error')
       if (isInsufficientBalanceError(error)) {
         setState('insufficient-balance')
         return
       }
-      const message = error instanceof Error ? error.message : 'Не удалось разместить заявку'
-      if (message.includes('Обновите предложение')) {
+      const message = error instanceof Error ? error.message : t('err.place')
+      if (message === t('err.stale') || message.includes(t('err.stale'))) {
         setState('stale-quote')
         return
       }

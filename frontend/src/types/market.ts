@@ -19,17 +19,21 @@ export type OutcomeFixture = {
 }
 
 export type CreatorFixture = {
+  id?: number
   handle: string
   displayName: string
   initials: string
+  photoUrl?: string
 }
 
 export type MarketFixture = {
   id: string
   category: string
+  categoryKey?: string
   timeLeft: string
   question: string
   creator: CreatorFixture
+  creatorId?: number
   volumeTon: number
   participants: number
   status: MarketStatus
@@ -52,9 +56,11 @@ export type OrderBookLevel = {
 }
 
 export type RecentTrade = {
+  id?: number
   odds: number
   amountTon: number
   timeAgo: string
+  createdAt?: string
 }
 
 export type ChartPoint = {

@@ -16,6 +16,8 @@ import {
   mapTransaction,
   mapUiCategoryToApi,
   mapUiSortToApi,
+  mapUiStatusToApi,
+  mapTradesToChartPoints,
   moneyForOrder,
 } from './adapters'
 import type { MarketOut } from './types'
@@ -80,7 +82,7 @@ describe('MarketOut → UI market', () => {
     expect(view.category).toBe('Спорт')
     expect(view.outcomeA.label).toBe('Спартак')
     expect(view.outcomeB.label).toBe('ЦСКА')
-    expect(view.creator).toEqual({ handle: 'nina', displayName: 'Нина', initials: 'НИ' })
+    expect(view.creator).toEqual({ id: 9, handle: 'nina', displayName: 'Нина', initials: 'НИ' })
     expect(view.volumeTon).toBe(40)
     expect(view.participants).toBe(3)
     expect(view.creator.handle).not.toBe('vasya')
@@ -452,5 +454,40 @@ describe('money payload', () => {
   it('serializes TON without inventing extra dust', () => {
     expect(moneyForOrder(100)).toBe('100')
     expect(moneyForOrder(10.5)).toBe('10.5')
+  })
+})
+
+describe('status filter mapping', () => {
+  it('maps extra-filter chips onto backend statuses without a fake active value', () => {
+    expect(mapUiStatusToApi('all')).toBeNull()
+    expect(mapUiStatusToApi('open')).toBe('open')
+    expect(mapUiStatusToApi('closed')).toBe('closed')
+    expect(mapUiStatusToApi('resolved')).toBe('resolved')
+    expect(mapUiStatusToApi('cancelled')).toBe('cancelled')
+  })
+})
+
+describe('trade history adapter', () => {
+  const fill = {
+    id: 9,
+    created_at: '2026-09-16T12:00:00.000Z',
+    maker_outcome: 0,
+    taker_outcome: 1,
+    maker_odds: 2.2,
+    taker_odds: 1.83333,
+    maker_stake: 41.6667,
+    taker_stake: 50,
+    maker_stake_nano: 41_666_700_000,
+    taker_stake_nano: 50_000_000_000,
+  }
+
+  it('charts actual executed odds per outcome and does not invent a series', () => {
+    expect(mapTradesToChartPoints([], 0)).toEqual([])
+    const seriesA = mapTradesToChartPoints([fill], 0)
+    const seriesB = mapTradesToChartPoints([fill], 1)
+    expect(seriesA).toHaveLength(1)
+    expect(seriesA[0]?.odds).toBe(2.2)
+    expect(seriesB[0]?.odds).toBe(1.83333)
+    expect(seriesA[0]?.volume).toBe(41.6667)
   })
 })

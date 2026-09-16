@@ -9,6 +9,7 @@ import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { PortfolioScreen } from '../screens/PortfolioScreen'
 import type { AccountFixture, OrderFixture } from '../types/account'
 import { confirmCancelOrder, invalidateAfterTrade } from './invalidate'
+import { useT } from '../i18n'
 
 const GUEST: AccountFixture = {
   displayName: 'Гость',
@@ -31,6 +32,8 @@ export type ConnectedPortfolioScreenProps = {
   onNavChange: (id: NavId) => void
   onProfileClick: () => void
   onSelectMarket: (marketId: number) => void
+  onDeposit?: () => void
+  onWithdraw?: () => void
 }
 
 export function ConnectedPortfolioScreen({
@@ -40,7 +43,10 @@ export function ConnectedPortfolioScreen({
   onNavChange,
   onProfileClick,
   onSelectMarket,
+  onDeposit,
+  onWithdraw,
 }: ConnectedPortfolioScreenProps) {
+  const t = useT()
   const queryClient = useQueryClient()
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null)
   const enabled = Boolean(userId)
@@ -104,13 +110,15 @@ export function ConnectedPortfolioScreen({
       onNavChange={onNavChange}
       onProfileClick={onProfileClick}
       onSelectMarket={onSelectMarket}
+      onDeposit={onDeposit}
+      onWithdraw={onWithdraw}
       onRetry={() => {
         void positionsQuery.refetch()
         void ordersQuery.refetch()
         void historyQuery.refetch()
       }}
       onCancelOrder={(order) => {
-        if (!confirmCancelOrder()) return
+        if (!confirmCancelOrder(t('order.cancelConfirm'))) return
         void cancelMutation.mutateAsync(order)
       }}
     />

@@ -51,7 +51,7 @@ export const privateCreateDraft: CreateMarketDraft = {
   outcomeA: 'Да',
   outcomeB: 'Нет',
   closeAt: '20 сен 2026 · 20:00',
-  visibility: 'private',
+  visibility: 'unlisted',
   description: 'Победит команда, забившая больше голов в основное время. Ничья считается исходом «Нет».',
 }
 

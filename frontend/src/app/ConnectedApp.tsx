@@ -5,13 +5,17 @@ import { getHealth } from '../api/account'
 import { getMarketByShare } from '../api/markets'
 import { queryKeys } from '../api/query'
 import { copyShareLink, rememberShareToken, telegramShareUrl } from '../api/share'
-import { COPY } from '../lib/constants'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
-import { bootTelegramWebApp, hasTelegramInitData, readShareTokenFromContext } from '../telegram/webapp'
+import { useI18n } from '../i18n'
 import type { AccountFixture } from '../types/account'
-import type { MarketFixture, OutcomeSide } from '../types/market'
-import type { MarketOut } from '../api/types'
+import type { MarketFixture } from '../types/market'
+import {
+  bootTelegramWebApp,
+  hasTelegramInitData,
+  readShareTokenFromContext,
+  syncTelegramBackButton,
+} from '../telegram/webapp'
 import { ConnectedCreateMarketScreen } from './ConnectedCreateMarketScreen'
 import { ConnectedMarketDetailScreen } from './ConnectedMarketDetailScreen'
 import { ConnectedMarketsScreen } from './ConnectedMarketsScreen'
@@ -21,20 +25,21 @@ import { ConnectedMyMarketsScreen } from './ConnectedMyMarketsScreen'
 import { ConnectedOwnPriceScreen } from './ConnectedOwnPriceScreen'
 import { ConnectedPortfolioScreen } from './ConnectedPortfolioScreen'
 import { ConnectedProfileScreen } from './ConnectedProfileScreen'
+import { ConnectedPublicProfileScreen } from './ConnectedPublicProfileScreen'
 import { CreateMarketResult } from './CreateMarketResult'
+import { HelpScreen } from '../screens/HelpScreen'
+import { WalletScreen } from '../screens/WalletScreen'
+import {
+  currentRoute,
+  goBack,
+  pushRoute,
+  resetToTab,
+  showTelegramBackButton,
+  type Route,
+  type WalletTab,
+} from './navigation'
 import { useAccount, useAuthExpired, useSession } from './session'
 import styles from './ConnectedApp.module.css'
-
-type Route =
-  | { name: 'markets' }
-  | { name: 'create' }
-  | { name: 'create-result'; market: MarketOut }
-  | { name: 'portfolio' }
-  | { name: 'profile'; from: 'markets' | 'create' | 'portfolio' | 'detail' }
-  | { name: 'detail'; marketId: number }
-  | { name: 'own-price'; marketId: number; side: OutcomeSide }
-  | { name: 'moderation' }
-  | { name: 'my-markets' }
 
 const GUEST_ACCOUNT: AccountFixture = {
   displayName: 'Гость',
@@ -50,13 +55,15 @@ const GUEST_ACCOUNT: AccountFixture = {
 }
 
 export function ConnectedApp() {
+  const { t } = useI18n()
   const [hasInitData, setHasInitData] = useState(() => hasTelegramInitData())
-  const [route, setRoute] = useState<Route>({ name: 'markets' })
+  const [stack, setStack] = useState<Route[]>([{ name: 'markets' }])
   const [shareToken, setShareToken] = useState<string | null>(null)
   const [feedView, setFeedView] = useState<FeedViewState>({
     query: '',
     sort: 'new',
     category: 'all',
+    status: 'open',
   })
   const session = useSession(hasInitData)
   const authExpired = useAuthExpired()
@@ -65,6 +72,7 @@ export function ConnectedApp() {
     queryKey: queryKeys.health,
     queryFn: getHealth,
   })
+  const route = currentRoute(stack)
 
   useEffect(() => {
     bootTelegramWebApp()
@@ -79,13 +87,17 @@ export function ConnectedApp() {
       .then((market) => {
         if (cancelled) return
         rememberShareToken(market.id, market.share_token || shareToken)
-        setRoute({ name: 'detail', marketId: market.id })
+        setStack((current) => pushRoute(current, { name: 'detail', marketId: market.id }))
       })
       .catch(() => undefined)
     return () => {
       cancelled = true
     }
   }, [shareToken, session.user])
+
+  useEffect(() => {
+    return syncTelegramBackButton(showTelegramBackButton(route), () => setStack(goBack))
+  }, [route])
 
   const account = accountQuery.data ?? null
   const mappedAccount = useMemo(() => (account ? mapAccountOut(account) : null), [account])
@@ -99,45 +111,27 @@ export function ConnectedApp() {
           ? 'ready'
           : 'unauthenticated'
 
-  const goTab = (id: NavId) => {
-    if (id === 'markets') setRoute({ name: 'markets' })
-    else if (id === 'create') setRoute({ name: 'create' })
-    else setRoute({ name: 'portfolio' })
-  }
+  const back = () => setStack((current) => goBack(current))
+  const goTab = (id: NavId) => setStack(resetToTab(id))
+  const push = (next: Route) => setStack((current) => pushRoute(current, next))
 
-  const openProfile = () => {
-    const from =
-      route.name === 'profile'
-        ? route.from
-        : route.name === 'detail' || route.name === 'own-price'
-          ? 'detail'
-          : route.name === 'create' || route.name === 'create-result'
-            ? 'create'
-            : route.name === 'portfolio'
-              ? 'portfolio'
-              : 'markets'
-    setRoute({ name: 'profile', from })
-  }
-
+  const openProfile = () => push({ name: 'profile' })
   const openMarket = (market: MarketFixture | number) => {
     const id = typeof market === 'number' ? market : Number(market.id)
     if (!Number.isFinite(id)) return
-    setRoute({ name: 'detail', marketId: id })
+    push({ name: 'detail', marketId: id })
   }
-
-  const closeProfile = () => {
-    if (route.name !== 'profile') return
-    if (route.from === 'create') setRoute({ name: 'create' })
-    else if (route.from === 'portfolio') setRoute({ name: 'portfolio' })
-    else setRoute({ name: 'markets' })
+  const openCreator = (userId?: number | null) => {
+    if (!userId) return
+    push({ name: 'public-profile', userId })
   }
 
   if (session.isExpired || authExpired) {
     return (
       <div className={styles.root}>
         <div className={styles.overlay}>
-          <StatusMessage tone="error" title={COPY.authExpiredTitle}>
-            {COPY.authExpiredBody}
+          <StatusMessage tone="error" title={t('auth.expiredTitle')}>
+            {t('auth.expiredBody')}
           </StatusMessage>
         </div>
       </div>
@@ -162,14 +156,15 @@ export function ConnectedApp() {
           onNavChange={goTab}
           onProfileClick={openProfile}
           onSelectMarket={openMarket}
-          onOwnPrice={(marketId, side) => setRoute({ name: 'own-price', marketId, side })}
+          onCreatorClick={(market) => openCreator(market.creator.id ?? market.creatorId)}
+          onOwnPrice={(marketId, side) => push({ name: 'own-price', marketId, side })}
         />
       ) : null}
       {route.name === 'create' ? (
         <ConnectedCreateMarketScreen
           enabled={accountState === 'ready'}
-          onBack={() => setRoute({ name: 'markets' })}
-          onCreated={(market) => setRoute({ name: 'create-result', market })}
+          onBack={() => goTab('markets')}
+          onCreated={(market) => push({ name: 'create-result', market })}
         />
       ) : null}
       {route.name === 'create-result' ? (
@@ -177,10 +172,10 @@ export function ConnectedApp() {
           market={route.market}
           shareLink={telegramShareUrl(botUsername, route.market.share_token)}
           onOpen={() => {
-            if (route.market.status === 'pending') setRoute({ name: 'my-markets' })
-            else setRoute({ name: 'detail', marketId: route.market.id })
+            if (route.market.status === 'pending') push({ name: 'my-markets' })
+            else push({ name: 'detail', marketId: route.market.id })
           }}
-          onBack={() => setRoute({ name: 'markets' })}
+          onBack={back}
           onCopy={() => {
             void copyShareLink(telegramShareUrl(botUsername, route.market.share_token))
           }}
@@ -193,7 +188,9 @@ export function ConnectedApp() {
           accountState={accountState}
           onNavChange={goTab}
           onProfileClick={openProfile}
-          onSelectMarket={(marketId) => setRoute({ name: 'detail', marketId })}
+          onSelectMarket={(marketId) => push({ name: 'detail', marketId })}
+          onDeposit={() => push({ name: 'wallet', tab: 'deposit' })}
+          onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })}
         />
       ) : null}
       {route.name === 'profile' ? (
@@ -201,26 +198,44 @@ export function ConnectedApp() {
           account={mappedAccount ?? GUEST_ACCOUNT}
           accountState={accountState === 'ready' ? 'ready' : 'unauthenticated'}
           userId={session.user?.id}
-          onBack={closeProfile}
+          onBack={back}
           onMenu={(id) => {
-            if (id === 'events') setRoute({ name: 'my-markets' })
-            else if (id === 'moderation' && isAdmin) setRoute({ name: 'moderation' })
-            else if (id === 'wallet') setRoute({ name: 'portfolio' })
+            if (id === 'events') push({ name: 'my-markets' })
+            else if (id === 'moderation' && isAdmin) push({ name: 'moderation' })
+            else if (id === 'wallet') push({ name: 'wallet', tab: 'deposit' })
+            else if (id === 'help') push({ name: 'help' })
+            else if (id === 'public' && session.user?.id) openCreator(session.user.id)
           }}
         />
       ) : null}
       {route.name === 'my-markets' ? (
         <ConnectedMyMarketsScreen
           userId={session.user?.id}
-          onBack={() => setRoute({ name: 'profile', from: 'markets' })}
-          onOpenMarket={(marketId) => setRoute({ name: 'detail', marketId })}
+          onBack={back}
+          onOpenMarket={(marketId) => push({ name: 'detail', marketId })}
         />
       ) : null}
       {route.name === 'moderation' ? (
         <ConnectedModerationScreen
           enabled={isAdmin}
-          onBack={() => setRoute({ name: 'profile', from: 'markets' })}
-          onOpenMarket={(marketId) => setRoute({ name: 'detail', marketId })}
+          onBack={back}
+          onOpenMarket={(marketId) => push({ name: 'detail', marketId })}
+        />
+      ) : null}
+      {route.name === 'help' ? <HelpScreen onBack={back} /> : null}
+      {route.name === 'wallet' ? (
+        <WalletScreen
+          account={mappedAccount}
+          tab={route.tab}
+          onBack={back}
+          onTabChange={(tab: WalletTab) => push({ name: 'wallet', tab })}
+        />
+      ) : null}
+      {route.name === 'public-profile' ? (
+        <ConnectedPublicProfileScreen
+          userId={route.userId}
+          onBack={back}
+          onOpenMarket={(marketId) => push({ name: 'detail', marketId })}
         />
       ) : null}
       {route.name === 'detail' ? (
@@ -229,8 +244,10 @@ export function ConnectedApp() {
           isAdmin={isAdmin}
           userId={session.user?.id}
           availableTon={availableTon}
-          onBack={() => setRoute({ name: 'markets' })}
-          onOwnPrice={(side) => setRoute({ name: 'own-price', marketId: route.marketId, side })}
+          botUsername={botUsername}
+          onBack={back}
+          onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })}
+          onCreatorClick={(creatorId) => openCreator(creatorId)}
         />
       ) : null}
       {route.name === 'own-price' ? (
@@ -239,8 +256,7 @@ export function ConnectedApp() {
           initialSide={route.side}
           availableTon={availableTon}
           userId={session.user?.id}
-          onBack={() => setRoute({ name: 'detail', marketId: route.marketId })}
-          onPlaced={() => setRoute({ name: 'detail', marketId: route.marketId })}
+          onBack={back}
         />
       ) : null}
     </div>

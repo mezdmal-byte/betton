@@ -23,11 +23,12 @@ export const queryKeys = {
   creator: (userId: number) => ['creators', userId] as const,
   moderation: ['moderation', 'markets'] as const,
   health: ['health'] as const,
-  markets: (input: { sort: string; category: string; q: string }) =>
-    ['markets', input.sort, input.category, input.q] as const,
+  markets: (input: { sort: string; category: string; q: string; status?: string | null }) =>
+    ['markets', input.sort, input.category, input.q, input.status ?? 'open'] as const,
   market: (marketId: number | string) => ['markets', String(marketId)] as const,
   marketShare: (token: string) => ['markets', 'share', token] as const,
   orderbook: (marketId: number | string) => ['markets', String(marketId), 'orderbook'] as const,
+  trades: (marketId: number | string) => ['markets', String(marketId), 'trades'] as const,
   orderPreview: (input: {
     marketId: number | string
     outcome: number

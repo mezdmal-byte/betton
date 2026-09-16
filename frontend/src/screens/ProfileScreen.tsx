@@ -3,23 +3,26 @@ import { Avatar } from '../components/Avatar/Avatar'
 import { Chip } from '../components/Chip/Chip'
 import { IconButton } from '../components/IconButton/IconButton'
 import { accountUser } from '../fixtures/account'
-import { CREATOR_SHARE_COMPACT, COPY } from '../lib/constants'
 import { formatInteger, formatTon } from '../lib/format'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
+import { useI18n } from '../i18n'
+import type { Locale } from '../i18n'
 import type { AccountFixture } from '../types/account'
 import styles from './ProfileScreen.module.css'
 
-const LANGS = [
+const LANGS: Array<{ id: Locale; label: string }> = [
   { id: 'ru', label: 'RU' },
   { id: 'en', label: 'EN' },
   { id: 'zh', label: '中文' },
-] as const
+]
 
 export type ProfileScreenProps = {
   account?: AccountFixture
   onBack?: () => void
   accountState?: 'ready' | 'unauthenticated'
   onMenu?: (id: string) => void
+  locale?: Locale
+  onLocaleChange?: (locale: Locale) => void
 }
 
 export function ProfileScreen({
@@ -27,84 +30,84 @@ export function ProfileScreen({
   onBack,
   accountState = 'ready',
   onMenu,
+  locale,
+  onLocaleChange,
 }: ProfileScreenProps) {
+  const i18n = useI18n()
+  const t = i18n.t
+  const activeLocale = locale ?? i18n.locale
   const menu = [
-    { id: 'public', label: 'Публичный профиль' },
-    { id: 'events', label: 'Мои события' },
-    { id: 'wallet', label: 'Кошелёк' },
-    ...(account.isAdmin ? [{ id: 'moderation', label: 'Модерация' }] : []),
-    { id: 'help', label: 'Помощь' },
+    { id: 'public', label: t('profile.public') },
+    { id: 'events', label: t('profile.events') },
+    { id: 'wallet', label: t('profile.wallet') },
+    ...(account.isAdmin ? [{ id: 'moderation', label: t('profile.moderation') }] : []),
+    { id: 'help', label: t('profile.help') },
   ]
 
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <IconButton label="Назад" size="md" onClick={onBack}>
+        <IconButton label={t('back')} size="md" onClick={onBack}>
           <ChevronLeft size={22} />
         </IconButton>
-        <strong>Профиль</strong>
+        <strong>{t('nav.profile')}</strong>
       </header>
       <div className={styles.body}>
         {accountState === 'unauthenticated' ? (
-          <StatusMessage tone="warning" title={COPY.openInTelegramTitle}>
-            {COPY.openInTelegramBody}
+          <StatusMessage tone="warning" title={t('err.openInTg')}>
+            {t('err.openInTgBody')}
           </StatusMessage>
         ) : (
           <>
-        <section className={styles.identity}>
-          <Avatar initials={account.initials} name={account.displayName} src={account.photoUrl} size="lg" />
-          <div className={styles.identityText}>
-            <strong>{account.displayName}</strong>
-            <span>@{account.handle}</span>
-          </div>
-        </section>
+            <section className={styles.identity}>
+              <Avatar initials={account.initials} name={account.displayName} src={account.photoUrl} size="lg" />
+              <div className={styles.identityText}>
+                <strong>{account.displayName}</strong>
+                <span>@{account.handle}</span>
+              </div>
+            </section>
 
-        <dl className={styles.metrics}>
-          <div>
-            <dt>События</dt>
-            <dd>{account.eventsCreated == null ? '—' : formatInteger(account.eventsCreated)}</dd>
-          </div>
-          <div>
-            <dt>Оборот</dt>
-            <dd>{account.createdVolumeTon == null ? '—' : formatTon(account.createdVolumeTon)}</dd>
-          </div>
-          <div>
-            <dt>Доход автора</dt>
-            <dd>{formatTon(account.creatorIncomeTon)}</dd>
-          </div>
-        </dl>
-        <p className={styles.fee}>{CREATOR_SHARE_COMPACT}</p>
+            <dl className={styles.metrics}>
+              <div>
+                <dt>{t('account.statEvents')}</dt>
+                <dd>{account.eventsCreated == null ? '—' : formatInteger(account.eventsCreated)}</dd>
+              </div>
+              <div>
+                <dt>{t('account.statVolume')}</dt>
+                <dd>{account.createdVolumeTon == null ? '—' : formatTon(account.createdVolumeTon)}</dd>
+              </div>
+              <div>
+                <dt>{t('account.creatorIncome')}</dt>
+                <dd>{formatTon(account.creatorIncomeTon)}</dd>
+              </div>
+            </dl>
           </>
         )}
 
-        <nav className={styles.menu} aria-label="Профиль">
-          {menu
-            .filter((item) => item.id !== 'help')
-            .map((item) => (
-              <button key={item.id} type="button" className={styles.menuItem} onClick={() => onMenu?.(item.id)}>
-                <span>{item.label}</span>
-                <ChevronRight size={18} strokeWidth={1.8} aria-hidden="true" />
-              </button>
-            ))}
+        <nav className={styles.menu} aria-label={t('profile.menu')}>
+          {menu.map((item) => (
+            <button key={item.id} type="button" className={styles.menuItem} onClick={() => onMenu?.(item.id)}>
+              <span>{item.label}</span>
+              <ChevronRight size={18} strokeWidth={1.8} aria-hidden="true" />
+            </button>
+          ))}
         </nav>
 
         <section className={styles.lang}>
-          <span className={styles.sectionLabel}>Язык</span>
-          <div className={styles.pills} role="group" aria-label="Язык">
+          <span className={styles.sectionLabel}>{t('account.lang')}</span>
+          <div className={styles.pills} role="group" aria-label={t('account.lang')}>
             {LANGS.map((item) => (
-              <Chip key={item.id} compact selected={item.id === 'ru'}>
+              <Chip
+                key={item.id}
+                compact
+                selected={item.id === activeLocale}
+                onClick={() => (onLocaleChange ?? i18n.setLocale)(item.id)}
+              >
                 {item.label}
               </Chip>
             ))}
           </div>
         </section>
-
-        <nav className={styles.menu} aria-label="Справка">
-          <button type="button" className={styles.menuItem}>
-            <span>Помощь</span>
-            <ChevronRight size={18} strokeWidth={1.8} aria-hidden="true" />
-          </button>
-        </nav>
       </div>
     </div>
   )

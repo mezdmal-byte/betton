@@ -4,6 +4,8 @@ import { buildCreateMarketPayload } from '../api/adapters'
 import { errorDetail } from '../api/errors'
 import { createMarket } from '../api/markets'
 import { rememberShareToken } from '../api/share'
+import { useT } from '../i18n'
+import { hapticNotification } from '../telegram/webapp'
 import { defaultCloseAt, formatCloseAtLabel, fromDatetimeLocalValue, toDatetimeLocalValue } from '../lib/datetime'
 import { CreateMarketScreen } from '../screens/CreateMarketScreen'
 import type { CreateMarketDraft } from '../types/account'
@@ -16,14 +18,16 @@ export type ConnectedCreateMarketScreenProps = {
 }
 
 export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled }: ConnectedCreateMarketScreenProps) {
+  const t = useT()
   const [closeAt, setCloseAt] = useState(() => defaultCloseAt())
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const mutation = useMutation({
     mutationFn: async (draft: CreateMarketDraft) => {
       const visibility = draft.visibility === 'unlisted' ? 'unlisted' : 'public'
-      if (draft.question.trim().length < 8) throw new Error('Вопрос должен содержать от 8 до 512 символов')
-      if (closeAt.getTime() <= Date.now()) throw new Error('Конец приёма не может быть в прошлом')
+      if (draft.question.trim().length < 8) throw new Error(t('create.qShort'))
+      if (closeAt.getTime() <= Date.now()) throw new Error(t('create.closePast'))
+      if (draft.outcomeA.trim() === draft.outcomeB.trim()) throw new Error(t('create.uniqOutcomes'))
       return createMarket(
         buildCreateMarketPayload({
           question: draft.question,
@@ -38,9 +42,13 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled }: Conn
     },
     onSuccess: (market) => {
       if (market.share_token) rememberShareToken(market.id, market.share_token)
+      hapticNotification('success')
       onCreated(market)
     },
-    onError: (error) => setErrorMessage(errorDetail(error)),
+    onError: (error) => {
+      hapticNotification('error')
+      setErrorMessage(errorDetail(error))
+    },
   })
 
   const closeLabel = useMemo(() => formatCloseAtLabel(closeAt), [closeAt])

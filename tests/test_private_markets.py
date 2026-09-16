@@ -161,10 +161,10 @@ def test_bot_share_deep_link_uses_current_webapp_base(monkeypatch):
     assert start_payload_token("market_" + token) == token
     assert start_payload_token("market_") is None
     assert start_payload_token("help") is None
-    assert share_webapp_url(token) == "https://fresh-tunnel.trycloudflare.com/?share=" + token
+    assert share_webapp_url(token) == "https://fresh-tunnel.trycloudflare.com/v2/?share=" + token
 
     monkeypatch.setattr(settings, "public_base_url", "https://other-tunnel.trycloudflare.com/")
-    assert share_webapp_url(token) == "https://other-tunnel.trycloudflare.com/?share=" + token
+    assert share_webapp_url(token) == "https://other-tunnel.trycloudflare.com/v2/?share=" + token
 
 
 def test_health_exposes_bot_username(client: TestClient, monkeypatch):

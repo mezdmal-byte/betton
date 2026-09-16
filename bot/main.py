@@ -133,11 +133,11 @@ def get_bot() -> Bot:
 
 
 def mini_app_url() -> str:
-    return settings.webapp_base() + "/"
+    return settings.webapp_base().rstrip("/") + "/v2/"
 
 
 def share_webapp_url(token: str) -> str:
-    return settings.webapp_base().rstrip("/") + "/?share=" + token
+    return settings.webapp_base().rstrip("/") + "/v2/?share=" + token
 
 
 def start_payload_token(payload: str | None) -> str | None:

@@ -9,12 +9,11 @@ import { MarketCard } from '../components/MarketCard/MarketCard'
 import { MarketFilters } from '../components/MarketFilters/MarketFilters'
 import { SearchField } from '../components/SearchField/SearchField'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
-import { COPY } from '../lib/constants'
+import { useT } from '../i18n'
 import { formatTon } from '../lib/format'
 import styles from './MarketsScreen.module.css'
 
 export type MarketsAccountState = 'ready' | 'loading' | 'unauthenticated'
-
 export type MarketsFeedState = 'ready' | 'loading' | 'empty' | 'error'
 
 export type MarketsHeaderUser = {
@@ -30,11 +29,15 @@ export type MarketsScreenProps = {
   query?: string
   sort?: string
   category?: string
+  filtersOpen?: boolean
+  filtersActive?: boolean
   onQueryChange?: (value: string) => void
   onSortChange?: (id: string) => void
   onCategoryChange?: (id: string) => void
+  onFiltersClick?: () => void
   onSelectOutcome?: (market: MarketFixture, side: OutcomeSide) => void
   onSelectMarket?: (market: MarketFixture) => void
+  onCreatorClick?: (market: MarketFixture) => void
   onNavChange?: (id: NavId) => void
   onProfileClick?: () => void
   headerUser?: MarketsHeaderUser | null
@@ -51,11 +54,15 @@ export function MarketsScreen({
   query = '',
   sort = 'new',
   category = 'all',
+  filtersOpen = false,
+  filtersActive = false,
   onQueryChange,
   onSortChange,
   onCategoryChange,
+  onFiltersClick,
   onSelectOutcome,
   onSelectMarket,
+  onCreatorClick,
   onNavChange,
   onProfileClick,
   headerUser,
@@ -66,6 +73,7 @@ export function MarketsScreen({
   loadingMore = false,
   onLoadMore,
 }: MarketsScreenProps) {
+  const t = useT()
   const [internalQuery, setInternalQuery] = useState(query)
   const [internalSort, setInternalSort] = useState(sort)
   const [internalCategory, setInternalCategory] = useState(category)
@@ -73,8 +81,7 @@ export function MarketsScreen({
   const search = onQueryChange ? query : internalQuery
   const sortValue = onSortChange ? sort : internalSort
   const categoryValue = onCategoryChange ? category : internalCategory
-  const resolvedHeader =
-    accountState === 'ready' ? (headerUser ?? currentUser) : null
+  const resolvedHeader = accountState === 'ready' ? (headerUser ?? currentUser) : null
   const balanceLabel =
     accountState === 'loading' ? '…' : resolvedHeader ? formatTon(resolvedHeader.availableTon) : '—'
 
@@ -84,9 +91,9 @@ export function MarketsScreen({
         <h1 className={styles.brand}>
           Bet<span>TON</span>
         </h1>
-        <div className={styles.headerRight} onClick={onProfileClick}>
+        <div className={styles.headerRight} onClick={onProfileClick} role="button" tabIndex={0}>
           <div className={styles.balance}>
-            <span>Доступно</span>
+            <span>{t('header.available')}</span>
             <strong>{balanceLabel}</strong>
           </div>
           <Avatar
@@ -101,32 +108,36 @@ export function MarketsScreen({
         <SearchField
           value={search}
           onChange={onQueryChange ?? setInternalQuery}
+          placeholder={t('feed.searchPh')}
         />
         <MarketFilters
           sort={sortValue}
           category={categoryValue}
+          filtersOpen={filtersOpen}
+          filtersActive={filtersActive}
           onSortChange={onSortChange ?? setInternalSort}
           onCategoryChange={onCategoryChange ?? setInternalCategory}
+          onFiltersClick={onFiltersClick}
         />
         <div className={styles.feed}>
           {feedState === 'loading' ? (
-            <StatusMessage tone="loading" title={COPY.marketsLoadingTitle}>
-              {COPY.marketsLoadingBody}
+            <StatusMessage tone="loading" title={t('loading')}>
+              {t('loading.body')}
             </StatusMessage>
           ) : null}
           {feedState === 'empty' ? (
-            <StatusMessage tone="empty" title={COPY.marketsEmptyTitle}>
-              {COPY.marketsEmptyBody}
+            <StatusMessage tone="empty" title={t('feed.emptyTitle')}>
+              {t('feed.emptyBody')}
             </StatusMessage>
           ) : null}
           {feedState === 'error' ? (
-            <StatusMessage tone="error" title={COPY.marketsErrorTitle}>
-              {COPY.marketsErrorBody}
+            <StatusMessage tone="error" title={t('err.request')}>
+              {t('err.requestBody')}
             </StatusMessage>
           ) : null}
           {feedState === 'error' && onRetry ? (
             <Button variant="secondary" onClick={onRetry}>
-              Повторить
+              {t('retry')}
             </Button>
           ) : null}
           {feedState === 'ready' || (feedState === 'error' && markets.length > 0)
@@ -135,13 +146,18 @@ export function MarketsScreen({
                   key={market.id}
                   market={market}
                   onOpen={onSelectMarket ? () => onSelectMarket(market) : undefined}
+                  onCreatorClick={
+                    onCreatorClick && (market.creator.id || market.creatorId)
+                      ? () => onCreatorClick(market)
+                      : undefined
+                  }
                   onSelectOutcome={(side) => onSelectOutcome?.(market, side)}
                 />
               ))
             : null}
           {feedState === 'ready' && hasMore ? (
             <Button variant="secondary" fullWidth loading={loadingMore} onClick={onLoadMore}>
-              {COPY.loadMore}
+              {t('feed.more')}
             </Button>
           ) : null}
         </div>

@@ -1,0 +1,47 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--color-overlay);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-4) var(--page-padding) var(--pad-bar-bottom);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-faint);
+  border-bottom: 0;
+  border-radius: var(--radius-16) var(--radius-16) 0 0;
+  box-shadow: var(--shadow-sheet);
+}
+
+.handle {
+  width: 36px;
+  height: 4px;
+  margin: var(--space-8) auto var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-border-subtle);
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+}

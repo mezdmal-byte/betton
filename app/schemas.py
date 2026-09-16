@@ -263,6 +263,21 @@ class P2PMoneyEntryOut(BaseModel):
     created_at: Optional[datetime] = None
 
 
+class MarketTradeOut(BaseModel):
+    """Read-only executed P2P fill. Odds come from the stored fill price tick."""
+
+    id: int
+    created_at: Optional[datetime] = None
+    maker_outcome: int
+    taker_outcome: int
+    maker_odds: float
+    taker_odds: float
+    maker_stake: float
+    taker_stake: float
+    maker_stake_nano: int
+    taker_stake_nano: int
+
+
 class P2PReconciliationOut(BaseModel):
     market_id: int
     status: str

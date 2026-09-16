@@ -1,7 +1,8 @@
 import { X } from 'lucide-react'
-import { AMOUNT_PRESETS, FEE_COPY } from '../../lib/constants'
+import { AMOUNT_PRESETS } from '../../lib/constants'
 import { splitFill } from '../../lib/fill'
 import { formatInteger, formatOdds, formatPayout, formatTon, formatTonFull } from '../../lib/format'
+import { useT } from '../../i18n'
 import { outcomeIsExecutable } from '../../lib/quote'
 import type { MarketFixture, OutcomeSide } from '../../types/market'
 import { AmountInput } from '../AmountInput/AmountInput'
@@ -70,6 +71,7 @@ export function QuickTradeSheet({
   errorMessage = null,
   placeResult = null,
 }: QuickTradeSheetProps) {
+  const t = useT()
   const selected = outcomeOf(market, selectedSide)
   const other = outcomeOf(market, selectedSide === 'a' ? 'b' : 'a')
   const executable = !quotesLoading && outcomeIsExecutable(selected)
@@ -95,52 +97,55 @@ export function QuickTradeSheet({
         : formatPayout(amount, selected.odds as number)
   const partialFill = state === 'success' && placeResult?.kind === 'partial'
   const cta = demoMode
-    ? 'Ставки пока недоступны'
+    ? t('demo.unavailable')
     : state === 'processing'
-      ? 'Ставим…'
+      ? t('market.processing')
       : partialFill
-        ? 'Частично исполнено'
+        ? t('market.partialFilled')
         : state === 'success'
-          ? 'Исполнено'
+          ? t('market.filled')
           : stale
-            ? 'Обновить предложение'
+            ? t('market.refreshQuote')
             : noLiquidity
-              ? 'Нет ликвидности'
-              : `Поставить ${amount} TON`
+              ? t('market.noLiq')
+              : t('market.betCtaAmount', { amt: amount })
 
   return (
-    <section className={styles.sheet} aria-label="Быстрая ставка">
+    <section className={styles.sheet} aria-label={t('market.quickTrade')}>
       <div className={styles.handle} aria-hidden="true" />
       <header className={styles.header}>
         <h2 className={styles.question}>{market.question}</h2>
-        <IconButton label="Закрыть" size="md" onClick={onClose}>
+        <IconButton label={t('close')} size="md" onClick={onClose}>
           <X size={18} />
         </IconButton>
       </header>
 
       {stale ? (
         <p className={styles.banner}>
-          {errorMessage || 'Коэффициент изменился. Обновите предложение.'}
+          {errorMessage || t('market.quoteChanged')}
         </p>
       ) : null}
       {partialFill && placeResult ? (
         <p className={styles.banner}>
-          Исполнено: {formatTonFull(placeResult.filledTon)}
+          {t('market.filledLine', { filled: formatTonFull(placeResult.filledTon) })}
           <br />
-          Возвращено: {formatTonFull(placeResult.refundedTon)}
+          {t('market.refundedLine', { refunded: formatTonFull(placeResult.refundedTon) })}
         </p>
       ) : null}
       {state === 'success' && !partialFill ? (
-        <p className={styles.banner}>Заявка обработана. Баланс обновлён с сервера.</p>
+        <p className={styles.banner}>{t('market.processed')}</p>
       ) : null}
       {state === 'error' && errorMessage ? <p className={styles.banner}>{errorMessage}</p> : null}
       {state === 'partial' && executable ? (
         <p className={styles.note}>
-          Сейчас доступно {formatTon(selected.liquidityTon)}. Исполнится {formatInteger(matched)}{' '}
-          TON, остаток {formatInteger(rest)} TON — своей ценой.
+          {t('market.partialNote', {
+            available: formatTon(selected.liquidityTon),
+            matched: formatInteger(matched),
+            rest: formatInteger(rest),
+          })}
         </p>
       ) : null}
-      {noLiquidity && !stale ? <p className={styles.note}>Нет встречных заявок по этой цене.</p> : null}
+      {noLiquidity && !stale ? <p className={styles.note}>{t('market.takeAvailable')}</p> : null}
 
       <div className={styles.outcomes}>
         <OutcomeQuote
@@ -164,7 +169,7 @@ export function QuickTradeSheet({
       </div>
 
       <p className={styles.liquidity}>
-        Доступно {quotesLoading ? '…' : executable ? formatTon(selected.liquidityTon) : '—'} · {other.label}{' '}
+        {t('market.availableLine', { amt: quotesLoading ? '…' : executable ? formatTon(selected.liquidityTon) : '—' })} · {other.label}{' '}
         {quotesLoading ? '—' : formatOdds(other.odds)}
       </p>
 
@@ -173,7 +178,7 @@ export function QuickTradeSheet({
         onChange={(value) => onAmountChange?.(Number(value) || 0)}
         error={
           state === 'insufficient-balance'
-            ? `Недостаточно средств · доступно ${formatTonFull(availableTon)}`
+            ? t('err.fundsAvail', { amt: formatTonFull(availableTon) })
             : undefined
         }
       />
@@ -192,7 +197,7 @@ export function QuickTradeSheet({
       </div>
 
       <div className={styles.payout}>
-        <span>Потенциальная выплата</span>
+        <span>{t('preview.payout')}</span>
         <b>{payout}</b>
       </div>
 
@@ -212,9 +217,9 @@ export function QuickTradeSheet({
         disabled={demoMode}
         onClick={demoMode ? undefined : onOwnPrice}
       >
-        Своя цена →
+        {t('market.ownPriceCta')}
       </Button>
-      <p className={styles.fee}>{FEE_COPY}</p>
+      <p className={styles.fee}>{t('account.fee')}</p>
     </section>
   )
 }

@@ -11,6 +11,7 @@ import {
   portfolioPositions,
 } from '../fixtures/account'
 import { formatOdds, formatTon, formatTonFull } from '../lib/format'
+import { isMessageKey, useT } from '../i18n'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import type {
   AccountFixture,
@@ -20,27 +21,6 @@ import type {
   PositionFixture,
 } from '../types/account'
 import styles from './PortfolioScreen.module.css'
-
-const TABS = [
-  { id: 'positions', label: 'Позиции' },
-  { id: 'orders', label: 'Заявки' },
-  { id: 'history', label: 'История' },
-] as const
-
-const EMPTY: Record<PortfolioTab, { title: string; body: string }> = {
-  positions: {
-    title: 'Нет позиций',
-    body: 'Исполненные ставки появятся здесь.',
-  },
-  orders: {
-    title: 'Нет активных заявок',
-    body: 'Когда вы разместите свою цену, заявка появится здесь.',
-  },
-  history: {
-    title: 'История пуста',
-    body: 'Операции по ставкам и выплатам появятся здесь.',
-  },
-}
 
 export type PortfolioScreenProps = {
   account?: AccountFixture
@@ -52,6 +32,8 @@ export type PortfolioScreenProps = {
   onProfileClick?: () => void
   onCancelOrder?: (order: OrderFixture) => void
   onSelectMarket?: (marketId: number) => void
+  onDeposit?: () => void
+  onWithdraw?: () => void
   accountState?: 'ready' | 'loading' | 'unauthenticated'
   listState?: 'ready' | 'loading' | 'error'
   onRetry?: () => void
@@ -68,14 +50,22 @@ export function PortfolioScreen({
   onProfileClick,
   onCancelOrder,
   onSelectMarket,
+  onDeposit,
+  onWithdraw,
   accountState = 'ready',
   listState = 'ready',
   onRetry,
   cancellingOrderId = null,
 }: PortfolioScreenProps) {
+  const t = useT()
   const [currentTab, setCurrentTab] = useState<PortfolioTab>(tab)
   const items =
     currentTab === 'positions' ? positions : currentTab === 'orders' ? orders : history
+  const emptyCopy = {
+    positions: { title: t('empty.positionsTitle'), body: t('empty.positionsBody') },
+    orders: { title: t('empty.ordersTitle'), body: t('empty.ordersBody') },
+    history: { title: t('empty.historyTitle'), body: t('empty.historyBody') },
+  }
 
   return (
     <div className={styles.screen}>
@@ -93,7 +83,7 @@ export function PortfolioScreen({
       </header>
       <div className={styles.body}>
         <section className={styles.hero}>
-          <span>Доступно</span>
+          <span>{t('account.available')}</span>
           <strong>
             {accountState === 'unauthenticated' || accountState === 'loading'
               ? '—'
@@ -102,45 +92,51 @@ export function PortfolioScreen({
         </section>
         <dl className={styles.metrics}>
           <div>
-            <dt>В позициях</dt>
+            <dt>{t('account.inPositions')}</dt>
             <dd>{accountState === 'ready' ? formatTon(account.inPositionsTon) : '—'}</dd>
           </div>
           <div>
-            <dt>В заявках</dt>
+            <dt>{t('account.reserved')}</dt>
             <dd>{accountState === 'ready' ? formatTon(account.inOrdersTon) : '—'}</dd>
           </div>
           <div>
-            <dt>Доход автора</dt>
+            <dt>{t('account.creatorIncome')}</dt>
             <dd>{accountState === 'ready' ? formatTon(account.creatorIncomeTon) : '—'}</dd>
           </div>
         </dl>
         <div className={styles.actions}>
-          <Button>Пополнить</Button>
-          <Button variant="secondary">Вывести</Button>
+          <Button onClick={onDeposit}>{t('account.deposit')}</Button>
+          <Button variant="secondary" onClick={onWithdraw}>
+            {t('account.withdraw')}
+          </Button>
         </div>
         <Tabs
-          items={[...TABS]}
+          items={[
+            { id: 'positions', label: t('portfolio.positions') },
+            { id: 'orders', label: t('portfolio.orders') },
+            { id: 'history', label: t('portfolio.history') },
+          ]}
           value={currentTab}
           onChange={(id) => setCurrentTab(id as PortfolioTab)}
-          ariaLabel="Портфель"
+          ariaLabel={t('portfolio.title')}
         />
         {listState === 'loading' ? (
-          <StatusMessage tone="loading" title="Загрузка">
-            Обновляем данные.
+          <StatusMessage tone="loading" title={t('loading')}>
+            {t('loading.body')}
           </StatusMessage>
         ) : listState === 'error' ? (
           <>
-            <StatusMessage tone="error" title="Не удалось загрузить">
-              Проверьте соединение и попробуйте снова.
+            <StatusMessage tone="error" title={t('err.request')}>
+              {t('err.requestBody')}
             </StatusMessage>
             {onRetry ? (
               <Button variant="secondary" onClick={onRetry}>
-                Повторить
+                {t('retry')}
               </Button>
             ) : null}
           </>
         ) : items.length === 0 ? (
-          <StatusMessage title={EMPTY[currentTab].title}>{EMPTY[currentTab].body}</StatusMessage>
+          <StatusMessage title={emptyCopy[currentTab].title}>{emptyCopy[currentTab].body}</StatusMessage>
         ) : currentTab === 'positions' ? (
           <ul className={styles.list}>
             {positions.map((item) => (
@@ -152,10 +148,10 @@ export function PortfolioScreen({
                     <span>{formatTonFull(item.amountTon)}</span>
                   </p>
                   <p className={styles.detail}>
-                    Средний коэффициент {formatOdds(item.avgOdds)}
+                    {t('pos.avgOdds')} {formatOdds(item.avgOdds)}
                   </p>
                   <p className={styles.detail}>
-                    Потенциальная выплата {formatTonFull(item.potentialPayoutTon)}
+                    {t('pos.payout')} {formatTonFull(item.potentialPayoutTon)}
                   </p>
                 </button>
               </li>
@@ -171,7 +167,9 @@ export function PortfolioScreen({
                   <span>{formatTonFull(item.remainingTon)}</span>
                 </p>
                 <div className={styles.orderFoot}>
-                  <span className={styles.status}>{item.status}</span>
+                  <span className={styles.status}>
+                    {item.filledTon > 0 && item.remainingTon > 0 ? t('order.partial') : t('order.wait')}
+                  </span>
                   {item.canCancel ? (
                     <Button
                       variant="ghost"
@@ -179,7 +177,7 @@ export function PortfolioScreen({
                       disabled={cancellingOrderId === item.id}
                       onClick={() => onCancelOrder?.(item)}
                     >
-                      {cancellingOrderId === item.id ? 'Отменяем…' : 'Отменить'}
+                      {cancellingOrderId === item.id ? t('order.cancelling') : t('order.cancel')}
                     </Button>
                   ) : null}
                 </div>
@@ -192,7 +190,7 @@ export function PortfolioScreen({
               <li key={item.id} className={styles.row}>
                 <p className={styles.question}>{item.question}</p>
                 <p className={styles.meta}>
-                  {item.action}
+                  {historyAction(item, t)}
                   <span className={styles.amount}>{formatSigned(item.amountTon)}</span>
                 </p>
                 <p className={styles.time}>{item.time}</p>
@@ -204,6 +202,12 @@ export function PortfolioScreen({
       <BottomNavigation active="portfolio" onChange={onNavChange} />
     </div>
   )
+}
+
+function historyAction(item: HistoryFixture, t: ReturnType<typeof useT>): string {
+  const key = item.actionKey ? `tx.${item.actionKey}` : ''
+  if (key && isMessageKey(key)) return t(key)
+  return item.action
 }
 
 function formatSigned(amount: number): string {

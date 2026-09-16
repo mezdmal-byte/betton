@@ -1,6 +1,7 @@
 import type { AccountFixture } from '../types/account'
 import type { HistoryFixture, OrderFixture, PositionFixture } from '../types/account'
-import type { CreatorFixture, MarketFixture, MarketStatus, OrderBookLevel, OutcomeFixture } from '../types/market'
+import type { CreatorFixture, MarketFixture, MarketStatus, OrderBookLevel, OutcomeFixture, ChartPoint, RecentTrade } from '../types/market'
+import { translate, type Locale } from '../i18n'
 import { moneyJsonValue, nanoToTon } from '../lib/money'
 import { formatTimeLeft, isClosingSoon } from '../lib/time'
 import type {
@@ -10,6 +11,7 @@ import type {
   CreatorBriefDto,
   CreatorStatsOut,
   MarketOut,
+  MarketTradeOut,
   OrderOut,
   OrderPreviewOut,
   OrderbookLevelDto,
@@ -32,6 +34,14 @@ export const UI_CATEGORY_TO_API: Record<string, string | undefined> = {
   other: 'unique',
 }
 
+export const UI_STATUS_TO_API: Record<string, MarketOut['status'] | null> = {
+  all: null,
+  open: 'open',
+  closed: 'closed',
+  resolved: 'resolved',
+  cancelled: 'cancelled',
+}
+
 export const API_CATEGORY_TO_LABEL: Record<string, string> = {
   sport: 'Спорт',
   politics: 'Политика',
@@ -46,6 +56,12 @@ export function mapUiSortToApi(sort: string): string {
 
 export function mapUiCategoryToApi(category: string): string | undefined {
   if (category in UI_CATEGORY_TO_API) return UI_CATEGORY_TO_API[category]
+  return undefined
+}
+
+export function mapUiStatusToApi(status: string | null | undefined): MarketOut['status'] | null | undefined {
+  if (status == null) return undefined
+  if (status in UI_STATUS_TO_API) return UI_STATUS_TO_API[status]
   return undefined
 }
 
@@ -69,6 +85,7 @@ export function mapCreator(dto: CreatorBriefDto | null | undefined): CreatorFixt
   const displayName = dto?.display_name?.trim() || 'Автор'
   const handle = (dto?.telegram_username || '').replace(/^@/, '').trim() || 'creator'
   return {
+    ...(dto?.id != null ? { id: dto.id } : {}),
     handle,
     displayName,
     initials: initialsFromName(displayName),
@@ -108,16 +125,17 @@ function mapResolvedSide(dto: MarketOut): MarketFixture['resolvedSide'] {
   return undefined
 }
 
-export function mapMarketOut(dto: MarketOut, now: Date = new Date()): MarketFixture {
-  const timeLeft = formatTimeLeft(dto.close_at, now, dto.status)
+export function mapMarketOut(dto: MarketOut, now: Date = new Date(), locale: Locale = 'ru'): MarketFixture {
+  const timeLeft = formatTimeLeft(dto.close_at, now, dto.status, locale)
   const status = mapStatus(dto, now)
-  let closeLabel = `Закроется через ${timeLeft}`
-  if (dto.status === 'resolved') closeLabel = 'Завершено'
-  else if (dto.status === 'cancelled') closeLabel = 'Отменено'
-  else if (dto.status === 'pending') closeLabel = 'На проверке'
-  else if (dto.status === 'rejected') closeLabel = 'Отклонено'
-  else if (dto.status === 'closed' || timeLeft === 'Приём завершён' || timeLeft === 'закрыто') {
-    closeLabel = 'Приём завершён'
+  const closedLabel = translate(locale, 'status.closedOne')
+  let closeLabel = translate(locale, 'time.closesIn', { time: timeLeft })
+  if (dto.status === 'resolved') closeLabel = translate(locale, 'status.resolvedOne')
+  else if (dto.status === 'cancelled') closeLabel = translate(locale, 'status.cancelledOne')
+  else if (dto.status === 'pending') closeLabel = translate(locale, 'status.pending')
+  else if (dto.status === 'rejected') closeLabel = translate(locale, 'status.rejected')
+  else if (dto.status === 'closed' || timeLeft === closedLabel || timeLeft === translate(locale, 'time.ended')) {
+    closeLabel = closedLabel
   }
 
   const volumeNano = dto.activity?.volume_nano
@@ -130,9 +148,11 @@ export function mapMarketOut(dto: MarketOut, now: Date = new Date()): MarketFixt
   return {
     id: String(dto.id),
     category: mapApiCategoryToLabel(dto.category),
+    categoryKey: dto.category,
     timeLeft: timeLeft || '—',
     question: dto.question,
     creator: mapCreator(dto.creator),
+    creatorId: dto.creator?.id ?? dto.creator_id,
     volumeTon,
     participants: dto.activity?.unique_participants ?? 0,
     status,
@@ -141,11 +161,11 @@ export function mapMarketOut(dto: MarketOut, now: Date = new Date()): MarketFixt
     outcomeB: mapOffer(outcomeLabel(dto.outcomes, 1), offers[1]),
     description: dto.description || '',
     resolution: dto.cancellation_reason
-      ? `Отмена. ${dto.cancellation_reason}`
+      ? `${translate(locale, 'status.cancelledOne')}. ${dto.cancellation_reason}`
       : dto.rejection_reason
-        ? `Отклонено. ${dto.rejection_reason}`
+        ? `${translate(locale, 'status.rejected')}. ${dto.rejection_reason}`
         : dto.winning_outcome
-          ? `Исход: ${dto.winning_outcome}`
+          ? `${translate(locale, 'status.resolvedOne')}: ${dto.winning_outcome}`
           : '',
     closeLabel,
     mechanism: dto.mechanism ?? 'p2p',
@@ -353,6 +373,7 @@ export function mapTransaction(dto: TransactionOut): HistoryFixture {
     id: dto.id,
     question: dto.question || (dto.market_id ? `Событие #${dto.market_id}` : 'Операция'),
     action: TX_ACTION[dto.type] || dto.type,
+    actionKey: dto.type,
     amountTon: Number(dto.display_amount),
     time,
   }
@@ -400,4 +421,64 @@ export function isAdminAccount(account: { is_admin?: boolean; isAdmin?: boolean 
 
 export function moneyForOrder(amount: number): string {
   return moneyJsonValue(amount)
+}
+
+export function oddsForOutcome(trade: MarketTradeOut, outcomeIndex: number): number | null {
+  if (trade.maker_outcome === outcomeIndex) return Number(trade.maker_odds)
+  if (trade.taker_outcome === outcomeIndex) return Number(trade.taker_odds)
+  return null
+}
+
+export function stakeForOutcome(trade: MarketTradeOut, outcomeIndex: number): number {
+  if (trade.maker_outcome === outcomeIndex) return Number(trade.maker_stake || 0)
+  if (trade.taker_outcome === outcomeIndex) return Number(trade.taker_stake || 0)
+  return 0
+}
+
+export function mapTradesToChartPoints(trades: MarketTradeOut[] | null | undefined, outcomeIndex: number): ChartPoint[] {
+  if (!Array.isArray(trades) || trades.length === 0) return []
+  return trades
+    .map((trade) => {
+      const odds = oddsForOutcome(trade, outcomeIndex)
+      if (odds == null || !(odds > 0)) return null
+      const created = trade.created_at ? Date.parse(trade.created_at) : Number.NaN
+      return {
+        t: Number.isFinite(created) ? created : trade.id,
+        odds,
+        volume: stakeForOutcome(trade, outcomeIndex),
+      } satisfies ChartPoint
+    })
+    .filter((point): point is ChartPoint => point != null)
+}
+
+export function mapTradesToRecent(trades: MarketTradeOut[] | null | undefined, outcomeIndex: number, now = Date.now()): RecentTrade[] {
+  if (!Array.isArray(trades)) return []
+  return [...trades].reverse().slice(0, 8).flatMap((trade) => {
+    const odds = oddsForOutcome(trade, outcomeIndex)
+    if (odds == null) return []
+    const created = trade.created_at ? Date.parse(trade.created_at) : Number.NaN
+    return [
+      {
+        id: trade.id,
+        odds,
+        amountTon: stakeForOutcome(trade, outcomeIndex),
+        timeAgo: formatRelativeTime(created, now),
+        createdAt: trade.created_at ?? undefined,
+      },
+    ]
+  })
+}
+
+function formatRelativeTime(created: number, now: number): string {
+  if (!Number.isFinite(created)) return '—'
+  const mins = Math.max(0, Math.round((now - created) / 60000))
+  if (mins < 1) return '1 мин'
+  if (mins < 60) return `${mins} мин`
+  const hours = Math.round(mins / 60)
+  if (hours < 24) return `${hours} ч`
+  return `${Math.round(hours / 24)} д`
+}
+
+export function hasFakeChartSeries(points: ChartPoint[] | null | undefined): boolean {
+  return !Array.isArray(points) || points.length === 0
 }

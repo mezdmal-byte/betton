@@ -223,6 +223,19 @@ export type CreateMarketBody = {
   visibility: 'public' | 'unlisted'
 }
 
+export type MarketTradeOut = {
+  id: number
+  created_at?: string | null
+  maker_outcome: number
+  taker_outcome: number
+  maker_odds: number
+  taker_odds: number
+  maker_stake: number
+  taker_stake: number
+  maker_stake_nano: number
+  taker_stake_nano: number
+}
+
 export type HealthOut = {
   status: string
   webapp?: string

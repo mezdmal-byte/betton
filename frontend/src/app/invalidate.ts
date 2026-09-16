@@ -15,11 +15,12 @@ export function invalidateAfterTrade(
   if (input.marketId != null) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.market(input.marketId) })
     void queryClient.invalidateQueries({ queryKey: queryKeys.orderbook(input.marketId) })
+    void queryClient.invalidateQueries({ queryKey: queryKeys.trades(input.marketId) })
   }
   void queryClient.invalidateQueries({ queryKey: ['markets'] })
 }
 
-export function confirmCancelOrder(): boolean {
+export function confirmCancelOrder(message?: string): boolean {
   if (typeof window === 'undefined') return false
-  return window.confirm('Отменить остаток заявки? Средства вернутся на доступный баланс.')
+  return window.confirm(message || 'Отменить остаток заявки? Средства вернутся на доступный баланс.')
 }

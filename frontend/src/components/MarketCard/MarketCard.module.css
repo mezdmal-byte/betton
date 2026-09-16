@@ -65,6 +65,11 @@
   min-width: 0;
 }
 
+.creatorClick {
+  cursor: pointer;
+  border-radius: var(--radius-8);
+}
+
 .handle {
   min-width: 0;
   overflow: hidden;

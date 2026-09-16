@@ -140,3 +140,10 @@
   font-size: 13px;
   color: var(--color-text-disabled);
 }
+
+.success {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-outcome-a-text);
+}

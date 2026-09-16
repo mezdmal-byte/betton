@@ -7,6 +7,7 @@ export type MarketChartProps = {
   currentOdds: number
   outcomeLabel?: string
   volumeTon?: number
+  title?: string
 }
 
 const WIDTH = 358
@@ -26,7 +27,8 @@ function stepLine(points: Array<{ x: number; y: number }>): string {
   return path
 }
 
-export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon }: MarketChartProps) {
+export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon, title }: MarketChartProps) {
+  if (series.length === 0) return null
   const plotWidth = WIDTH - PAD_LEFT - PAD_RIGHT
   const plotBottom = PAD_TOP + PLOT_HEIGHT
   const minOdds = Math.min(...series.map((point) => point.odds), currentOdds)
@@ -46,13 +48,13 @@ export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon }: Ma
   const lastX = mapped[mapped.length - 1]?.x ?? PAD_LEFT
   const lastY = mapped[mapped.length - 1]?.y ?? PAD_TOP
   const barWidth = Math.max(plotWidth / Math.max(series.length, 1) - 6, 4)
-  const title = outcomeLabel ? `Цена · ${outcomeLabel}` : 'Цена'
+  const heading = title ?? (outcomeLabel ? `Цена · ${outcomeLabel}` : 'Цена')
 
   return (
     <div className={styles.root}>
       <div className={styles.header}>
         <div className={styles.titleRow}>
-          <span>{title}</span>
+          <span>{heading}</span>
           <b>{formatOdds(currentOdds)}</b>
         </div>
         {volumeTon != null ? (
@@ -63,7 +65,7 @@ export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon }: Ma
         className={styles.svg}
         viewBox={`0 0 ${WIDTH} ${plotBottom + VOLUME_HEIGHT + PAD_BOTTOM}`}
         role="img"
-        aria-label={`${title} ${formatOdds(currentOdds)}`}
+        aria-label={`${heading} ${formatOdds(currentOdds)}`}
       >
         {[0, 0.5, 1].map((ratio) => {
           const y = PAD_TOP + ratio * PLOT_HEIGHT

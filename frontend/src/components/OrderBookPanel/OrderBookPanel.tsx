@@ -1,0 +1,63 @@
+import { useT } from '../../i18n'
+import type { OrderBookLevel } from '../../types/market'
+import { OrderBookRow } from '../OrderBookRow/OrderBookRow'
+import { StatusMessage } from '../StatusMessage/StatusMessage'
+import styles from './OrderBookPanel.module.css'
+
+export type OrderBookPanelProps = {
+  outcomeALabel: string
+  outcomeBLabel: string
+  sideA: OrderBookLevel[]
+  sideB: OrderBookLevel[]
+  state?: 'ready' | 'loading' | 'error' | 'empty'
+  hint?: string
+}
+
+export function OrderBookPanel({
+  outcomeALabel,
+  outcomeBLabel,
+  sideA,
+  sideB,
+  state = 'ready',
+  hint,
+}: OrderBookPanelProps) {
+  const t = useT()
+  if (state === 'loading') {
+    return (
+      <StatusMessage tone="loading" title={t('book.loading')}>
+        {t('loading.body')}
+      </StatusMessage>
+    )
+  }
+  if (state === 'error') {
+    return <StatusMessage tone="error" title={t('book.error')} />
+  }
+
+  return (
+    <section className={styles.root} aria-label={t('event.book')}>
+      {hint ? <p className={styles.hint}>{hint}</p> : null}
+      <OutcomeBook label={outcomeALabel} levels={sideA} />
+      <OutcomeBook label={outcomeBLabel} levels={sideB} />
+    </section>
+  )
+}
+
+function OutcomeBook({ label, levels }: { label: string; levels: OrderBookLevel[] }) {
+  const t = useT()
+  const maxAvailable = Math.max(...levels.map((level) => level.availableTon), 1)
+  return (
+    <div className={styles.side}>
+      <div className={styles.head}>
+        <strong>{label}</strong>
+        <span>{t('book.availCol')}</span>
+      </div>
+      {levels.length === 0 ? (
+        <p className={styles.empty}>{t('book.noOrders')}</p>
+      ) : (
+        levels.map((level, index) => (
+          <OrderBookRow key={`${level.odds}-${index}`} level={level} maxAvailable={maxAvailable} active={index === 0} />
+        ))
+      )}
+    </div>
+  )
+}

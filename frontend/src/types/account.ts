@@ -29,6 +29,7 @@ export type HistoryFixture = {
   id: string
   question: string
   action: string
+  actionKey?: string
   amountTon: number
   time: string
 }

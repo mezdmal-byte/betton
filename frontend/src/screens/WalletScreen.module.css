@@ -1,0 +1,76 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-canvas);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--header-height);
+  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
+}
+
+.header strong {
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: 0 var(--page-padding) max(var(--space-24), var(--safe-bottom));
+  overflow: auto;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero span {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.hero strong {
+  font-size: 32px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.pills {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.note,
+.disabledHint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.disabledHint {
+  color: var(--color-text-disabled);
+}

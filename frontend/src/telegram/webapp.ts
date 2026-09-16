@@ -7,6 +7,30 @@ export type TelegramUserUnsafe = {
   language_code?: string
 }
 
+export type TelegramColorScheme = 'light' | 'dark'
+
+export type TelegramThemeParams = {
+  bg_color?: string
+  secondary_bg_color?: string
+  text_color?: string
+  hint_color?: string
+  button_color?: string
+  button_text_color?: string
+}
+
+export type TelegramBackButton = {
+  isVisible?: boolean
+  show?: () => void
+  hide?: () => void
+  onClick?: (callback: () => void) => void
+  offClick?: (callback: () => void) => void
+}
+
+export type TelegramHapticFeedback = {
+  notificationOccurred?: (type: 'error' | 'success' | 'warning') => void
+  impactOccurred?: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void
+}
+
 export type TelegramWebApp = {
   initData?: string
   initDataUnsafe?: {
@@ -15,6 +39,14 @@ export type TelegramWebApp = {
   }
   ready?: () => void
   expand?: () => void
+  colorScheme?: TelegramColorScheme
+  themeParams?: TelegramThemeParams
+  onEvent?: (event: string, callback: () => void) => void
+  offEvent?: (event: string, callback: () => void) => void
+  BackButton?: TelegramBackButton
+  HapticFeedback?: TelegramHapticFeedback
+  setHeaderColor?: (color: string) => void
+  setBackgroundColor?: (color: string) => void
 }
 
 declare global {
@@ -62,4 +94,33 @@ export function readShareTokenFromContext(): string | null {
   const token = raw.startsWith('market_') ? raw.slice('market_'.length) : raw
   const cleaned = token.trim()
   return cleaned || null
+}
+
+export function hapticNotification(type: 'error' | 'success' | 'warning'): void {
+  try {
+    getTelegramWebApp()?.HapticFeedback?.notificationOccurred?.(type)
+  } catch {
+    // Browser fallback: do nothing.
+  }
+}
+
+export function syncTelegramBackButton(visible: boolean, onBack: () => void): () => void {
+  const button = getTelegramWebApp()?.BackButton
+  if (!button) return () => undefined
+  const handler = () => onBack()
+  try {
+    button.onClick?.(handler)
+    if (visible) button.show?.()
+    else button.hide?.()
+  } catch {
+    return () => undefined
+  }
+  return () => {
+    try {
+      button.offClick?.(handler)
+      button.hide?.()
+    } catch {
+      // Host gone.
+    }
+  }
 }

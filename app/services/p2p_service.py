@@ -417,6 +417,44 @@ def book(db, market_id, viewer_id=None, share_token=None):
     return payload
 
 
+def _trade_out(fill: P2PFill) -> dict:
+    maker_tick = int(fill.price)
+    taker_tick = PRICE - maker_tick
+    maker_odds = (PRICE / maker_tick) if maker_tick else 0.0
+    taker_odds = (PRICE / taker_tick) if taker_tick else 0.0
+    created = fill.created_at
+    return dict(
+        id=fill.id,
+        created_at=created.isoformat() if created is not None else None,
+        maker_outcome=int(fill.maker_outcome),
+        taker_outcome=1 - int(fill.maker_outcome),
+        maker_odds=maker_odds,
+        taker_odds=taker_odds,
+        maker_stake=fill.maker_stake / ATOM,
+        taker_stake=fill.taker_stake / ATOM,
+        maker_stake_nano=int(fill.maker_stake),
+        taker_stake_nano=int(fill.taker_stake),
+    )
+
+
+def list_trades(db, market_id, viewer_id=None, share_token=None, limit=100):
+    """Read-only executed fills. Does not change money, matching, or orders."""
+    market = legacy.get_market(db, market_id)
+    require_p2p(market)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(404, 'Рынок не найден')
+    _guard_unlisted(db, market, viewer_id, share_token)
+    cap = max(1, min(int(limit or 100), 200))
+    fills = (
+        db.query(P2PFill)
+        .filter_by(market_id=market_id)
+        .order_by(P2PFill.id.asc())
+        .limit(cap)
+        .all()
+    )
+    return [_trade_out(fill) for fill in fills]
+
+
 def settle(db, market, winning_outcome):
     """Called with the market locked, within legacy resolve's rollback boundary."""
     win = legacy.parse_outcome(legacy.market_outcomes(market), winning_outcome)

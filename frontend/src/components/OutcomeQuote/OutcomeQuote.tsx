@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react'
 import { cx } from '../../lib/cx'
+import { useT } from '../../i18n'
 import { formatOdds, formatTon } from '../../lib/format'
 import { resolveOutcomeQuoteState } from '../../lib/quote'
 import type { OutcomeQuoteState, OutcomeSide } from '../../types/market'
@@ -28,6 +29,7 @@ export function OutcomeQuote({
   disabled,
   ...rest
 }: OutcomeQuoteProps) {
+  const t = useT()
   const resolvedState = resolveOutcomeQuoteState({ odds, liquidity, state, showMetrics })
   const isDisabled =
     disabled ||
@@ -68,14 +70,14 @@ export function OutcomeQuote({
       ) : (
         <>
           <span className={styles.label}>{label}</span>
-          {resolvedState === 'winner' ? <span className={styles.winnerMark}>Победил</span> : null}
+          {resolvedState === 'winner' ? <span className={styles.winnerMark}>{t('market.winner')}</span> : null}
           {showMetrics ? (
             <>
               <span className={styles.odds}>
                 {formatOdds(resolvedState === 'no-liquidity' ? null : odds)}
               </span>
               <span className={styles.liquidity}>
-                {resolvedState === 'no-liquidity' ? 'Нет ликвидности' : formatTon(liquidity)}
+                {resolvedState === 'no-liquidity' ? t('market.noLiq') : formatTon(liquidity)}
               </span>
             </>
           ) : null}

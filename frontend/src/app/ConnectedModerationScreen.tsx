@@ -8,6 +8,7 @@ import { Button } from '../components/Button/Button'
 import { IconButton } from '../components/IconButton/IconButton'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { TextField } from '../components/TextField/TextField'
+import { useI18n } from '../i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import styles from '../screens/ProfileScreen.module.css'
 
@@ -18,6 +19,7 @@ export type ConnectedModerationScreenProps = {
 }
 
 export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: ConnectedModerationScreenProps) {
+  const { t, locale } = useI18n()
   const queryClient = useQueryClient()
   const [reasonById, setReasonById] = useState<Record<number, string>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -48,29 +50,29 @@ export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: Con
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <IconButton label="Назад" size="md" onClick={onBack}>
+        <IconButton label={t('back')} size="md" onClick={onBack}>
           <ChevronLeft size={22} />
         </IconButton>
-        <strong>Модерация</strong>
+        <strong>{t('moderation.title')}</strong>
       </header>
       <div className={styles.body}>
         {!enabled ? (
-          <StatusMessage tone="warning" title="Нет доступа">
-            Модерация доступна только администратору.
+          <StatusMessage tone="warning" title={t('err.noAccess')}>
+            {t('mod.adminOnly')}
           </StatusMessage>
         ) : queue.isPending ? (
-          <StatusMessage tone="loading" title="Загрузка">
-            Обновляем очередь.
+          <StatusMessage tone="loading" title={t('loading')}>
+            {t('loading.events')}
           </StatusMessage>
         ) : queue.isError ? (
-          <StatusMessage tone="error" title="Не удалось загрузить">
+          <StatusMessage tone="error" title={t('err.request')}>
             {errorDetail(queue.error)}
           </StatusMessage>
         ) : (queue.data ?? []).length === 0 ? (
-          <StatusMessage title="Нет событий на проверке">Очередь пуста.</StatusMessage>
+          <StatusMessage title={t('mod.empty')} />
         ) : (
           (queue.data ?? []).map((market) => {
-            const view = mapMarketOut(market)
+            const view = mapMarketOut(market, new Date(), locale)
             return (
               <section key={market.id}>
                 <p>
@@ -80,14 +82,14 @@ export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: Con
                   {view.category} · {view.closeLabel}
                 </p>
                 <Button variant="ghost" size="md" onClick={() => onOpenMarket(market.id)}>
-                  Открыть
+                  {t('mod.open')}
                 </Button>
                 <Button size="md" onClick={() => approve.mutate(market.id)}>
-                  Одобрить
+                  {t('mod.approve')}
                 </Button>
                 <TextField
                   id={`reject-${market.id}`}
-                  label="Причина отклонения"
+                  label={t('mod.reasonPh')}
                   value={reasonById[market.id] ?? ''}
                   onChange={(value) => setReasonById((current) => ({ ...current, [market.id]: value }))}
                 />
@@ -96,14 +98,14 @@ export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: Con
                   size="md"
                   onClick={() => reject.mutate({ marketId: market.id, reason: (reasonById[market.id] || '').trim() })}
                 >
-                  Отклонить
+                  {t('mod.reject')}
                 </Button>
               </section>
             )
           })
         )}
         {errorMessage ? (
-          <StatusMessage tone="error" title="Ошибка">
+          <StatusMessage tone="error" title={t('error')}>
             {errorMessage}
           </StatusMessage>
         ) : null}

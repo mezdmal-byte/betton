@@ -25,6 +25,7 @@ from app.schemas import (
     CancelMarketRequest,
     MarketCreate,
     MarketOut,
+    MarketTradeOut,
     PositionOut,
     QuoteOut,
     QuoteRequest,
@@ -524,6 +525,25 @@ def orderbook_endpoint(
         market_id,
         viewer_id=viewer_id,
         share_token=market_access.share_token_from_request(request),
+    )
+
+
+@app.get("/markets/{market_id}/trades", response_model=list[MarketTradeOut])
+def market_trades_endpoint(
+    market_id: int,
+    request: Request,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    """Read-only completed P2P fills for the trade-history chart. No money side effects."""
+    viewer_id = current_user.id if current_user is not None else None
+    return p2p_service.list_trades(
+        db,
+        market_id,
+        viewer_id=viewer_id,
+        share_token=market_access.share_token_from_request(request),
+        limit=limit,
     )
 
 

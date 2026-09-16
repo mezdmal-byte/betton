@@ -1,11 +1,13 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { applyPersonalizedExecutableQuotes, mapAccountOut, mapMarketOut } from '../api/adapters'
+import { applyPersonalizedExecutableQuotes, mapAccountOut, mapMarketOut, mapUiStatusToApi } from '../api/adapters'
 import { getOrderbook, listMarkets } from '../api/markets'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
 import type { AccountOut } from '../api/types'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
+import { FilterSheet } from '../components/FilterSheet/FilterSheet'
+import { useI18n } from '../i18n'
 import { marketIsP2P, marketIsTradable } from '../lib/quote'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { MarketsScreen } from '../screens/MarketsScreen'
@@ -17,6 +19,7 @@ export type FeedViewState = {
   query: string
   sort: string
   category: string
+  status: string
 }
 
 export type ConnectedMarketsScreenProps = {
@@ -30,6 +33,7 @@ export type ConnectedMarketsScreenProps = {
   onNavChange: (id: NavId) => void
   onProfileClick: () => void
   onSelectMarket: (market: MarketFixture) => void
+  onCreatorClick?: (market: MarketFixture) => void
   onOwnPrice: (marketId: number, side: OutcomeSide) => void
 }
 
@@ -44,11 +48,14 @@ export function ConnectedMarketsScreen({
   onNavChange,
   onProfileClick,
   onSelectMarket,
+  onCreatorClick,
   onOwnPrice,
 }: ConnectedMarketsScreenProps) {
+  const { locale } = useI18n()
   const [trade, setTrade] = useState<{ market: MarketFixture; side: OutcomeSide; amount: number } | null>(
     null,
   )
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const debouncedQuery = useDebouncedValue(feedView.query, 280)
   const headerUser = useMemo(() => {
     if (!account) return null
@@ -63,13 +70,18 @@ export function ConnectedMarketsScreen({
   }, [account])
 
   const feed = useInfiniteQuery({
-    queryKey: queryKeys.markets({ sort: feedView.sort, category: feedView.category, q: debouncedQuery }),
+    queryKey: queryKeys.markets({
+      sort: feedView.sort,
+      category: feedView.category,
+      q: debouncedQuery,
+      status: feedView.status,
+    }),
     queryFn: ({ pageParam }) =>
       listMarkets({
         sort: feedView.sort,
         category: feedView.category,
         q: debouncedQuery,
-        status: 'open',
+        status: mapUiStatusToApi(feedView.status) ?? null,
         offset: pageParam,
       }),
     initialPageParam: 0,
@@ -84,8 +96,8 @@ export function ConnectedMarketsScreen({
     for (const item of items) {
       if (item.share_token) rememberShareToken(item.id, item.share_token)
     }
-    return items.map((item) => mapMarketOut(item))
-  }, [feed.data])
+    return items.map((item) => mapMarketOut(item, new Date(), locale))
+  }, [feed.data, locale])
 
   const tradeMarketId = trade ? Number(trade.market.id) : NaN
   const tradeShare = Number.isFinite(tradeMarketId) ? shareTokenFor(tradeMarketId) : null
@@ -130,7 +142,11 @@ export function ConnectedMarketsScreen({
         onQueryChange={(query) => onFeedViewChange({ ...feedView, query })}
         onSortChange={(sort) => onFeedViewChange({ ...feedView, sort })}
         onCategoryChange={(category) => onFeedViewChange({ ...feedView, category })}
+        filtersOpen={filtersOpen}
+        filtersActive={feedView.status !== 'open'}
+        onFiltersClick={() => setFiltersOpen(true)}
         onSelectMarket={onSelectMarket}
+        onCreatorClick={onCreatorClick}
         onSelectOutcome={(market, side) => {
           if (!marketIsTradable(market) || !marketIsP2P(market)) {
             onSelectMarket(market)
@@ -151,6 +167,12 @@ export function ConnectedMarketsScreen({
         onLoadMore={() => {
           void feed.fetchNextPage()
         }}
+      />
+      <FilterSheet
+        open={filtersOpen}
+        status={feedView.status}
+        onClose={() => setFiltersOpen(false)}
+        onApply={(status) => onFeedViewChange({ ...feedView, status })}
       />
       {trade && sheetMarket ? (
         <div className={overlayStyles.overlay}>

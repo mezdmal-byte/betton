@@ -6,6 +6,7 @@ import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
 import { OrderBookRow } from '../OrderBookRow/OrderBookRow'
 import { availableAtOdds, splitFill } from '../../lib/fill'
 import { formatInteger, formatOdds, formatTon, formatTonFull } from '../../lib/format'
+import { useT } from '../../i18n'
 import type { OrderBookLevel, OutcomeSide, RecentTrade } from '../../types/market'
 import styles from './OwnPricePanel.module.css'
 
@@ -28,6 +29,7 @@ export type OwnPricePanelProps = {
   disabled?: boolean
   errorMessage?: string | null
   availableTon?: number | null
+  success?: boolean
 }
 
 export function OwnPricePanel({
@@ -49,7 +51,9 @@ export function OwnPricePanel({
   disabled = false,
   errorMessage = null,
   availableTon = null,
+  success = false,
 }: OwnPricePanelProps) {
+  const t = useT()
   const maxAvailable = Math.max(...book.map((level) => level.availableTon), 1)
   const selectedLabel = selectedSide === 'a' ? outcomeALabel : outcomeBLabel
   const localSplit = splitFill(amount, availableAtOdds(book, odds))
@@ -77,10 +81,10 @@ export function OwnPricePanel({
       </div>
 
       <div className={styles.oddsBlock}>
-        <span className={styles.label}>Коэффициент · {selectedLabel}</span>
+        <span className={styles.label}>{t('advanced.yourOdds', { name: selectedLabel })}</span>
         <div className={styles.stepper}>
           <IconButton
-            label="Меньше"
+            label={t('advanced.less')}
             variant="plain"
             size="md"
             onClick={() => onOddsChange?.(Number((odds - 0.01).toFixed(2)))}
@@ -89,7 +93,7 @@ export function OwnPricePanel({
           </IconButton>
           <span className={styles.oddsValue}>{formatOdds(odds)}</span>
           <IconButton
-            label="Больше"
+            label={t('advanced.more')}
             variant="plain"
             size="md"
             onClick={() => onOddsChange?.(Number((odds + 0.01).toFixed(2)))}
@@ -106,33 +110,35 @@ export function OwnPricePanel({
           errorMessage
             ? errorMessage
             : availableTon != null && amount > availableTon
-              ? `Недостаточно средств · доступно ${formatTonFull(availableTon)}`
+              ? t('err.fundsAvail', { amt: formatTonFull(availableTon) })
               : undefined
         }
       />
 
       <div className={styles.summary}>
         <div className={styles.summaryRow}>
-          <span>Исполнится сейчас</span>
+          <span>{t('preview.now')}</span>
           <b>{formatInteger(matched)} TON</b>
         </div>
         <div className={styles.summaryRow}>
-          <span>Останется заявкой</span>
+          <span>{t('preview.rest')}</span>
           <b>{formatInteger(rest)} TON</b>
         </div>
       </div>
 
-      <Button fullWidth loading={submitting} disabled={disabled || submitting} onClick={onSubmit}>
-        {submitting ? 'Размещаем…' : 'Разместить заявку'}
+      {success ? <p className={styles.success}>{t('advanced.success')}</p> : null}
+
+      <Button fullWidth loading={submitting} disabled={disabled || submitting || success} onClick={onSubmit}>
+        {submitting ? t('advanced.placing') : t('advanced.place')}
       </Button>
 
       <section className={styles.book}>
         <div className={styles.bookHead}>
-          <span>Коэффициент</span>
-          <span>Доступно</span>
+          <span>{t('book.coef')}</span>
+          <span>{t('book.availCol')}</span>
         </div>
         {book.length === 0 ? (
-          <p className={styles.empty}>Нет заявок в стакане.</p>
+          <p className={styles.empty}>{t('advanced.noBook')}</p>
         ) : (
           book.map((level, index) => (
             <OrderBookRow
@@ -147,7 +153,7 @@ export function OwnPricePanel({
 
       {trades.length > 0 ? (
         <section className={styles.trades}>
-          <h3>Недавние сделки</h3>
+          <h3>{t('advanced.recent')}</h3>
           {trades.map((trade) => (
             <div key={`${trade.odds}-${trade.timeAgo}`} className={styles.trade}>
               <span className={styles.tradeOdds}>{formatOdds(trade.odds)}</span>

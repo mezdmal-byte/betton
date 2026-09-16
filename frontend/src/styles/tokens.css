@@ -69,3 +69,33 @@
   --shadow-none: none;
   --shadow-sheet: 0 -8px 28px rgba(21, 23, 26, 0.08);
 }
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #121417;
+  --color-surface: #1b1d21;
+  --color-surface-muted: #22252b;
+  --color-text-primary: #f2f4f7;
+  --color-text-secondary: #98a2b3;
+  --color-text-inverse: #15171a;
+  --color-text-disabled: #667085;
+  --color-border-subtle: #2e3238;
+  --color-border-faint: #26292e;
+  --color-brand-plum: #e8dce6;
+  --color-outcome-a-tint: #152422;
+  --color-outcome-a-surface: #1a2e2c;
+  --color-outcome-a-text: #7ad4cf;
+  --color-outcome-a-pressed: #1f3a37;
+  --color-outcome-b-tint: #2a1c1c;
+  --color-outcome-b-surface: #332020;
+  --color-outcome-b-text: #f2a3a3;
+  --color-outcome-b-pressed: #3a2525;
+  --color-warning: #f79009;
+  --color-warning-surface: #2a2118;
+  --color-danger: #f97066;
+  --color-danger-surface: #2a1c1c;
+  --color-overlay: rgba(8, 9, 10, 0.62);
+  --color-chart-fill: rgba(32, 163, 158, 0.12);
+  --color-chart-grid: #2e3238;
+  --shadow-sheet: 0 -8px 28px rgba(0, 0, 0, 0.35);
+}
