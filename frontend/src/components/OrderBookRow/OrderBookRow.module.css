@@ -1,0 +1,41 @@
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--space-12);
+  overflow: hidden;
+}
+
+.depth {
+  position: absolute;
+  inset: 4px auto 4px 0;
+  background: var(--color-outcome-a-surface);
+  border-radius: 0 var(--radius-8) var(--radius-8) 0;
+}
+
+.odds,
+.available {
+  position: relative;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.odds {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.available {
+  text-align: right;
+  color: var(--color-text-secondary);
+}
+
+.active {
+  font-weight: var(--font-weight-bold);
+}
+
+.active .odds {
+  color: var(--color-outcome-a-text);
+}

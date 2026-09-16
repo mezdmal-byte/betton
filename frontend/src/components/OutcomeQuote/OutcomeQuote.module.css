@@ -1,0 +1,110 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 88px;
+  padding: var(--space-12);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-14);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.odds {
+  font-size: 22px;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.liquidity {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.a .label,
+.a .odds {
+  color: var(--color-outcome-a-text);
+}
+
+.b .label,
+.b .odds {
+  color: var(--color-outcome-b-text);
+}
+
+.selected.a,
+.pressed.a {
+  background: var(--color-outcome-a-surface);
+  border-color: var(--color-outcome-a-accent);
+}
+
+.selected.b,
+.pressed.b {
+  background: var(--color-outcome-b-surface);
+  border-color: var(--color-outcome-b-accent);
+}
+
+.pressed.a {
+  background: var(--color-outcome-a-pressed);
+}
+
+.pressed.b {
+  background: var(--color-outcome-b-pressed);
+}
+
+.root:active:not(:disabled):not(.disabled):not(.loading) {
+  transform: translateY(0);
+}
+
+.noLiquidity .odds,
+.noLiquidity .label {
+  color: var(--color-text-secondary);
+}
+
+.noLiquidity .liquidity {
+  color: var(--color-text-secondary);
+}
+
+.disabled,
+.loading {
+  opacity: 0.55;
+}
+
+.compact {
+  min-height: var(--touch-preferred);
+  justify-content: center;
+}
+
+.skeleton {
+  display: block;
+  border-radius: var(--radius-8);
+  background: var(--color-surface-muted);
+}
+
+.skeletonLabel {
+  width: 42%;
+  height: 12px;
+}
+
+.skeletonOdds {
+  width: 36%;
+  height: 22px;
+}
+
+.skeletonLiq {
+  width: 54%;
+  height: 10px;
+}

@@ -1,0 +1,28 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-16);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.selected {
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+  color: var(--color-text-inverse);
+}
+
+.root:hover:not(:disabled):not(.selected) {
+  background: var(--color-surface-muted);
+}
+
+.root:disabled {
+  opacity: 0.45;
+}

@@ -1,0 +1,26 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-canvas);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--header-height);
+  padding: var(--space-8) var(--page-padding);
+}
+
+.header strong {
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 var(--page-padding) var(--space-24);
+}
