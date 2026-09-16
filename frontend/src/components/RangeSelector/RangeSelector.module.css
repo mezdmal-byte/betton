@@ -12,12 +12,11 @@
   background: transparent;
   color: var(--color-text-secondary);
   font-size: 13px;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
 }
 
 .active {
-  background: var(--color-surface);
+  background: var(--color-surface-muted);
   color: var(--color-text-primary);
-  font-weight: var(--font-weight-semibold);
-  border: 1px solid var(--color-border-subtle);
+  font-weight: var(--font-weight-medium);
 }

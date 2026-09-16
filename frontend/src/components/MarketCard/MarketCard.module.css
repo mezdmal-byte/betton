@@ -1,10 +1,10 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
-  padding: var(--space-16);
+  gap: var(--space-8);
+  padding: var(--space-12);
   background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border-faint);
   border-radius: var(--radius-14);
 }
 
@@ -14,16 +14,16 @@
   gap: var(--space-8);
   min-width: 0;
   font-size: 12px;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
 }
 
 .category {
-  color: var(--color-outcome-a-text);
+  font-weight: var(--font-weight-medium);
 }
 
 .dot {
-  color: var(--color-text-secondary);
+  color: var(--color-text-disabled);
 }
 
 .time {
@@ -32,7 +32,7 @@
 
 .closing {
   color: var(--color-warning);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
 }
 
 .badge {
@@ -40,9 +40,9 @@
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   background: var(--color-surface-muted);
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   font-size: 11px;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
 }
 
 .cancelled {
@@ -71,13 +71,15 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
 }
 
 .stats {
   margin-left: auto;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

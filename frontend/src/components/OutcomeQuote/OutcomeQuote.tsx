@@ -12,6 +12,7 @@ export type OutcomeQuoteProps = {
   side: OutcomeSide
   state?: OutcomeQuoteState
   showMetrics?: boolean
+  density?: 'default' | 'compact'
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
 
 export function OutcomeQuote({
@@ -21,6 +22,7 @@ export function OutcomeQuote({
   side,
   state = 'default',
   showMetrics = true,
+  density = 'default',
   className,
   type = 'button',
   disabled,
@@ -48,6 +50,7 @@ export function OutcomeQuote({
         resolvedState === 'winner' && styles.winner,
         resolvedState === 'resolved-loser' && styles.resolvedLoser,
         !showMetrics && styles.compact,
+        density === 'compact' && styles.dense,
         className,
       )}
       data-side={side}

@@ -9,6 +9,7 @@ const meta = {
   args: {
     series: chartSpartakA,
     currentOdds: 1.82,
+    outcomeLabel: 'Да',
   },
   decorators: [
     (Story) => (
@@ -28,5 +29,6 @@ export const SideB: Story = {
   args: {
     series: chartSpartakB,
     currentOdds: 2.18,
+    outcomeLabel: 'Нет',
   },
 }

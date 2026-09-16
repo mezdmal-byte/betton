@@ -7,16 +7,19 @@
   --color-text-inverse: #ffffff;
   --color-text-disabled: #98a2b3;
   --color-border-subtle: #e5e7eb;
+  --color-border-faint: #eef0f3;
   --color-brand-plum: #23001e;
   --color-brand-teal: #20a39e;
   --color-action-primary: #11756f;
   --color-action-primary-hover: #0f6d68;
   --color-action-primary-pressed: #0c5c58;
   --color-outcome-a-accent: #20a39e;
+  --color-outcome-a-tint: #f4fbfa;
   --color-outcome-a-surface: #eaf8f7;
   --color-outcome-a-text: #0f716b;
   --color-outcome-a-pressed: #d7f0ee;
   --color-outcome-b-accent: #ef5b5b;
+  --color-outcome-b-tint: #fdf7f7;
   --color-outcome-b-surface: #fff1f1;
   --color-outcome-b-text: #b42318;
   --color-outcome-b-pressed: #fde3e3;
@@ -27,8 +30,8 @@
   --color-overlay: rgba(21, 23, 26, 0.4);
   --color-focus: #20a39e;
   --color-chart-line: #20a39e;
-  --color-chart-fill: rgba(32, 163, 158, 0.1);
-  --color-chart-grid: #e5e7eb;
+  --color-chart-fill: rgba(32, 163, 158, 0.05);
+  --color-chart-grid: #eef0f3;
 
   --space-4: 4px;
   --space-8: 8px;
@@ -59,4 +62,5 @@
   --font-weight-bold: 700;
 
   --shadow-none: none;
+  --shadow-sheet: 0 -8px 28px rgba(21, 23, 26, 0.08);
 }

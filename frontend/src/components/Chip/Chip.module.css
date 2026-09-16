@@ -4,9 +4,9 @@
   justify-content: center;
   min-height: var(--touch-min);
   padding: 0 var(--space-16);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid transparent;
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
+  background: var(--color-surface-muted);
   color: var(--color-text-secondary);
   font-size: 14px;
   font-weight: var(--font-weight-medium);
@@ -20,7 +20,7 @@
 }
 
 .root:hover:not(:disabled):not(.selected) {
-  background: var(--color-surface-muted);
+  background: var(--color-border-faint);
 }
 
 .root:disabled {

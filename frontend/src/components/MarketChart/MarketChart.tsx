@@ -1,20 +1,20 @@
-import { formatOdds } from '../../lib/format'
+import { formatOdds, formatTon } from '../../lib/format'
 import type { ChartPoint } from '../../types/market'
 import styles from './MarketChart.module.css'
 
 export type MarketChartProps = {
   series: ChartPoint[]
   currentOdds: number
-  currentLabel?: string
+  outcomeLabel?: string
 }
 
 const WIDTH = 358
-const PLOT_HEIGHT = 148
-const VOLUME_HEIGHT = 32
-const PAD_LEFT = 8
-const PAD_RIGHT = 52
-const PAD_TOP = 16
-const PAD_BOTTOM = 8
+const PLOT_HEIGHT = 108
+const VOLUME_HEIGHT = 22
+const PAD_LEFT = 4
+const PAD_RIGHT = 12
+const PAD_TOP = 8
+const PAD_BOTTOM = 4
 
 function stepLine(points: Array<{ x: number; y: number }>): string {
   if (points.length === 0) return ''
@@ -25,7 +25,7 @@ function stepLine(points: Array<{ x: number; y: number }>): string {
   return path
 }
 
-export function MarketChart({ series, currentOdds, currentLabel = 'сейчас' }: MarketChartProps) {
+export function MarketChart({ series, currentOdds, outcomeLabel }: MarketChartProps) {
   const plotWidth = WIDTH - PAD_LEFT - PAD_RIGHT
   const plotBottom = PAD_TOP + PLOT_HEIGHT
   const minOdds = Math.min(...series.map((point) => point.odds), currentOdds)
@@ -45,23 +45,31 @@ export function MarketChart({ series, currentOdds, currentLabel = 'сейчас'
   const fill = `${line} V ${plotBottom} H ${mapped[0]?.x ?? PAD_LEFT} Z`
   const lastX = mapped[mapped.length - 1]?.x ?? PAD_LEFT
   const lastY = mapped[mapped.length - 1]?.y ?? PAD_TOP
-  const barWidth = Math.max(plotWidth / Math.max(series.length, 1) - 4, 6)
+  const barWidth = Math.max(plotWidth / Math.max(series.length, 1) - 6, 4)
+  const title = outcomeLabel ? `Цена · ${outcomeLabel}` : 'Цена'
 
   return (
     <div className={styles.root}>
+      <div className={styles.header}>
+        <div className={styles.titleRow}>
+          <span>{title}</span>
+          <b>{formatOdds(currentOdds)}</b>
+        </div>
+        <span className={styles.volumeLabel}>Объём {formatTon(last.volume)}</span>
+      </div>
       <svg
         className={styles.svg}
         viewBox={`0 0 ${WIDTH} ${plotBottom + VOLUME_HEIGHT + PAD_BOTTOM}`}
         role="img"
-        aria-label={`Коэффициент ${formatOdds(currentOdds)}`}
+        aria-label={`${title} ${formatOdds(currentOdds)}`}
       >
-        {[0, 0.33, 0.66, 1].map((ratio) => {
+        {[0, 0.5, 1].map((ratio) => {
           const y = PAD_TOP + ratio * PLOT_HEIGHT
           return (
             <line
               key={ratio}
               x1={PAD_LEFT}
-              x2={WIDTH - PAD_RIGHT + 8}
+              x2={WIDTH - PAD_RIGHT}
               y1={y}
               y2={y}
               className={styles.grid}
@@ -70,15 +78,10 @@ export function MarketChart({ series, currentOdds, currentLabel = 'сейчас'
         })}
         {mapped.length > 0 ? <path d={fill} className={styles.fill} /> : null}
         {mapped.length > 0 ? <path d={line} className={styles.line} /> : null}
-        <circle cx={lastX} cy={lastY} r="3.5" className={styles.dot} />
-        <text x={lastX + 10} y={lastY + 4} className={styles.label}>
-          {formatOdds(last.odds)}
-        </text>
-        <text x={lastX + 10} y={lastY + 18} className={styles.caption}>
-          {currentLabel}
-        </text>
+        <circle cx={lastX} cy={lastY} r="4" className={styles.dotRing} />
+        <circle cx={lastX} cy={lastY} r="2.25" className={styles.dot} />
         {mapped.map((point, index) => {
-          const height = (point.volume / maxVolume) * (VOLUME_HEIGHT - 4)
+          const height = Math.max((point.volume / maxVolume) * (VOLUME_HEIGHT - 2), 2)
           return (
             <rect
               key={series[index].t}

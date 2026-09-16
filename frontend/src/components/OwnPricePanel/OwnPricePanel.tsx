@@ -65,7 +65,7 @@ export function OwnPricePanel({
         <div className={styles.stepper}>
           <IconButton
             label="Меньше"
-            variant="bordered"
+            variant="plain"
             size="md"
             onClick={() => onOddsChange?.(Number((odds - 0.01).toFixed(2)))}
           >
@@ -74,7 +74,7 @@ export function OwnPricePanel({
           <span className={styles.oddsValue}>{formatOdds(odds)}</span>
           <IconButton
             label="Больше"
-            variant="bordered"
+            variant="plain"
             size="md"
             onClick={() => onOddsChange?.(Number((odds + 0.01).toFixed(2)))}
           >
@@ -89,12 +89,14 @@ export function OwnPricePanel({
       />
 
       <div className={styles.summary}>
-        <p>
-          Исполнится сейчас <b>{formatInteger(matched)} TON</b>
-        </p>
-        <p>
-          Останется заявкой <b>{formatInteger(rest)} TON</b>
-        </p>
+        <div className={styles.summaryRow}>
+          <span>Исполнится сейчас</span>
+          <b>{formatInteger(matched)} TON</b>
+        </div>
+        <div className={styles.summaryRow}>
+          <span>Останется заявкой</span>
+          <b>{formatInteger(rest)} TON</b>
+        </div>
       </div>
 
       <Button fullWidth>Разместить заявку</Button>

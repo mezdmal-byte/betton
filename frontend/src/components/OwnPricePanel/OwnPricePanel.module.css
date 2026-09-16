@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: var(--space-12);
 }
 
 .question {
@@ -21,11 +21,11 @@
 .oddsBlock {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-4);
 }
 
 .label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
@@ -34,16 +34,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-12);
-  padding: var(--space-8) var(--space-12);
+  min-height: 56px;
+  padding: 0 var(--space-4);
   background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border-faint);
   border-radius: var(--radius-14);
 }
 
 .oddsValue {
   font-size: 28px;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
@@ -51,15 +51,30 @@
 .summary {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
-  padding: var(--space-12) 0;
-  font-size: 14px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--space-12);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
 }
 
-.summary b {
+.summaryRow + .summaryRow {
+  border-top: 1px solid var(--color-border-faint);
+}
+
+.summaryRow b {
   color: var(--color-text-primary);
-  font-weight: var(--font-weight-semibold);
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
 }
 
@@ -67,19 +82,17 @@
 .trades {
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-14);
   overflow: hidden;
 }
 
 .bookHead {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: var(--space-8) var(--space-12);
-  color: var(--color-text-secondary);
-  font-size: 12px;
+  padding: var(--space-4) var(--space-12) var(--space-8);
+  color: var(--color-text-disabled);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
 }
 
 .bookHead span:last-child {
@@ -87,18 +100,20 @@
 }
 
 .trades h3 {
-  padding: var(--space-12) var(--space-12) var(--space-4);
-  font-size: 13px;
-  font-weight: var(--font-weight-semibold);
+  padding: var(--space-8) var(--space-12) var(--space-4);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-disabled);
 }
 
 .trade {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
-  min-height: 36px;
+  min-height: 32px;
   padding: 0 var(--space-12);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
 }
 
@@ -114,7 +129,7 @@
 }
 
 .tradeTime {
-  color: var(--color-text-secondary);
+  color: var(--color-text-disabled);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }

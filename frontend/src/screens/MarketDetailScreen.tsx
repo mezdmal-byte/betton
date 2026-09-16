@@ -66,7 +66,7 @@ export function MarketDetailScreen({
           />
         </div>
         <RangeSelector value={range} onChange={setRange} />
-        <MarketChart series={series} currentOdds={currentOdds} />
+        <MarketChart series={series} currentOdds={currentOdds} outcomeLabel={selected.label} />
         <section className={styles.info}>
           <h2>Как разрешится</h2>
           <p>{market.description}</p>

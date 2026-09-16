@@ -1,9 +1,38 @@
 .root {
   width: 100%;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-14);
   overflow: hidden;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-8);
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-12);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.titleRow b {
+  color: var(--color-text-primary);
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.volumeLabel {
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-disabled);
+  font-variant-numeric: tabular-nums;
 }
 
 .svg {
@@ -24,34 +53,26 @@
 .line {
   fill: none;
   stroke: var(--color-chart-line);
-  stroke-width: 1.75;
+  stroke-width: 1.25;
   stroke-linejoin: miter;
   stroke-linecap: square;
+}
+
+.dotRing {
+  fill: var(--color-surface);
+  stroke: var(--color-chart-line);
+  stroke-width: 1.25;
 }
 
 .dot {
   fill: var(--color-chart-line);
 }
 
-.label {
-  fill: var(--color-text-primary);
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-family);
-}
-
-.caption {
-  fill: var(--color-text-secondary);
-  font-size: 10px;
-  font-family: var(--font-family);
-}
-
 .volume {
-  fill: var(--color-border-subtle);
+  fill: var(--color-border-faint);
 }
 
 .volumeNow {
   fill: var(--color-brand-teal);
-  opacity: 0.45;
+  opacity: 0.35;
 }

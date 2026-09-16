@@ -1,7 +1,7 @@
 .list {
   display: flex;
-  gap: var(--space-16);
-  border-bottom: 1px solid var(--color-border-subtle);
+  gap: var(--space-20);
+  border-bottom: 1px solid var(--color-border-faint);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -19,7 +19,7 @@
   background: transparent;
   color: var(--color-text-secondary);
   font-size: 15px;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
   white-space: nowrap;
 }
 

@@ -6,8 +6,8 @@
 }
 
 .label {
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
 }
 
@@ -16,7 +16,7 @@
   align-items: center;
   min-height: 56px;
   padding: 0 var(--space-16);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border-faint);
   border-radius: var(--radius-14);
   background: var(--color-surface);
 }

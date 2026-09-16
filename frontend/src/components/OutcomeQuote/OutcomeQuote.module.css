@@ -5,23 +5,23 @@
   justify-content: flex-start;
   gap: var(--space-4);
   width: 100%;
-  min-height: 88px;
-  padding: var(--space-12);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-14);
+  min-height: 72px;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius-12);
   background: var(--color-surface);
   text-align: left;
 }
 
 .label {
   font-size: 13px;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .odds {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
@@ -30,9 +30,17 @@
 
 .liquidity {
   font-size: 12px;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
+}
+
+.a {
+  background: var(--color-outcome-a-tint);
+}
+
+.b {
+  background: var(--color-outcome-b-tint);
 }
 
 .a .label,
@@ -65,15 +73,13 @@
   background: var(--color-outcome-b-pressed);
 }
 
-.root:active:not(:disabled):not(.disabled):not(.loading) {
-  transform: translateY(0);
+.noLiquidity {
+  background: var(--color-surface-muted);
+  border-color: var(--color-border-faint);
 }
 
 .noLiquidity .odds,
-.noLiquidity .label {
-  color: var(--color-text-secondary);
-}
-
+.noLiquidity .label,
 .noLiquidity .liquidity {
   color: var(--color-text-secondary);
 }
@@ -85,12 +91,13 @@
 
 .winnerMark {
   font-size: 11px;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
 
 .resolvedLoser {
   opacity: 0.42;
+  background: var(--color-surface);
 }
 
 .resolvedLoser .label,
@@ -104,8 +111,19 @@
 }
 
 .compact {
-  min-height: var(--touch-preferred);
+  min-height: var(--touch-min);
   justify-content: center;
+  padding: var(--space-8) var(--space-12);
+}
+
+.dense {
+  min-height: 64px;
+  gap: 2px;
+  padding: 6px var(--space-8);
+}
+
+.dense .odds {
+  font-size: 18px;
 }
 
 .skeleton {
@@ -121,7 +139,7 @@
 
 .skeletonOdds {
   width: 36%;
-  height: 22px;
+  height: 20px;
 }
 
 .skeletonLiq {

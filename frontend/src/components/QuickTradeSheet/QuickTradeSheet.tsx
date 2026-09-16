@@ -89,6 +89,7 @@ export function QuickTradeSheet({
           odds={market.outcomeA.odds}
           liquidity={market.outcomeA.liquidityTon}
           side="a"
+          density="compact"
           state={selectedSide === 'a' ? 'selected' : 'default'}
           onClick={() => onSelectSide?.('a')}
         />
@@ -97,6 +98,7 @@ export function QuickTradeSheet({
           odds={market.outcomeB.odds}
           liquidity={market.outcomeB.liquidityTon}
           side="b"
+          density="compact"
           state={selectedSide === 'b' ? 'selected' : 'default'}
           onClick={() => onSelectSide?.('b')}
         />
@@ -117,7 +119,12 @@ export function QuickTradeSheet({
 
       <div className={styles.presets}>
         {AMOUNT_PRESETS.map((preset) => (
-          <Chip key={preset} selected={preset === amount} onClick={() => onAmountChange?.(preset)}>
+          <Chip
+            key={preset}
+            compact
+            selected={preset === amount}
+            onClick={() => onAmountChange?.(preset)}
+          >
             {preset}
           </Chip>
         ))}
@@ -136,7 +143,7 @@ export function QuickTradeSheet({
       >
         {cta}
       </Button>
-      <Button variant="secondary" fullWidth onClick={onOwnPrice}>
+      <Button variant="ghost" size="md" fullWidth className={styles.ownPrice} onClick={onOwnPrice}>
         Своя цена →
       </Button>
       <p className={styles.fee}>{FEE_COPY}</p>
