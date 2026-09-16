@@ -264,8 +264,42 @@ export function mapPlaceResult(dto: OrderOut) {
     filledTon: Number(dto.filled || 0),
     remainingTon: Number(dto.remaining || 0),
     refundedTon: Number(dto.refunded || 0),
+    requestedTon: Number(dto.amount || 0),
     status: dto.status,
     requestId: dto.request_id,
+  }
+}
+
+export const IOC_REQUOTE_MESSAGE = 'Предложение уже изменилось. Обновите коэффициент.'
+
+export type IocPlacementKind = 'empty' | 'partial' | 'full'
+
+export type IocPlacementResult = {
+  kind: IocPlacementKind
+  filledTon: number
+  refundedTon: number
+  requestedTon: number
+  status: string
+}
+
+export function classifyIocPlacement(
+  order: Pick<OrderOut, 'filled' | 'refunded' | 'amount' | 'status'>,
+): IocPlacementResult {
+  const filledTon = Number(order.filled || 0)
+  const refundedTon = Number(order.refunded || 0)
+  const requestedTon = Number(order.amount || 0)
+  let kind: IocPlacementKind = 'full'
+  if (filledTon <= 0) {
+    kind = 'empty'
+  } else if (filledTon < requestedTon) {
+    kind = 'partial'
+  }
+  return {
+    kind,
+    filledTon,
+    refundedTon,
+    requestedTon,
+    status: order.status,
   }
 }
 

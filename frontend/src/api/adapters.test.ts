@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   applyPersonalizedExecutableQuotes,
   buildCreateMarketPayload,
+  classifyIocPlacement,
+  IOC_REQUOTE_MESSAGE,
   backendVisibilityOrUnavailable,
   isAdminAccount,
   mapApiCategoryToLabel,
@@ -253,7 +255,62 @@ describe('place result mapping', () => {
     expect(result.filledTon).toBe(40)
     expect(result.remainingTon).toBe(0)
     expect(result.refundedTon).toBe(60)
+    expect(result.requestedTon).toBe(100)
     expect(result.requestId).toBe('aaaaaaaa')
+  })
+})
+
+describe('IOC placement classification', () => {
+  it('treats filled=0 as a stale/no-liquidity requote, not UI success', () => {
+    expect(IOC_REQUOTE_MESSAGE).toBe('Предложение уже изменилось. Обновите коэффициент.')
+    expect(
+      classifyIocPlacement({
+        amount: 50,
+        filled: 0,
+        refunded: 50,
+        status: 'cancelled',
+      }),
+    ).toMatchObject({
+      kind: 'empty',
+      filledTon: 0,
+      refundedTon: 50,
+      requestedTon: 50,
+      status: 'cancelled',
+    })
+  })
+
+  it('reports a partial fill from backend filled/refunded without client matching', () => {
+    expect(
+      classifyIocPlacement({
+        amount: 100,
+        filled: 40,
+        refunded: 60,
+        status: 'filled',
+      }),
+    ).toMatchObject({
+      kind: 'partial',
+      filledTon: 40,
+      refundedTon: 60,
+      requestedTon: 100,
+      status: 'filled',
+    })
+  })
+
+  it('reports a full fill from backend filled/amount', () => {
+    expect(
+      classifyIocPlacement({
+        amount: 25,
+        filled: 25,
+        refunded: 0,
+        status: 'filled',
+      }),
+    ).toMatchObject({
+      kind: 'full',
+      filledTon: 25,
+      refundedTon: 0,
+      requestedTon: 25,
+      status: 'filled',
+    })
   })
 })
 

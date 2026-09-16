@@ -11,3 +11,13 @@ build/
 .idea/
 .vscode/
 *.db
+
+# Local always-on runtime (logs / pid); leftover one-off launchers
+.betton-run/
+.local-preserve/
+.cloudflared.err.log
+.cloudflared.out.log
+.uvicorn.err.log
+.uvicorn.out.log
+/start-betton.ps1
+/stop-betton.ps1

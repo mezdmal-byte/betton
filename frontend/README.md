@@ -38,7 +38,7 @@ From the repo root, after a DB backup if you will place real orders:
 start-betton-always-on.bat
 ```
 
-The launcher builds `frontend/dist` only when the build is missing or older than `frontend/src`. Then it starts uvicorn + cloudflared with the existing watchdog.
+The launcher rebuilds `frontend/dist` when it is missing or older than `frontend/src`, `frontend/index.html`, `frontend/package.json`, `frontend/package-lock.json`, or `frontend/vite.config.ts`. Then it starts uvicorn + cloudflared with the existing watchdog.
 
 Open:
 

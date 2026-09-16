@@ -39,6 +39,11 @@ export type QuickTradeSheetProps = {
   previewRestTon?: number | null
   previewPayoutTon?: number | null
   errorMessage?: string | null
+  placeResult?: {
+    kind: 'empty' | 'partial' | 'full'
+    filledTon: number
+    refundedTon: number
+  } | null
 }
 
 function outcomeOf(market: MarketFixture, side: OutcomeSide) {
@@ -63,6 +68,7 @@ export function QuickTradeSheet({
   previewRestTon = null,
   previewPayoutTon = null,
   errorMessage = null,
+  placeResult = null,
 }: QuickTradeSheetProps) {
   const selected = outcomeOf(market, selectedSide)
   const other = outcomeOf(market, selectedSide === 'a' ? 'b' : 'a')
@@ -87,17 +93,20 @@ export function QuickTradeSheet({
       : previewPayoutTon != null
         ? formatTon(previewPayoutTon)
         : formatPayout(amount, selected.odds as number)
+  const partialFill = state === 'success' && placeResult?.kind === 'partial'
   const cta = demoMode
     ? 'Ставки пока недоступны'
     : state === 'processing'
       ? 'Ставим…'
-      : state === 'success'
-        ? 'Исполнено'
-        : stale
-          ? 'Обновить предложение'
-          : noLiquidity
-            ? 'Нет ликвидности'
-            : `Поставить ${amount} TON`
+      : partialFill
+        ? 'Частично исполнено'
+        : state === 'success'
+          ? 'Исполнено'
+          : stale
+            ? 'Обновить предложение'
+            : noLiquidity
+              ? 'Нет ликвидности'
+              : `Поставить ${amount} TON`
 
   return (
     <section className={styles.sheet} aria-label="Быстрая ставка">
@@ -109,8 +118,21 @@ export function QuickTradeSheet({
         </IconButton>
       </header>
 
-      {stale ? <p className={styles.banner}>Коэффициент изменился. Обновите предложение.</p> : null}
-      {state === 'success' ? <p className={styles.banner}>Заявка обработана. Баланс обновлён с сервера.</p> : null}
+      {stale ? (
+        <p className={styles.banner}>
+          {errorMessage || 'Коэффициент изменился. Обновите предложение.'}
+        </p>
+      ) : null}
+      {partialFill && placeResult ? (
+        <p className={styles.banner}>
+          Исполнено: {formatTonFull(placeResult.filledTon)}
+          <br />
+          Возвращено: {formatTonFull(placeResult.refundedTon)}
+        </p>
+      ) : null}
+      {state === 'success' && !partialFill ? (
+        <p className={styles.banner}>Заявка обработана. Баланс обновлён с сервера.</p>
+      ) : null}
       {state === 'error' && errorMessage ? <p className={styles.banner}>{errorMessage}</p> : null}
       {state === 'partial' && executable ? (
         <p className={styles.note}>

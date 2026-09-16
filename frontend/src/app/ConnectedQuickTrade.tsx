@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { mapOrderPreview, moneyForOrder } from '../api/adapters'
+import {
+  classifyIocPlacement,
+  IOC_REQUOTE_MESSAGE,
+  mapOrderPreview,
+  moneyForOrder,
+  type IocPlacementResult,
+} from '../api/adapters'
 import { isInsufficientBalanceError } from '../api/errors'
 import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
 import { iocOddsFromPreview, placeOrder, previewOrder } from '../api/orders'
@@ -42,6 +48,7 @@ export function ConnectedQuickTradeSheet({
   const keys = useRef(new IdempotencyKeys())
   const [state, setState] = useState<QuickTradeState>('normal')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [placeResult, setPlaceResult] = useState<IocPlacementResult | null>(null)
   const marketId = Number(market.id)
   const shareToken = shareTokenFor(marketId)
   const outcome = selectedSide === 'a' ? 0 : 1
@@ -77,6 +84,7 @@ export function ConnectedQuickTradeSheet({
   useEffect(() => {
     setState('normal')
     setErrorMessage(null)
+    setPlaceResult(null)
   }, [selectedSide, amount, limitOdds])
 
   useEffect(() => {
@@ -143,9 +151,20 @@ export function ConnectedQuickTradeSheet({
     onMutate: () => {
       setState('processing')
       setErrorMessage(null)
+      setPlaceResult(null)
     },
-    onSuccess: () => {
+    onSuccess: (order) => {
       invalidateAfterTrade(queryClient, { userId, marketId })
+      const placed = classifyIocPlacement(order)
+      if (placed.kind === 'empty') {
+        setPlaceResult(null)
+        setErrorMessage(IOC_REQUOTE_MESSAGE)
+        setState('stale-quote')
+        void previewQuery.refetch()
+        return
+      }
+      setPlaceResult(placed)
+      setErrorMessage(null)
       setState('success')
     },
     onError: (error) => {
@@ -175,6 +194,7 @@ export function ConnectedQuickTradeSheet({
       previewRestTon={preview?.remainingTon ?? null}
       previewPayoutTon={preview?.payoutTon ?? null}
       errorMessage={errorMessage}
+      placeResult={placeResult}
       onSelectSide={onSelectSide}
       onAmountChange={onAmountChange}
       onClose={onClose}

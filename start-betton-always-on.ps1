@@ -224,11 +224,24 @@ function Ensure-ReactPreview([string]$ProjectDir) {
     }
 
     $needBuild = -not (Test-Path $distIndex)
-    if (-not $needBuild -and (Test-Path $srcDir)) {
+    if (-not $needBuild) {
         $distTime = (Get-Item $distIndex).LastWriteTimeUtc
-        $newest = Get-ChildItem -Path $srcDir -Recurse -File -ErrorAction SilentlyContinue |
-            Sort-Object LastWriteTimeUtc -Descending |
-            Select-Object -First 1
+        $candidates = @()
+        $watchFiles = @(
+            (Join-Path $frontend "index.html"),
+            (Join-Path $frontend "package.json"),
+            (Join-Path $frontend "package-lock.json"),
+            (Join-Path $frontend "vite.config.ts")
+        )
+        foreach ($path in $watchFiles) {
+            if (Test-Path -LiteralPath $path) {
+                $candidates += Get-Item -LiteralPath $path
+            }
+        }
+        if (Test-Path $srcDir) {
+            $candidates += Get-ChildItem -Path $srcDir -Recurse -File -ErrorAction SilentlyContinue
+        }
+        $newest = $candidates | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
         if ($newest -and $newest.LastWriteTimeUtc -gt $distTime) {
             $needBuild = $true
         }

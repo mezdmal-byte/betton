@@ -65,3 +65,17 @@ export const StaleQuote: Story = {
 export const InsufficientBalance: Story = {
   args: { state: 'insufficient-balance', amount: 500, availableTon: 1240 },
 }
+
+export const SuccessFull: Story = {
+  args: {
+    state: 'success',
+    placeResult: { kind: 'full', filledTon: 100, refundedTon: 0 },
+  },
+}
+
+export const SuccessPartial: Story = {
+  args: {
+    state: 'success',
+    placeResult: { kind: 'partial', filledTon: 40, refundedTon: 60 },
+  },
+}
