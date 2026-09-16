@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { Tabs } from './Tabs'
 
 const items = [
-  { id: 'for-you', label: 'Для вас' },
   { id: 'new', label: 'Новые' },
   { id: 'popular', label: 'Популярные' },
   { id: 'closing', label: 'Скоро' },
@@ -15,7 +14,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     items,
-    value: 'for-you',
+    value: 'new',
   },
   decorators: [
     (Story) => (
@@ -33,7 +32,7 @@ export const Default: Story = {}
 
 export const Interactive: Story = {
   render: function Render() {
-    const [value, setValue] = useState('for-you')
+    const [value, setValue] = useState('new')
     return <Tabs items={items} value={value} onChange={setValue} ariaLabel="Сортировка" />
   },
 }

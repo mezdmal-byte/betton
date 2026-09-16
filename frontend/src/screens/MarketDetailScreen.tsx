@@ -6,7 +6,7 @@ import { IconButton } from '../components/IconButton/IconButton'
 import { MarketChart } from '../components/MarketChart/MarketChart'
 import { OutcomeQuote } from '../components/OutcomeQuote/OutcomeQuote'
 import { RangeSelector } from '../components/RangeSelector/RangeSelector'
-import { chartSpartak, marketYesNo } from '../fixtures/markets'
+import { chartSpartakA, chartSpartakB, marketYesNo } from '../fixtures/markets'
 import { formatInteger, formatTon } from '../lib/format'
 import type { MarketFixture, OutcomeSide } from '../types/market'
 import styles from './MarketDetailScreen.module.css'
@@ -23,6 +23,8 @@ export function MarketDetailScreen({
   const [side, setSide] = useState<OutcomeSide>(selectedSide)
   const [range, setRange] = useState('1d')
   const selected = side === 'a' ? market.outcomeA : market.outcomeB
+  const series = side === 'a' ? chartSpartakA : chartSpartakB
+  const currentOdds = selected.odds ?? series[series.length - 1]?.odds ?? 0
 
   return (
     <div className={styles.screen}>
@@ -64,7 +66,7 @@ export function MarketDetailScreen({
           />
         </div>
         <RangeSelector value={range} onChange={setRange} />
-        <MarketChart series={chartSpartak} currentOdds={selected.odds ?? 1.82} />
+        <MarketChart series={series} currentOdds={currentOdds} />
         <section className={styles.info}>
           <h2>Как разрешится</h2>
           <p>{market.description}</p>

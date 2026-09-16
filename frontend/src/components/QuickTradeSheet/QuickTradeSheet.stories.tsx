@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { useState } from 'react'
 import { marketNoLiquidity, marketPartialLiquidity, marketYesNo } from '../../fixtures/markets'
 import { QuickTradeSheet } from './QuickTradeSheet'
 
@@ -30,8 +31,27 @@ export const Partial: Story = {
   args: { state: 'partial', market: marketPartialLiquidity, amount: 100 },
 }
 
+export const PartialInteractive: Story = {
+  render: function Render() {
+    const [amount, setAmount] = useState(100)
+    return (
+      <QuickTradeSheet
+        market={marketPartialLiquidity}
+        selectedSide="a"
+        amount={amount}
+        state="partial"
+        onAmountChange={setAmount}
+      />
+    )
+  },
+}
+
 export const NoLiquidity: Story = {
   args: { state: 'no-liquidity', market: marketNoLiquidity },
+}
+
+export const SelectedEmptyQuote: Story = {
+  args: { market: marketPartialLiquidity, selectedSide: 'b', amount: 100 },
 }
 
 export const Processing: Story = {

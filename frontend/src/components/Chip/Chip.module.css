@@ -26,3 +26,11 @@
 .root:disabled {
   opacity: 0.45;
 }
+
+.compact {
+  min-height: var(--touch-min);
+  padding: 0 var(--space-8);
+  font-size: 12px;
+  flex: 1 1 0;
+  min-width: 0;
+}

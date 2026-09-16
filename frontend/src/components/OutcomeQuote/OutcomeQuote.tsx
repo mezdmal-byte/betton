@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react'
 import { cx } from '../../lib/cx'
 import { formatOdds, formatTon } from '../../lib/format'
+import { resolveOutcomeQuoteState } from '../../lib/quote'
 import type { OutcomeQuoteState, OutcomeSide } from '../../types/market'
 import styles from './OutcomeQuote.module.css'
 
@@ -25,11 +26,13 @@ export function OutcomeQuote({
   disabled,
   ...rest
 }: OutcomeQuoteProps) {
-  const noLiquidity =
-    state === 'no-liquidity' ||
-    (showMetrics && odds == null && liquidity == null && state !== 'loading')
-  const resolvedState = noLiquidity && state === 'default' ? 'no-liquidity' : state
-  const isDisabled = disabled || resolvedState === 'disabled' || resolvedState === 'loading'
+  const resolvedState = resolveOutcomeQuoteState({ odds, liquidity, state, showMetrics })
+  const isDisabled =
+    disabled ||
+    resolvedState === 'disabled' ||
+    resolvedState === 'loading' ||
+    resolvedState === 'winner' ||
+    resolvedState === 'resolved-loser'
 
   return (
     <button
@@ -42,6 +45,8 @@ export function OutcomeQuote({
         resolvedState === 'disabled' && styles.disabled,
         resolvedState === 'loading' && styles.loading,
         resolvedState === 'no-liquidity' && styles.noLiquidity,
+        resolvedState === 'winner' && styles.winner,
+        resolvedState === 'resolved-loser' && styles.resolvedLoser,
         !showMetrics && styles.compact,
         className,
       )}
@@ -59,6 +64,7 @@ export function OutcomeQuote({
       ) : (
         <>
           <span className={styles.label}>{label}</span>
+          {resolvedState === 'winner' ? <span className={styles.winnerMark}>Победил</span> : null}
           {showMetrics ? (
             <>
               <span className={styles.odds}>

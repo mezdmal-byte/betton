@@ -1,6 +1,7 @@
-import { cx } from '../../lib/cx'
 import { formatInteger, formatTon } from '../../lib/format'
-import type { MarketFixture, OutcomeSide } from '../../types/market'
+import { outcomeIsExecutable } from '../../lib/quote'
+import type { MarketFixture, OutcomeQuoteState, OutcomeSide } from '../../types/market'
+import { cx } from '../../lib/cx'
 import { Avatar } from '../Avatar/Avatar'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
 import styles from './MarketCard.module.css'
@@ -11,14 +12,19 @@ export type MarketCardProps = {
   onSelectOutcome?: (side: OutcomeSide) => void
 }
 
+function quoteState(market: MarketFixture, side: OutcomeSide, selectedSide: OutcomeSide | null): OutcomeQuoteState {
+  if (market.status === 'resolved') {
+    return market.resolvedSide === side ? 'winner' : 'resolved-loser'
+  }
+  if (market.status === 'cancelled') return 'disabled'
+  const outcome = side === 'a' ? market.outcomeA : market.outcomeB
+  if (!outcomeIsExecutable(outcome)) return 'no-liquidity'
+  if (selectedSide === side) return 'selected'
+  return 'default'
+}
+
 export function MarketCard({ market, selectedSide = null, onSelectOutcome }: MarketCardProps) {
   const locked = market.status === 'resolved' || market.status === 'cancelled'
-  const quoteState = (hasLiquidity: boolean, side: OutcomeSide) => {
-    if (locked) return 'disabled' as const
-    if (!hasLiquidity) return 'no-liquidity' as const
-    if (selectedSide === side) return 'selected' as const
-    return 'default' as const
-  }
 
   return (
     <article className={styles.card} data-status={market.status}>
@@ -47,16 +53,20 @@ export function MarketCard({ market, selectedSide = null, onSelectOutcome }: Mar
           odds={market.outcomeA.odds}
           liquidity={market.outcomeA.liquidityTon}
           side="a"
-          state={quoteState(market.outcomeA.liquidityTon != null, 'a')}
-          onClick={() => onSelectOutcome?.('a')}
+          state={quoteState(market, 'a', selectedSide)}
+          onClick={() => {
+            if (!locked) onSelectOutcome?.('a')
+          }}
         />
         <OutcomeQuote
           label={market.outcomeB.label}
           odds={market.outcomeB.odds}
           liquidity={market.outcomeB.liquidityTon}
           side="b"
-          state={quoteState(market.outcomeB.liquidityTon != null, 'b')}
-          onClick={() => onSelectOutcome?.('b')}
+          state={quoteState(market, 'b', selectedSide)}
+          onClick={() => {
+            if (!locked) onSelectOutcome?.('b')
+          }}
         />
       </div>
     </article>

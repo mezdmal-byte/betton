@@ -5,7 +5,6 @@ import { Tabs } from '../Tabs/Tabs'
 import styles from './MarketFilters.module.css'
 
 export const SORT_TABS = [
-  { id: 'for-you', label: 'Для вас' },
   { id: 'new', label: 'Новые' },
   { id: 'popular', label: 'Популярные' },
   { id: 'closing', label: 'Скоро' },
@@ -43,6 +42,7 @@ export function MarketFilters({
           {CATEGORY_PILLS.map((item) => (
             <Chip
               key={item.id}
+              compact
               selected={item.id === category}
               onClick={() => onCategoryChange?.(item.id)}
             >

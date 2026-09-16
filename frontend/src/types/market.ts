@@ -9,6 +9,8 @@ export type OutcomeQuoteState =
   | 'disabled'
   | 'loading'
   | 'no-liquidity'
+  | 'winner'
+  | 'resolved-loser'
 
 export type OutcomeFixture = {
   label: string

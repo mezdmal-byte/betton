@@ -32,8 +32,6 @@ export function OwnPriceScreen({ market = marketYesNo }: OwnPriceScreenProps) {
           selectedSide={side}
           odds={odds}
           amount={amount}
-          fillNowTon={40}
-          restTon={60}
           book={book}
           trades={recentTrades}
           onSelectSide={(next) => {

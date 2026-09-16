@@ -22,6 +22,14 @@ export const Default: Story = {
   ),
 }
 
+export const SideB: Story = {
+  render: () => (
+    <PhoneShell>
+      <MarketDetailScreen selectedSide="b" />
+    </PhoneShell>
+  ),
+}
+
 export const Wide430: Story = {
   parameters: { viewport: { defaultViewport: 'phone430' } },
   render: () => (

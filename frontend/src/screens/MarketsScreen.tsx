@@ -20,7 +20,7 @@ export type MarketsScreenProps = {
 export function MarketsScreen({
   markets = feedMarkets,
   query = '',
-  sort = 'for-you',
+  sort = 'new',
   category = 'all',
   onSelectOutcome,
 }: MarketsScreenProps) {

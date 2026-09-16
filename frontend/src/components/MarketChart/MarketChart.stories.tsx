@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { chartSpartak } from '../../fixtures/markets'
+import { chartSpartakA, chartSpartakB } from '../../fixtures/markets'
 import { MarketChart } from './MarketChart'
 
 const meta = {
@@ -7,7 +7,7 @@ const meta = {
   component: MarketChart,
   tags: ['autodocs'],
   args: {
-    series: chartSpartak,
+    series: chartSpartakA,
     currentOdds: 1.82,
   },
   decorators: [
@@ -23,3 +23,10 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Placeholder: Story = {}
+
+export const SideB: Story = {
+  args: {
+    series: chartSpartakB,
+    currentOdds: 2.18,
+  },
+}

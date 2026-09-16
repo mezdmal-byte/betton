@@ -223,7 +223,7 @@ export const feedMarkets: MarketFixture[] = [
   marketPolitics,
 ]
 
-export const chartSpartak: ChartPoint[] = [
+export const chartSpartakA: ChartPoint[] = [
   { t: 0, odds: 1.7, volume: 40 },
   { t: 1, odds: 1.7, volume: 18 },
   { t: 2, odds: 1.78, volume: 86 },
@@ -232,6 +232,17 @@ export const chartSpartak: ChartPoint[] = [
   { t: 5, odds: 1.9, volume: 36 },
   { t: 6, odds: 1.85, volume: 64 },
   { t: 7, odds: 1.82, volume: 90 },
+]
+
+export const chartSpartakB: ChartPoint[] = [
+  { t: 0, odds: 2.35, volume: 28 },
+  { t: 1, odds: 2.35, volume: 12 },
+  { t: 2, odds: 2.22, volume: 70 },
+  { t: 3, odds: 2.22, volume: 20 },
+  { t: 4, odds: 2.1, volume: 95 },
+  { t: 5, odds: 2.1, volume: 30 },
+  { t: 6, odds: 2.15, volume: 48 },
+  { t: 7, odds: 2.18, volume: 66 },
 ]
 
 export const orderBookA: OrderBookLevel[] = [

@@ -1,6 +1,8 @@
 import { X } from 'lucide-react'
 import { AMOUNT_PRESETS, FEE_COPY } from '../../lib/constants'
-import { formatOdds, formatPayout, formatTon } from '../../lib/format'
+import { splitFill } from '../../lib/fill'
+import { formatInteger, formatOdds, formatPayout, formatTon } from '../../lib/format'
+import { outcomeIsExecutable } from '../../lib/quote'
 import type { MarketFixture, OutcomeSide } from '../../types/market'
 import { AmountInput } from '../AmountInput/AmountInput'
 import { Button } from '../Button/Button'
@@ -26,6 +28,7 @@ export type QuickTradeSheetProps = {
   onAmountChange?: (amount: number) => void
   onClose?: () => void
   onOwnPrice?: () => void
+  onRefreshQuote?: () => void
 }
 
 function outcomeOf(market: MarketFixture, side: OutcomeSide) {
@@ -41,21 +44,25 @@ export function QuickTradeSheet({
   onAmountChange,
   onClose,
   onOwnPrice,
+  onRefreshQuote,
 }: QuickTradeSheetProps) {
   const selected = outcomeOf(market, selectedSide)
-  const otherSide: OutcomeSide = selectedSide === 'a' ? 'b' : 'a'
-  const other = outcomeOf(market, otherSide)
-  const odds = selected.odds
-  const liquidity = selected.liquidityTon
-  const noLiquidity = state === 'no-liquidity' || odds == null || liquidity == null
-  const canPlace = !noLiquidity && state !== 'insufficient-balance' && state !== 'processing'
-  const payout = odds != null ? formatPayout(amount, odds) : '—'
+  const other = outcomeOf(market, selectedSide === 'a' ? 'b' : 'a')
+  const executable = outcomeIsExecutable(selected)
+  const noLiquidity = state === 'no-liquidity' || !executable
+  const stale = state === 'stale-quote'
+  const { matched, rest } = splitFill(amount, selected.liquidityTon)
+  const canPlace =
+    executable && !stale && state !== 'insufficient-balance' && state !== 'processing' && state !== 'no-liquidity'
+  const payout = !executable || stale ? '—' : formatPayout(amount, selected.odds as number)
   const cta =
     state === 'processing'
       ? 'Ставим…'
-      : noLiquidity
-        ? 'Нет ликвидности'
-        : `Поставить ${amount} TON`
+      : stale
+        ? 'Обновить предложение'
+        : noLiquidity
+          ? 'Нет ликвидности'
+          : `Поставить ${amount} TON`
 
   return (
     <section className={styles.sheet} aria-label="Быстрая ставка">
@@ -67,17 +74,14 @@ export function QuickTradeSheet({
         </IconButton>
       </header>
 
-      {state === 'stale-quote' ? (
-        <p className={styles.banner}>Коэффициент обновился. Проверьте цену перед ставкой.</p>
-      ) : null}
-      {state === 'partial' ? (
+      {stale ? <p className={styles.banner}>Коэффициент изменился. Обновите предложение.</p> : null}
+      {state === 'partial' && executable ? (
         <p className={styles.note}>
-          Сейчас доступно {formatTon(40)}. Остаток можно выставить своей ценой.
+          Сейчас доступно {formatTon(selected.liquidityTon)}. Исполнится {formatInteger(matched)}{' '}
+          TON, остаток {formatInteger(rest)} TON — своей ценой.
         </p>
       ) : null}
-      {state === 'no-liquidity' ? (
-        <p className={styles.note}>Нет встречных заявок по этой цене.</p>
-      ) : null}
+      {noLiquidity && !stale ? <p className={styles.note}>Нет встречных заявок по этой цене.</p> : null}
 
       <div className={styles.outcomes}>
         <OutcomeQuote
@@ -85,13 +89,7 @@ export function QuickTradeSheet({
           odds={market.outcomeA.odds}
           liquidity={market.outcomeA.liquidityTon}
           side="a"
-          state={
-            state === 'no-liquidity' && selectedSide === 'a'
-              ? 'no-liquidity'
-              : selectedSide === 'a'
-                ? 'selected'
-                : 'default'
-          }
+          state={selectedSide === 'a' ? 'selected' : 'default'}
           onClick={() => onSelectSide?.('a')}
         />
         <OutcomeQuote
@@ -99,21 +97,14 @@ export function QuickTradeSheet({
           odds={market.outcomeB.odds}
           liquidity={market.outcomeB.liquidityTon}
           side="b"
-          state={
-            state === 'no-liquidity' && selectedSide === 'b'
-              ? 'no-liquidity'
-              : selectedSide === 'b'
-                ? 'selected'
-                : market.outcomeB.liquidityTon == null
-                  ? 'no-liquidity'
-                  : 'default'
-          }
+          state={selectedSide === 'b' ? 'selected' : 'default'}
           onClick={() => onSelectSide?.('b')}
         />
       </div>
 
       <p className={styles.liquidity}>
-        Доступно {noLiquidity ? '—' : formatTon(liquidity)} · {other.label} {formatOdds(other.odds)}
+        Доступно {executable ? formatTon(selected.liquidityTon) : '—'} · {other.label}{' '}
+        {formatOdds(other.odds)}
       </p>
 
       <AmountInput
@@ -137,7 +128,12 @@ export function QuickTradeSheet({
         <b>{payout}</b>
       </div>
 
-      <Button fullWidth loading={state === 'processing'} disabled={!canPlace}>
+      <Button
+        fullWidth
+        loading={state === 'processing'}
+        disabled={stale ? false : !canPlace}
+        onClick={stale ? onRefreshQuote : undefined}
+      >
         {cta}
       </Button>
       <Button variant="secondary" fullWidth onClick={onOwnPrice}>

@@ -4,6 +4,7 @@ import { Button } from '../Button/Button'
 import { IconButton } from '../IconButton/IconButton'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
 import { OrderBookRow } from '../OrderBookRow/OrderBookRow'
+import { availableAtOdds, splitFill } from '../../lib/fill'
 import { formatInteger, formatOdds, formatTon } from '../../lib/format'
 import type { OrderBookLevel, OutcomeSide, RecentTrade } from '../../types/market'
 import styles from './OwnPricePanel.module.css'
@@ -15,8 +16,6 @@ export type OwnPricePanelProps = {
   selectedSide: OutcomeSide
   odds: number
   amount: number
-  fillNowTon: number
-  restTon: number
   book: OrderBookLevel[]
   trades: RecentTrade[]
   onSelectSide?: (side: OutcomeSide) => void
@@ -31,8 +30,6 @@ export function OwnPricePanel({
   selectedSide,
   odds,
   amount,
-  fillNowTon,
-  restTon,
   book,
   trades,
   onSelectSide,
@@ -41,6 +38,7 @@ export function OwnPricePanel({
 }: OwnPricePanelProps) {
   const maxAvailable = Math.max(...book.map((level) => level.availableTon), 1)
   const selectedLabel = selectedSide === 'a' ? outcomeALabel : outcomeBLabel
+  const { matched, rest } = splitFill(amount, availableAtOdds(book, odds))
 
   return (
     <div className={styles.root}>
@@ -92,10 +90,10 @@ export function OwnPricePanel({
 
       <div className={styles.summary}>
         <p>
-          Исполнится сейчас <b>{formatInteger(fillNowTon)} TON</b>
+          Исполнится сейчас <b>{formatInteger(matched)} TON</b>
         </p>
         <p>
-          Останется заявкой <b>{formatInteger(restTon)} TON</b>
+          Останется заявкой <b>{formatInteger(rest)} TON</b>
         </p>
       </div>
 

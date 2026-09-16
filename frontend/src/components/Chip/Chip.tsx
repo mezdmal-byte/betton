@@ -4,14 +4,22 @@ import styles from './Chip.module.css'
 
 export type ChipProps = {
   selected?: boolean
+  compact?: boolean
   children: ReactNode
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
 
-export function Chip({ selected = false, className, children, type = 'button', ...rest }: ChipProps) {
+export function Chip({
+  selected = false,
+  compact = false,
+  className,
+  children,
+  type = 'button',
+  ...rest
+}: ChipProps) {
   return (
     <button
       type={type}
-      className={cx(styles.root, selected && styles.selected, className)}
+      className={cx(styles.root, selected && styles.selected, compact && styles.compact, className)}
       aria-pressed={selected}
       {...rest}
     >

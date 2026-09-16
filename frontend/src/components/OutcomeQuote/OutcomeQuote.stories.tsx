@@ -45,6 +45,18 @@ export const NoLiquidity: Story = {
   args: { state: 'no-liquidity', odds: null, liquidity: null },
 }
 
+export const SelectedButEmpty: Story = {
+  args: { state: 'selected', odds: null, liquidity: null, label: 'Нет', side: 'b' },
+}
+
+export const Winner: Story = {
+  args: { state: 'winner', odds: 1, liquidity: 0, label: 'Да' },
+}
+
+export const ResolvedLoser: Story = {
+  args: { state: 'resolved-loser', odds: 0, liquidity: 0, label: 'Нет', side: 'b' },
+}
+
 export const SideB: Story = {
   args: { label: 'Нет', odds: 2.18, liquidity: 190, side: 'b' },
 }

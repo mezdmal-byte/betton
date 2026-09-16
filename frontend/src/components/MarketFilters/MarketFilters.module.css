@@ -14,11 +14,5 @@
   display: flex;
   flex: 1;
   min-width: 0;
-  gap: var(--space-8);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.pills::-webkit-scrollbar {
-  display: none;
+  gap: var(--space-4);
 }

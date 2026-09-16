@@ -7,7 +7,7 @@ const meta = {
   component: MarketFilters,
   tags: ['autodocs'],
   args: {
-    sort: 'for-you',
+    sort: 'new',
     category: 'all',
   },
   decorators: [
@@ -30,7 +30,7 @@ export const Sport: Story = {
 
 export const Interactive: Story = {
   render: function Render() {
-    const [sort, setSort] = useState('for-you')
+    const [sort, setSort] = useState('new')
     const [category, setCategory] = useState('all')
     const [open, setOpen] = useState(false)
     return (
