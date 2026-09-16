@@ -39,6 +39,7 @@ export type AccountFixture = {
   eventsCreated: number
   createdVolumeTon: number
   isAdmin: boolean
+  photoUrl?: string
 }
 
 export type CreateMarketDraft = {

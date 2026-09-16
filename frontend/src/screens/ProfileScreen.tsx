@@ -3,8 +3,9 @@ import { Avatar } from '../components/Avatar/Avatar'
 import { Chip } from '../components/Chip/Chip'
 import { IconButton } from '../components/IconButton/IconButton'
 import { accountUser } from '../fixtures/account'
-import { CREATOR_SHARE_COMPACT } from '../lib/constants'
+import { CREATOR_SHARE_COMPACT, COPY } from '../lib/constants'
 import { formatInteger, formatTon } from '../lib/format'
+import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import type { AccountFixture } from '../types/account'
 import styles from './ProfileScreen.module.css'
 
@@ -16,9 +17,15 @@ const LANGS = [
 
 export type ProfileScreenProps = {
   account?: AccountFixture
+  onBack?: () => void
+  accountState?: 'ready' | 'unauthenticated'
 }
 
-export function ProfileScreen({ account = accountUser }: ProfileScreenProps) {
+export function ProfileScreen({
+  account = accountUser,
+  onBack,
+  accountState = 'ready',
+}: ProfileScreenProps) {
   const menu = [
     { id: 'public', label: 'Публичный профиль' },
     { id: 'events', label: 'Мои события' },
@@ -30,14 +37,20 @@ export function ProfileScreen({ account = accountUser }: ProfileScreenProps) {
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <IconButton label="Назад" size="md">
+        <IconButton label="Назад" size="md" onClick={onBack}>
           <ChevronLeft size={22} />
         </IconButton>
         <strong>Профиль</strong>
       </header>
       <div className={styles.body}>
+        {accountState === 'unauthenticated' ? (
+          <StatusMessage tone="warning" title={COPY.openInTelegramTitle}>
+            {COPY.openInTelegramBody}
+          </StatusMessage>
+        ) : (
+          <>
         <section className={styles.identity}>
-          <Avatar initials={account.initials} name={account.displayName} size="lg" />
+          <Avatar initials={account.initials} name={account.displayName} src={account.photoUrl} size="lg" />
           <div className={styles.identityText}>
             <strong>{account.displayName}</strong>
             <span>@{account.handle}</span>
@@ -59,6 +72,8 @@ export function ProfileScreen({ account = accountUser }: ProfileScreenProps) {
           </div>
         </dl>
         <p className={styles.fee}>{CREATOR_SHARE_COMPACT}</p>
+          </>
+        )}
 
         <nav className={styles.menu} aria-label="Профиль">
           {menu

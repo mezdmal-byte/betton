@@ -1,6 +1,6 @@
 export type OutcomeSide = 'a' | 'b'
 
-export type MarketStatus = 'open' | 'closing' | 'resolved' | 'cancelled'
+export type MarketStatus = 'open' | 'closing' | 'closed' | 'resolved' | 'cancelled'
 
 export type OutcomeQuoteState =
   | 'default'
@@ -63,4 +63,5 @@ export type UserFixture = {
   handle: string
   initials: string
   availableTon: number
+  photoUrl?: string
 }

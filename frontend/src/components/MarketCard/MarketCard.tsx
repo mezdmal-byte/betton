@@ -1,6 +1,6 @@
 import { formatInteger, formatTon } from '../../lib/format'
-import { outcomeIsExecutable } from '../../lib/quote'
-import type { MarketFixture, OutcomeQuoteState, OutcomeSide } from '../../types/market'
+import { marketIsLocked, marketOutcomeQuoteState } from '../../lib/quote'
+import type { MarketFixture, OutcomeSide } from '../../types/market'
 import { cx } from '../../lib/cx'
 import { Avatar } from '../Avatar/Avatar'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
@@ -10,25 +10,15 @@ export type MarketCardProps = {
   market: MarketFixture
   selectedSide?: OutcomeSide | null
   onSelectOutcome?: (side: OutcomeSide) => void
+  onOpen?: () => void
 }
 
-function quoteState(market: MarketFixture, side: OutcomeSide, selectedSide: OutcomeSide | null): OutcomeQuoteState {
-  if (market.status === 'resolved') {
-    return market.resolvedSide === side ? 'winner' : 'resolved-loser'
-  }
-  if (market.status === 'cancelled') return 'disabled'
-  const outcome = side === 'a' ? market.outcomeA : market.outcomeB
-  if (!outcomeIsExecutable(outcome)) return 'no-liquidity'
-  if (selectedSide === side) return 'selected'
-  return 'default'
-}
-
-export function MarketCard({ market, selectedSide = null, onSelectOutcome }: MarketCardProps) {
-  const locked = market.status === 'resolved' || market.status === 'cancelled'
+export function MarketCard({ market, selectedSide = null, onSelectOutcome, onOpen }: MarketCardProps) {
+  const locked = marketIsLocked(market)
 
   return (
     <article className={styles.card} data-status={market.status}>
-      <header className={styles.meta}>
+      <header className={styles.meta} onClick={onOpen}>
         <span className={styles.category}>{market.category}</span>
         <span className={styles.dot}>·</span>
         <span className={cx(styles.time, market.status === 'closing' && styles.closing)}>
@@ -38,9 +28,12 @@ export function MarketCard({ market, selectedSide = null, onSelectOutcome }: Mar
         {market.status === 'cancelled' ? (
           <span className={cx(styles.badge, styles.cancelled)}>Отмена</span>
         ) : null}
+        {market.status === 'closed' ? <span className={styles.badge}>Приём завершён</span> : null}
       </header>
-      <h2 className={styles.question}>{market.question}</h2>
-      <div className={styles.creatorRow}>
+      <h2 className={styles.question} onClick={onOpen}>
+        {market.question}
+      </h2>
+      <div className={styles.creatorRow} onClick={onOpen}>
         <Avatar initials={market.creator.initials} name={market.creator.displayName} size="sm" />
         <span className={styles.handle}>@{market.creator.handle}</span>
         <span className={styles.stats}>
@@ -53,7 +46,7 @@ export function MarketCard({ market, selectedSide = null, onSelectOutcome }: Mar
           odds={market.outcomeA.odds}
           liquidity={market.outcomeA.liquidityTon}
           side="a"
-          state={quoteState(market, 'a', selectedSide)}
+          state={marketOutcomeQuoteState(market, 'a', selectedSide)}
           onClick={() => {
             if (!locked) onSelectOutcome?.('a')
           }}
@@ -63,7 +56,7 @@ export function MarketCard({ market, selectedSide = null, onSelectOutcome }: Mar
           odds={market.outcomeB.odds}
           liquidity={market.outcomeB.liquidityTon}
           side="b"
-          state={quoteState(market, 'b', selectedSide)}
+          state={marketOutcomeQuoteState(market, 'b', selectedSide)}
           onClick={() => {
             if (!locked) onSelectOutcome?.('b')
           }}
