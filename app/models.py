@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     BigInteger,
     DateTime,
     Enum,
@@ -37,11 +38,13 @@ class Outcome(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (CheckConstraint('balance_nano IS NOT NULL AND balance_nano BETWEEN 0 AND 9223372036854775807'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True)
     username: Mapped[str] = mapped_column(String(64), unique=True)
-    balance: Mapped[float] = mapped_column(Float, default=0.0)
+    balance_legacy: Mapped[float] = mapped_column('balance', Float, default=0.0)
+    balance_nano: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     markets: Mapped[list["Market"]] = relationship(back_populates="creator")
@@ -50,12 +53,28 @@ class User(Base):
     settlements: Mapped[list["SettlementRecord"]] = relationship(back_populates="user")
 
     @property
+    def balance(self):
+        from app.money import as_ton
+        return as_ton(self.balance_nano)
+
+    @balance.setter
+    def balance(self, value):
+        from app.money import nonnegative_nano
+        self.balance_nano = nonnegative_nano(value)
+        if self.balance_legacy is None:
+            self.balance_legacy = float(value)
+
+    @property
     def is_admin(self) -> bool:
         return settings.is_admin_telegram(self.telegram_id)
 
 
 class Market(Base):
     __tablename__ = "markets"
+    __table_args__ = (
+        CheckConstraint('pot_nano IS NOT NULL AND pot_nano BETWEEN 0 AND 9223372036854775807'),
+        CheckConstraint('lock_nano IS NOT NULL AND lock_nano BETWEEN 0 AND 9223372036854775807'),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     question: Mapped[str] = mapped_column(String(512))
@@ -68,8 +87,10 @@ class Market(Base):
     q_no: Mapped[float] = mapped_column(Float, default=0.0)
     outcomes: Mapped[list] = mapped_column(JSON, default=list)
     q: Mapped[list] = mapped_column(JSON, default=list)
-    lock_ton: Mapped[float] = mapped_column(Float, default=0.0)
-    pot: Mapped[float] = mapped_column(Float, default=0.0)
+    lock_ton_legacy: Mapped[float] = mapped_column('lock_ton', Float, default=0.0)
+    pot_legacy: Mapped[float] = mapped_column('pot', Float, default=0.0)
+    pot_nano: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    lock_nano: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     close_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     lock_returned: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[MarketStatus] = mapped_column(
@@ -95,6 +116,30 @@ class Market(Base):
     positions: Mapped[list["Position"]] = relationship(back_populates="market")
     trades: Mapped[list["Trade"]] = relationship(back_populates="market")
     settlements: Mapped[list["SettlementRecord"]] = relationship(back_populates="market")
+
+    @property
+    def pot(self):
+        from app.money import as_ton
+        return as_ton(self.pot_nano)
+
+    @pot.setter
+    def pot(self, value):
+        from app.money import nonnegative_nano
+        self.pot_nano = nonnegative_nano(value)
+        if self.pot_legacy is None:
+            self.pot_legacy = float(value)
+
+    @property
+    def lock_ton(self):
+        from app.money import as_ton
+        return as_ton(self.lock_nano)
+
+    @lock_ton.setter
+    def lock_ton(self, value):
+        from app.money import nonnegative_nano
+        self.lock_nano = nonnegative_nano(value)
+        if self.lock_ton_legacy is None:
+            self.lock_ton_legacy = float(value)
 
 
 class Position(Base):
