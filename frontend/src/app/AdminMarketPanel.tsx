@@ -15,6 +15,7 @@ import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { TextField } from '../components/TextField/TextField'
 import { useT } from '../i18n'
 import { invalidateAfterTrade } from './invalidate'
+import styles from './AdminMarketPanel.module.css'
 
 export function AdminMarketPanel({
   market,
@@ -43,7 +44,7 @@ export function AdminMarketPanel({
   const names = market.outcomes?.length ? market.outcomes : [t('outcome.yes'), t('outcome.no')]
 
   return (
-    <section>
+    <section className={styles.root}>
       <StatusMessage title={t('moderation.title')}>{t('mod.hint')}</StatusMessage>
       {errorMessage ? (
         <StatusMessage tone="error" title={t('error')}>
@@ -51,39 +52,48 @@ export function AdminMarketPanel({
         </StatusMessage>
       ) : null}
       {market.status === 'pending' ? (
-        <>
-          <Button fullWidth onClick={() => run.mutate(() => approveMarket(market.id))}>
+        <div className={styles.actions}>
+          <Button fullWidth disabled={run.isPending} onClick={() => run.mutate(() => approveMarket(market.id))}>
             {t('mod.approve')}
           </Button>
           <TextField id="admin-reject" label={t('mod.reasonPh')} value={reason} onChange={setReason} />
-          <Button variant="secondary" fullWidth onClick={() => run.mutate(() => rejectMarket(market.id, reason.trim()))}>
+          <Button
+            variant="secondary"
+            fullWidth
+            disabled={run.isPending}
+            onClick={() => run.mutate(() => rejectMarket(market.id, reason.trim()))}
+          >
             {t('mod.reject')}
           </Button>
-        </>
+        </div>
       ) : null}
       {market.status === 'open' ? (
-        <Button variant="secondary" fullWidth onClick={() => run.mutate(() => closeMarket(market.id))}>
+        <Button variant="secondary" fullWidth disabled={run.isPending} onClick={() => run.mutate(() => closeMarket(market.id))}>
           {t('mod.close')}
         </Button>
       ) : null}
-      {market.status === 'closed'
-        ? names.map((name, index) => (
+      {market.status === 'closed' ? (
+        <div className={styles.resolveGrid}>
+          {names.map((name, index) => (
             <Button
               key={name}
               variant="secondary"
               fullWidth
+              disabled={run.isPending}
               onClick={() => run.mutate(() => resolveMarket(market.id, index))}
             >
               {t('mod.resolve', { name })}
             </Button>
-          ))
-        : null}
+          ))}
+        </div>
+      ) : null}
       {p2p && (market.status === 'open' || market.status === 'closed') ? (
-        <>
+        <div className={styles.actions}>
           <TextField id="admin-void" label={t('mod.cancelPh')} value={reason} onChange={setReason} />
           <Button
             variant="secondary"
             fullWidth
+            disabled={run.isPending}
             onClick={() => {
               if (typeof window !== 'undefined' && !window.confirm(t('mod.voidConfirm'))) {
                 return
@@ -93,7 +103,7 @@ export function AdminMarketPanel({
           >
             {t('mod.cancel')}
           </Button>
-        </>
+        </div>
       ) : null}
     </section>
   )
