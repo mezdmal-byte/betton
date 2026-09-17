@@ -11,8 +11,10 @@ export type MarketChartProps = {
 }
 
 const WIDTH = 358
-const PLOT_HEIGHT = 108
-const VOLUME_HEIGHT = 22
+const DEFAULT_PLOT_HEIGHT = 108
+const DEFAULT_VOLUME_HEIGHT = 22
+const SINGLE_PLOT_HEIGHT = 44
+const SINGLE_VOLUME_HEIGHT = 12
 const PAD_LEFT = 4
 const PAD_RIGHT = 12
 const PAD_TOP = 8
@@ -29,17 +31,22 @@ function stepLine(points: Array<{ x: number; y: number }>): string {
 
 export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon, title }: MarketChartProps) {
   if (series.length === 0) return null
+
+  const singlePoint = series.length === 1
+  const plotHeight = singlePoint ? SINGLE_PLOT_HEIGHT : DEFAULT_PLOT_HEIGHT
+  const volumeHeight = singlePoint ? SINGLE_VOLUME_HEIGHT : DEFAULT_VOLUME_HEIGHT
   const plotWidth = WIDTH - PAD_LEFT - PAD_RIGHT
-  const plotBottom = PAD_TOP + PLOT_HEIGHT
+  const plotBottom = PAD_TOP + plotHeight
   const minOdds = Math.min(...series.map((point) => point.odds), currentOdds)
   const maxOdds = Math.max(...series.map((point) => point.odds), currentOdds)
   const oddsSpan = Math.max(maxOdds - minOdds, 0.2)
   const maxVolume = Math.max(...series.map((point) => point.volume), 1)
 
   const mapped = series.map((point, index) => {
-    const x =
-      PAD_LEFT + (series.length === 1 ? plotWidth : (index / (series.length - 1)) * plotWidth)
-    const y = PAD_TOP + ((maxOdds - point.odds) / oddsSpan) * PLOT_HEIGHT
+    const x = singlePoint
+      ? PAD_LEFT + plotWidth / 2
+      : PAD_LEFT + (index / (series.length - 1)) * plotWidth
+    const y = PAD_TOP + ((maxOdds - point.odds) / oddsSpan) * plotHeight
     return { x, y, volume: point.volume }
   })
 
@@ -47,7 +54,9 @@ export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon, titl
   const fill = `${line} V ${plotBottom} H ${mapped[0]?.x ?? PAD_LEFT} Z`
   const lastX = mapped[mapped.length - 1]?.x ?? PAD_LEFT
   const lastY = mapped[mapped.length - 1]?.y ?? PAD_TOP
-  const barWidth = Math.max(plotWidth / Math.max(series.length, 1) - 6, 4)
+  const barWidth = singlePoint
+    ? Math.min(92, plotWidth * 0.28)
+    : Math.max(plotWidth / Math.max(series.length, 1) - 6, 4)
   const heading = title ?? (outcomeLabel ? `Цена · ${outcomeLabel}` : 'Цена')
 
   return (
@@ -63,12 +72,12 @@ export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon, titl
       </div>
       <svg
         className={styles.svg}
-        viewBox={`0 0 ${WIDTH} ${plotBottom + VOLUME_HEIGHT + PAD_BOTTOM}`}
+        viewBox={`0 0 ${WIDTH} ${plotBottom + volumeHeight + PAD_BOTTOM}`}
         role="img"
         aria-label={`${heading} ${formatOdds(currentOdds)}`}
       >
-        {[0, 0.5, 1].map((ratio) => {
-          const y = PAD_TOP + ratio * PLOT_HEIGHT
+        {(singlePoint ? [0.5] : [0, 0.5, 1]).map((ratio) => {
+          const y = PAD_TOP + ratio * plotHeight
           return (
             <line
               key={ratio}
@@ -80,17 +89,17 @@ export function MarketChart({ series, currentOdds, outcomeLabel, volumeTon, titl
             />
           )
         })}
-        {mapped.length > 0 ? <path d={fill} className={styles.fill} /> : null}
-        {mapped.length > 0 ? <path d={line} className={styles.line} /> : null}
+        {!singlePoint && mapped.length > 0 ? <path d={fill} className={styles.fill} /> : null}
+        {!singlePoint && mapped.length > 0 ? <path d={line} className={styles.line} /> : null}
         <circle cx={lastX} cy={lastY} r="4" className={styles.dotRing} />
         <circle cx={lastX} cy={lastY} r="2.25" className={styles.dot} />
         {mapped.map((point, index) => {
-          const height = Math.max((point.volume / maxVolume) * (VOLUME_HEIGHT - 2), 2)
+          const height = Math.max((point.volume / maxVolume) * (volumeHeight - 2), 2)
           return (
             <rect
               key={series[index].t}
               x={point.x - barWidth / 2}
-              y={plotBottom + VOLUME_HEIGHT - height}
+              y={plotBottom + volumeHeight - height}
               width={barWidth}
               height={height}
               className={index === mapped.length - 1 ? styles.volumeNow : styles.volume}
