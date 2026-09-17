@@ -10,7 +10,8 @@
   align-items: center;
   gap: var(--space-8);
   min-height: var(--header-height);
-  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
+  padding: var(--pad-header-top) var(--page-padding) 8px;
+  background: var(--color-canvas);
 }
 
 .header strong {
@@ -23,15 +24,20 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  gap: var(--space-16);
-  padding: 0 var(--page-padding) var(--space-16);
+  gap: 14px;
+  padding: 0 var(--page-padding) calc(var(--space-20) + var(--tg-bottom));
   overflow: auto;
 }
 
-.section {
+.section,
+.fee {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius-14);
+  background: var(--color-surface);
 }
 
 .sectionLabel {
@@ -42,7 +48,8 @@
 
 .pills {
   display: flex;
-  gap: var(--space-4);
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .outcomes {
@@ -53,23 +60,23 @@
 
 .outcomeA :global(input) {
   background: var(--color-outcome-a-tint);
+  border-color: transparent;
 }
 
 .outcomeB :global(input) {
   background: var(--color-outcome-b-tint);
+  border-color: transparent;
 }
 
 .fee {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  gap: 6px;
 }
 
 .feeRow {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  min-height: var(--touch-min);
+  min-height: 36px;
 }
 
 .feeRow p {
@@ -82,17 +89,21 @@
   color: var(--color-text-secondary);
 }
 
-.fee > p {
+.fee > p,
+.fee :global(#creator-fee-detail) p {
   margin: 0;
   font-size: 12px;
   font-weight: var(--font-weight-regular);
-  line-height: 1.4;
-  color: var(--color-text-disabled);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
 }
 
 .actions {
-  padding: var(--space-12) var(--page-padding) var(--pad-bar-bottom);
-  background: var(--color-canvas);
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  padding: 10px var(--page-padding) var(--pad-bar-bottom);
+  background: var(--color-surface);
   border-top: 1px solid var(--color-border-faint);
 }
 
@@ -107,4 +118,15 @@
 .error {
   color: var(--color-warning);
   padding-bottom: var(--space-8);
+}
+
+@media (max-width: 340px) {
+  .body {
+    gap: 12px;
+  }
+
+  .section,
+  .fee {
+    padding: 10px;
+  }
 }
