@@ -73,20 +73,23 @@ export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: Con
         ) : (
           (queue.data ?? []).map((market) => {
             const view = mapMarketOut(market, new Date(), locale)
+            const busy = (approve.isPending && approve.variables === market.id) || (reject.isPending && reject.variables?.marketId === market.id)
             return (
-              <section key={market.id}>
+              <section key={market.id} className={styles.adminCard}>
                 <p>
                   <strong>{view.question}</strong>
                 </p>
                 <p>
                   {view.category} · {view.closeLabel}
                 </p>
-                <Button variant="ghost" size="md" onClick={() => onOpenMarket(market.id)}>
-                  {t('mod.open')}
-                </Button>
-                <Button size="md" onClick={() => approve.mutate(market.id)}>
-                  {t('mod.approve')}
-                </Button>
+                <div className={styles.adminActions}>
+                  <Button variant="secondary" size="md" disabled={busy} onClick={() => onOpenMarket(market.id)}>
+                    {t('mod.open')}
+                  </Button>
+                  <Button size="md" disabled={busy} onClick={() => approve.mutate(market.id)}>
+                    {t('mod.approve')}
+                  </Button>
+                </div>
                 <TextField
                   id={`reject-${market.id}`}
                   label={t('mod.reasonPh')}
@@ -96,6 +99,7 @@ export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: Con
                 <Button
                   variant="secondary"
                   size="md"
+                  disabled={busy}
                   onClick={() => reject.mutate({ marketId: market.id, reason: (reasonById[market.id] || '').trim() })}
                 >
                   {t('mod.reject')}
