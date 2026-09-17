@@ -121,7 +121,10 @@ async def setup_webhook_task():
     url = settings.webapp_base() + "/webhook"
     await bot.set_webhook(url=url)
     print(f"Вебхук Telegram: {url}")
-    print(f"Mini App: {settings.webapp_base()}/")
+    print(f"Mini App: {settings.webapp_base()}/v2/")
+    from bot.main import sync_menu_button
+
+    await sync_menu_button(bot)
 
 
 async def expire_orders_task():
