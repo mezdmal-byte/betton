@@ -7,6 +7,7 @@ import {
   iocDiscoveryOdds,
   iocExecutionOdds,
   IOC_MIN_ACCEPTABLE_ODDS,
+  normalizeQuickTradeMaxAmount,
   presetExceedsBalance,
   QUICK_TRADE_INITIAL_AMOUNT,
   quickTradeCtaDisabled,
@@ -50,6 +51,12 @@ describe('Quick Trade amount and Max', () => {
     expect(presetExceedsBalance(66, 50)).toBe(true)
     expect(presetExceedsBalance(66, 100)).toBe(false)
     expect(presetExceedsBalance(100, 80)).toBe(true)
+  })
+
+  it('never rounds Max above executable liquidity and hides nano-level dust', () => {
+    expect(normalizeQuickTradeMaxAmount(3750.00507143)).toBe(3750.005)
+    expect(formatMaxPreset(3750.005)).toBe('3750.005')
+    expect(normalizeQuickTradeMaxAmount(0.00507143)).toBe(0.005)
   })
 })
 
