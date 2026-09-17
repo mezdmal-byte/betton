@@ -1,325 +1,509 @@
 # BetTON handoff
 
-2026-09-12. Merge в `main`, деплой и рестарт Render **не разрешены**.
+Актуально для передачи проекта новому разработчику.
 
-## Текущее состояние
+## Куда смотреть в первую очередь
 
-Не хранить «текущий HEAD» здесь: любой SHA в этой ячейке устаревает следующим коммитом. Ниже — стабильные точки кода.
+Если цель — продолжать **актуальную версию BetTON**, работайте из ветки:
 
-| Что | Значение |
-| --- | --- |
-| Репозиторий | https://github.com/mezdmal-byte/betton |
-| Рабочая ветка | `feature/vasily-product` (строго от актуального `feature/beta-ui`) |
-| База beta-ui | `a66a81f11dc84f0fdd9be06157bc7659050aa928` (не откатывалась) |
-| Vasily Product A | `80cebd8` profile + public creators |
-| Vasily Product B | `eb1de84` wallet/account/history shell |
-| Vasily Product C | `524e0bb` feed sort/search/pagination + TOP creators |
-| Vasily Product D | `5e836d0` public/unlisted + Telegram share |
-| Vasily Product E | `abe80ad` i18n RU/EN/CN + onboarding + desktop |
-| Vasily Product F | этот коммит: demo seed + tests + docs |
-| Sprint 2 Mini App code | `b5d0fdb994b26595d6dfc7296119ca4e5f1fc0a1` |
-| Sprint 1 Mini App code | `05c9b44734040b7cde6486ae6c539b6fe174454d` |
-| Точка ветки до UI | `88da7c7ed3be210d2bb2e204b876f51449096b56` (HANDOFF) |
-| Основа integer-money | `6b0bc658ee20c1293eeeb74469f5adbb935fb80b` |
-| PR №11 | [draft / open](https://github.com/mezdmal-byte/betton/pull/11) `feature/beta-ui` → `feature/integer-money`, **не слит**. Title: Beta UI Sprint 1–2 |
-| Final Live UI Polish code | `9acdb716482773926a072e3a47b38ad5ebad60db` |
-| PR №10 | [draft / open](https://github.com/mezdmal-byte/betton/pull/10) `feature/integer-money`, **не слит** |
-| `origin/main` | `23fa84d417e21cbb954cb6ebcb7087ac1910cb36` (PR №9). **Не менять.** |
-| Production Render | `srv-daffpoon74is739r4csg`, Free, auto-deploy с `main`. **Не деплоить и не перезапускать.** |
-
-integer-money уже внутри ветки. Production storage migration — **DEFERRED**.
-
-## Consumer UX Architecture pass (static HTML/JS, React deferred)
-
-Цель: довести Telegram Mini App до состояния, которое уже можно показывать реальному пользователю и Василию. Frontend остаётся **static HTML + CSS + JS**. React / Vue / Svelte / Next / Vite / Tailwind / Bootstrap / MUI / shadcn **намеренно не добавлялись**. Backend matching, integer nanoTON, settlement, fee math, auth HMAC, private access **не менялись**.
-
-PR №12 (`feature/vasily-product` → `feature/beta-ui`) оставить Draft. Merge, deploy, `main`, PR №10, PR №11, Render, production DB **не трогались**.
-
-### Navigation / header / feed
-
-Нижняя навигация обычного пользователя: **Рынки / Создать / Портфель**. Admin «Проверка» убрана из bottom nav и доступна только из Profile. Header: BetTON + баланс (клик → Портфель) + avatar (клик → Profile). Feed: header → search → sort → categories → market cards. Status dropdown убран с главного экрана (фильтр в compact sheet). TOP creators preview (max 3) вставляется после 5–6 карточек. Карточки показывают category, time left, question, creator, volume, participants, YES/NO best executable offers; без fake odds.
-
-### Simple bet / advanced own odds
-
-Основной market screen: выбрать Да/Нет, сумму, увидеть выплату, CTA. Simple bet = существующий **IOC только по available_to_me**. Собственная ликвидность не исполняется. Нет встречного предложения → честный empty state + «Выставить свой коэффициент». Advanced — отдельный subview с limit order, степпером коэффициента и стаканом. Стакан на простом экране collapsed. Closed / resolved / cancelled прячут betting controls.
-
-### Portfolio ≠ Profile
-
-Портфель: доступно / в резерве / в позициях, Пополнить/Вывести, вкладки Позиции / Заявки / История, компактный Доход автора. Язык, help и admin moderation живут в Profile. Wallet shell визуально в той же design system, без blockchain.
-
-### Auth / loading / empty / i18n
-
-Expired Telegram session → blocking overlay `#auth-block`, money controls не показываются. Header/feed/portfolio skeleton вместо «—». RU/EN/ZH key parity и live rerender сохранены. UGC не переводится.
-
-### Tests
-
-`tests/test_consumer_ux.py` + обновлённые UI tests. SQLite: `python -m pytest -q tests --ignore=tests/test_p2p_journal_postgres.py`. PostgreSQL CI command без изменений workflow.
-
-### Safe demo seed (не запускать на live/user DB автоматически)
-
-```
-python scripts/seed_demo_markets.py --count 100 --database-url sqlite:///./.betton-demo-qa.db --allow-local-demo --demo-tag vasily
+```bash
+feature/react-full-preview
 ```
 
-Не seed текущую пользовательскую live DB. Не запускать на Render.
+Она содержит текущий React preview и открыта отдельным Draft PR **#15**. Это ещё не `main`.
 
-Известные UX-ограничения этого pass: feed-карточки используют public `best_offers` (персональный `available_to_me` — на странице рынка, без N+1); simple bet не оставляет resting limit; без Telegram initData money controls недоступны; event images не вводились; React migration не начиналась.
+Ветки сейчас следует понимать так:
 
-## Vasily Product Expansion
+- `main` — консервативная основа: backend, Telegram bot, P2P, legacy Mini App;
+- `feature/react-full-preview` — текущая рабочая/демонстрационная версия продукта и UI;
+- `/` — legacy Mini App;
+- `/v2/` — React preview в `feature/react-full-preview`.
 
-Продуктовый sprint вокруг уже принятой P2P beta. Matching, partial fill, IOC/limit, self-match, settlement, integer nanoTON, P2P ledger, auth/initData, webhook, расчёт 1%, refund/cancel и legacy LMSR **не переписывались**.
+Перед началом работы:
 
-Ветка: `feature/vasily-product` → `feature/beta-ui`. Draft PR, **не merge**. `main`, PR №10, PR №11, Render, production env/DB **не трогались**.
-
-### Экономика 1% не изменена. Новый creator reward не добавлялся.
-
-Новый creator reward не добавлялся. Существующее распределение сервисного сбора сохранено: 75% creator / 25% platform в предусмотренных текущей settlement-логикой случаях. В repair pass это только отражено в UI.
-
-Сервисный сбор по-прежнему **1% только с чистой прибыли победителя**. Внутренний split 75/25 (creator/platform) в ledger не менялся и в UI не выдаётся за «автор получает 1%». Новый creator payout не создавался.
-
-Unlisted: публичные surfaces по-прежнему скрывают событие. Orderbook / quote / place и GET по numeric id закрыты централизованным access check: нужен `X-Market-Share-Token` этого market, либо creator/admin. Иначе 404, не 403. Mini App: `?share=` → существующий share resolve → token только для открытого event → заголовок, не query string. Отмена своей заявки через `/orders/{id}/cancel` без token.
-
-Криптоинтеграции нет: нет TON Connect, Solana adapter, RPC, deposit address, seed phrase, on-chain tx. Wallet — visual-final shell, CTA disabled, баланс через эти формы не меняется.
-
-### DB additions (additive, ensure_schema; persistent production migration DEFERRED)
-
-- `users.telegram_username`, `users.display_name`, `users.photo_url` (nullable)
-- `markets.visibility` default `public`
-- `markets.share_token` unique nullable (unlisted only, `secrets.token_urlsafe(24)`)
-
-SQLite и PostgreSQL покрыты tests. На Render ничего не применялось.
-
-### Account / profile
-
-Личный кабинет: аватар (Telegram `photo_url` текущего пользователя или initials), display name, @username, внутренний id, бейдж админа. Balance-card кликабельна → Wallet. Действия Пополнить/Вывести. Секции: Обзор, Мои события, Мои заявки, Мои позиции, История.
-
-При Telegram auth нефинансовые поля обновляются из проверенного initData. Canonical identity не username.
-
-Публичный профиль автора: `GET /creators/{id}` — только public events. Свой профиль дополнительно даёт wallet/account controls.
-
-### Wallet shell only
-
-TON | Solana, вкладки Пополнить / Вывести / История. Адрес не генерируется: «Адрес появится после подключения блокчейн-модуля». QR-слот пустой. «Получить адрес» и «Вывести» disabled. Нет API списания.
-
-### История денег
-
-Read-only DTO из существующего P2P journal + settlements (`GET /users/{id}/transactions`). Типы: заявка/резерв, исполнение, возврат остатка, отмена, выигрыш, проигрыш, сервисный сбор, возврат события. Пополнение/вывод предусмотрены в UI-фильтре, fake records не создаются.
-
-### Лента
-
-Sort отделён от категории: Новые | Популярные | Закрываются, затем категории и поиск.
-
-- new: public, `created_at` DESC (tie-break id)
-- closing: accepting, `close_at` ASC, только будущие
-- popular: executed volume DESC, unique traders, fill count, newest
-
-`GET /markets` backward-compatible: `q`, `category`, `status`, `sort`, `limit`, `offset`, заголовок `X-Total-Count`. Без `limit` по-прежнему полный список. Unlisted не в feed/search/popular. Mini App: 20 + «Показать ещё», debounce 280ms.
-
-Best offers batch сохранён. Creator names/activity batch, без `/users/{id}` и `/orderbook` на карточку.
-
-### TOP creators
-
-`GET /creators/top`: volume / fills / unique participants по **public** рынкам автора. Кликабельные профили. Блок «Лучшие авторы →» в ленте, без новой bottom-tab.
-
-### Private / unlisted
-
-Публичное: pending → admin moderation → лента. По ссылке: сразу `open`, share token, не в ленте/поиске/popular/публичном профиле автора. `GET /markets/{id}` для unlisted → 404. Resolve: `GET /markets/share/{token}` (Telegram auth). Trading по id после resolve сохранён (ограничение beta). Settlement/cancel permissions не расширялись.
-
-Стабильная share-ссылка: `https://t.me/<bot>?start=market_<TOKEN>`. Бот по `/start` отдаёт кнопку «Открыть событие» на **текущий** `settings.webapp_base()/?share=<TOKEN>`. Mini App читает `?share=` (и start_param). `TELEGRAM_BOT_USERNAME` в health.
-
-### i18n / onboarding / responsive
-
-Словарь `app/static/i18n.js`: RU / EN / 简体中文. Default: Telegram `language_code` ru→RU, zh*→CN, иначе EN. Выбор в профиле, localStorage `betton-lang`. UGC (вопрос, исходы) не переводится. Бот `/start` `/help` по language_code, unknown → EN.
-
-Onboarding dismissible (`betton-onboard-v1`): честный 1%, без «без комиссии». Help «Как это работает». Форма создания компактная, сборы в collapsed `<details>`.
-
-Mobile-first; desktop `--app-max` 720/900, лента 2 колонки с 768px, account/wallet две колонки с 1024px. Bottom nav: **Рынки / Создать / Портфель**. Admin moderation только из Profile, не из постоянной нижней навигации.
-
-### Demo seeder
-
-```
-python scripts/seed_demo_markets.py --count 100 --database-url sqlite:///./betton.db --allow-local-demo --demo-tag vasily
+```bash
+git fetch origin
+git switch feature/react-full-preview
+git branch --show-current
+git log -5 --oneline
 ```
 
-Перед seed seeder делает timestamped backup SQLite (`backups/betton-YYYYMMDD-HHMMSS.db`), если файл существует. `--demo-tag vasily` идемпотентен: повтор не создаёт вторую сотню. Не удаляет существующих Telegram-пользователей и ручные рынки. Hard guard без изменений: Render env, production-like host, `betton.db` без `--allow-local-demo`. Не запускать на Render.
+Не хранить в документации «вечный текущий HEAD»: SHA быстро устаревает. Источник истины — сама ветка и Draft PR #15.
 
-### Vasily UX + demo polish
+## Что такое BetTON сейчас
 
-Компактный profile dashboard (stats + read-only «Доход автора» из существующих `OP_TIP` journal credits автора). Fee-эссе только в Help/`<details>`. Onboarding ~одна карточка. Лента: TOP-3 preview, отдельная панель TOP-10. `setLang` полностью rerender текущий UI; UGC не переводится. Словарь RU/EN/ZH с key parity.
+BetTON — Telegram Mini App с **P2P prediction market**.
 
-## Tests / CI
+Платформа не должна изображаться как классический букмекер. Пользователи создают и принимают предложения друг друга.
 
-Новые: `test_profile_creators.py`, `test_history.py`, `test_wallet_ui.py`, `test_feed.py`, `test_private_markets.py`, `test_i18n.py`, `test_demo_seed.py`, `test_consumer_ux.py`. SQLite full suite. PostgreSQL job: journal + integer money + migration + E2E + profile/private/feed/seed. sqlite job: `actions/setup-node`.
+Основной поток:
 
-### Известные ограничения этого sprint
+```text
+Пользователь A выставляет заявку
+→ пользователь B принимает её полностью или частично
+→ backend выполняет matching
+→ деньги и резерв фиксируются backend
+→ при resolution settlement определяет выплаты
+```
 
-- Unlisted market можно торговать по numeric id, если id уже известен; публичный GET по id закрыт.
-- Wallet не меняет баланс и не выдаёт адреса.
-- Creator 1% reward не реализован.
-- Persistent production storage still deferred.
-- Второй реальный Telegram-аккаунт для live matching всё ещё pending.
-- Нет TON/Solana интеграции.
+Если встречной ликвидности нет — мгновенной ставки нет.
 
-## Что сделано в Beta UI / UX sprint 1
+### Quick Trade
 
-Светлая Mini App-тема (fintech / prediction market, без золота и казино-эстетики). Нижняя навигация: **Лента / Создать / Мои** (+ Модерация у админа). Шапка: BetTON + доступный баланс в TON, без nanoTON и без имени пользователя.
+Quick Trade — простой UX поверх доступной P2P-ликвидности. Это IOC-сценарий: backend preview показывает, сколько реально может исполниться сейчас.
 
-Лента — компактные карточки: вопрос, два исхода, срок приёма, статус (активно / приём завершён / завершено / отменено). При `pot == 0` не утверждаем отсутствие заявок в стакане: «Сделок пока нет · откройте событие…». Клик открывает **страницу события** с формой заявки, YES/NO, стаканом предложений и preview исполнения.
+Для авторизованного пользователя используется `available_to_me`, чтобы собственная заявка пользователя не считалась доступной ему же ликвидностью.
 
-Форма заявки показывает, что исполнится сразу, что останется заявкой, встречный объём и что будет при отмене события. Частичное исполнение — не ошибка. Legacy LMSR и админ-действия сохранены.
+### Own Price
 
-## Что сделано в Beta UI / UX sprint 2
+Own Price — limit order. Часть заявки может исполниться сразу; остаток может остаться в стакане и ждать встречного пользователя.
 
-«Мои» объясняет, где деньги: доступный баланс в шапке; заявки с событием, исходом, коэффициентом, исходной суммой, исполнено / в резерве / возвращено; статусы человеческим языком (**Ожидает контрагента / Частично исполнена / Исполнена / Отменена / Приём завершён**). У открытой заявки кнопка **Отменить остаток** и подсказка, что остаток вернётся на доступный баланс. Несколько заявок на одно событие группируются под названием события; бейджи отличают заявку, исполненную ставку и итог события.
+### Частичное исполнение
 
-P2P-позиция: исход, поставлено, средний коэффициент, возможная выплата, статус события — без внутренних shares. Legacy LMSR по-прежнему показывает доли.
+Partial fill — нормальная ситуация и должна честно отображаться UI.
 
-История: вопрос, выбранный исход, победивший исход, сумма ставок, выплата, **Сервисный сбор** при наличии, итог `+X TON` / `-X TON` / `Возврат X TON`. Отмена визуально отделена от проигрыша: «Событие отменено · средства возвращены».
+Frontend не должен вычислять matching самостоятельно.
 
-Страница события: статус → вопрос → срок → исходы → компактные предложения → форма заявки → preview → действия. Подробный стакан в `<details>`. Preview выделяет сумму, исполнение сейчас, остаток заявки, коэффициент и выплату только по исполненной части. Если встречного объёма нет — это не ошибка.
+## Экономика
 
-Лента: клиентский поиск по вопросу без нового API; категории компактными chips; состояние — один `<select>`. Empty states у разделов «Мои». Mobile: без горизонтального скролла на 320/360/390/430 и desktop preview; клавиатура сдвигает нижнюю навигацию через `visualViewport`.
+Каноническая пользовательская формулировка:
 
-Экономика, matching, integer nanoTON, auth, migrations, API contracts не менялись.
+> **Сервисный сбор — 1% только с чистой прибыли победителя.**
 
-## Sprint 3 — E2E verification (продукт, не новый функционал)
+Нет отдельной комиссии за создание события или размещение заявки.
 
-Проверка beta как целого пользовательского пути на изолированной тестовой БД (`tests/conftest.py`: tempfile SQLite, никогда не production `DATABASE_URL`). Реальные FastAPI endpoints, matching и settlement. Три отдельных аккаунта: User A, User B, Admin. Живые JSON ответов прогоняются через реальные функции Mini App (`orderCard`, `settlementCard`, `p2pCard`, `positionCard`, `feedCard`, `p2pPreviewLines`).
+В существующей settlement/ledger-логике этот 1% в предусмотренных кодом случаях распределяется:
 
-Файл: `tests/test_beta_e2e.py`.
+- 75% — автору события;
+- 25% — платформе.
 
-### Сценарий resolve (partial → cancel remainder → full → close → resolve)
+Это split одного и того же 1%, не дополнительная комиссия.
 
-1. User A создаёт P2P-событие с исходами Да/Нет. Pending: нет в `GET /markets`, `GET /markets/{id}` = 404, заявка 400, залог 0.
-2. Admin approve. Событие появляется в ленте.
-3. User A: limit 100 TON @ 2.0 на «Да». Баланс −100 nano-точно; «Мои» → **Ожидает контрагента**; стакан показывает встречное 100 @ 2.0; повтор того же `request_id` не снимает деньги второй раз.
-4. User B: 40 TON @ 2.0 на «Нет» → PARTIAL FILL. A: filled 40 / remaining 60; B: filled 40 / remaining 0; pot = 80; позиции A/B 40 stake / 80 payout; 1 fill; journal `reserve×2` + `fill_escrow×2`; reconciliation `fully_verified`.
-5. User A отменяет остаток: +60 один раз; filled 40 сохраняется; повторная отмена не меняет баланс и не пишет второй `refund`.
-6. Отдельные заявки FULL FILL: A 30 «Да» + B 30 «Нет». Оба filled 30 remaining 0; pot = 140; 2 fills.
-7. Admin close. Новая заявка 400. После close remaining не появляется.
-8. Admin resolve «Да». pot = 0, `settlement_kind=auto`. A: payout 140, tip 0.70 (создатель-победитель → чаевые целиком платформе), credited 139.30, result +69.30, баланс 1069.30. B: payout 0, tip 0, result −70, баланс 930. Повторный resolve 400, журнал и балансы не меняются. `POST /claim` 400.
+Не менять эти правила без отдельной продуктовой задачи и полного тестирования.
 
-UI с живых payload: «Ожидает контрагента» / «Частично исполнена» / «Отменена» / «Исполнена»; история `+69.30 TON` и `-70.00 TON`; нет «Забрать выигрыш» на auto P2P; нет формы заявки после resolve.
+## P2P — основной механизм
 
-### Сценарий void
+Основной актуальный механизм — P2P order book/matching.
 
-Второе событие: partial 80/20 и full 25/25, затем admin cancel. Исполненные ставки и незакрытый резерв возвращены; tip = 0; pot = 0; `settlement_kind=void`; A credited 105, B 45; балансы = стартовым. UI: «Событие отменено · средства возвращены». Повторная отмена 200, причина не перезаписывается, второй возврат не создаётся.
+Legacy LMSR остаётся в репозитории только для старых рынков и совместимости.
 
-### Legacy LMSR
+Не путать:
 
-Отдельный рынок: quote + buy, close, auto-resolve, победителю зачисление без claim, проигравшему баланс без лишнего, повторный resolve 400. Conservation nano сохраняется.
+- P2P: цена определяется заявками пользователей;
+- LMSR: цена рассчитывается AMM.
 
-### Денежные инварианты
+React preview не должен притворяться, что LMSR — это P2P стакан.
 
-На каждом критичном шаге `sum(balance_nano) + sum(pot_nano) + sum(order.remaining)` константен. `order.amount == filled + remaining + refunded`. Journal reconciliation `fully_verified` после fill/cancel/resolve/void. Чаевые 1% прибыли, существующее правило 75/25, не менялись.
+## Текущая архитектура
 
-### Найденные ошибки
+```text
+Telegram
+   │
+   ├─ /start
+   ├─ WebApp
+   └─ share/start_param
+   │
+   ▼
+bot/main.py
+   │
+   ▼
+app/main.py (FastAPI)
+   │
+   ├─ auth
+   ├─ markets
+   ├─ users/account/profile
+   ├─ order preview/place/cancel
+   ├─ orderbook
+   ├─ trade history
+   ├─ moderation
+   └─ webhook
+   │
+   ▼
+services
+   ├─ p2p_service.py
+   ├─ p2p_ledger.py
+   ├─ discovery.py
+   ├─ history.py
+   └─ market_service.py
+   │
+   ▼
+Database
+```
 
-Продуктовых багов не найдено. Расхождения в черновике E2E (читать maker после taker на full fill; toast частичного fill брать у заявки с remaining > 0) — ошибки теста, не сервиса.
+## Где что лежит
 
-### Результаты тестов
+### Backend
 
-Локально, Windows, SQLite tempfile:
+```text
+app/main.py
+```
 
-`pytest tests --ignore=tests/test_p2p_journal_postgres.py` → **160 passed, 4 skipped**.
+Главные API routes, `/health`, Telegram webhook, hosting `/` и `/v2/`.
 
-3 новых E2E: `test_beta_e2e_partial_cancel_full_resolve`, `test_beta_e2e_void_partial_and_full`, `test_beta_e2e_legacy_lmsr_regression`.
+```text
+app/config.py
+```
 
-4 skipped без Node.js на этой машине: `test_load_mine_refreshes_balance_and_keeps_legacy_results` (4 параметра). Остальной JS harness (Sprint 1–2 UI, E2E render) исполняется через Node, если он есть, иначе headless Edge.
+env/settings.
 
-GitHub CI до Sprint 3 (job sqlite на `f933e1d`): **161 passed**. Runner image `ubuntu-latest` уже содержит Node, поэтому JS-тесты в SQLite job исполняются, хотя workflow не вызывает `actions/setup-node`. Не утверждать, что «Node отсутствует в GitHub CI».
+```text
+app/database.py
+```
 
-GitHub CI после Sprint 3 (job sqlite): **164 passed**. Job `postgres` (журнал + integer money + migration + E2E): **37 passed**.
+DB setup, sessions, schema guards.
 
-## Final Live UI Polish
+```text
+app/models.py
+```
 
-Закрытие UX-дефектов живого Telegram WebView. Экономика, matching, integer nanoTON, 1% settlement, auth, migrations, production infra **не менялись**.
+SQLAlchemy models: users, markets, orders, fills, ledger, settlements.
 
-### Live issues addressed
+```text
+app/schemas.py
+```
 
-- Палитра graphite + teal: фон `#FFFFFF`, surface `#F7F8FA`, текст `#171717`, YES `#20A39E`, NO `#EF5B5B`. Фиолетовый `#23001E` убран. Логотип: **Bet** graphite, **TON** teal. Без градиентов, золота и казино-эстетики.
-- Меньше вложенных рамок: внутренние блоки отделяются surface/padding.
-- **Лента показывает best odds** из `GET /markets` (`best_offers`), без N+1 `/orderbook` на карточку. Нет предложения → «Нет предложений», коэффициент не выдумывается. Closed/resolved/cancelled → `best_offers: null`.
-- Публичный стакан сохранён. Authenticated `GET /markets/{id}/orderbook` дополнительно отдаёт `available_to_me` без заявок текущего пользователя. UI различает «лучшее предложение рынка» и «доступно вам сейчас». «Принять доступное» не включается, если ликвидность только своя. Self-match по-прежнему запрещён.
-- Top-of-book на странице события кликабелен: выбирает исход, подставляет коэффициент, делает preview, заявку не отправляет.
-- Компактный мини-маркет предложений; полный стакан в `<details>` с tabular numbers.
-- CTA «Оставить заявку» — graphite. YES/NO — tinted surface + accent border/text.
-- Нижняя навигация: **Проверка** вместо «Модерация», одна строка (`nowrap`) на 320–430 px.
-- Telegram `BackButton`: `show` на событии, `hide` при возврате в ленту/раздел, `onClick` = тот же `closeEvent`, что «← К ленте». Handler регистрируется один раз.
-- Даты в UI — локальный timezone браузера/WebView, locale `ru-RU`. Backend timestamps без изменений.
-- Пользовательские тексты: обязательный **сервисный сбор 1% с чистой прибыли победителя**, не «чаевые». Пример 100 → 180, прибыль 80, сбор 0.80. Ledger `op_type` не переименовывался.
-- `bot/main.py` `/start` и `/help`: P2P рынок, нет LMSR как текущей механики, нет гарантированной ликвидности.
-- «Мои»: иерархия Доступно / В резерве / Исполнено / Возвращено, tabular numbers.
+API request/response contracts.
 
-### Tests
+```text
+app/telegram_auth.py
+```
 
-- `tests/test_best_offers.py` — empty / one-side / two-side / closed+resolved; list не вызывает `book()`; own order не executable для того же пользователя.
-- `tests/test_live_polish_ui.py` — feed best odds, prefill, local dates, BackButton lifecycle, «Проверка», fee copy без «чаевые».
-- `tests/test_bot_texts.py` — START/HELP не обещают LMSR-ликвидность.
-- Существующие Sprint 1–3 UI и E2E обновлены под новые тексты.
+Telegram initData HMAC/TTL verification.
 
-Локально, Windows, SQLite tempfile: `pytest tests --ignore=tests/test_p2p_journal_postgres.py` → **168 passed, 4 skipped** (те же 4 `loadMine` без Node.js).
+### P2P
 
-GitHub CI после push: sqlite + postgres jobs на PR №11.
+```text
+app/services/p2p_service.py
+```
 
-### Remaining live limitation
+Quote, matching, IOC/LIMIT placement, partial fills, self-match protection.
 
-- Второй реальный Telegram-аккаунт для живого E2E matching всё ещё pending.
-- Persistent production storage всё ещё **DEFERRED**.
-- Merge PR №10 / №11, push `main`, deploy/restart Render — запрещены.
+```text
+app/services/p2p_ledger.py
+```
 
-## Страницы
+Immutable P2P money journal / reconciliation.
 
-- Лента (`#markets`) — поиск и компактные фильтры
-- Событие (`#event-root`)
-- Создать
-- Мои (заявки по событиям, позиции, созданные, история)
-- Модерация (админ)
+### Read models
 
-## API, которые использует UI
+```text
+app/services/discovery.py
+app/services/history.py
+```
 
-Без новых сущностей.
+Feed, creator/account statistics, transaction history.
 
-Публичные: `GET /markets` (`q`/`sort`/`limit`/`offset`, `best_offers`, `creator`, `activity`; unlisted исключены), `GET /markets/{id}` (unlisted → 404), `GET /markets/share/{token}` (auth), `GET /markets/{id}/orderbook`.
+### Telegram bot
 
-Discovery: `GET /creators/top`, `GET /creators/{id}`.
+```text
+bot/main.py
+```
 
-Auth: `POST /auth/telegram` (обновляет display name / telegram username / photo_url, не деньги), `GET /users/{id}`, `GET /users/{id}/account`, `GET /users/{id}/transactions`.
+`/start`, WebApp buttons, share/start_param flow.
 
-P2P: `POST /markets/{id}/orders/quote`, `POST /markets/{id}/orders`, `GET /users/{id}/orders`, `POST /orders/{id}/cancel`.
+### Legacy frontend
 
-LMSR: `POST /markets/{id}/quote`, `POST /markets/{id}/buy`, `POST /markets/{id}/claim`.
+```text
+app/static/
+```
 
-Прочее: `POST /markets`, `GET /users/{id}/markets|positions|settlements`, админ `GET /moderation/markets`, `POST /markets/{id}/approve|reject|close|resolve|cancel|collect-residual`.
+HTML/CSS/JS Mini App. Полезен как функциональный reference/fallback.
 
-Лента **не** вызывает orderbook на каждую карточку: `best_offers` считаются одним запросом на сервере из той же агрегации стакана. `pot` — объём уже исполненных сделок. Полный стакан — на странице события.
+### React preview
 
-После внешнего ревью Sprint 1: лента больше не выводит «Нет встречных заявок» из `pot == 0`; после P2P-заявки сначала `GET /users/{id}`, затем перерисовка события и новый quote; Render service ID возвращён к `srv-daffpoon74is739r4csg`; PR №11 переведён в Draft.
+```text
+frontend/
+```
 
-## Известные UX / API ограничения
+Есть в `feature/react-full-preview`.
 
-- `GET /markets/{id}` → 404 для pending/rejected; автор открывает такие события из кэша «Мои».
-- Quote P2P требует Telegram-сессию; в обычном браузере форма видна, расчёт — после входа.
-- Дата в форме создания зависит от локали браузера (`datetime-local`).
-- Поиск ленты серверный (`q=`), с debounce и пагинацией; unlisted не попадают.
-- Workflow SQLite пинит Node через `actions/setup-node`.
-- Sprint 3 E2E — TestClient + JS-рендер payload, не живая Telegram Mini App-сессия.
-- Живой E2E со вторым реальным Telegram-аккаунтом всё ещё pending.
-- Wallet UI — shell без блокчейна.
-- Unlisted: GET по id 404; торговля по известному id возможна после share-resolve.
+Стек:
 
-## Следующий этап (не начинать без задачи)
+- React + TypeScript
+- Vite
+- TanStack Query
+- CSS Modules / design tokens
+- Storybook
+- Vitest
+- Playwright visual tests
 
-- Не начинать TON/Solana integration.
-- Не merge, не deploy.
-- Второй реальный Telegram-аккаунт: partial/full matching в живом WebView.
-- Persistent production storage — DEFERRED.
+## Что есть в React preview
 
-## Запрещено до отдельного разрешения
+Текущий preview включает:
 
-- merge PR №10 в `main`;
-- merge PR №11 в `feature/integer-money` или `main`;
-- merge `feature/beta-ui` или `feature/vasily-product` в `main`;
-- push/изменение `main`;
-- deploy / restart / смена тарифа текущего Render;
-- закрытие PR №10.
+- feed;
+- search;
+- New / Popular / Closing;
+- categories/status filters;
+- TOP creators;
+- Market Detail;
+- Quick Trade;
+- Own Price;
+- orderbook;
+- trade-history chart по реальным P2P fills;
+- positions;
+- open orders;
+- transaction history;
+- cancel order;
+- create public market;
+- create unlisted/by-link market;
+- share link;
+- personal profile;
+- public creator profile;
+- wallet shell;
+- Help;
+- RU / EN / 中文;
+- Telegram light/dark theme;
+- Telegram BackButton;
+- admin moderation.
+
+## Public / unlisted
+
+Backend реально поддерживает:
+
+```text
+public
+unlisted
+```
+
+`unlisted` — событие по ссылке/share token и не показывается в общей публичной ленте.
+
+Это не account-allowlist private market.
+
+Нельзя описывать `unlisted` так, будто доступ ограничен списком выбранных аккаунтов.
+
+Share flow:
+
+```text
+https://t.me/<bot>?start=market_<TOKEN>
+```
+
+React preview имеет fallback:
+
+```text
+<public-base>/v2/?share=<TOKEN>
+```
+
+## Trade history / chart
+
+График в connected runtime должен строиться только по реальным `p2p_fills`.
+
+Текущий read-only endpoint:
+
+```text
+GET /markets/{id}/trades
+```
+
+Для последних N fills backend выбирает последние записи и возвращает их в хронологическом порядке для графика.
+
+Не добавлять случайные/fixture точки в live connected UI.
+
+## Orderbook
+
+Endpoint:
+
+```text
+GET /markets/{id}/orderbook
+```
+
+Public book используется для отображения стакана.
+
+Quick Trade для пользователя должен использовать `available_to_me`, а не просто суммировать public sides на клиенте.
+
+Frontend не является источником истины для того, что реально исполнится.
+
+## Auth
+
+Защищённые вызовы используют:
+
+```text
+Authorization: tma <initData>
+```
+
+Не ослаблять проверку подписи/TTL.
+
+`AUTH_MAX_AGE_SECONDS` сейчас должен оставаться 3600, если нет отдельной согласованной задачи.
+
+## Money safety
+
+Денежная логика — зона повышенного риска.
+
+Не менять без отдельного review:
+
+- integer/nano money;
+- matching;
+- self-match protection;
+- service fee;
+- 75/25 split;
+- settlement;
+- ledger;
+- auth semantics;
+- idempotency `request_id`.
+
+Frontend после write должен refetch/invalidates, а не оптимистично придумывать новый баланс.
+
+## Wallet
+
+Wallet сейчас — UI shell.
+
+Реального on-chain модуля пока нет.
+
+Не реализовано:
+
+- TON Connect;
+- Solana adapter;
+- реальный deposit address;
+- RPC;
+- on-chain deposit;
+- on-chain withdraw.
+
+UI должен честно показывать unavailable state и не имитировать успешные blockchain операции.
+
+## React navigation
+
+Top-level:
+
+```text
+Markets
+Create
+Portfolio
+```
+
+Secondary routes:
+
+```text
+Market Detail
+Own Price
+Profile
+Public Profile
+Wallet
+Help
+My Markets
+History
+Moderation
+Create Result
+```
+
+Secondary screen должен иметь рабочий Back и Telegram BackButton.
+
+Не превращать каждое переключение внутренней вкладки в новую запись history stack.
+
+## Telegram theme
+
+React preview поддерживает Telegram light/dark theme.
+
+Design должен использовать CSS tokens и не превращать dark mode в neon/crypto/casino style.
+
+## Локальный запуск React preview
+
+```bash
+git switch feature/react-full-preview
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+Далее backend:
+
+```bash
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+или текущий локальный demo launcher:
+
+```text
+start-betton-always-on.bat
+```
+
+В preview-ветке:
+
+```text
+/      -> legacy Mini App
+/v2/   -> React preview
+/health
+```
+
+Для Telegram нужен публичный HTTPS URL. Quick Tunnel URL может меняться.
+
+## Тесты
+
+Backend:
+
+```bash
+python -m pytest tests --ignore=tests/test_p2p_journal_postgres.py
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm test
+npm run build
+npm run build-storybook
+npm run test:visual
+```
+
+PostgreSQL journal tests требуют отдельного подходящего окружения.
+
+## Demo / QA
+
+Если нужен demo seed/QA, сначала читать:
+
+```text
+docs/DEMO_QA.md
+```
+
+Не запускать seeder на live/user DB автоматически.
+
+Перед любыми экспериментами с локальной SQLite DB сделать backup.
+
+## Что сейчас намеренно не завершено
+
+- blockchain deposit/withdraw;
+- настоящий allowlist-private;
+- полная замена legacy LMSR;
+- production merge/deploy React preview;
+- отдельный security/audit pass перед реальными средствами.
+
+## Что разработчику не нужно делать первым делом
+
+Не надо начинать с:
+
+- переписывания backend;
+- изменения fee math;
+- новой БД;
+- новой matching-модели;
+- удаления legacy UI;
+- миграции на другой frontend framework.
+
+Сначала нужно поднять текущую ветку и пройти existing flows.
+
+## Рекомендуемый порядок изучения
+
+```text
+1. README.md
+2. docs/HANDOFF.md
+3. docs/p2p.md
+4. frontend/README.md
+5. app/schemas.py
+6. app/main.py
+7. app/services/p2p_service.py
+8. app/services/p2p_ledger.py
+9. bot/main.py
+10. tests/
+```
+
+## Исторический контекст
+
+До текущего React preview проект прошёл несколько этапов: integer-money, P2P matching, ledger, beta UI, `feature/vasily-product`, static Mini App polish и затем React preview.
+
+Старые ветки/PR полезны как история решений, но **не являются текущей точкой продолжения разработки**.
+
+Если нужна именно история прошлых этапов, смотрите git log / старые PR, а не используйте старый HANDOFF как текущую инструкцию.
+
+## Передача проекта
+
+Короткое сообщение новому программисту можно дать такое:
+
+> Актуальная рабочая версия находится в `feature/react-full-preview`, Draft PR #15. `main` — более старый стабильный baseline. Сначала прочитай README, затем `docs/HANDOFF.md`, `docs/p2p.md` и `frontend/README.md`. Backend является источником истины для денег, matching и settlement; React — текущая оболочка preview.
