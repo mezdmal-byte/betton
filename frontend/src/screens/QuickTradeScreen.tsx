@@ -10,6 +10,11 @@ export type QuickTradeScreenProps = {
   selectedSide?: OutcomeSide
   amount?: number
   state?: QuickTradeState
+  previewMatchedTon?: number | null
+  previewRestTon?: number | null
+  previewPayoutTon?: number | null
+  previewAverageOdds?: number | null
+  previewWorstOdds?: number | null
 }
 
 export function QuickTradeScreen({
@@ -17,6 +22,11 @@ export function QuickTradeScreen({
   selectedSide = 'a',
   amount = 0,
   state = 'normal',
+  previewMatchedTon,
+  previewRestTon,
+  previewPayoutTon,
+  previewAverageOdds,
+  previewWorstOdds,
 }: QuickTradeScreenProps) {
   const sheetMarket = state === 'partial' ? marketPartialLiquidity : market
 
@@ -29,6 +39,11 @@ export function QuickTradeScreen({
           selectedSide={selectedSide}
           amount={amount}
           state={state}
+          previewMatchedTon={previewMatchedTon}
+          previewRestTon={previewRestTon}
+          previewPayoutTon={previewPayoutTon}
+          previewAverageOdds={previewAverageOdds}
+          previewWorstOdds={previewWorstOdds}
         />
       </div>
     </div>

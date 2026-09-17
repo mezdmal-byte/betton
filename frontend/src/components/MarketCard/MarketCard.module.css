@@ -1,10 +1,11 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
-  padding: var(--space-16);
+  gap: 8px;
+  padding: 12px;
   background: var(--color-surface);
-  border-radius: var(--radius-20);
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius-16);
 }
 
 .meta {
@@ -13,7 +14,7 @@
   justify-content: space-between;
   gap: var(--space-8);
   min-width: 0;
-  font-size: var(--text-micro);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
@@ -40,9 +41,9 @@
 
 .badge {
   margin-left: auto;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: var(--radius-pill);
-  background: var(--color-control-fill);
+  background: var(--color-surface-muted);
   color: var(--color-text-secondary);
   font-size: 11px;
   font-weight: var(--font-weight-medium);
@@ -54,9 +55,9 @@
 }
 
 .question {
-  font-size: var(--text-question);
+  font-size: 16px;
   font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-tight);
+  line-height: 1.28;
   letter-spacing: var(--tracking-tight);
   overflow-wrap: anywhere;
 }
@@ -78,7 +79,7 @@
 .stats,
 .dot {
   color: var(--color-text-secondary);
-  font-size: var(--text-micro);
+  font-size: 11px;
   font-weight: var(--font-weight-regular);
 }
 
@@ -97,5 +98,5 @@
 .outcomes {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
+  gap: 8px;
 }

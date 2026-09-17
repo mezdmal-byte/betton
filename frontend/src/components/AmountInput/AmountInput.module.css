@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-4);
   width: 100%;
 }
 
@@ -14,10 +14,10 @@
 .field {
   display: flex;
   align-items: center;
-  min-height: 56px;
+  min-height: 44px;
   padding: 0 var(--space-16);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-16);
+  border-radius: var(--radius-14);
   background: var(--color-surface);
 }
 
@@ -30,7 +30,7 @@
   min-width: 0;
   border: 0;
   background: transparent;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;

@@ -1,20 +1,20 @@
 .sheet {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
+  gap: 8px;
   max-height: 82%;
   overflow: auto;
-  padding: var(--space-4) var(--page-padding) var(--pad-bar-bottom);
+  padding: 4px var(--page-padding) var(--pad-bar-bottom);
   background: var(--color-surface);
   border-bottom: 0;
-  border-radius: var(--radius-24) var(--radius-24) 0 0;
+  border-radius: var(--radius-20) var(--radius-20) 0 0;
   box-shadow: var(--shadow-sheet);
 }
 
 .handle {
   width: 36px;
   height: 4px;
-  margin: var(--space-8) auto var(--space-4);
+  margin: 8px auto 4px;
   border-radius: var(--radius-pill);
   background: var(--color-border-subtle);
 }
@@ -28,9 +28,9 @@
 .question {
   flex: 1;
   min-width: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-tight);
+  line-height: 1.28;
   letter-spacing: var(--tracking-tight);
   overflow-wrap: anywhere;
 }
@@ -38,22 +38,22 @@
 .outcomes {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
+  gap: 8px;
 }
 
 .liquidity,
 .note {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: var(--font-weight-regular);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .banner,
 .note {
   margin: 0;
-  padding: var(--space-12);
-  border-radius: var(--radius-16);
+  padding: 8px 12px;
+  border-radius: var(--radius-12);
   background: var(--color-warning-surface);
   color: var(--color-warning);
 }
@@ -61,14 +61,15 @@
 .presets {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-8);
+  gap: 6px;
 }
 
 .summary {
   display: flex;
   flex-direction: column;
-  background: var(--color-control-fill);
-  border-radius: var(--radius-16);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-12);
   overflow: hidden;
 }
 
@@ -76,9 +77,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 40px;
-  padding: 0 var(--space-16);
-  font-size: 13px;
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
   font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
 }
@@ -89,13 +90,13 @@
 
 .summaryRow b {
   color: var(--color-text-primary);
-  font-size: 14px;
-  font-weight: var(--font-weight-bold);
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
 }
 
 .payoutRow {
-  min-height: 52px;
+  min-height: 40px;
 }
 
 .payoutRow span {
@@ -104,38 +105,36 @@
 
 .payoutRow b {
   color: var(--color-action-primary);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .payout {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: var(--space-12) var(--space-16);
-  border-radius: var(--radius-16);
-  background: var(--color-control-fill);
-  font-size: 13px;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 0 0;
+  font-size: 12px;
   font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
 }
 
 .payout b {
   color: var(--color-text-disabled);
-  font-size: 22px;
-  font-weight: var(--font-weight-bold);
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
 }
 
 .ownPrice {
-  min-height: var(--touch-min);
+  min-height: 40px;
   font-size: 14px;
 }
 
 .fee {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--font-weight-regular);
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--color-text-disabled);
 }

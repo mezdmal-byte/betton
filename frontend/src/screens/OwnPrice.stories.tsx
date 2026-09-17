@@ -30,3 +30,12 @@ export const Wide430: Story = {
     </PhoneShell>
   ),
 }
+
+export const Compact380: Story = {
+  parameters: { viewport: { defaultViewport: 'phone380' } },
+  render: () => (
+    <PhoneShell width={380} height={720}>
+      <OwnPriceScreen />
+    </PhoneShell>
+  ),
+}

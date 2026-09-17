@@ -1,7 +1,8 @@
 :root {
   --color-canvas: #f7f8fa;
   --color-surface: #ffffff;
-  --color-surface-muted: #f3f5f7;
+  --color-surface-muted: #f5f6f8;
+  --color-control-fill: #f5f6f8;
   --color-text-primary: #15171a;
   --color-text-secondary: #667085;
   --color-text-inverse: #ffffff;
@@ -14,13 +15,13 @@
   --color-action-primary-hover: #0f6d68;
   --color-action-primary-pressed: #0c5c58;
   --color-outcome-a-accent: #20a39e;
-  --color-outcome-a-tint: #f4fbfa;
-  --color-outcome-a-surface: #eaf8f7;
+  --color-outcome-a-tint: #e8f6f5;
+  --color-outcome-a-surface: #d7f0ee;
   --color-outcome-a-text: #0f716b;
-  --color-outcome-a-pressed: #d7f0ee;
+  --color-outcome-a-pressed: #c5e8e5;
   --color-outcome-b-accent: #ef5b5b;
-  --color-outcome-b-tint: #fdf7f7;
-  --color-outcome-b-surface: #fff1f1;
+  --color-outcome-b-tint: #fdeeee;
+  --color-outcome-b-surface: #fbdada;
   --color-outcome-b-text: #b42318;
   --color-outcome-b-pressed: #fde3e3;
   --color-warning: #b54708;
@@ -55,8 +56,7 @@
   --touch-min: 44px;
   --touch-preferred: 48px;
   --nav-height: 64px;
-  --header-height: 56px;
-  --color-control-fill: #eef1f4;
+  --header-height: 48px;
   --color-balance-pill: #20a39e;
 
   --text-brand: 24px;
@@ -72,10 +72,10 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --pad-header-top: max(var(--space-8), var(--safe-top));
-  --pad-bar-bottom: max(var(--space-16), var(--safe-bottom));
+  --pad-bar-bottom: max(var(--space-12), var(--safe-bottom));
   --pad-nav-bottom: max(8px, var(--safe-bottom));
   --tg-bottom: var(--tg-safe-area-inset-bottom, var(--safe-bottom));
-  --action-bar-space: calc(var(--touch-min) + var(--space-12) + var(--pad-bar-bottom));
+  --action-bar-space: calc(var(--touch-min) + var(--space-8) + var(--pad-bar-bottom));
 
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
   --font-weight-regular: 400;

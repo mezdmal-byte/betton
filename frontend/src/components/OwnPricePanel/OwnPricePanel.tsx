@@ -1,4 +1,4 @@
-import { Minus, Plus } from 'lucide-react'
+import { Bookmark, Minus, Plus, Zap } from 'lucide-react'
 import { AmountInput } from '../AmountInput/AmountInput'
 import { Button } from '../Button/Button'
 import { Chip } from '../Chip/Chip'
@@ -9,6 +9,7 @@ import { availableAtOdds, splitFill } from '../../lib/fill'
 import { formatInteger, formatOdds, formatTon, formatTonFull } from '../../lib/format'
 import { QUICK_TRADE_AMOUNT_PRESETS } from '../../lib/constants'
 import { useT } from '../../i18n'
+import { cx } from '../../lib/cx'
 import type { OrderBookLevel, OutcomeSide, RecentTrade } from '../../types/market'
 import styles from './OwnPricePanel.module.css'
 
@@ -133,12 +134,18 @@ export function OwnPricePanel({
       </div>
 
       <div className={styles.summary}>
-        <div className={styles.summaryRow}>
-          <span>{t('preview.now')}</span>
+        <div className={cx(styles.summaryRow, styles.now)}>
+          <span>
+            <Zap size={14} strokeWidth={2.2} aria-hidden="true" />
+            {t('preview.now')}
+          </span>
           <b>{formatInteger(matched)} TON</b>
         </div>
-        <div className={styles.summaryRow}>
-          <span>{t('preview.rest')}</span>
+        <div className={cx(styles.summaryRow, styles.rest)}>
+          <span>
+            <Bookmark size={14} strokeWidth={2.2} aria-hidden="true" />
+            {t('preview.rest')}
+          </span>
           <b>{formatInteger(rest)} TON</b>
         </div>
       </div>

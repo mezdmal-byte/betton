@@ -192,11 +192,12 @@ export function MarketDetailScreen({
           <Avatar initials={market.creator.initials} name={market.creator.displayName} size="sm" />
           <span>@{market.creator.handle}</span>
         </div>
-        <div className={styles.statsStrip}>
+        <div className={styles.statsRow}>
           <div className={styles.stat}>
             <b>{formatTon(market.volumeTon)}</b>
             <span>{t('market.volume')}</span>
           </div>
+          <span className={styles.statsDivider} aria-hidden="true" />
           <div className={styles.stat}>
             <b>{formatInteger(market.participants)}</b>
             <span>{t('market.people')}</span>
@@ -303,10 +304,10 @@ export function MarketDetailScreen({
         {extra}
       </div>
       <div className={styles.actions}>
-        <Button variant="secondary" disabled={actionsOff} onClick={onOwnPrice}>
+        <Button variant="secondary" size="md" disabled={actionsOff} onClick={onOwnPrice}>
           {t('market.ownOdds')}
         </Button>
-        <Button disabled={actionsOff} onClick={onPlace}>
+        <Button size="md" disabled={actionsOff} onClick={onPlace}>
           {t('market.betCta')}
         </Button>
       </div>

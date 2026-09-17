@@ -142,3 +142,21 @@ export const Wide430: Story = {
     </PhoneShell>
   ),
 }
+
+export const Compact380: Story = {
+  parameters: { viewport: { defaultViewport: 'phone380' } },
+  render: () => (
+    <PhoneShell width={380} height={720}>
+      <MarketDetailScreen
+        showMarketDataSwitch
+        tradeHistoryState="ready"
+        chartSeriesA={chartSpartakA}
+        chartSeriesB={chartSpartakB}
+        orderbookA={orderBookA}
+        orderbookB={orderBookB}
+        orderbookState="ready"
+        pane="chart"
+      />
+    </PhoneShell>
+  ),
+}

@@ -1,4 +1,5 @@
 import { useT } from '../../i18n'
+import { cx } from '../../lib/cx'
 import { Chip } from '../Chip/Chip'
 import styles from './MarketFilters.module.css'
 
@@ -33,18 +34,18 @@ export function MarketFilters({
 
   return (
     <div className={styles.root}>
-      <div className={styles.row} role="tablist" aria-label={t('feed.sort')}>
+      <div className={styles.sortRow} role="tablist" aria-label={t('feed.sort')}>
         {sortTabs.map((item) => (
-          <Chip
+          <button
             key={item.id}
-            compact
-            surface="muted"
-            tone="teal"
-            selected={item.id === sort}
+            type="button"
+            role="tab"
+            aria-selected={item.id === sort}
+            className={cx(styles.sortTab, item.id === sort && styles.sortTabActive)}
             onClick={() => onSortChange?.(item.id)}
           >
             {item.label}
-          </Chip>
+          </button>
         ))}
       </div>
       <div className={styles.row} role="group" aria-label={t('feed.cats')}>

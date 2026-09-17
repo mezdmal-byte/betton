@@ -35,6 +35,10 @@ const preview: Preview = {
           name: '360×800',
           styles: { width: '360px', height: '800px' },
         },
+        phone380: {
+          name: '380×720',
+          styles: { width: '380px', height: '720px' },
+        },
         phone390: {
           name: '390×844',
           styles: { width: '390px', height: '844px' },

@@ -60,8 +60,8 @@
 .chip {
   width: 100%;
   height: auto;
-  min-height: var(--touch-min);
-  padding: var(--space-8) var(--space-12);
+  min-height: 40px;
+  padding: 6px 10px;
   white-space: normal;
   text-align: center;
   line-height: 1.25;

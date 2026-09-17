@@ -4,7 +4,7 @@
   justify-content: center;
   gap: var(--space-8);
   border: 1px solid transparent;
-  border-radius: var(--radius-16);
+  border-radius: var(--radius-14);
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0;
   white-space: nowrap;

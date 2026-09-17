@@ -3,19 +3,20 @@
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: var(--touch-preferred);
-  padding-right: var(--space-8);
-  background: var(--color-control-fill);
-  border-radius: var(--radius-16);
+  min-height: var(--touch-min);
+  padding-right: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-14);
 }
 
 .withTrailing {
-  padding-right: 4px;
+  padding-right: 2px;
 }
 
 .icon {
   position: absolute;
-  left: 14px;
+  left: 12px;
   color: var(--color-text-secondary);
   pointer-events: none;
 }
@@ -23,10 +24,10 @@
 .input {
   width: 100%;
   min-width: 0;
-  min-height: var(--touch-preferred);
-  padding: 0 var(--space-12) 0 42px;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-12) 0 38px;
   border: 0;
-  border-radius: var(--radius-16);
+  border-radius: var(--radius-14);
   background: transparent;
   color: var(--color-text-primary);
   font-size: 15px;

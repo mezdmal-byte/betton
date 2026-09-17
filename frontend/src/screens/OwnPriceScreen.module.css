@@ -14,7 +14,7 @@
 }
 
 .header strong {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--tracking-tight);
 }
@@ -23,5 +23,5 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 0 var(--page-padding) max(var(--space-24), var(--safe-bottom));
+  padding: 0 var(--page-padding) max(var(--space-16), var(--safe-bottom));
 }
