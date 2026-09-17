@@ -28,6 +28,7 @@ export type OwnPricePanelProps = {
   onSubmit?: () => void
   matchedTon?: number | null
   restTon?: number | null
+  previewMode?: 'local' | 'backend'
   submitting?: boolean
   disabled?: boolean
   errorMessage?: string | null
@@ -50,6 +51,7 @@ export function OwnPricePanel({
   onSubmit,
   matchedTon = null,
   restTon = null,
+  previewMode = 'local',
   submitting = false,
   disabled = false,
   errorMessage = null,
@@ -60,8 +62,8 @@ export function OwnPricePanel({
   const maxAvailable = Math.max(...book.map((level) => level.availableTon), 1)
   const selectedLabel = selectedSide === 'a' ? outcomeALabel : outcomeBLabel
   const localSplit = splitFill(amount, availableAtOdds(book, odds))
-  const matched = matchedTon ?? localSplit.matched
-  const rest = restTon ?? localSplit.rest
+  const matched = matchedTon ?? (previewMode === 'local' ? localSplit.matched : null)
+  const rest = restTon ?? (previewMode === 'local' ? localSplit.rest : null)
 
   return (
     <div className={styles.root}>
@@ -139,14 +141,14 @@ export function OwnPricePanel({
             <Zap size={14} strokeWidth={2.2} aria-hidden="true" />
             {t('preview.now')}
           </span>
-          <b>{formatInteger(matched)} TON</b>
+          <b>{matched == null ? '—' : `${formatInteger(matched)} TON`}</b>
         </div>
         <div className={cx(styles.summaryRow, styles.rest)}>
           <span>
             <Bookmark size={14} strokeWidth={2.2} aria-hidden="true" />
             {t('preview.rest')}
           </span>
-          <b>{formatInteger(rest)} TON</b>
+          <b>{rest == null ? '—' : `${formatInteger(rest)} TON`}</b>
         </div>
       </div>
 
