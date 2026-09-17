@@ -1,62 +1,41 @@
-import { ArrowRight, Gauge, ListPlus, Percent } from 'lucide-react'
+import { ArrowRight, BookOpen, Percent, UsersRound } from 'lucide-react'
 import { Button } from '../components/Button/Button'
 import { useT } from '../i18n'
 import styles from './OnboardingScreen.module.css'
 
-export type OnboardingScreenProps = {
-  onContinue?: () => void
-}
+export type OnboardingScreenProps = { onContinue?: () => void }
 
 export function OnboardingScreen({ onContinue }: OnboardingScreenProps) {
   const t = useT()
+  const benefits = [
+    { icon: <UsersRound size={18} aria-hidden="true" />, title: 'P2P', body: t('help.p2p') },
+    { icon: <BookOpen size={18} aria-hidden="true" />, title: t('event.book'), body: t('help.book') },
+    { icon: <Percent size={18} aria-hidden="true" />, title: t('create.feesSummary'), body: t('help.fee') },
+  ]
+
   return (
     <div className={styles.screen}>
-      <header className={styles.header}>
-        <div className={styles.brand}>Bet<span>TON</span></div>
-        <span className={styles.pill}>P2P · TON</span>
-      </header>
-
-      <main className={styles.body}>
-        <section className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>BetTON</span>
-            <h1>P2P</h1>
-            <p>{t('help.lead')}</p>
-          </div>
-          <div className={styles.quotePreview} aria-hidden="true">
-            <div className={styles.quoteA}>
-              <span>A</span>
-              <strong>1.82</strong>
-              <small>320 TON</small>
-            </div>
-            <div className={styles.quoteB}>
-              <span>B</span>
-              <strong>2.18</strong>
-              <small>190 TON</small>
-            </div>
-          </div>
+      <main className={styles.main}>
+        <section className={styles.intro}>
+          <div className={styles.mark} aria-hidden="true">B</div>
+          <div className={styles.brand}>Bet<span>TON</span></div>
+          <span className={styles.eyebrow}>P2P · TON</span>
+          <p>{t('help.lead')}</p>
         </section>
 
-        <section className={styles.steps}>
-          <article className={styles.step}>
-            <span className={styles.stepIcon}><Gauge size={18} aria-hidden="true" /></span>
-            <div><strong>{t('market.betCta')}</strong><p>{t('help.quick')}</p></div>
-          </article>
-          <article className={styles.step}>
-            <span className={styles.stepIcon}><ListPlus size={18} aria-hidden="true" /></span>
-            <div><strong>{t('market.ownOdds')}</strong><p>{t('help.ownPrice')}</p></div>
-          </article>
-          <article className={styles.step}>
-            <span className={styles.stepIcon}><Percent size={18} aria-hidden="true" /></span>
-            <div><strong>{t('create.feesSummary')}</strong><p>{t('help.fee')}</p></div>
-          </article>
+        <section className={styles.benefits}>
+          {benefits.map((item) => (
+            <article key={item.title} className={styles.benefit}>
+              <span className={styles.icon}>{item.icon}</span>
+              <div><strong>{item.title}</strong><p>{item.body}</p></div>
+            </article>
+          ))}
         </section>
       </main>
 
       <footer className={styles.footer}>
-        <Button size="md" onClick={onContinue}>
-          {t('nav.feed')} <ArrowRight size={18} aria-hidden="true" />
-        </Button>
+        <Button size="md" onClick={onContinue}>{t('nav.feed')} <ArrowRight size={18} aria-hidden="true" /></Button>
+        <small>{t('create.feesFee')}</small>
       </footer>
     </div>
   )

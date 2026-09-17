@@ -24,15 +24,15 @@ const stories = [
   ['screens-portfolio--default', 'portfolio'],
   ['screens-portfolio--empty', 'portfolio-empty'],
   ['screens-profile--default', 'profile'],
-  ['screens-my-events--default', 'my-events'],
-  ['screens-public-profile--default', 'public-profile'],
+  ['screens-myevents--default', 'my-events'],
+  ['screens-publicprofile--default', 'public-profile'],
   ['screens-moderation--default', 'moderation'],
   ['screens-help--default', 'help'],
   ['screens-wallet--default', 'wallet'],
   ['screens-onboarding--default', 'onboarding'],
-  ['screens-auth-expired--default', 'auth-expired'],
-  ['screens-system-state--network-error', 'network-error'],
-  ['screens-system-state--loading', 'loading'],
+  ['screens-authexpired--default', 'auth-expired'],
+  ['screens-systemstate--network-error', 'network-error'],
+  ['screens-systemstate--loading', 'loading'],
 ]
 
 const widths = [[320, 700], [360, 800], [390, 844], [430, 900]]
