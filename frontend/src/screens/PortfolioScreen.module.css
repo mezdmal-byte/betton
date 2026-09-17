@@ -11,7 +11,7 @@
   justify-content: space-between;
   gap: var(--space-8);
   min-height: var(--header-height);
-  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
+  padding: var(--pad-header-top) var(--page-padding) 8px;
 }
 
 .headerSecondary {
@@ -40,7 +40,7 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: 12px;
   padding: 0 var(--page-padding) calc(var(--space-16) + var(--tg-bottom));
   overflow: auto;
   overflow-x: hidden;
@@ -50,16 +50,20 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 14px;
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius-16);
+  background: var(--color-surface);
 }
 
 .hero span {
   font-size: 12px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-text-disabled);
+  color: var(--color-text-secondary);
 }
 
 .hero strong {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
@@ -68,29 +72,40 @@
 
 .metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-8);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
   margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius-14);
+  background: var(--color-surface);
 }
 
 .metrics div {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
+  padding: 10px;
+}
+
+.metrics div + div {
+  border-left: 1px solid var(--color-border-faint);
 }
 
 .metrics dt {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-text-disabled);
+  line-height: 1.2;
+  color: var(--color-text-secondary);
 }
 
 .metrics dd {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .actions {
@@ -102,6 +117,7 @@
 .list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -110,19 +126,17 @@
 .row {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--space-12) 0;
-  border-bottom: 1px solid var(--color-border-faint);
-}
-
-.row:first-child {
-  padding-top: var(--space-4);
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius-14);
+  background: var(--color-surface);
 }
 
 .rowButton {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   width: 100%;
   padding: 0;
   border: 0;
@@ -145,7 +159,7 @@
   align-items: baseline;
   gap: var(--space-12);
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   flex-wrap: wrap;
@@ -162,9 +176,9 @@
 .time,
 .status {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-text-disabled);
+  color: var(--color-text-secondary);
   overflow-wrap: anywhere;
 }
 
@@ -173,10 +187,19 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
-  min-height: var(--touch-min);
+  min-height: 36px;
 }
 
 .amount {
   font-variant-numeric: tabular-nums;
 }
 
+@media (max-width: 340px) {
+  .metrics div {
+    padding: 8px 7px;
+  }
+
+  .hero strong {
+    font-size: 27px;
+  }
+}
