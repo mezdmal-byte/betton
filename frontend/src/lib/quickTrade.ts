@@ -1,7 +1,7 @@
 import { hasExecutableQuote } from './quote'
 import type { OutcomeFixture } from '../types/market'
 
-/** Protocol minimum odds from parse_terms. Quick Trade uses this floor for preview and place. */
+/** Protocol minimum odds from parse_terms. Discovery preview may walk from this floor. */
 export const IOC_MIN_ACCEPTABLE_ODDS = 1.00001
 
 export const QUICK_TRADE_INITIAL_AMOUNT = 0
@@ -13,6 +13,22 @@ export function iocExecutionOdds(minAcceptableOdds?: number | null): number {
       : Number(minAcceptableOdds)
   const floored = Math.floor(raw * 1e6) / 1e6
   return Math.min(10000, Math.max(IOC_MIN_ACCEPTABLE_ODDS, floored))
+}
+
+/** Wide floor so backend can compute the multi-level discovery plan. */
+export function iocDiscoveryOdds(): number {
+  return iocExecutionOdds()
+}
+
+/**
+ * Lock the displayed backend worst odds for this confirmation.
+ * Keep full precision so the same book tick still matches after parse_terms.
+ */
+export function iocAcceptedOdds(displayedWorstOdds: number | null | undefined): number | null {
+  if (displayedWorstOdds == null || !Number.isFinite(Number(displayedWorstOdds))) return null
+  const value = Number(displayedWorstOdds)
+  if (value < IOC_MIN_ACCEPTABLE_ODDS || value > 10000) return null
+  return value
 }
 
 export function amountInputValue(amount: number): string {

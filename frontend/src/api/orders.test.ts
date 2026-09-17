@@ -36,6 +36,26 @@ describe('idempotent request_id', () => {
     const third = keys.forFingerprint(fingerprint)
     expect(third).not.toBe(first)
   })
+
+  it('uses the accepted worst odds in the fingerprint, not the discovery floor', () => {
+    const floor = orderFingerprint({
+      marketId: 1,
+      outcome: 0,
+      money: '100',
+      odds: 1.00001,
+      kind: 'ioc',
+    })
+    const locked = orderFingerprint({
+      marketId: 1,
+      outcome: 0,
+      money: '100',
+      odds: 1.99,
+      kind: 'ioc',
+    })
+    expect(floor).not.toBe(locked)
+    const keys = new IdempotencyKeys()
+    expect(keys.forFingerprint(floor)).not.toBe(keys.forFingerprint(locked))
+  })
 })
 
 describe('order client', () => {
@@ -54,7 +74,7 @@ describe('order client', () => {
       }
       expect(url).toBe('/markets/42/orders')
       expect(body.kind).toBe('ioc')
-      expect(body.odds).toBe(1.00001)
+      expect(body.odds).toBe(1.801)
       expect(body.request_id).toMatch(/.{8,}/)
       return jsonResponse({
         id: 7,
@@ -77,7 +97,7 @@ describe('order client', () => {
     const placed = await placeOrder(42, {
       outcome: 0,
       money: '100',
-      odds: 1.00001,
+      odds: preview.requested.worst_odds as number,
       kind: 'ioc',
       request_id: 'request-id-1',
     })

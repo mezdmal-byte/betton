@@ -16,7 +16,8 @@ import type { QuickTradeState } from '../components/QuickTradeSheet/QuickTradeSh
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { outcomeIsExecutable } from '../lib/quote'
 import {
-  iocExecutionOdds,
+  iocAcceptedOdds,
+  iocDiscoveryOdds,
   shouldRequestQuickTradePreview,
 } from '../lib/quickTrade'
 import type { MarketFixture, OutcomeSide } from '../types/market'
@@ -59,7 +60,7 @@ export function ConnectedQuickTradeSheet({
   const shareToken = shareTokenFor(marketId)
   const outcome = selectedSide === 'a' ? 0 : 1
   const selected = selectedSide === 'a' ? market.outcomeA : market.outcomeB
-  const executionOdds = iocExecutionOdds()
+  const discoveryOdds = iocDiscoveryOdds()
   const money = moneyForOrder(amount)
   const debouncedMoney = useDebouncedValue(money, 280)
   const previewEnabled = shouldRequestQuickTradePreview({
@@ -74,13 +75,13 @@ export function ConnectedQuickTradeSheet({
       marketId,
       outcome,
       money: debouncedMoney,
-      odds: String(executionOdds),
+      odds: String(discoveryOdds),
       kind: 'ioc',
     }),
     queryFn: () =>
       previewOrder(
         marketId,
-        { outcome, money: debouncedMoney, odds: executionOdds, kind: 'ioc' },
+        { outcome, money: debouncedMoney, odds: discoveryOdds, kind: 'ioc' },
         shareToken,
       ),
     enabled: previewEnabled,
@@ -92,7 +93,7 @@ export function ConnectedQuickTradeSheet({
     setState('normal')
     setErrorMessage(null)
     setPlaceResult(null)
-  }, [selectedSide, amount, executionOdds])
+  }, [selectedSide, amount, discoveryOdds])
 
   useEffect(() => {
     if (state === 'processing' || state === 'success' || state === 'stale-quote' || state === 'error') {
@@ -135,9 +136,13 @@ export function ConnectedQuickTradeSheet({
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const acceptedOdds = iocAcceptedOdds(preview?.worstOdds)
+      if (acceptedOdds == null || !preview || preview.matchedTon <= 0) {
+        throw new Error(t('err.stale'))
+      }
       const live = await previewOrder(
         marketId,
-        { outcome, money, odds: executionOdds, kind: 'ioc' },
+        { outcome, money, odds: acceptedOdds, kind: 'ioc' },
         shareToken,
       )
       const mapped = mapOrderPreview(live)
@@ -146,13 +151,13 @@ export function ConnectedQuickTradeSheet({
         marketId,
         outcome,
         money,
-        odds: executionOdds,
+        odds: acceptedOdds,
         kind: 'ioc',
       })
       const requestId = keys.current.forFingerprint(fingerprint)
       const result = await placeOrder(
         marketId,
-        { outcome, money, odds: executionOdds, kind: 'ioc', request_id: requestId },
+        { outcome, money, odds: acceptedOdds, kind: 'ioc', request_id: requestId },
         shareToken,
       )
       keys.current.clear(fingerprint)

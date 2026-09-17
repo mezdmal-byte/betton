@@ -6,6 +6,7 @@ import type {
   OrderPreviewBody,
   OrderPreviewOut,
 } from './types'
+import { iocAcceptedOdds, iocExecutionOdds } from '../lib/quickTrade'
 
 export async function previewOrder(
   marketId: number | string,
@@ -47,8 +48,7 @@ export async function listOrders(userId: number): Promise<OrderOut[]> {
 }
 
 export function iocOddsFromPreview(worstOdds: number | null | undefined, fallbackOdds: number): number {
-  const value = worstOdds != null && Number.isFinite(Number(worstOdds)) ? Number(worstOdds) : fallbackOdds
-  return Math.min(10000, Math.floor(value * 1e6) / 1e6)
+  return iocAcceptedOdds(worstOdds) ?? iocExecutionOdds(fallbackOdds)
 }
 
 export function asOrderKind(kind: string | null | undefined): OrderKind {

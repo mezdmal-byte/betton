@@ -3,6 +3,8 @@ import { QUICK_TRADE_AMOUNT_PRESETS } from './constants'
 import {
   amountInputValue,
   formatMaxPreset,
+  iocAcceptedOdds,
+  iocDiscoveryOdds,
   iocExecutionOdds,
   IOC_MIN_ACCEPTABLE_ODDS,
   presetExceedsBalance,
@@ -52,9 +54,17 @@ describe('Quick Trade amount and Max', () => {
 })
 
 describe('IOC execution floor', () => {
-  it('defaults to the protocol minimum so preview and place walk the same book', () => {
+  it('uses the protocol minimum only for discovery preview, not as a place lock', () => {
+    expect(iocDiscoveryOdds()).toBe(IOC_MIN_ACCEPTABLE_ODDS)
     expect(iocExecutionOdds()).toBe(IOC_MIN_ACCEPTABLE_ODDS)
     expect(iocExecutionOdds(null)).toBe(IOC_MIN_ACCEPTABLE_ODDS)
+  })
+
+  it('locks the displayed worst odds without snapping to 1e-6', () => {
+    expect(iocAcceptedOdds(1.99)).toBe(1.99)
+    expect(iocAcceptedOdds(1.990000258303547)).toBe(1.990000258303547)
+    expect(iocAcceptedOdds(null)).toBeNull()
+    expect(iocAcceptedOdds(0)).toBeNull()
   })
 
   it('keeps a higher min-acceptable floor for a future slippage control', () => {
