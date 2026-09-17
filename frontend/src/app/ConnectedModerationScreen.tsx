@@ -1,119 +1,26 @@
-import { ChevronLeft } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { mapMarketOut } from '../api/adapters'
 import { errorDetail } from '../api/errors'
 import { listModerationQueue, rejectMarket, approveMarket } from '../api/moderation'
 import { queryKeys } from '../api/query'
-import { Button } from '../components/Button/Button'
-import { IconButton } from '../components/IconButton/IconButton'
-import { StatusMessage } from '../components/StatusMessage/StatusMessage'
-import { TextField } from '../components/TextField/TextField'
 import { useI18n } from '../i18n'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import styles from '../screens/ProfileScreen.module.css'
+import { ModerationScreen } from '../screens/ModerationScreen'
 
-export type ConnectedModerationScreenProps = {
-  enabled: boolean
-  onBack: () => void
-  onOpenMarket: (marketId: number) => void
-}
+export type ConnectedModerationScreenProps = { enabled: boolean; onBack: () => void; onOpenMarket: (marketId: number) => void }
 
 export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: ConnectedModerationScreenProps) {
-  const { t, locale } = useI18n()
+  const { locale } = useI18n()
   const queryClient = useQueryClient()
   const [reasonById, setReasonById] = useState<Record<number, string>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const queue = useQuery({ queryKey: queryKeys.moderation, queryFn: listModerationQueue, enabled })
+  const invalidate = (marketId?: number) => { void queryClient.invalidateQueries({ queryKey: queryKeys.moderation }); void queryClient.invalidateQueries({ queryKey: ['markets'] }); if (marketId != null) void queryClient.invalidateQueries({ queryKey: queryKeys.market(marketId) }) }
+  const approve = useMutation({ mutationFn: (marketId: number) => approveMarket(marketId), onSuccess: (_data, marketId) => invalidate(marketId), onError: (error) => setErrorMessage(errorDetail(error)) })
+  const reject = useMutation({ mutationFn: ({ marketId, reason }: { marketId: number; reason: string }) => rejectMarket(marketId, reason), onSuccess: (_data, vars) => invalidate(vars.marketId), onError: (error) => setErrorMessage(errorDetail(error)) })
+  const markets = useMemo(() => (queue.data ?? []).map((market) => mapMarketOut(market, new Date(), locale)), [queue.data, locale])
+  const busyMarketId = approve.isPending ? approve.variables ?? null : reject.isPending ? reject.variables?.marketId ?? null : null
+  const viewState = !enabled ? 'no-access' : queue.isPending ? 'loading' : queue.isError ? 'error' : 'ready'
 
-  const queue = useQuery({
-    queryKey: queryKeys.moderation,
-    queryFn: listModerationQueue,
-    enabled,
-  })
-
-  const invalidate = (marketId?: number) => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.moderation })
-    void queryClient.invalidateQueries({ queryKey: ['markets'] })
-    if (marketId != null) void queryClient.invalidateQueries({ queryKey: queryKeys.market(marketId) })
-  }
-
-  const approve = useMutation({
-    mutationFn: (marketId: number) => approveMarket(marketId),
-    onSuccess: (_data, marketId) => invalidate(marketId),
-    onError: (error) => setErrorMessage(errorDetail(error)),
-  })
-  const reject = useMutation({
-    mutationFn: ({ marketId, reason }: { marketId: number; reason: string }) => rejectMarket(marketId, reason),
-    onSuccess: (_data, vars) => invalidate(vars.marketId),
-    onError: (error) => setErrorMessage(errorDetail(error)),
-  })
-
-  return (
-    <div className={styles.screen}>
-      <header className={styles.header}>
-        <IconButton label={t('back')} size="md" onClick={onBack}>
-          <ChevronLeft size={22} />
-        </IconButton>
-        <strong>{t('moderation.title')}</strong>
-      </header>
-      <div className={styles.body}>
-        {!enabled ? (
-          <StatusMessage tone="warning" title={t('err.noAccess')}>
-            {t('mod.adminOnly')}
-          </StatusMessage>
-        ) : queue.isPending ? (
-          <StatusMessage tone="loading" title={t('loading')}>
-            {t('loading.events')}
-          </StatusMessage>
-        ) : queue.isError ? (
-          <StatusMessage tone="error" title={t('err.request')}>
-            {errorDetail(queue.error)}
-          </StatusMessage>
-        ) : (queue.data ?? []).length === 0 ? (
-          <StatusMessage title={t('mod.empty')} />
-        ) : (
-          (queue.data ?? []).map((market) => {
-            const view = mapMarketOut(market, new Date(), locale)
-            const busy = (approve.isPending && approve.variables === market.id) || (reject.isPending && reject.variables?.marketId === market.id)
-            return (
-              <section key={market.id} className={styles.adminCard}>
-                <p>
-                  <strong>{view.question}</strong>
-                </p>
-                <p>
-                  {view.category} · {view.closeLabel}
-                </p>
-                <div className={styles.adminActions}>
-                  <Button variant="secondary" size="md" disabled={busy} onClick={() => onOpenMarket(market.id)}>
-                    {t('mod.open')}
-                  </Button>
-                  <Button size="md" disabled={busy} onClick={() => approve.mutate(market.id)}>
-                    {t('mod.approve')}
-                  </Button>
-                </div>
-                <TextField
-                  id={`reject-${market.id}`}
-                  label={t('mod.reasonPh')}
-                  value={reasonById[market.id] ?? ''}
-                  onChange={(value) => setReasonById((current) => ({ ...current, [market.id]: value }))}
-                />
-                <Button
-                  variant="secondary"
-                  size="md"
-                  disabled={busy}
-                  onClick={() => reject.mutate({ marketId: market.id, reason: (reasonById[market.id] || '').trim() })}
-                >
-                  {t('mod.reject')}
-                </Button>
-              </section>
-            )
-          })
-        )}
-        {errorMessage ? (
-          <StatusMessage tone="error" title={t('error')}>
-            {errorMessage}
-          </StatusMessage>
-        ) : null}
-      </div>
-    </div>
-  )
+  return <ModerationScreen markets={markets} viewState={viewState} reasonById={reasonById} busyMarketId={busyMarketId} errorMessage={queue.isError ? errorDetail(queue.error) : errorMessage} onBack={onBack} onOpenMarket={onOpenMarket} onApprove={(marketId) => { setErrorMessage(null); approve.mutate(marketId) }} onReject={(marketId, reason) => { setErrorMessage(null); reject.mutate({ marketId, reason }) }} onReasonChange={(marketId, reason) => setReasonById((current) => ({ ...current, [marketId]: reason }))} />
 }
