@@ -5,6 +5,7 @@ import type { OutcomeFixture } from '../types/market'
 export const IOC_MIN_ACCEPTABLE_ODDS = 1.00001
 
 export const QUICK_TRADE_INITIAL_AMOUNT = 0
+const QUICK_TRADE_MAX_DECIMALS = 4
 
 export function iocExecutionOdds(minAcceptableOdds?: number | null): number {
   const raw =
@@ -35,15 +36,25 @@ export function amountInputValue(amount: number): string {
   return amount > 0 ? String(amount) : ''
 }
 
+/**
+ * User-facing Max must never round above executable top-level liquidity.
+ * Keep enough precision for small TON amounts without exposing nano-level dust in the UI.
+ */
+export function normalizeQuickTradeMaxAmount(amount: number): number {
+  if (!Number.isFinite(amount) || amount <= 0) return 0
+  const factor = 10 ** QUICK_TRADE_MAX_DECIMALS
+  return Math.floor((amount + Number.EPSILON) * factor) / factor
+}
+
 export function topExecutableTon(outcome: Pick<OutcomeFixture, 'odds' | 'liquidityTon'>): number {
   if (!hasExecutableQuote(outcome.odds, outcome.liquidityTon)) return 0
-  return Number(outcome.liquidityTon)
+  return normalizeQuickTradeMaxAmount(Number(outcome.liquidityTon))
 }
 
 export function formatMaxPreset(amount: number): string {
   if (!Number.isFinite(amount) || amount <= 0) return '0'
-  if (Math.abs(amount - Math.round(amount)) < 1e-9) return String(Math.round(amount))
-  return amount.toFixed(2).replace(/\.?0+$/, '')
+  const fixed = amount.toFixed(QUICK_TRADE_MAX_DECIMALS)
+  return fixed.replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.0+$/, '')
 }
 
 export function presetExceedsBalance(preset: number, availableTon: number | null | undefined): boolean {
