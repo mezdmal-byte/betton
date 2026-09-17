@@ -15,6 +15,7 @@ import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useT, useI18n } from '../i18n'
 import { openLegacyMiniApp } from '../lib/legacy'
 import { marketIsP2P, marketIsTradable } from '../lib/quote'
+import { QUICK_TRADE_INITIAL_AMOUNT } from '../lib/quickTrade'
 import { MarketDetailScreen } from '../screens/MarketDetailScreen'
 import type { MarketDetailPane, MarketDetailViewState, TradeHistoryState } from '../screens/MarketDetailScreen'
 import overlayStyles from '../screens/QuickTradeScreen.module.css'
@@ -49,7 +50,7 @@ export function ConnectedMarketDetailScreen({
   const t = useT()
   const { locale } = useI18n()
   const [side, setSide] = useState<OutcomeSide>('a')
-  const [tradeAmount, setTradeAmount] = useState(100)
+  const [tradeAmount, setTradeAmount] = useState(QUICK_TRADE_INITIAL_AMOUNT)
   const [trading, setTrading] = useState(false)
   const [pane, setPane] = useState<MarketDetailPane>('chart')
   const [adminOpen, setAdminOpen] = useState(false)
@@ -145,6 +146,7 @@ export function ConnectedMarketDetailScreen({
         onOwnPrice={() => onOwnPrice(side)}
         onPlace={() => {
           if (!market || actionsOff) return
+          setTradeAmount(QUICK_TRADE_INITIAL_AMOUNT)
           setTrading(true)
         }}
         onRetry={() => {

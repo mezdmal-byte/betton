@@ -591,6 +591,7 @@ def order_quote_endpoint(
         req.money,
         req.odds,
         share_token=market_access.share_token_from_request(request),
+        kind=req.kind,
     )
 
 

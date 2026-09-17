@@ -61,7 +61,38 @@
 
 .presets {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--space-12);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+.summaryRow + .summaryRow {
+  border-top: 1px solid var(--color-border-faint);
+}
+
+.summaryRow b {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
 }
 
 .payout {

@@ -105,21 +105,28 @@ export type MarketsPage = {
   offset: number
 }
 
+export type OrderKind = 'limit' | 'ioc'
+
+export type OrderPreviewFill = {
+  odds: number
+  matched: number
+}
+
 export type OrderPreviewStats = {
   matched: number
   remaining: number
   payout: number
   average_odds?: number | null
   worst_odds?: number | null
+  fills?: OrderPreviewFill[]
 }
 
 export type OrderPreviewOut = {
   limit_odds: number
+  kind?: OrderKind
   requested: OrderPreviewStats
   available: OrderPreviewStats
 }
-
-export type OrderKind = 'limit' | 'ioc'
 
 export type OrderPlaceBody = {
   outcome: number
@@ -133,6 +140,7 @@ export type OrderPreviewBody = {
   outcome: number
   money: string | number
   odds: string | number
+  kind?: OrderKind
 }
 
 export type OrderOut = {

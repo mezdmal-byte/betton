@@ -1,0 +1,64 @@
+import { describe, expect, it } from 'vitest'
+import { QUICK_TRADE_AMOUNT_PRESETS } from './constants'
+import {
+  amountInputValue,
+  formatMaxPreset,
+  iocExecutionOdds,
+  IOC_MIN_ACCEPTABLE_ODDS,
+  presetExceedsBalance,
+  QUICK_TRADE_INITIAL_AMOUNT,
+  quickTradeCtaDisabled,
+  shouldRequestQuickTradePreview,
+  topExecutableTon,
+} from './quickTrade'
+
+describe('Quick Trade amount and Max', () => {
+  it('opens with a blank amount, not a hardcoded 100', () => {
+    expect(QUICK_TRADE_INITIAL_AMOUNT).toBe(0)
+    expect(amountInputValue(0)).toBe('')
+    expect(amountInputValue(100)).toBe('100')
+    expect([...QUICK_TRADE_AMOUNT_PRESETS]).toEqual([10, 50, 100])
+  })
+
+  it('does not request preview when amount is blank or 0', () => {
+    expect(shouldRequestQuickTradePreview({ amount: 0, executable: true, userId: 1, marketId: 7 })).toBe(
+      false,
+    )
+    expect(shouldRequestQuickTradePreview({ amount: 100, executable: true, userId: 1, marketId: 7 })).toBe(
+      true,
+    )
+    expect(shouldRequestQuickTradePreview({ amount: 100, executable: false, userId: 1, marketId: 7 })).toBe(
+      false,
+    )
+  })
+
+  it('disables CTA when amount is 0', () => {
+    expect(
+      quickTradeCtaDisabled({ amount: 0, executable: true, matchedTon: null }),
+    ).toBe(true)
+    expect(
+      quickTradeCtaDisabled({ amount: 100, executable: true, matchedTon: 100 }),
+    ).toBe(false)
+  })
+
+  it('Max is the top executable level, not balance or full book depth', () => {
+    expect(topExecutableTon({ odds: 2, liquidityTon: 66 })).toBe(66)
+    expect(topExecutableTon({ odds: null, liquidityTon: null })).toBe(0)
+    expect(formatMaxPreset(66)).toBe('66')
+    expect(presetExceedsBalance(66, 50)).toBe(true)
+    expect(presetExceedsBalance(66, 100)).toBe(false)
+    expect(presetExceedsBalance(100, 80)).toBe(true)
+  })
+})
+
+describe('IOC execution floor', () => {
+  it('defaults to the protocol minimum so preview and place walk the same book', () => {
+    expect(iocExecutionOdds()).toBe(IOC_MIN_ACCEPTABLE_ODDS)
+    expect(iocExecutionOdds(null)).toBe(IOC_MIN_ACCEPTABLE_ODDS)
+  })
+
+  it('keeps a higher min-acceptable floor for a future slippage control', () => {
+    expect(iocExecutionOdds(1.99)).toBe(1.99)
+    expect(iocExecutionOdds(1)).toBe(IOC_MIN_ACCEPTABLE_ODDS)
+  })
+})

@@ -35,6 +35,16 @@ export const queryKeys = {
     outcome: number
     money: string
     odds: string
+    kind?: string
   }) =>
-    ['markets', String(input.marketId), 'orders', 'quote', input.outcome, input.money, input.odds] as const,
+    [
+      'markets',
+      String(input.marketId),
+      'orders',
+      'quote',
+      input.outcome,
+      input.money,
+      input.odds,
+      input.kind ?? 'limit',
+    ] as const,
 }

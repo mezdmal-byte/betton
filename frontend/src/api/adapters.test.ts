@@ -226,6 +226,34 @@ describe('preview mapping', () => {
     expect(preview.remainingTon).toBe(60)
     expect(preview.payoutTon).toBe(72.8)
     expect(preview.availableWorstOdds).toBe(1.8)
+    expect(preview.fills).toEqual([])
+  })
+
+  it('maps backend fill legs without inventing extra levels', () => {
+    const preview = mapOrderPreview({
+      limit_odds: 1.00001,
+      kind: 'ioc',
+      requested: {
+        matched: 100,
+        remaining: 0,
+        payout: 199.66,
+        average_odds: 1.9966,
+        worst_odds: 1.99,
+        fills: [
+          { odds: 2, matched: 66 },
+          { odds: 1.99, matched: 34 },
+        ],
+      },
+      available: { matched: 100, remaining: 0, payout: 199.66, worst_odds: 1.99 },
+    })
+    expect(preview.matchedTon).toBe(100)
+    expect(preview.remainingTon).toBe(0)
+    expect(preview.averageOdds).toBe(1.9966)
+    expect(preview.worstOdds).toBe(1.99)
+    expect(preview.fills).toEqual([
+      { odds: 2, matchedTon: 66 },
+      { odds: 1.99, matchedTon: 34 },
+    ])
   })
 
   it('maps a zero match as no immediate fill', () => {

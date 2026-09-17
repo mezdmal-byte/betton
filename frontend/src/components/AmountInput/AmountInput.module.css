@@ -37,6 +37,10 @@
   line-height: 1;
 }
 
+.input::placeholder {
+  color: var(--color-text-disabled);
+}
+
 .suffix {
   margin-left: var(--space-8);
   color: var(--color-text-secondary);

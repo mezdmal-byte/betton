@@ -237,10 +237,12 @@ class OrderPreviewRequest(BaseModel):
     outcome: int = Field(ge=0, le=1)
     money: Decimal
     odds: Decimal
+    # Same matching limit as place(): odds is the minimum acceptable coefficient.
+    # Quick Trade sends kind=ioc with the protocol floor so preview and IOC walk the same book.
+    kind: Literal["limit", "ioc"] = "limit"
 
 
 class OrderRequest(OrderPreviewRequest):
-    kind: Literal["limit", "ioc"] = "limit"
     request_id: str = Field(min_length=8, max_length=64)
 
 

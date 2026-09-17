@@ -275,12 +275,16 @@ export function mapOrderBookLevels(levels: OrderbookLevelDto[] | null | undefine
 
 export function mapOrderPreview(dto: OrderPreviewOut) {
   const requested = dto.requested ?? { matched: 0, remaining: 0, payout: 0 }
+  const fills = Array.isArray(requested.fills) ? requested.fills : []
   return {
     matchedTon: Number(requested.matched || 0),
     remainingTon: Number(requested.remaining || 0),
     payoutTon: Number(requested.payout || 0),
     averageOdds: requested.average_odds ?? null,
     worstOdds: requested.worst_odds ?? null,
+    fills: fills
+      .filter((leg) => leg && Number(leg.matched) > 0)
+      .map((leg) => ({ odds: Number(leg.odds), matchedTon: Number(leg.matched) })),
     availableMatchedTon: Number(dto.available?.matched || 0),
     availableWorstOdds: dto.available?.worst_odds ?? null,
     limitOdds: Number(dto.limit_odds),

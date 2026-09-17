@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from './client'
 import { isInsufficientBalanceError, mapPlaceError } from './errors'
 import { IdempotencyKeys, orderFingerprint } from './idempotency'
-import { cancelOrder, iocOddsFromPreview, placeOrder, previewOrder } from './orders'
+import { cancelOrder, placeOrder, previewOrder } from './orders'
 import { buildCreateMarketPayload } from './adapters'
 import { createMarket } from './markets'
 
@@ -44,15 +44,17 @@ describe('order client', () => {
       const url = String(input)
       const body = JSON.parse(String(init?.body))
       if (url.endsWith('/orders/quote')) {
-        expect(body).toEqual({ outcome: 0, money: '100', odds: 1.82 })
+        expect(body).toEqual({ outcome: 0, money: '100', odds: 1.00001, kind: 'ioc' })
         return jsonResponse({
-          limit_odds: 1.82,
-          requested: { matched: 100, remaining: 0, payout: 182 },
+          limit_odds: 1.00001,
+          kind: 'ioc',
+          requested: { matched: 100, remaining: 0, payout: 182, average_odds: 1.82, worst_odds: 1.801 },
           available: { matched: 100, remaining: 0, payout: 182, worst_odds: 1.801 },
         })
       }
       expect(url).toBe('/markets/42/orders')
       expect(body.kind).toBe('ioc')
+      expect(body.odds).toBe(1.00001)
       expect(body.request_id).toMatch(/.{8,}/)
       return jsonResponse({
         id: 7,
@@ -70,12 +72,12 @@ describe('order client', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const preview = await previewOrder(42, { outcome: 0, money: '100', odds: 1.82 })
+    const preview = await previewOrder(42, { outcome: 0, money: '100', odds: 1.00001, kind: 'ioc' })
     expect(preview.requested.matched).toBe(100)
     const placed = await placeOrder(42, {
       outcome: 0,
       money: '100',
-      odds: iocOddsFromPreview(preview.available.worst_odds, 1.82),
+      odds: 1.00001,
       kind: 'ioc',
       request_id: 'request-id-1',
     })

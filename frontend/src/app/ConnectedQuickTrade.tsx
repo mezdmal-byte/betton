@@ -8,13 +8,17 @@ import {
 } from '../api/adapters'
 import { isInsufficientBalanceError } from '../api/errors'
 import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
-import { iocOddsFromPreview, placeOrder, previewOrder } from '../api/orders'
+import { placeOrder, previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
 import { shareTokenFor } from '../api/share'
 import { QuickTradeSheet } from '../components/QuickTradeSheet/QuickTradeSheet'
 import type { QuickTradeState } from '../components/QuickTradeSheet/QuickTradeSheet'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { outcomeIsExecutable } from '../lib/quote'
+import {
+  iocExecutionOdds,
+  shouldRequestQuickTradePreview,
+} from '../lib/quickTrade'
 import type { MarketFixture, OutcomeSide } from '../types/market'
 import { hapticNotification } from '../telegram/webapp'
 import { useT } from '../i18n'
@@ -55,27 +59,28 @@ export function ConnectedQuickTradeSheet({
   const shareToken = shareTokenFor(marketId)
   const outcome = selectedSide === 'a' ? 0 : 1
   const selected = selectedSide === 'a' ? market.outcomeA : market.outcomeB
-  const limitOdds = selected.odds
+  const executionOdds = iocExecutionOdds()
   const money = moneyForOrder(amount)
   const debouncedMoney = useDebouncedValue(money, 280)
-  const previewEnabled =
-    Boolean(userId) &&
-    Number.isFinite(marketId) &&
-    amount > 0 &&
-    limitOdds != null &&
-    outcomeIsExecutable(selected)
+  const previewEnabled = shouldRequestQuickTradePreview({
+    amount,
+    executable: outcomeIsExecutable(selected),
+    userId,
+    marketId,
+  })
 
   const previewQuery = useQuery({
     queryKey: queryKeys.orderPreview({
       marketId,
       outcome,
       money: debouncedMoney,
-      odds: String(limitOdds ?? ''),
+      odds: String(executionOdds),
+      kind: 'ioc',
     }),
     queryFn: () =>
       previewOrder(
         marketId,
-        { outcome, money: debouncedMoney, odds: limitOdds as number },
+        { outcome, money: debouncedMoney, odds: executionOdds, kind: 'ioc' },
         shareToken,
       ),
     enabled: previewEnabled,
@@ -87,7 +92,7 @@ export function ConnectedQuickTradeSheet({
     setState('normal')
     setErrorMessage(null)
     setPlaceResult(null)
-  }, [selectedSide, amount, limitOdds])
+  }, [selectedSide, amount, executionOdds])
 
   useEffect(() => {
     if (state === 'processing' || state === 'success' || state === 'stale-quote' || state === 'error') {
@@ -95,6 +100,7 @@ export function ConnectedQuickTradeSheet({
     }
     if (!previewEnabled) {
       if (!quotesLoading && !outcomeIsExecutable(selected)) setState('no-liquidity')
+      else if (amount <= 0) setState('normal')
       return
     }
     if (amount > availableTon) {
@@ -129,22 +135,24 @@ export function ConnectedQuickTradeSheet({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (limitOdds == null) throw new Error(t('err.stale'))
-      const live = await previewOrder(marketId, { outcome, money, odds: limitOdds }, shareToken)
+      const live = await previewOrder(
+        marketId,
+        { outcome, money, odds: executionOdds, kind: 'ioc' },
+        shareToken,
+      )
       const mapped = mapOrderPreview(live)
       if (mapped.matchedTon <= 0) throw new Error(t('err.stale'))
-      const odds = iocOddsFromPreview(mapped.availableWorstOdds, limitOdds)
       const fingerprint = orderFingerprint({
         marketId,
         outcome,
         money,
-        odds,
+        odds: executionOdds,
         kind: 'ioc',
       })
       const requestId = keys.current.forFingerprint(fingerprint)
       const result = await placeOrder(
         marketId,
-        { outcome, money, odds, kind: 'ioc', request_id: requestId },
+        { outcome, money, odds: executionOdds, kind: 'ioc', request_id: requestId },
         shareToken,
       )
       keys.current.clear(fingerprint)
@@ -198,6 +206,9 @@ export function ConnectedQuickTradeSheet({
       previewMatchedTon={preview?.matchedTon ?? null}
       previewRestTon={preview?.remainingTon ?? null}
       previewPayoutTon={preview?.payoutTon ?? null}
+      previewAverageOdds={preview?.averageOdds ?? null}
+      previewWorstOdds={preview?.worstOdds ?? null}
+      previewFills={preview?.fills ?? null}
       errorMessage={errorMessage}
       placeResult={placeResult}
       onSelectSide={onSelectSide}

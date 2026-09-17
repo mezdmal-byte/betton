@@ -27,6 +27,18 @@ type Story = StoryObj<typeof meta>
 
 export const Normal: Story = {}
 
+export const EmptyAmount: Story = {
+  args: { amount: 0 },
+}
+
+export const MaxPreset: Story = {
+  args: {
+    amount: 0,
+    market: { ...marketYesNo, outcomeA: { ...marketYesNo.outcomeA, odds: 2, liquidityTon: 66 } },
+    availableTon: 1000,
+  },
+}
+
 export const Partial: Story = {
   args: { state: 'partial', market: marketPartialLiquidity, amount: 100 },
 }

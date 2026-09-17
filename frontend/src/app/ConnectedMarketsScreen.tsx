@@ -164,7 +164,7 @@ export function ConnectedMarketsScreen({
             onSelectMarket(market)
             return
           }
-          setTrade({ market, side, amount: 100 })
+          setTrade({ market, side, amount: 0 })
         }}
         onNavChange={onNavChange}
         onProfileClick={onProfileClick}

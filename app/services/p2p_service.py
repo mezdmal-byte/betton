@@ -103,7 +103,20 @@ def _guard_unlisted(db, market, user_id=None, share_token=None):
     market_access.require_unlisted_access(market, viewer=viewer, share_token=share_token)
 
 
-def preview(db, market_id, user_id, outcome, amount, odds, share_token=None):
+def _fill_legs(plan):
+    legs = []
+    for maker, _maker_stake, taker_stake in plan:
+        tick = PRICE - maker.price
+        if legs and legs[-1][0] == tick:
+            legs[-1] = (tick, legs[-1][1] + taker_stake)
+        else:
+            legs.append((tick, taker_stake))
+    return [dict(odds=PRICE / tick, matched=stake / ATOM) for tick, stake in legs]
+
+
+def preview(db, market_id, user_id, outcome, amount, odds, share_token=None, kind='limit'):
+    if kind not in ('limit', 'ioc'):
+        raise HTTPException(400, 'Некорректный тип заявки')
     market = legacy.get_market(db, market_id)
     require_p2p(market)
     _guard_unlisted(db, market, user_id, share_token)
@@ -111,6 +124,7 @@ def preview(db, market_id, user_id, outcome, amount, odds, share_token=None):
     idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
     atomic, tick = parse_terms(amount, odds)
     orders = candidates(db, market, idx, user_id)
+    # requested uses the same price limit as place() with these odds — preview is not a second policy.
     plan, remaining = plan_matches(orders, atomic, tick)
     best, best_remaining = plan_matches(orders, atomic, PRICE-1)
     def stats(plan, left):
@@ -118,8 +132,9 @@ def preview(db, market_id, user_id, outcome, amount, odds, share_token=None):
         payout = sum(a+b for _, a, b in plan)
         return dict(matched=spent/ATOM, remaining=left/ATOM,
                     payout=payout/ATOM, average_odds=payout/spent if spent else None,
-                    worst_odds=min((PRICE/(PRICE-m.price) for m, _, _ in plan), default=None))
-    return dict(limit_odds=PRICE/tick, requested=stats(plan, remaining), available=stats(best, best_remaining))
+                    worst_odds=min((PRICE/(PRICE-m.price) for m, _, _ in plan), default=None),
+                    fills=_fill_legs(plan))
+    return dict(limit_odds=PRICE/tick, kind=kind, requested=stats(plan, remaining), available=stats(best, best_remaining))
 
 
 def _refund(db, order, status='cancelled', reason='cancel'):
