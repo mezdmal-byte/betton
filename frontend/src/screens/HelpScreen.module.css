@@ -10,7 +10,7 @@
   align-items: center;
   gap: var(--space-8);
   min-height: var(--header-height);
-  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
+  padding: var(--pad-header-top) var(--page-padding) 8px;
 }
 
 .header strong {
@@ -23,34 +23,51 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: 8px;
   padding: 0 var(--page-padding) max(var(--space-24), var(--safe-bottom));
   overflow: auto;
 }
 
-.body p {
+.body > p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius-12);
+  background: var(--color-surface);
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--color-text-primary);
 }
 
+.body > p:first-child {
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  border-color: rgba(32, 163, 158, 0.16);
+  background: var(--color-outcome-a-tint);
+}
+
 .details {
-  border-top: 1px solid var(--color-border-faint);
-  padding-top: var(--space-12);
+  overflow: hidden;
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius-12);
+  background: var(--color-surface);
 }
 
 .details summary {
   min-height: var(--touch-min);
   display: flex;
   align-items: center;
-  font-size: 14px;
+  padding: 0 14px;
+  font-size: 13px;
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 
 .details p {
-  margin-top: var(--space-8);
+  margin: 0;
+  padding: 0 14px 12px;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--color-text-secondary);
 }
