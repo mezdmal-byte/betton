@@ -82,9 +82,10 @@ export function ConnectedOwnPriceScreen({
       outcome,
       money: debouncedMoney,
       odds: String(debouncedOdds),
+      kind: 'limit',
     }),
     queryFn: () =>
-      previewOrder(marketId, { outcome, money: debouncedMoney, odds: debouncedOdds }, shareToken),
+      previewOrder(marketId, { outcome, money: debouncedMoney, odds: debouncedOdds, kind: 'limit' }, shareToken),
     enabled: Boolean(userId && market && amount > 0 && odds > 1),
   })
 
@@ -143,6 +144,26 @@ export function ConnectedOwnPriceScreen({
     )
   }
 
+  const selectSide = (next: OutcomeSide) => {
+    setSide(next)
+    setErrorMessage(null)
+    setSuccess(false)
+    const nextOdds = next === 'a' ? market.outcomeA.odds : market.outcomeB.odds
+    if (nextOdds) setOdds(nextOdds)
+  }
+
+  const changeOdds = (next: number) => {
+    setErrorMessage(null)
+    setSuccess(false)
+    setOdds(Math.max(1.01, Math.round(next * 100) / 100))
+  }
+
+  const changeAmount = (next: number) => {
+    setErrorMessage(null)
+    setSuccess(false)
+    setAmount(next)
+  }
+
   return (
     <OwnPriceScreen
       market={market}
@@ -154,14 +175,15 @@ export function ConnectedOwnPriceScreen({
       trades={trades}
       matchedTon={preview?.matchedTon ?? null}
       restTon={preview?.remainingTon ?? null}
+      previewMode="backend"
       submitting={mutation.isPending}
       disabled={insufficient || !userId || mutation.isPending || success}
       errorMessage={errorMessage}
       availableTon={availableTon}
       success={success}
-      onSelectSide={setSide}
-      onOddsChange={(next) => setOdds(Math.max(1.01, Math.round(next * 100) / 100))}
-      onAmountChange={setAmount}
+      onSelectSide={selectSide}
+      onOddsChange={changeOdds}
+      onAmountChange={changeAmount}
       onSubmit={() => {
         setErrorMessage(null)
         if (insufficient) return
