@@ -21,6 +21,7 @@ export type OwnPriceScreenProps = {
   onSubmit?: () => void
   matchedTon?: number | null
   restTon?: number | null
+  previewMode?: 'local' | 'backend'
   submitting?: boolean
   disabled?: boolean
   errorMessage?: string | null
@@ -42,6 +43,7 @@ export function OwnPriceScreen({
   onSubmit,
   matchedTon = null,
   restTon = null,
+  previewMode = 'local',
   submitting = false,
   disabled = false,
   errorMessage = null,
@@ -77,6 +79,7 @@ export function OwnPriceScreen({
           trades={trades}
           matchedTon={matchedTon}
           restTon={restTon}
+          previewMode={previewMode}
           submitting={submitting}
           disabled={disabled}
           errorMessage={errorMessage}
