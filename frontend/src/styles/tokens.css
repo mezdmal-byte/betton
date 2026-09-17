@@ -1,8 +1,8 @@
 :root {
   --color-canvas: #f7f8fa;
   --color-surface: #ffffff;
-  --color-surface-muted: #f5f6f8;
-  --color-control-fill: #f5f6f8;
+  --color-surface-muted: #fafbfc;
+  --color-control-fill: #ffffff;
   --color-text-primary: #15171a;
   --color-text-secondary: #667085;
   --color-text-inverse: #ffffff;
@@ -15,15 +15,15 @@
   --color-action-primary-hover: #0f6d68;
   --color-action-primary-pressed: #0c5c58;
   --color-outcome-a-accent: #20a39e;
-  --color-outcome-a-tint: #e8f6f5;
-  --color-outcome-a-surface: #d7f0ee;
+  --color-outcome-a-tint: #eef9f8;
+  --color-outcome-a-surface: #e1f4f2;
   --color-outcome-a-text: #0f716b;
-  --color-outcome-a-pressed: #c5e8e5;
+  --color-outcome-a-pressed: #d2eeeb;
   --color-outcome-b-accent: #ef5b5b;
-  --color-outcome-b-tint: #fdeeee;
-  --color-outcome-b-surface: #fbdada;
+  --color-outcome-b-tint: #fff3f3;
+  --color-outcome-b-surface: #fde8e8;
   --color-outcome-b-text: #b42318;
-  --color-outcome-b-pressed: #fde3e3;
+  --color-outcome-b-pressed: #fbdada;
   --color-warning: #b54708;
   --color-warning-surface: #fef6ee;
   --color-danger: #b42318;
