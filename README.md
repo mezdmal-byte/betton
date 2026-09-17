@@ -2,9 +2,39 @@
 
 **BetTON** — Telegram Mini App с P2P-рынком прогнозов. Пользователи создают события и выставляют предложения друг другу; платформа не выступает букмекером и не обязана сама обеспечивать ликвидность.
 
-> Если нужно быстро передать проект новому программисту: начните с этого README, затем откройте `docs/HANDOFF.md` и `docs/p2p.md` в рабочей ветке.
+## ⚠️ Где сейчас актуальная версия
 
-## В двух словах — как это работает
+Если вы открыли репозиторий впервые, это главное:
+
+- `main` — консервативная основная ветка: backend, Telegram-бот, P2P-логика и legacy Mini App;
+- `feature/react-full-preview` — **актуальная рабочая/демонстрационная версия интерфейса**, сейчас она живёт отдельно от `main` и открыта как Draft PR **#15**;
+- новый React-интерфейс в preview-ветке обслуживается по `/v2/`, legacy UI остаётся по `/`;
+- если задача — понять, как продукт выглядит и работает сейчас, начинайте с `feature/react-full-preview`, а не с `main`.
+
+```bash
+git fetch origin
+git switch feature/react-full-preview
+```
+
+Проверить, что вы действительно на нужной ветке:
+
+```bash
+git branch --show-current
+git rev-parse --short HEAD
+```
+
+> Не делайте вывод о текущем продукте только по `main`: React preview туда пока не слит.
+
+Для передачи проекта программисту рекомендуемый порядок чтения:
+
+```text
+README.md
+→ docs/HANDOFF.md
+→ docs/p2p.md
+→ frontend/README.md   # в feature/react-full-preview
+```
+
+## В двух словах — как работает BetTON
 
 Пример события:
 
@@ -12,7 +42,7 @@
 
 Есть два исхода, например **Да / Нет**. Пользователь может:
 
-1. принять уже существующее предложение по доступному коэффициенту — **Быстрая ставка**;
+1. принять уже существующее предложение — **Быстрая ставка**;
 2. выставить свой коэффициент — **Своя цена**;
 3. дождаться встречной заявки другого пользователя;
 4. отменить неисполненный остаток своей заявки.
@@ -25,45 +55,16 @@
 
 Это не комиссия за создание события и не комиссия за размещение заявки. В существующей settlement-логике этот 1% распределяется между автором события и платформой в соотношении **75% / 25%** в предусмотренных кодом случаях. Это внутреннее распределение одного и того же сбора, а не дополнительная комиссия.
 
-## Что сейчас является основной моделью
+## Основная модель и legacy
 
 Основное направление BetTON — **P2P order book / matching**.
 
-В репозитории также остаётся старый механизм **LMSR** для совместимости со старыми рынками. Его не следует принимать за текущую продуктовую модель и не нужно смешивать с P2P-котировками.
-
-Главное отличие:
+В репозитории также остаётся старый механизм **LMSR** для совместимости со старыми рынками.
 
 - **P2P**: цену и ликвидность создают заявки пользователей;
 - **LMSR**: цену автоматически рассчитывает маркетмейкер.
 
-## Ветки и текущее состояние
-
-### `main`
-
-Консервативная основная ветка. Здесь есть backend, Telegram-бот, P2P-логика и legacy Mini App.
-
-Legacy интерфейс обслуживается с:
-
-```text
-/
-```
-
-### `feature/react-full-preview`
-
-Текущая демонстрационная ветка нового интерфейса. Она открыта как Draft PR **#15** и не должна считаться слитой в `main`.
-
-В ней:
-
-```text
-/      -> legacy Mini App
-/v2/   -> новый React preview
-```
-
-Если программисту нужно посмотреть **самое актуальное состояние продукта и UI**, начинать лучше с:
-
-```bash
-git switch feature/react-full-preview
-```
+LMSR не следует принимать за текущую основную продуктовую модель.
 
 ## Архитектура простыми словами
 
@@ -71,19 +72,18 @@ git switch feature/react-full-preview
 Telegram
    │
    ├─ /start, WebApp, share links
-   │
    ▼
 Telegram bot (bot/main.py)
    │
    ▼
 FastAPI (app/main.py)
    │
-   ├─ авторизация Telegram initData
-   ├─ рынки / пользователи / профиль
-   ├─ заявки / quote / orderbook
-   ├─ matching P2P
+   ├─ Telegram auth
+   ├─ markets / profiles / account
+   ├─ quote / orderbook / orders
+   ├─ P2P matching
    ├─ settlement
-   └─ read-only история / статистика
+   └─ history / statistics
    │
    ▼
 Database
@@ -95,7 +95,7 @@ Database
    └─ settlement/history data
 ```
 
-Интерфейс **не должен сам решать**, сколько денег списать, кого с кем сматчить или сколько выплатить. Источник истины для денег и исполнения — backend.
+Frontend **не должен сам решать**, сколько денег списать, кого с кем сматчить или сколько выплатить. Источник истины для денег и исполнения — backend.
 
 ## Где что лежит
 
@@ -104,14 +104,14 @@ betton/
 ├── app/
 │   ├── main.py                 # FastAPI routes, /health, /webhook, Mini App hosting
 │   ├── config.py               # env/settings
-│   ├── database.py             # DB setup/session/schema checks
+│   ├── database.py             # DB/session/schema checks
 │   ├── models.py               # SQLAlchemy models
-│   ├── schemas.py              # API DTO / request-response schemas
+│   ├── schemas.py              # API DTO
 │   ├── telegram_auth.py        # проверка Telegram initData
-│   ├── lmsr.py                 # legacy LMSR, не основная P2P-модель
+│   ├── lmsr.py                 # legacy LMSR
 │   ├── services/
-│   │   ├── p2p_service.py      # P2P quote, order placement, matching
-│   │   ├── p2p_ledger.py       # журнал движения денег P2P
+│   │   ├── p2p_service.py      # P2P quote, placement, matching
+│   │   ├── p2p_ledger.py       # P2P money journal
 │   │   ├── market_service.py   # общая/legacy market logic
 │   │   ├── discovery.py        # feed/account/creator read models
 │   │   └── history.py          # история операций
@@ -121,27 +121,30 @@ betton/
 │   └── main.py                 # Telegram bot, /start, WebApp links
 │
 ├── docs/
-│   ├── HANDOFF.md              # подробная история и handoff проекта
+│   ├── HANDOFF.md              # что сейчас происходит и куда смотреть
 │   ├── p2p.md                  # P2P-механика и API
-│   ├── money-migration.md      # integer-money / migration notes
-│   ├── collateral.md           # заметки по обеспечению
-│   └── DEMO_QA.md              # demo/QA сценарии в dev-ветке
+│   ├── money-migration.md      # integer-money notes
+│   └── collateral.md           # заметки по обеспечению
 │
 ├── tests/                      # backend tests
-├── scripts/                    # dev/demo scripts в новых ветках
-├── frontend/                   # React + TS preview, есть в feature/react-full-preview
 ├── requirements.txt
 ├── .env.example
-└── main.py                     # маленькая точка входа/совместимость
+└── main.py                     # compatibility entry point
 ```
 
-`frontend/` отсутствует в старых состояниях `main` и появляется в React preview-ветке.
+В `feature/react-full-preview` дополнительно есть:
 
-## P2P: важные понятия
+```text
+frontend/                       # React + TypeScript preview
+scripts/                        # demo/dev scripts
+start-betton-always-on.bat      # локальный demo launcher
+```
+
+## P2P: ключевые понятия
 
 ### Быстрая ставка
 
-Простой UX поверх существующей ликвидности. Backend проверяет, сколько реально можно исполнить против других пользователей. Для авторизованного пользователя используется персональная доступная ликвидность (`available_to_me`), чтобы его собственная заявка не исполнилась сама об себя.
+Простой UX поверх существующей ликвидности. Backend проверяет, сколько реально можно исполнить против других пользователей. Для авторизованного пользователя используется персональная ликвидность `available_to_me`, чтобы пользователь не исполнил собственную заявку сам об себя.
 
 ### Своя цена
 
@@ -149,19 +152,19 @@ betton/
 
 ### IOC
 
-Для быстрой ставки используется поведение **IOC**: исполняется доступная часть, неисполненный остаток не остаётся висеть как новая заявка и обрабатывается backend согласно текущей логике.
+Для Quick Trade используется IOC-поведение: исполняется доступная часть, а неисполненный остаток не превращается в новую resting-заявку.
 
 ### Стакан
 
-`orderbook` показывает уровни предложений и доступный объём. Он информационный; реальное исполнение всё равно подтверждается backend preview/place, а не вычислениями frontend.
+`orderbook` показывает уровни предложений и доступный объём. Реальное исполнение всё равно подтверждается backend preview/place, а не расчётом frontend.
 
 ### История сделок
 
-Для P2P история цены должна строиться только по **реально исполненным fills**. Нельзя рисовать случайный или fixture-график в connected runtime.
+График P2P должен строиться только по **реально исполненным fills**. Нельзя использовать случайные или fixture-данные в connected runtime.
 
 ## Деньги — зона повышенного риска
 
-Денежная логика использует integer/nano-представление. При изменениях нельзя заменять её вычислениями на JS `float` или обычные Python float там, где уже используется integer money.
+Денежная логика использует integer/nano-представление.
 
 Особенно осторожно менять:
 
@@ -169,28 +172,32 @@ betton/
 app/services/p2p_service.py
 app/services/p2p_ledger.py
 settlement logic
-auth / telegram initData verification
-money conversion helpers
+auth / Telegram initData verification
+money helpers
 ```
 
-Перед изменениями в этих частях нужно сначала прочитать тесты и `docs/p2p.md` / `docs/money-migration.md`.
+Перед изменениями в этих частях сначала прочитайте тесты, `docs/p2p.md` и `docs/money-migration.md`.
 
 ## Доступ к событиям
 
-Сейчас используются два реальных режима:
+Сейчас реально используются два режима:
 
 - `public` — публичное событие;
-- `unlisted` — событие по ссылке/share token, не показывается в общей ленте.
+- `unlisted` — событие по ссылке/share token, скрытое из общей ленты.
 
-`unlisted` — это **не полноценный allowlist-private** для выбранных аккаунтов. Не следует описывать его как такую функцию.
+`unlisted` — **не** полноценный allowlist-private для выбранных аккаунтов.
 
-Share-механика использует `share_token`; Telegram-ссылка может иметь вид:
+Share-ссылка может иметь вид:
 
 ```text
 https://t.me/<bot>?start=market_<TOKEN>
 ```
 
-или прямую WebApp-ссылку `/v2/?share=<TOKEN>` в preview-ветке.
+В React preview также используется fallback:
+
+```text
+/v2/?share=<TOKEN>
+```
 
 ## Telegram auth
 
@@ -200,21 +207,21 @@ https://t.me/<bot>?start=market_<TOKEN>
 Authorization: tma <initData>
 ```
 
-Backend проверяет подпись и срок действия. Frontend не должен обходить эту проверку и не должен подставлять фиктивного пользователя для денежных операций.
+Frontend не должен обходить эту проверку или подставлять фиктивного пользователя для денежных операций.
 
 ## Frontend
 
-### Legacy
+### Legacy UI
 
 ```text
 app/static/
 ```
 
-Обычный HTML/CSS/JavaScript. Это всё ещё полезный функциональный референс: часть UX и старых сценариев проще проверить здесь.
+Обычный HTML/CSS/JavaScript. Он остаётся функциональным reference/fallback.
 
 ### React preview
 
-В `feature/react-full-preview`:
+На ветке `feature/react-full-preview`:
 
 ```text
 frontend/
@@ -226,27 +233,27 @@ frontend/
 - TypeScript
 - Vite
 - TanStack Query
-- CSS Modules + CSS variables
+- CSS Modules / CSS variables
 - Storybook
 - Vitest
 - Playwright visual tests
 
-React не является обязательным требованием для финального продукта: UI можно позже реализовать на vanilla JS по тем же API и дизайн-макетам. Backend от этого меняться не должен.
+React не является обязательным требованием для финального продукта: frontend можно позже реализовать на vanilla JS по тем же API и дизайн-макетам.
 
-## Что уже есть в React preview
+## Что есть в актуальном preview
 
-В актуальной preview-ветке подключены или предусмотрены:
+В рабочей preview-ветке реализованы/подключены:
 
-- лента, поиск, сортировка и фильтры;
+- feed, search, sort, filters;
 - Quick Trade;
 - Own Price / limit orders;
-- стакан;
-- история реальных P2P fills для графика;
-- позиции, заявки, история;
-- отмена заявки;
-- создание public/unlisted события;
+- orderbook;
+- график по реальным P2P fills;
+- positions / orders / history;
+- cancel order;
+- создание `public` / `unlisted` рынка;
 - share links;
-- профиль и публичный профиль автора;
+- personal/public creator profile;
 - TOP creators;
 - admin/moderation;
 - RU / EN / 中文;
@@ -254,9 +261,9 @@ React не является обязательным требованием дл
 - Telegram BackButton;
 - wallet shell.
 
-## Что пока намеренно не работает как реальная blockchain-функция
+## Что пока не является настоящей blockchain-функцией
 
-Wallet сейчас — **оболочка**, а не on-chain кошелёк.
+Wallet сейчас — **UI shell**, а не on-chain кошелёк.
 
 Нет полноценного:
 
@@ -267,7 +274,7 @@ Wallet сейчас — **оболочка**, а не on-chain кошелёк.
 - on-chain deposit;
 - on-chain withdraw.
 
-UI не должен имитировать успешные blockchain-транзакции или показывать выдуманный адрес.
+Не имитировать успешные blockchain-транзакции и не показывать выдуманные адреса.
 
 ## Локальный запуск backend
 
@@ -288,39 +295,32 @@ http://127.0.0.1:8000/health
 http://127.0.0.1:8000/
 ```
 
-Для Telegram Mini App нужен публичный HTTPS URL.
-
-### Preview-ветка
-
-В `feature/react-full-preview` можно собрать React:
+### React preview
 
 ```bash
+git switch feature/react-full-preview
 cd frontend
 npm install
 npm run build
 cd ..
 ```
 
-После этого FastAPI обслуживает:
+После сборки FastAPI обслуживает:
 
 ```text
-/      legacy
-/v2/   React build
+/      legacy UI
+/v2/   React preview
 ```
 
-Для текущего локального demo workflow в preview-ветке есть:
+Для текущего локального demo workflow:
 
 ```text
 start-betton-always-on.bat
 ```
 
-Он предназначен для локального запуска backend + built frontend + Cloudflare Quick Tunnel. Перед использованием нужно понимать, что Quick Tunnel URL временный.
+Cloudflare Quick Tunnel временный; его URL может измениться после перезапуска туннеля.
 
 ## Основные env-переменные
-
-Смотрите `.env.example`.
-
-Ключевые:
 
 ```text
 DATABASE_URL
@@ -341,9 +341,7 @@ Backend:
 python -m pytest tests --ignore=tests/test_p2p_journal_postgres.py
 ```
 
-PostgreSQL journal tests запускаются отдельно в подходящем окружении.
-
-В React preview:
+React preview:
 
 ```bash
 cd frontend
@@ -353,62 +351,49 @@ npm run build-storybook
 npm run test:visual
 ```
 
-## Если нужно разобраться в проекте за 15 минут
+## Если нужно разобраться за 15 минут
 
-Рекомендуемый порядок чтения:
+1. `README.md` — карта проекта и правильная ветка.
+2. `docs/HANDOFF.md` — текущее состояние и ограничения.
+3. `docs/p2p.md` — matching, quote, orderbook, partial fills.
+4. `app/schemas.py` — API contracts.
+5. `app/main.py` — endpoints.
+6. `app/services/p2p_service.py` — исполнение заявок.
+7. `app/services/p2p_ledger.py` — движение денег.
+8. `bot/main.py` — Telegram entry points.
+9. `app/static/` — legacy UI.
+10. `frontend/` — актуальный preview UI на `feature/react-full-preview`.
 
-1. `README.md` — общая карта проекта.
-2. `docs/p2p.md` — как работают заявки, коэффициенты и matching.
-3. `app/schemas.py` — какие данные принимает/возвращает API.
-4. `app/main.py` — доступные endpoints.
-5. `app/services/p2p_service.py` — исполнение заявок.
-6. `app/services/p2p_ledger.py` — движение денег.
-7. `bot/main.py` — Telegram entry points.
-8. `app/static/` — legacy UI.
-9. `frontend/` — новый preview UI, если открыта `feature/react-full-preview`.
-10. `docs/HANDOFF.md` — подробная история решений и текущие ограничения.
+## Что не менять «по пути»
 
-## Что не следует менять «по пути»
+Без отдельной задачи и тестов не менять:
 
-Без отдельной причины и тестов не менять одновременно:
-
-- формулу сервисного сбора;
+- сервисный сбор 1%;
 - split 75/25;
 - matching;
 - self-match protection;
 - integer money;
 - settlement;
-- auth HMAC / TTL;
-- правила доступа unlisted;
+- Telegram auth HMAC/TTL;
+- unlisted access;
 - схему БД.
-
-Frontend должен запрашивать preview/quote у backend и считать ответ backend источником истины.
-
-## Текущие известные ограничения
-
-- нет настоящего blockchain deposit/withdraw;
-- нет account-allowlist private markets;
-- legacy LMSR всё ещё существует для старых рынков;
-- preview UI развивается в отдельной ветке и Draft PR;
-- Quick Tunnel предназначен только для локальной демонстрации;
-- перед реальными денежными интеграциями нужен отдельный security/audit pass.
 
 ## Для передачи разработчику
 
-Если задача — продолжить **актуальную демонстрационную версию**, передайте разработчику репозиторий и скажите начать с:
+Если нужно продолжить **актуальную версию продукта**:
 
 ```bash
 git fetch origin
 git switch feature/react-full-preview
 ```
 
-Затем:
+Дальше читать:
 
 ```text
 README.md
-→ docs/p2p.md
 → docs/HANDOFF.md
+→ docs/p2p.md
 → frontend/README.md
 ```
 
-Если задача — изучить только текущую основную ветку без preview UI, оставайтесь на `main`.
+Если задача — изучить только стабильную основную ветку без React preview, оставайтесь на `main`.
