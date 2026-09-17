@@ -88,6 +88,10 @@ export function ConnectedQuickTradeSheet({
   })
 
   const preview = previewQuery.data ? mapOrderPreview(previewQuery.data) : null
+  // During the debounce window React Query still exposes the previous amount's preview.
+  // Never let that stale plan be confirmed for a newly typed amount.
+  const previewSettling =
+    previewEnabled && (debouncedMoney !== money || previewQuery.isPending || previewQuery.isFetching)
 
   useEffect(() => {
     setState('normal')
@@ -112,7 +116,7 @@ export function ConnectedQuickTradeSheet({
       setState('insufficient-balance')
       return
     }
-    if (!preview) return
+    if (previewSettling || !preview) return
     if (preview.matchedTon <= 0) {
       setState('no-liquidity')
       return
@@ -129,6 +133,7 @@ export function ConnectedQuickTradeSheet({
     previewEnabled,
     previewQuery.error,
     previewQuery.isError,
+    previewSettling,
     quotesLoading,
     selected,
     state,
@@ -136,6 +141,9 @@ export function ConnectedQuickTradeSheet({
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (debouncedMoney !== money || previewQuery.isFetching) {
+        throw new Error(t('err.stale'))
+      }
       const acceptedOdds = iocAcceptedOdds(preview?.worstOdds)
       if (acceptedOdds == null || !preview || preview.matchedTon <= 0) {
         throw new Error(t('err.stale'))
@@ -206,14 +214,14 @@ export function ConnectedQuickTradeSheet({
       selectedSide={selectedSide}
       amount={amount}
       state={state}
-      quotesLoading={quotesLoading || (previewEnabled && previewQuery.isPending)}
+      quotesLoading={quotesLoading || previewSettling}
       availableTon={availableTon}
-      previewMatchedTon={preview?.matchedTon ?? null}
-      previewRestTon={preview?.remainingTon ?? null}
-      previewPayoutTon={preview?.payoutTon ?? null}
-      previewAverageOdds={preview?.averageOdds ?? null}
-      previewWorstOdds={preview?.worstOdds ?? null}
-      previewFills={preview?.fills ?? null}
+      previewMatchedTon={previewSettling ? null : (preview?.matchedTon ?? null)}
+      previewRestTon={previewSettling ? null : (preview?.remainingTon ?? null)}
+      previewPayoutTon={previewSettling ? null : (preview?.payoutTon ?? null)}
+      previewAverageOdds={previewSettling ? null : (preview?.averageOdds ?? null)}
+      previewWorstOdds={previewSettling ? null : (preview?.worstOdds ?? null)}
+      previewFills={previewSettling ? null : (preview?.fills ?? null)}
       errorMessage={errorMessage}
       placeResult={placeResult}
       onSelectSide={onSelectSide}
