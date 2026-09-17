@@ -5,10 +5,10 @@
   justify-content: flex-start;
   gap: var(--space-4);
   width: 100%;
-  min-height: 72px;
-  padding: var(--space-8) var(--space-12);
-  border: 1px solid var(--color-border-faint);
-  border-radius: var(--radius-12);
+  min-height: 84px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-16);
   background: var(--color-surface);
   text-align: left;
 }
@@ -16,12 +16,12 @@
 .label {
   font-size: 13px;
   font-weight: var(--font-weight-medium);
-  line-height: 1.25;
+  line-height: var(--leading-tight);
   overflow-wrap: anywhere;
 }
 
 .odds {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
@@ -117,13 +117,13 @@
 }
 
 .dense {
-  min-height: 64px;
+  min-height: 72px;
   gap: 2px;
-  padding: 6px var(--space-8);
+  padding: 10px 12px;
 }
 
 .dense .odds {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .skeleton {

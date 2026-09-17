@@ -47,6 +47,8 @@
   --radius-12: 12px;
   --radius-14: 14px;
   --radius-16: 16px;
+  --radius-20: 20px;
+  --radius-24: 24px;
   --radius-pill: 999px;
 
   --page-padding: 16px;
@@ -54,6 +56,19 @@
   --touch-preferred: 48px;
   --nav-height: 64px;
   --header-height: 56px;
+  --color-control-fill: #eef1f4;
+  --color-balance-pill: #20a39e;
+
+  --text-brand: 24px;
+  --text-title: 22px;
+  --text-question: 17px;
+  --text-body: 16px;
+  --text-callout: 15px;
+  --text-caption: 13px;
+  --text-micro: 12px;
+  --leading-tight: 1.25;
+  --leading-body: 1.4;
+  --tracking-tight: -0.02em;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --pad-header-top: max(var(--space-8), var(--safe-top));
@@ -77,6 +92,8 @@ html[data-theme="dark"] {
   --color-canvas: #121417;
   --color-surface: #1b1d21;
   --color-surface-muted: #22252b;
+  --color-control-fill: #22252b;
+  --color-balance-pill: #20a39e;
   --color-text-primary: #f2f4f7;
   --color-text-secondary: #98a2b3;
   --color-text-inverse: #15171a;

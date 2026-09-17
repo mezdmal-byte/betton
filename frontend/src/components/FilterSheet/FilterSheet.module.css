@@ -14,9 +14,8 @@
   gap: var(--space-16);
   padding: var(--space-4) var(--page-padding) var(--pad-bar-bottom);
   background: var(--color-surface);
-  border: 1px solid var(--color-border-faint);
   border-bottom: 0;
-  border-radius: var(--radius-16) var(--radius-16) 0 0;
+  border-radius: var(--radius-24) var(--radius-24) 0 0;
   box-shadow: var(--shadow-sheet);
 }
 
@@ -28,9 +27,27 @@
   background: var(--color-border-subtle);
 }
 
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
 .title {
   margin: 0;
-  font-size: 16px;
+  font-size: 20px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.reset {
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-action-primary);
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
 }
 

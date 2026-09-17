@@ -49,14 +49,24 @@ export function FilterSheet({ open, status, onClose, onApply }: FilterSheetProps
         onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.handle} aria-hidden="true" />
-        <h2 id={titleId} className={styles.title}>
-          {t('feed.status')}
-        </h2>
+        <div className={styles.head}>
+          <h2 id={titleId} className={styles.title}>
+            {t('feed.filters')}
+          </h2>
+          <button
+            type="button"
+            className={styles.reset}
+            onClick={() => setDraft('all')}
+          >
+            {t('feed.reset')}
+          </button>
+        </div>
         <div className={styles.pills} role="radiogroup" aria-labelledby={titleId}>
           {STATUS_FILTERS.map((item) => (
             <Chip
               key={item.id}
               className={styles.chip}
+              surface="raised"
               selected={draft === item.id}
               onClick={() => setDraft(item.id)}
             >

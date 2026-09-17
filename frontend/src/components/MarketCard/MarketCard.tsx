@@ -1,9 +1,9 @@
+import { Clock } from 'lucide-react'
 import { formatInteger, formatTon } from '../../lib/format'
 import { marketIsLocked, marketOutcomeQuoteState } from '../../lib/quote'
 import { useT, type MessageKey } from '../../i18n'
 import type { MarketFixture, OutcomeSide } from '../../types/market'
 import { cx } from '../../lib/cx'
-import { Avatar } from '../Avatar/Avatar'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
 import styles from './MarketCard.module.css'
 
@@ -44,13 +44,14 @@ export function MarketCard({
     <article className={styles.card} data-status={market.status}>
       <header className={styles.meta} onClick={onOpen}>
         <span className={styles.category}>{categoryLabel(market, t)}</span>
-        <span className={styles.dot}>·</span>
-        <span className={cx(styles.time, market.status === 'closing' && styles.closing)}>
-          {market.timeLeft}
-        </span>
         {badge ? (
           <span className={cx(styles.badge, market.status === 'cancelled' && styles.cancelled)}>{badge}</span>
-        ) : null}
+        ) : (
+          <span className={cx(styles.time, market.status === 'closing' && styles.closing)}>
+            <Clock size={12} strokeWidth={2.2} aria-hidden="true" />
+            {market.timeLeft}
+          </span>
+        )}
       </header>
       <h2 className={styles.question} onClick={onOpen}>
         {market.question}
@@ -78,11 +79,11 @@ export function MarketCard({
             : undefined
         }
       >
-        <Avatar initials={market.creator.initials} name={market.creator.displayName} size="sm" />
         <span className={styles.handle}>@{market.creator.handle}</span>
-        <span className={styles.stats}>
-          {formatTon(market.volumeTon)} · {formatInteger(market.participants)}
-        </span>
+        <span className={styles.dot}>·</span>
+        <span className={styles.stats}>{formatTon(market.volumeTon)}</span>
+        <span className={styles.dot}>·</span>
+        <span className={styles.stats}>{t('market.peopleCount', { n: formatInteger(market.participants) })}</span>
       </div>
       <div className={styles.outcomes}>
         <OutcomeQuote

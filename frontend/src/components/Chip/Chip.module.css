@@ -6,21 +6,40 @@
   padding: 0 var(--space-16);
   border: 1px solid transparent;
   border-radius: var(--radius-pill);
-  background: var(--color-surface-muted);
   color: var(--color-text-secondary);
   font-size: 14px;
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
 
-.selected {
+.muted {
+  background: var(--color-control-fill);
+  border-color: transparent;
+}
+
+.raised {
+  background: var(--color-surface);
+  border-color: var(--color-border-subtle);
+}
+
+.selected.teal {
   background: var(--color-action-primary);
   border-color: var(--color-action-primary);
   color: var(--color-text-inverse);
 }
 
-.root:hover:not(:disabled):not(.selected) {
-  background: var(--color-border-faint);
+.selected.plum {
+  background: var(--color-brand-plum);
+  border-color: var(--color-brand-plum);
+  color: var(--color-text-inverse);
+}
+
+.root:hover:not(:disabled):not(.selected).muted {
+  background: var(--color-border-subtle);
+}
+
+.root:hover:not(:disabled):not(.selected).raised {
+  background: var(--color-surface-muted);
 }
 
 .root:disabled {
@@ -29,6 +48,6 @@
 
 .compact {
   min-height: var(--touch-min);
-  padding: 0 var(--space-8);
+  padding: 0 var(--space-12);
   font-size: 13px;
 }

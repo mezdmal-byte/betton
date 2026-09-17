@@ -18,7 +18,13 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   render: () => (
     <PhoneShell>
-      <MarketsScreen />
+      <MarketsScreen
+        topCreators={[
+          { id: 1, displayName: 'Вася', handle: 'vasya', initials: 'ВА', volumeTon: 18200 },
+          { id: 2, displayName: 'Ира', handle: 'eaaasy', initials: 'ИР', volumeTon: 14500 },
+          { id: 3, displayName: 'TON Boss', handle: 'ton_boss', initials: 'TB', volumeTon: 12000 },
+        ]}
+      />
     </PhoneShell>
   ),
 }

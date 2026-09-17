@@ -4,7 +4,7 @@
   justify-content: center;
   gap: var(--space-8);
   border: 1px solid transparent;
-  border-radius: var(--radius-14);
+  border-radius: var(--radius-16);
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0;
   white-space: nowrap;
@@ -60,6 +60,17 @@
 .ghost:hover:not(:disabled) {
   background: var(--color-surface-muted);
   color: var(--color-text-primary);
+}
+
+.link {
+  background: transparent;
+  color: var(--color-action-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.link:hover:not(:disabled) {
+  background: var(--color-outcome-a-tint);
+  color: var(--color-action-primary-hover);
 }
 
 .root:disabled {

@@ -15,7 +15,7 @@ export type QuickTradeScreenProps = {
 export function QuickTradeScreen({
   market = marketYesNo,
   selectedSide = 'a',
-  amount = 100,
+  amount = 0,
   state = 'normal',
 }: QuickTradeScreenProps) {
   const sheetMarket = state === 'partial' ? marketPartialLiquidity : market

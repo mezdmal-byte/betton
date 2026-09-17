@@ -1,11 +1,13 @@
 import { Minus, Plus } from 'lucide-react'
 import { AmountInput } from '../AmountInput/AmountInput'
 import { Button } from '../Button/Button'
+import { Chip } from '../Chip/Chip'
 import { IconButton } from '../IconButton/IconButton'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
 import { OrderBookRow } from '../OrderBookRow/OrderBookRow'
 import { availableAtOdds, splitFill } from '../../lib/fill'
 import { formatInteger, formatOdds, formatTon, formatTonFull } from '../../lib/format'
+import { QUICK_TRADE_AMOUNT_PRESETS } from '../../lib/constants'
 import { useT } from '../../i18n'
 import type { OrderBookLevel, OutcomeSide, RecentTrade } from '../../types/market'
 import styles from './OwnPricePanel.module.css'
@@ -105,6 +107,7 @@ export function OwnPricePanel({
 
       <AmountInput
         value={String(amount)}
+        label={t('wallet.amount')}
         onChange={(value) => onAmountChange?.(Number(value) || 0)}
         error={
           errorMessage
@@ -114,6 +117,20 @@ export function OwnPricePanel({
               : undefined
         }
       />
+
+      <div className={styles.presets}>
+        {QUICK_TRADE_AMOUNT_PRESETS.map((preset) => (
+          <Chip
+            key={preset}
+            compact
+            selected={preset === amount}
+            disabled={availableTon != null && preset > availableTon}
+            onClick={() => onAmountChange?.(preset)}
+          >
+            {preset}
+          </Chip>
+        ))}
+      </div>
 
       <div className={styles.summary}>
         <div className={styles.summaryRow}>

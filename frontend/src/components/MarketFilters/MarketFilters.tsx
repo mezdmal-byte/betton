@@ -1,8 +1,5 @@
-import { SlidersHorizontal } from 'lucide-react'
 import { useT } from '../../i18n'
 import { Chip } from '../Chip/Chip'
-import { IconButton } from '../IconButton/IconButton'
-import { Tabs } from '../Tabs/Tabs'
 import styles from './MarketFilters.module.css'
 
 export type MarketFiltersProps = {
@@ -18,11 +15,8 @@ export type MarketFiltersProps = {
 export function MarketFilters({
   sort,
   category,
-  filtersOpen = false,
-  filtersActive = false,
   onSortChange,
   onCategoryChange,
-  onFiltersClick,
 }: MarketFiltersProps) {
   const t = useT()
   const sortTabs = [
@@ -39,29 +33,33 @@ export function MarketFilters({
 
   return (
     <div className={styles.root}>
-      <Tabs items={sortTabs} value={sort} onChange={onSortChange} ariaLabel={t('feed.sort')} />
-      <div className={styles.row}>
-        <div className={styles.pills} role="group" aria-label={t('feed.cats')}>
-          {categories.map((item) => (
-            <Chip
-              key={item.id}
-              compact
-              selected={item.id === category}
-              onClick={() => onCategoryChange?.(item.id)}
-            >
-              {item.label}
-            </Chip>
-          ))}
-        </div>
-        <IconButton
-          label={t('feed.filters')}
-          variant="bordered"
-          size="md"
-          aria-pressed={filtersOpen || filtersActive}
-          onClick={onFiltersClick}
-        >
-          <SlidersHorizontal size={18} strokeWidth={2} />
-        </IconButton>
+      <div className={styles.row} role="tablist" aria-label={t('feed.sort')}>
+        {sortTabs.map((item) => (
+          <Chip
+            key={item.id}
+            compact
+            surface="muted"
+            tone="teal"
+            selected={item.id === sort}
+            onClick={() => onSortChange?.(item.id)}
+          >
+            {item.label}
+          </Chip>
+        ))}
+      </div>
+      <div className={styles.row} role="group" aria-label={t('feed.cats')}>
+        {categories.map((item) => (
+          <Chip
+            key={item.id}
+            compact
+            surface="raised"
+            tone="plum"
+            selected={item.id === category}
+            onClick={() => onCategoryChange?.(item.id)}
+          >
+            {item.label}
+          </Chip>
+        ))}
       </div>
     </div>
   )

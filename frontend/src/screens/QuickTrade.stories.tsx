@@ -17,7 +17,15 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   render: () => (
     <PhoneShell>
-      <QuickTradeScreen />
+      <QuickTradeScreen amount={0} />
+    </PhoneShell>
+  ),
+}
+
+export const FilledPreview: Story = {
+  render: () => (
+    <PhoneShell>
+      <QuickTradeScreen amount={100} />
     </PhoneShell>
   ),
 }

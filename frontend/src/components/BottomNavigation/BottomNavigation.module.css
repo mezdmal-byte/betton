@@ -21,6 +21,28 @@
   font-weight: var(--font-weight-medium);
 }
 
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.createIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--color-control-fill);
+  color: var(--color-text-primary);
+}
+
+.create.active .createIcon,
+.active .createIcon {
+  background: var(--color-outcome-a-surface);
+  color: var(--color-action-primary);
+}
+
 .active {
   color: var(--color-action-primary);
   font-weight: var(--font-weight-semibold);

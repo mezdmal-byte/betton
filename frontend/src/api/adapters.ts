@@ -247,12 +247,23 @@ const TX_ACTION: Record<string, string> = {
   withdraw: 'Вывод',
 }
 
-export function mapTopCreator(dto: CreatorStatsOut): { id: number; displayName: string; handle: string } {
+export function mapTopCreator(dto: CreatorStatsOut): {
+  id: number
+  displayName: string
+  handle: string
+  initials: string
+  photoUrl?: string
+  volumeTon: number
+} {
   const handle = (dto.telegram_username || '').replace(/^@/, '').trim()
+  const displayName = dto.display_name
   return {
     id: dto.id,
-    displayName: dto.display_name,
-    handle: handle || dto.display_name,
+    displayName,
+    handle: handle || displayName,
+    initials: initialsFromName(displayName || handle),
+    photoUrl: dto.photo_url || undefined,
+    volumeTon: dto.volume_nano != null ? nanoToTon(dto.volume_nano) : Number(dto.volume ?? 0),
   }
 }
 

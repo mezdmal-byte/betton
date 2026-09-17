@@ -10,7 +10,7 @@ const meta = {
   args: {
     market: marketYesNo,
     selectedSide: 'a',
-    amount: 100,
+    amount: 0,
     state: 'normal',
   },
   decorators: [
@@ -27,6 +27,18 @@ type Story = StoryObj<typeof meta>
 
 export const Normal: Story = {}
 
+export const Filled: Story = {
+  args: {
+    amount: 100,
+    previewMatchedTon: 100,
+    previewRestTon: 0,
+    previewPayoutTon: 182,
+    previewAverageOdds: 1.82,
+    previewWorstOdds: 1.82,
+    previewFills: [{ odds: 1.82, matchedTon: 100 }],
+  },
+}
+
 export const EmptyAmount: Story = {
   args: { amount: 0 },
 }
@@ -40,7 +52,17 @@ export const MaxPreset: Story = {
 }
 
 export const Partial: Story = {
-  args: { state: 'partial', market: marketPartialLiquidity, amount: 100 },
+  args: {
+    state: 'partial',
+    market: marketPartialLiquidity,
+    amount: 100,
+    previewMatchedTon: 40,
+    previewRestTon: 60,
+    previewPayoutTon: 64,
+    previewAverageOdds: 1.6,
+    previewWorstOdds: 1.6,
+    previewFills: [{ odds: 1.6, matchedTon: 40 }],
+  },
 }
 
 export const PartialInteractive: Story = {

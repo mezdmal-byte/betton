@@ -1,3 +1,4 @@
+import { SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { currentUser, feedMarkets } from '../fixtures/markets'
 import type { MarketFixture, OutcomeSide } from '../types/market'
@@ -5,12 +6,13 @@ import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { Avatar } from '../components/Avatar/Avatar'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import { Button } from '../components/Button/Button'
+import { IconButton } from '../components/IconButton/IconButton'
 import { MarketCard } from '../components/MarketCard/MarketCard'
 import { MarketFilters } from '../components/MarketFilters/MarketFilters'
 import { SearchField } from '../components/SearchField/SearchField'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useT } from '../i18n'
-import { formatTon } from '../lib/format'
+import { formatCompactAmount, formatTon } from '../lib/format'
 import styles from './MarketsScreen.module.css'
 
 export type MarketsAccountState = 'ready' | 'loading' | 'unauthenticated'
@@ -22,6 +24,15 @@ export type MarketsHeaderUser = {
   initials: string
   availableTon: number
   photoUrl?: string
+}
+
+export type FeedCreator = {
+  id: number
+  displayName: string
+  handle: string
+  initials?: string
+  photoUrl?: string
+  volumeTon?: number
 }
 
 export type MarketsScreenProps = {
@@ -47,7 +58,7 @@ export type MarketsScreenProps = {
   hasMore?: boolean
   loadingMore?: boolean
   onLoadMore?: () => void
-  topCreators?: Array<{ id: number; displayName: string; handle: string }>
+  topCreators?: FeedCreator[]
   onTopCreatorClick?: (userId: number) => void
 }
 
@@ -95,17 +106,19 @@ export function MarketsScreen({
         <h1 className={styles.brand}>
           Bet<span>TON</span>
         </h1>
-        <div className={styles.headerRight} onClick={onProfileClick} role="button" tabIndex={0}>
-          <div className={styles.balance}>
+        <div className={styles.headerRight}>
+          <div className={styles.balancePill} aria-label={`${t('header.available')} ${balanceLabel}`}>
             <span>{t('header.available')}</span>
             <strong>{balanceLabel}</strong>
           </div>
-          <Avatar
-            initials={resolvedHeader?.initials ?? '?'}
-            name={resolvedHeader?.displayName}
-            src={resolvedHeader?.photoUrl}
-            size="md"
-          />
+          <button type="button" className={styles.avatarButton} onClick={onProfileClick} aria-label={t('nav.profile')}>
+            <Avatar
+              initials={resolvedHeader?.initials ?? '?'}
+              name={resolvedHeader?.displayName}
+              src={resolvedHeader?.photoUrl}
+              size="md"
+            />
+          </button>
         </div>
       </header>
       <div className={styles.body}>
@@ -113,6 +126,18 @@ export function MarketsScreen({
           value={search}
           onChange={onQueryChange ?? setInternalQuery}
           placeholder={t('feed.searchPh')}
+          trailing={
+            <IconButton
+              label={t('feed.filters')}
+              variant="plain"
+              size="md"
+              className={filtersActive || filtersOpen ? styles.filterActive : undefined}
+              aria-pressed={filtersOpen || filtersActive}
+              onClick={onFiltersClick}
+            >
+              <SlidersHorizontal size={18} strokeWidth={2} />
+            </IconButton>
+          }
         />
         <MarketFilters
           sort={sortValue}
@@ -121,7 +146,6 @@ export function MarketsScreen({
           filtersActive={filtersActive}
           onSortChange={onSortChange ?? setInternalSort}
           onCategoryChange={onCategoryChange ?? setInternalCategory}
-          onFiltersClick={onFiltersClick}
         />
         {topCreators.length > 0 ? (
           <section className={styles.creators} aria-label={t('feed.topCreators')}>
@@ -134,7 +158,20 @@ export function MarketsScreen({
                   className={styles.creatorChip}
                   onClick={() => onTopCreatorClick?.(creator.id)}
                 >
-                  {creator.handle ? `@${creator.handle}` : creator.displayName}
+                  <Avatar
+                    initials={creator.initials ?? creator.displayName.slice(0, 2)}
+                    name={creator.displayName}
+                    src={creator.photoUrl}
+                    size="sm"
+                  />
+                  <span className={styles.creatorMeta}>
+                    <span className={styles.creatorHandle}>
+                      {creator.handle ? `@${creator.handle}` : creator.displayName}
+                    </span>
+                    {creator.volumeTon != null ? (
+                      <span className={styles.creatorVolume}>{formatCompactAmount(creator.volumeTon)}</span>
+                    ) : null}
+                  </span>
                 </button>
               ))}
             </div>

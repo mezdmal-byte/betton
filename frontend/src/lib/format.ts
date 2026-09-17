@@ -31,6 +31,17 @@ export function formatInteger(value: number): string {
   return String(Math.round(value))
 }
 
+export function formatCompactAmount(amount: number | null | undefined): string {
+  if (amount == null || Number.isNaN(amount)) return '—'
+  if (Math.abs(amount) >= 1000) {
+    const compact = amount / 1000
+    const label = isWholeNumber(compact) ? String(Math.round(compact)) : compact.toFixed(1)
+    return `${label}K`
+  }
+  if (isWholeNumber(amount)) return String(Math.round(amount))
+  return formatTonFraction(Math.abs(amount))
+}
+
 export function formatTonFull(amount: number | null | undefined): string {
   if (amount == null || Number.isNaN(amount)) return '—'
   if (amount === 0) return '0 TON'

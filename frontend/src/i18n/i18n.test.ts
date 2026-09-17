@@ -34,9 +34,9 @@ describe('language selection', () => {
   })
 
   it('switches visible copy immediately per locale', () => {
-    expect(translate('ru', 'nav.feed')).toBe('Рынки')
-    expect(translate('en', 'nav.feed')).toBe('Markets')
-    expect(translate('zh', 'nav.feed')).toBe('市场')
+    expect(translate('ru', 'nav.feed')).toBe('Лента')
+    expect(translate('en', 'nav.feed')).toBe('Feed')
+    expect(translate('zh', 'nav.feed')).toBe('动态')
     expect(translate('en', 'account.fee')).toContain('1%')
   })
 })

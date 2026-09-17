@@ -1,6 +1,9 @@
 .root {
   width: 100%;
   overflow: hidden;
+  padding: var(--space-12);
+  background: var(--color-surface);
+  border-radius: var(--radius-16);
 }
 
 .header {

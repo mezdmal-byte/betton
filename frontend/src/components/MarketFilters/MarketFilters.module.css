@@ -8,11 +8,15 @@
   display: flex;
   align-items: center;
   gap: var(--space-8);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.pills {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  gap: var(--space-4);
+.row::-webkit-scrollbar {
+  display: none;
+}
+
+.row > button {
+  flex: 0 0 auto;
 }

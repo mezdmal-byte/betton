@@ -20,13 +20,12 @@
   background: var(--color-canvas);
 }
 
-.meta {
-  display: flex;
-  gap: var(--space-8);
+.title {
+  flex: 1;
   min-width: 0;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: var(--font-weight-regular);
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
 }
 
 .body {
@@ -35,15 +34,49 @@
   min-height: 0;
   flex-direction: column;
   gap: var(--space-12);
-  padding: 0 var(--page-padding) calc(var(--action-bar-space) + var(--space-16) + var(--tg-bottom));
+  padding: 0 var(--page-padding) calc(var(--action-bar-space) + var(--space-24) + var(--tg-bottom));
   overflow: visible;
 }
 
+.kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.catChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-medium);
+}
+
+.time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-medium);
+  text-align: right;
+}
+
+.closing {
+  color: var(--color-outcome-b-accent);
+}
+
 .question {
-  font-size: 24px;
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.25;
-  letter-spacing: -0.02em;
+  font-size: var(--text-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
   overflow-wrap: anywhere;
 }
 
@@ -52,14 +85,37 @@
   align-items: center;
   gap: var(--space-8);
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--text-micro);
   font-weight: var(--font-weight-regular);
   cursor: pointer;
 }
 
-.stats {
-  margin-left: auto;
+.statsStrip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  background: var(--color-surface);
+  border-radius: var(--radius-16);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stat b {
+  font-size: 16px;
+  font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.stat span {
+  font-size: var(--text-micro);
+  color: var(--color-text-secondary);
 }
 
 .outcomes {

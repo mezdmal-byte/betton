@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Clock } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Avatar } from '../components/Avatar/Avatar'
 import { Button } from '../components/Button/Button'
@@ -12,6 +12,7 @@ import { Tabs } from '../components/Tabs/Tabs'
 import { chartSpartakA, chartSpartakB, marketYesNo } from '../fixtures/markets'
 import { useT, type MessageKey } from '../i18n'
 import { formatInteger, formatTon } from '../lib/format'
+import { cx } from '../lib/cx'
 import { marketIsLocked, marketOutcomeQuoteState } from '../lib/quote'
 import type { ChartPoint, MarketFixture, OrderBookLevel, OutcomeSide } from '../types/market'
 import styles from './MarketDetailScreen.module.css'
@@ -107,9 +108,7 @@ export function MarketDetailScreen({
           <IconButton label={t('back')} size="md" onClick={onBack}>
             <ChevronLeft size={22} />
           </IconButton>
-          <div className={styles.meta}>
-            <span>{t('event.loading')}</span>
-          </div>
+          <strong className={styles.title}>{t('event.title')}</strong>
         </header>
         <div className={styles.body}>
           <StatusMessage tone="loading" title={t('loading')}>
@@ -135,9 +134,7 @@ export function MarketDetailScreen({
           <IconButton label={t('back')} size="md" onClick={onBack}>
             <ChevronLeft size={22} />
           </IconButton>
-          <div className={styles.meta}>
-            <span>{t('nav.feed')}</span>
-          </div>
+          <strong className={styles.title}>{t('event.title')}</strong>
         </header>
         <div className={styles.body}>
           <StatusMessage tone="error" title={title}>
@@ -159,11 +156,7 @@ export function MarketDetailScreen({
         <IconButton label={t('back')} size="md" onClick={onBack}>
           <ChevronLeft size={22} />
         </IconButton>
-        <div className={styles.meta}>
-          <span>{categoryLabel(market, t)}</span>
-          <span>·</span>
-          <span>{market.closeLabel}</span>
-        </div>
+        <strong className={styles.title}>{t('event.title')}</strong>
         {shareAvailable && onShare ? (
           <Button variant="ghost" size="md" onClick={onShare}>
             {t('share')}
@@ -171,6 +164,13 @@ export function MarketDetailScreen({
         ) : null}
       </header>
       <div className={styles.body}>
+        <div className={styles.kicker}>
+          <span className={styles.catChip}>{categoryLabel(market, t)}</span>
+          <span className={cx(styles.time, market.status === 'closing' && styles.closing)}>
+            <Clock size={13} strokeWidth={2.2} aria-hidden="true" />
+            {market.closeLabel}
+          </span>
+        </div>
         <h1 className={styles.question}>{market.question}</h1>
         {banner}
         <div
@@ -191,9 +191,16 @@ export function MarketDetailScreen({
         >
           <Avatar initials={market.creator.initials} name={market.creator.displayName} size="sm" />
           <span>@{market.creator.handle}</span>
-          <span className={styles.stats}>
-            {formatTon(market.volumeTon)} · {formatInteger(market.participants)}
-          </span>
+        </div>
+        <div className={styles.statsStrip}>
+          <div className={styles.stat}>
+            <b>{formatTon(market.volumeTon)}</b>
+            <span>{t('market.volume')}</span>
+          </div>
+          <div className={styles.stat}>
+            <b>{formatInteger(market.participants)}</b>
+            <span>{t('market.people')}</span>
+          </div>
         </div>
         <div className={styles.outcomes}>
           <OutcomeQuote

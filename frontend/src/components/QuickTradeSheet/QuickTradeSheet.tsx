@@ -16,6 +16,7 @@ import { Button } from '../Button/Button'
 import { Chip } from '../Chip/Chip'
 import { IconButton } from '../IconButton/IconButton'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
+import { cx } from '../../lib/cx'
 import styles from './QuickTradeSheet.module.css'
 
 export type QuickTradeState =
@@ -196,6 +197,7 @@ export function QuickTradeSheet({
       <AmountInput
         value={amountInputValue(amount)}
         placeholder="0"
+        label={t('wallet.amount')}
         onChange={(value) => onAmountChange?.(Number(value) || 0)}
         error={
           insufficient
@@ -252,7 +254,7 @@ export function QuickTradeSheet({
             <span>{t('preview.worstOdds')}</span>
             <b>{formatOdds(previewWorstOdds)}</b>
           </div>
-          <div className={styles.summaryRow}>
+          <div className={cx(styles.summaryRow, styles.payoutRow)}>
             <span>{t('preview.expectedPayout')}</span>
             <b>~{formatTon(previewPayoutTon)}</b>
           </div>
@@ -284,7 +286,7 @@ export function QuickTradeSheet({
       </Button>
       {primaryIsOwnPrice ? null : (
         <Button
-          variant="ghost"
+          variant="link"
           size="md"
           fullWidth
           className={styles.ownPrice}
