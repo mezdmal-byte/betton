@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { QUICK_TRADE_AMOUNT_PRESETS } from '../../lib/constants'
 import { formatOdds, formatTon, formatTonFull } from '../../lib/format'
@@ -95,9 +96,16 @@ export function QuickTradeSheet({
   placeResult = null,
 }: QuickTradeSheetProps) {
   const t = useT()
+  const [amountDraft, setAmountDraft] = useState(() => amountInputValue(amount))
+
+  useEffect(() => {
+    setAmountDraft(amountInputValue(amount))
+  }, [amount])
+
   const selected = outcomeOf(market, selectedSide)
   const executable = !quotesLoading && outcomeIsExecutable(selected)
-  const noLiquidity = !quotesLoading && (state === 'no-liquidity' || !executable)
+  const terminalState = state === 'success' || state === 'processing' || state === 'error'
+  const noLiquidity = !quotesLoading && !terminalState && (state === 'no-liquidity' || !executable)
   const stale = state === 'stale-quote'
   const insufficient = state === 'insufficient-balance' || (amount > 0 && presetExceedsBalance(amount, availableTon))
   const amountEntered = amount > 0
@@ -131,8 +139,10 @@ export function QuickTradeSheet({
             : primaryIsOwnPrice
               ? t('market.ownOdds')
               : amountEntered
-                ? t('market.betCtaAmount', { amt: amount })
+                ? t('market.betCtaAmount', { amt: formatMaxPreset(amount) })
                 : t('market.betCta')
+  const primaryDisabled =
+    demoMode || state === 'success' || (primaryIsRefresh || primaryIsOwnPrice ? false : !canPlace)
 
   return (
     <section className={styles.sheet} aria-label={t('market.quickTrade')}>
@@ -150,17 +160,16 @@ export function QuickTradeSheet({
         </p>
       ) : null}
       {partialFill && placeResult ? (
-        <p className={styles.banner}>
+        <p className={cx(styles.banner, styles.successBanner)}>
           {t('market.filledLine', { filled: formatTonFull(placeResult.filledTon) })}
           <br />
           {t('market.refundedLine', { refunded: formatTonFull(placeResult.refundedTon) })}
         </p>
       ) : null}
       {state === 'success' && !partialFill ? (
-        <p className={styles.banner}>{t('market.processed')}</p>
+        <p className={cx(styles.banner, styles.successBanner)}>{t('market.processed')}</p>
       ) : null}
       {state === 'error' && errorMessage ? <p className={styles.banner}>{errorMessage}</p> : null}
-      {noLiquidity && !stale ? <p className={styles.note}>{t('market.noLiquidityNow')}</p> : null}
 
       <div className={styles.outcomes}>
         <OutcomeQuote
@@ -183,22 +192,30 @@ export function QuickTradeSheet({
         />
       </div>
 
-      <p className={styles.liquidity}>
-        {quotesLoading
-          ? t('market.atOddsAvailable', { odds: '…', amt: '…' })
-          : executable
-            ? t('market.atOddsAvailable', {
-                odds: formatOdds(selected.odds),
-                amt: formatTon(selected.liquidityTon),
-              })
-            : t('market.noLiquidityNow')}
-      </p>
+      {state === 'success' ? null : (
+        <p className={cx(styles.liquidity, noLiquidity && !stale && styles.noLiquidity)}>
+          {quotesLoading
+            ? t('market.atOddsAvailable', { odds: '…', amt: '…' })
+            : executable
+              ? t('market.atOddsAvailable', {
+                  odds: formatOdds(selected.odds),
+                  amt: formatTon(selected.liquidityTon),
+                })
+              : t('market.noLiquidityNow')}
+        </p>
+      )}
 
       <AmountInput
-        value={amountInputValue(amount)}
+        value={amountDraft}
         placeholder="0"
         label={t('wallet.amount')}
-        onChange={(value) => onAmountChange?.(Number(value) || 0)}
+        onChange={(value) => {
+          let normalized = value.replace(',', '.')
+          if (normalized.startsWith('.')) normalized = `0${normalized}`
+          if (!/^\d*(?:\.\d{0,4})?$/.test(normalized)) return
+          setAmountDraft(normalized)
+          onAmountChange?.(Number(normalized) || 0)
+        }}
         error={
           insufficient
             ? t('err.fundsAvail', { amt: formatTonFull(availableTon) })
@@ -277,9 +294,17 @@ export function QuickTradeSheet({
       <Button
         fullWidth
         loading={!demoMode && state === 'processing'}
-        disabled={demoMode || (primaryIsRefresh || primaryIsOwnPrice ? false : !canPlace)}
+        disabled={primaryDisabled}
         onClick={
-          demoMode ? undefined : primaryIsRefresh ? onRefreshQuote : primaryIsOwnPrice ? onOwnPrice : onPlace
+          state === 'success'
+            ? undefined
+            : demoMode
+              ? undefined
+              : primaryIsRefresh
+                ? onRefreshQuote
+                : primaryIsOwnPrice
+                  ? onOwnPrice
+                  : onPlace
         }
       >
         {cta}
