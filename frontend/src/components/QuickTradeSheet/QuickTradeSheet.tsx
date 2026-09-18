@@ -124,7 +124,7 @@ export function QuickTradeSheet({
     state,
   })
   const primaryIsOwnPrice = noLiquidity && !stale
-  const primaryIsRefresh = stale
+  const primaryIsRefresh = stale || state === 'error'
   const partialFill = state === 'success' && placeResult?.kind === 'partial'
   const cta = demoMode
     ? t('demo.unavailable')
