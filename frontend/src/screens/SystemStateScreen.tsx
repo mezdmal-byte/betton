@@ -1,9 +1,9 @@
-import { CloudOff, Inbox, LoaderCircle } from 'lucide-react'
+import { CloudOff, Inbox, LoaderCircle, LogIn } from 'lucide-react'
 import { Button } from '../components/Button/Button'
 import { useT } from '../i18n'
 import styles from './SystemStateScreen.module.css'
 
-export type SystemStateKind = 'loading' | 'network' | 'empty'
+export type SystemStateKind = 'loading' | 'network' | 'empty' | 'auth'
 export type SystemStateScreenProps = { kind: SystemStateKind; onRetry?: () => void }
 
 export function SystemStateScreen({ kind, onRetry }: SystemStateScreenProps) {
@@ -12,7 +12,9 @@ export function SystemStateScreen({ kind, onRetry }: SystemStateScreenProps) {
     ? { icon: <LoaderCircle size={26} aria-hidden="true" />, title: t('market.processing'), body: t('loading.body') }
     : kind === 'network'
       ? { icon: <CloudOff size={26} aria-hidden="true" />, title: t('err.request'), body: t('err.requestBody') }
-      : { icon: <Inbox size={26} aria-hidden="true" />, title: t('feed.emptyTitle'), body: t('feed.emptyBody') }
+      : kind === 'auth'
+        ? { icon: <LogIn size={26} aria-hidden="true" />, title: t('err.openInTg'), body: t('err.openInTgBody') }
+        : { icon: <Inbox size={26} aria-hidden="true" />, title: t('feed.emptyTitle'), body: t('feed.emptyBody') }
 
   return (
     <div className={styles.screen}>
