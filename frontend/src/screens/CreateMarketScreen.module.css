@@ -25,19 +25,27 @@
   min-height: 0;
   flex-direction: column;
   gap: 14px;
-  padding: 0 var(--page-padding) calc(var(--space-20) + var(--tg-bottom));
+  padding: 2px var(--page-padding) 16px;
   overflow: auto;
 }
 
-.section,
-.fee {
+.questionBlock {
+  position: relative;
+}
+
+.counter {
+  position: absolute;
+  right: 12px;
+  bottom: 9px;
+  font-size: 10px;
+  color: var(--color-text-disabled);
+  font-variant-numeric: tabular-nums;
+}
+
+.section {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--color-border-faint);
-  border-radius: var(--radius-14);
-  background: var(--color-surface);
 }
 
 .sectionLabel {
@@ -54,55 +62,66 @@
 
 .outcomes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.outcomeA :global(input),
+.outcomeB :global(input) {
+  min-height: 44px;
 }
 
 .outcomeA :global(input) {
   background: var(--color-outcome-a-tint);
-  border-color: transparent;
+  border-color: rgba(32, 163, 158, 0.12);
 }
 
 .outcomeB :global(input) {
   background: var(--color-outcome-b-tint);
-  border-color: transparent;
+  border-color: rgba(239, 91, 91, 0.12);
 }
 
 .fee {
-  gap: 6px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-12);
+  background: var(--color-surface);
 }
 
 .feeRow {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  min-height: 36px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 4px 0 12px;
+  color: var(--color-text-secondary);
 }
 
 .feeRow p {
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 12px;
-  font-weight: var(--font-weight-medium);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.feeDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+
+.feeDetail p {
+  margin: 0;
+  font-size: 11px;
   line-height: 1.4;
   color: var(--color-text-secondary);
 }
 
-.fee > p,
-.fee :global(#creator-fee-detail) p {
-  margin: 0;
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  line-height: 1.45;
-  color: var(--color-text-secondary);
-}
-
 .actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 3;
-  padding: 10px var(--page-padding) var(--pad-bar-bottom);
+  flex: 0 0 auto;
+  padding: 10px var(--page-padding);
   background: var(--color-surface);
   border-top: 1px solid var(--color-border-faint);
 }
@@ -110,7 +129,7 @@
 .visibilityNote,
 .error {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.4;
   color: var(--color-text-secondary);
 }
@@ -123,10 +142,5 @@
 @media (max-width: 340px) {
   .body {
     gap: 12px;
-  }
-
-  .section,
-  .fee {
-    padding: 10px;
   }
 }

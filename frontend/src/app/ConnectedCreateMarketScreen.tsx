@@ -17,7 +17,7 @@ export type ConnectedCreateMarketScreenProps = {
   enabled: boolean
 }
 
-export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled }: ConnectedCreateMarketScreenProps) {
+export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavChange }: ConnectedCreateMarketScreenProps) {
   const t = useT()
   const [closeAt, setCloseAt] = useState(() => defaultCloseAt())
   const [errorMessage, setErrorMessage] = useState<string | null>(null)

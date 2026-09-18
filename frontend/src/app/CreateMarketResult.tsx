@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { Check, ChevronLeft, Link2 } from 'lucide-react'
 import { copyShareLink, shareExternally } from '../api/share'
 import type { MarketOut } from '../api/types'
+import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { Button } from '../components/Button/Button'
 import { IconButton } from '../components/IconButton/IconButton'
-import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useT } from '../i18n'
 import styles from './CreateMarketResult.module.css'
 
@@ -14,12 +15,14 @@ export function CreateMarketResult({
   onOpen,
   onBack,
   onToFeed,
+  onNavChange,
 }: {
   market: MarketOut
   shareLink: string
   onOpen: () => void
   onBack: () => void
   onToFeed: () => void
+  onNavChange?: (id: NavId) => void
 }) {
   const t = useT()
   const pending = market.status === 'pending'
@@ -36,6 +39,14 @@ export function CreateMarketResult({
     : unlisted
       ? t('create.resultUnlistedBody')
       : t('create.resultCreatedBody')
+  const category =
+    market.category === 'sport'
+      ? t('cat.sport')
+      : market.category === 'politics'
+        ? t('cat.politics')
+        : market.category === 'crypto'
+          ? t('cat.crypto')
+          : t('cat.other')
 
   return (
     <div className={styles.screen}>
@@ -43,13 +54,31 @@ export function CreateMarketResult({
         <IconButton label={t('back')} size="md" onClick={onBack}>
           <ChevronLeft size={22} />
         </IconButton>
-        <strong>{title}</strong>
+        <strong>{t('create.title')}</strong>
       </header>
+
       <div className={styles.body}>
-        <StatusMessage title={title}>{body}</StatusMessage>
+        <section className={styles.hero}>
+          <span className={styles.successIcon} aria-hidden="true">
+            <Check size={24} strokeWidth={2.2} />
+          </span>
+          <h1>{title}</h1>
+          <p>{body}</p>
+          {pending ? <span className={styles.pendingBadge}>{t('status.pending')}</span> : null}
+        </section>
+
+        <section className={styles.marketCard}>
+          <span>{category}</span>
+          <strong>{market.question}</strong>
+          <small>{unlisted ? t('type.unlisted') : pending ? t('status.pending') : t('status.open')}</small>
+        </section>
+
         {showShare ? (
           <section className={styles.share}>
-            <span className={styles.label}>{t('share.linkTitle')}</span>
+            <div className={styles.shareTitle}>
+              <Link2 size={16} aria-hidden="true" />
+              <span>{t('share.linkTitle')}</span>
+            </div>
             <input className={styles.link} readOnly value={shareLink} onFocus={(event) => event.currentTarget.select()} />
             {copyState === 'ok' ? <p className={styles.note}>{t('share.copied')}</p> : null}
             {copyState === 'fail' ? <p className={styles.error}>{t('share.fail')}</p> : null}
@@ -74,13 +103,17 @@ export function CreateMarketResult({
             </div>
           </section>
         ) : null}
+      </div>
+
+      <div className={styles.actions}>
         <Button fullWidth onClick={onOpen}>
-          {t('create.openEvent')}
+          {pending ? t('profile.events') : t('create.openEvent')}
         </Button>
         <Button variant="ghost" fullWidth onClick={onToFeed}>
           {t('create.toFeed')}
         </Button>
       </div>
+      <BottomNavigation active="create" onChange={onNavChange} />
     </div>
   )
 }

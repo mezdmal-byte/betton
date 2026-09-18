@@ -1,5 +1,7 @@
 import { ChevronLeft, Info } from 'lucide-react'
 import { useState } from 'react'
+import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { Button } from '../components/Button/Button'
 import { Chip } from '../components/Chip/Chip'
 import { DateTimeField } from '../components/DateTimeField/DateTimeField'
@@ -15,6 +17,7 @@ export type CreateMarketScreenProps = {
   feeOpen?: boolean
   pickerOpen?: boolean
   onBack?: () => void
+  onNavChange?: (id: NavId) => void
   submitDisabled?: boolean
   submitting?: boolean
   errorMessage?: string | null
@@ -30,6 +33,7 @@ export function CreateMarketScreen({
   feeOpen = false,
   pickerOpen = false,
   onBack,
+  onNavChange,
   submitDisabled = false,
   submitting = false,
   errorMessage = null,
@@ -55,6 +59,7 @@ export function CreateMarketScreen({
   const categories = [
     { id: 'sport', label: t('cat.sport') },
     { id: 'politics', label: t('cat.politics') },
+    { id: 'crypto', label: t('cat.crypto') },
     { id: 'other', label: t('cat.other') },
   ]
   const visibilityOptions: Array<{ id: 'public' | 'unlisted'; label: string }> = [
@@ -73,15 +78,19 @@ export function CreateMarketScreen({
         </IconButton>
         <strong>{t('create.title')}</strong>
       </header>
+
       <div className={styles.body}>
-        <TextField
-          id="create-question"
-          label={t('create.question')}
-          placeholder={t('create.questionPh')}
-          value={question}
-          multiline
-          onChange={setQuestion}
-        />
+        <div className={styles.questionBlock}>
+          <TextField
+            id="create-question"
+            label={t('create.question')}
+            placeholder={t('create.questionPh')}
+            value={question}
+            multiline
+            onChange={setQuestion}
+          />
+          <span className={styles.counter}>{question.length}/512</span>
+        </div>
 
         <section className={styles.section}>
           <span className={styles.sectionLabel} id="create-category-label">
@@ -164,6 +173,7 @@ export function CreateMarketScreen({
 
         <div className={styles.fee}>
           <div className={styles.feeRow}>
+            <Info size={16} strokeWidth={1.8} aria-hidden="true" />
             <p id="creator-fee-compact">{t('create.feesFee')}</p>
             <IconButton
               label={feeExpanded ? t('create.feesHide') : t('create.feesShow')}
@@ -172,17 +182,18 @@ export function CreateMarketScreen({
               aria-controls="creator-fee-detail"
               onClick={() => setFeeExpanded((current) => !current)}
             >
-              <Info size={16} strokeWidth={1.8} />
+              <Info size={15} strokeWidth={1.8} />
             </IconButton>
           </div>
           {feeExpanded ? (
-            <div id="creator-fee-detail">
+            <div id="creator-fee-detail" className={styles.feeDetail}>
               <p>{t('create.feesP2p')}</p>
               <p>{t('create.moderationNote')}</p>
             </div>
           ) : null}
         </div>
       </div>
+
       <div className={styles.actions}>
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
         <Button
@@ -208,6 +219,7 @@ export function CreateMarketScreen({
               : t('create.submit')}
         </Button>
       </div>
+      <BottomNavigation active="create" onChange={onNavChange} />
     </div>
   )
 }

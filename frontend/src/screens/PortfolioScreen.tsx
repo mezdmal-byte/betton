@@ -68,8 +68,7 @@ export function PortfolioScreen({
   const { locale } = useI18n()
   const [currentTab, setCurrentTab] = useState<PortfolioTab>(variant === 'history' ? 'history' : tab)
   const hideNav = variant === 'history'
-  const items =
-    currentTab === 'positions' ? positions : currentTab === 'orders' ? orders : history
+  const items = currentTab === 'positions' ? positions : currentTab === 'orders' ? orders : history
   const emptyCopy = {
     positions: { title: t('empty.positionsTitle'), body: t('empty.positionsBody') },
     orders: { title: t('empty.ordersTitle'), body: t('empty.ordersBody') },
@@ -84,11 +83,11 @@ export function PortfolioScreen({
             <ChevronLeft size={22} />
           </IconButton>
         ) : (
-          <h1 className={styles.brand}>
-            Bet<span>TON</span>
-          </h1>
+          <strong>{t('portfolio.title')}</strong>
         )}
-        {hideNav ? <strong>{t('profile.history')}</strong> : (
+        {hideNav ? (
+          <strong>{t('profile.history')}</strong>
+        ) : (
           <Avatar
             initials={account.initials}
             name={account.displayName}
@@ -98,6 +97,7 @@ export function PortfolioScreen({
           />
         )}
       </header>
+
       <div className={styles.body}>
         <section className={styles.hero}>
           <span>{t('account.available')}</span>
@@ -106,27 +106,19 @@ export function PortfolioScreen({
               ? '—'
               : formatTonFull(account.availableTon)}
           </strong>
+          <p className={styles.balanceMeta}>
+            {t('account.inPositions')}: {accountState === 'ready' ? formatTon(account.inPositionsTon) : '—'}
+            <span>·</span>
+            {t('account.reserved')}: {accountState === 'ready' ? formatTon(account.inOrdersTon) : '—'}
+          </p>
+          <div className={styles.actions}>
+            <Button onClick={onDeposit}>{t('account.deposit')}</Button>
+            <Button variant="secondary" onClick={onWithdraw}>
+              {t('account.withdraw')}
+            </Button>
+          </div>
         </section>
-        <dl className={styles.metrics}>
-          <div>
-            <dt>{t('account.inPositions')}</dt>
-            <dd>{accountState === 'ready' ? formatTon(account.inPositionsTon) : '—'}</dd>
-          </div>
-          <div>
-            <dt>{t('account.reserved')}</dt>
-            <dd>{accountState === 'ready' ? formatTon(account.inOrdersTon) : '—'}</dd>
-          </div>
-          <div>
-            <dt>{t('account.creatorIncome')}</dt>
-            <dd>{accountState === 'ready' ? formatTon(account.creatorIncomeTon) : '—'}</dd>
-          </div>
-        </dl>
-        <div className={styles.actions}>
-          <Button onClick={onDeposit}>{t('account.deposit')}</Button>
-          <Button variant="secondary" onClick={onWithdraw}>
-            {t('account.withdraw')}
-          </Button>
-        </div>
+
         <Tabs
           items={[
             { id: 'positions', label: t('portfolio.positions') },
@@ -137,6 +129,14 @@ export function PortfolioScreen({
           onChange={(id) => setCurrentTab(id as PortfolioTab)}
           ariaLabel={t('portfolio.title')}
         />
+
+        {currentTab === 'history' && accountState === 'ready' && account.creatorIncomeTon > 0 ? (
+          <section className={styles.creatorIncome}>
+            <span>{t('account.creatorIncome')}</span>
+            <strong>+{formatTonFull(account.creatorIncomeTon)}</strong>
+          </section>
+        ) : null}
+
         {listState === 'loading' ? (
           <StatusMessage tone="loading" title={t('loading')}>
             {t('loading.body')}
@@ -161,14 +161,11 @@ export function PortfolioScreen({
                 <button type="button" className={styles.rowButton} onClick={() => onSelectMarket?.(item.marketId)}>
                   <p className={styles.question}>{item.question}</p>
                   <p className={styles.meta}>
-                    {item.outcomeLabel}
-                    <span>{formatTonFull(item.amountTon)}</span>
+                    <span className={styles.side}>{item.outcomeLabel}</span>
+                    <strong>{formatTonFull(item.amountTon)}</strong>
                   </p>
                   <p className={styles.detail}>
-                    {t('pos.avgOdds')} {formatOdds(item.avgOdds)}
-                  </p>
-                  <p className={styles.detail}>
-                    {t('pos.payout')} {formatTonFull(item.potentialPayoutTon)}
+                    {t('pos.avgOdds')} {formatOdds(item.avgOdds)} · {t('pos.payout')} {formatTonFull(item.potentialPayoutTon)}
                   </p>
                 </button>
               </li>
@@ -180,8 +177,8 @@ export function PortfolioScreen({
               <li key={item.id} className={styles.row}>
                 <p className={styles.question}>{item.question}</p>
                 <p className={styles.meta}>
-                  {item.outcomeLabel} · {formatOdds(item.odds)}
-                  <span>{formatTonFull(item.remainingTon)}</span>
+                  <span>{item.outcomeLabel} · {formatOdds(item.odds)}</span>
+                  <strong>{formatTonFull(item.remainingTon)}</strong>
                 </p>
                 <div className={styles.orderFoot}>
                   <span className={styles.status}>
@@ -205,12 +202,14 @@ export function PortfolioScreen({
           <ul className={styles.list}>
             {history.map((item) => (
               <li key={item.id} className={styles.row}>
-                <p className={styles.question}>{item.question}</p>
+                <div className={styles.historyHead}>
+                  <p className={styles.question}>{item.question}</p>
+                  <p className={styles.time}>{formatHistoryTime(item.createdAt ?? item.time, locale)}</p>
+                </div>
                 <p className={styles.meta}>
-                  {historyAction(item, t)}
-                  <span className={styles.amount}>{formatSigned(item.amountTon)}</span>
+                  <span>{historyAction(item, t)}</span>
+                  <strong className={styles.amount}>{formatSigned(item.amountTon)}</strong>
                 </p>
-                <p className={styles.time}>{formatHistoryTime(item.createdAt ?? item.time, locale)}</p>
               </li>
             ))}
           </ul>

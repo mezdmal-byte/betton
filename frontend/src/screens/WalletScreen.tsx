@@ -5,7 +5,6 @@ import type { AccountFixture } from '../types/account'
 import { Button } from '../components/Button/Button'
 import { Chip } from '../components/Chip/Chip'
 import { IconButton } from '../components/IconButton/IconButton'
-import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { Tabs } from '../components/Tabs/Tabs'
 import { TextField } from '../components/TextField/TextField'
 import { formatTonFull } from '../lib/format'
@@ -38,6 +37,7 @@ export function WalletScreen({
   const [activeNetwork, setActiveNetwork] = useState<WalletNetwork>(network)
   const currentTab = onTabChange ? tab : activeTab
   const currentNetwork = onNetworkChange ? network : activeNetwork
+  const asset = currentNetwork === 'ton' ? 'TON' : 'SOL'
 
   return (
     <div className={styles.screen}>
@@ -47,13 +47,18 @@ export function WalletScreen({
         </IconButton>
         <strong>{t('wallet.title')}</strong>
       </header>
+
       <div className={styles.body}>
         <section className={styles.hero}>
           <span>{t('account.available')}</span>
           <strong>{account ? formatTonFull(account.availableTon) : '—'}</strong>
         </section>
-        <section className={styles.section}>
-          <span className={styles.label}>{t('wallet.network')}</span>
+
+        <section className={styles.networkBar}>
+          <div>
+            <span className={styles.label}>{t('wallet.network')}</span>
+            <strong className={styles.asset}>{asset}</strong>
+          </div>
           <div className={styles.pills} role="group" aria-label={t('wallet.network')}>
             <Chip compact selected={currentNetwork === 'ton'} onClick={() => (onNetworkChange ?? setActiveNetwork)('ton')}>
               TON
@@ -63,6 +68,7 @@ export function WalletScreen({
             </Chip>
           </div>
         </section>
+
         <Tabs
           items={[
             { id: 'deposit', label: t('wallet.deposit') },
@@ -72,17 +78,28 @@ export function WalletScreen({
           onChange={(id) => (onTabChange ?? setActiveTab)(id as WalletTab)}
           ariaLabel={t('wallet.title')}
         />
+
         {currentTab === 'deposit' ? (
-          <>
-            <StatusMessage title={t('wallet.depositAddress')}>{t('wallet.addressPending')}</StatusMessage>
-            <p className={styles.note}>{t('wallet.qrHint')}</p>
+          <section className={styles.transferCard}>
+            <div className={styles.transferHeading}>
+              <strong>{t('wallet.depositAddress')}</strong>
+              <span>{asset}</span>
+            </div>
+            <p>{t('wallet.addressPending')}</p>
+            <div className={styles.placeholder}>
+              <span>{t('wallet.qrHint')}</span>
+            </div>
             <Button fullWidth disabled title={t('wallet.unavailable')}>
               {t('wallet.getAddress')}
             </Button>
-            <p className={styles.note}>{t('wallet.depositNote')}</p>
-          </>
+            <small>{t('wallet.depositNote')}</small>
+          </section>
         ) : (
-          <>
+          <section className={styles.transferCard}>
+            <div className={styles.transferHeading}>
+              <strong>{t('wallet.withdraw')}</strong>
+              <span>{asset}</span>
+            </div>
             <TextField
               id="wallet-recipient"
               label={t('wallet.recipient')}
@@ -103,9 +120,10 @@ export function WalletScreen({
             <Button fullWidth disabled title={t('wallet.unavailable')}>
               {t('wallet.withdrawCta')}
             </Button>
-            <p className={styles.note}>{t('wallet.withdrawNote')}</p>
-          </>
+            <small>{t('wallet.withdrawNote')}</small>
+          </section>
         )}
+
         {!chainConnected ? <p className={styles.disabledHint}>{t('wallet.unavailable')}</p> : null}
       </div>
     </div>
