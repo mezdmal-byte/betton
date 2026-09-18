@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hapticNotification, readShareTokenFromContext, syncTelegramBackButton } from './webapp'
+import { bootTelegramWebApp, hapticNotification, readShareTokenFromContext, syncTelegramBackButton } from './webapp'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -8,6 +8,25 @@ afterEach(() => {
 function stubWindow(value: Record<string, unknown>) {
   vi.stubGlobal('window', value)
 }
+
+describe('Telegram WebApp', () => {
+  it('expands the Mini App and keeps vertical swipes inside the app', () => {
+    const ready = vi.fn()
+    const expand = vi.fn()
+    const disableVerticalSwipes = vi.fn()
+    stubWindow({
+      Telegram: {
+        WebApp: { ready, expand, disableVerticalSwipes },
+      },
+    })
+
+    bootTelegramWebApp()
+
+    expect(ready).toHaveBeenCalledOnce()
+    expect(expand).toHaveBeenCalledOnce()
+    expect(disableVerticalSwipes).toHaveBeenCalledOnce()
+  })
+})
 
 describe('Telegram BackButton', () => {
   it('shows on secondary routes and hides on root', () => {
