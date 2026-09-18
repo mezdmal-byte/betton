@@ -1,5 +1,6 @@
 import { ChevronLeft } from 'lucide-react'
 import { Avatar } from '../components/Avatar/Avatar'
+import { Button } from '../components/Button/Button'
 import { IconButton } from '../components/IconButton/IconButton'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useT } from '../i18n'
@@ -26,6 +27,7 @@ export type PublicProfileScreenProps = {
   viewState?: 'ready' | 'loading' | 'error'
   onBack?: () => void
   onOpenMarket?: (market: MarketFixture) => void
+  onRetry?: () => void
 }
 
 export function PublicProfileScreen({
@@ -34,6 +36,7 @@ export function PublicProfileScreen({
   viewState = 'ready',
   onBack,
   onOpenMarket,
+  onRetry,
 }: PublicProfileScreenProps) {
   const t = useT()
   return (
@@ -51,9 +54,12 @@ export function PublicProfileScreen({
           </StatusMessage>
         ) : null}
         {viewState === 'error' ? (
-          <StatusMessage tone="error" title={t('err.request')}>
-            {t('err.requestBody')}
-          </StatusMessage>
+          <>
+            <StatusMessage tone="error" title={t('err.request')}>
+              {t('err.requestBody')}
+            </StatusMessage>
+            {onRetry ? <Button variant="secondary" onClick={onRetry}>{t('retry')}</Button> : null}
+          </>
         ) : null}
         {viewState === 'ready' && profile ? (
           <>
