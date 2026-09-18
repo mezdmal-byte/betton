@@ -2,15 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { mapMarketOut, mapOrderBookLevels, mapOrderPreview, mapTradesToRecent, moneyForOrder } from '../api/adapters'
 import { isApiError } from '../api/client'
-import { isInsufficientBalanceError } from '../api/errors'
+import { errorDetail, isInsufficientBalanceError } from '../api/errors'
 import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
 import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
 import { placeOrder, previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
-import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { hapticNotification } from '../telegram/webapp'
 import { useT, useI18n } from '../i18n'
+import { formatTonFull } from '../lib/format'
+import { marketIsTradable } from '../lib/quote'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { OwnPriceScreen } from '../screens/OwnPriceScreen'
 import type { OutcomeSide } from '../types/market'
@@ -86,13 +87,14 @@ export function ConnectedOwnPriceScreen({
     }),
     queryFn: () =>
       previewOrder(marketId, { outcome, money: debouncedMoney, odds: debouncedOdds, kind: 'limit' }, shareToken),
-    enabled: Boolean(userId && market && amount > 0 && odds > 1),
+    enabled: Boolean(userId && market && tradable && amount > 0 && odds > 1),
   })
 
   const preview = previewQuery.data ? mapOrderPreview(previewQuery.data) : null
   const book = mapOrderBookLevels(bookQuery.data?.sides?.[outcome])
   const trades = mapTradesToRecent(tradesQuery.data, outcome)
   const insufficient = amount > availableTon
+  const tradable = Boolean(market && marketIsTradable(market))
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -120,27 +122,21 @@ export function ConnectedOwnPriceScreen({
     onError: (error) => {
       hapticNotification('error')
       if (isInsufficientBalanceError(error)) {
-        setErrorMessage(t('err.fundsAvail', { amt: `${availableTon}` }))
+        setErrorMessage(t('err.fundsAvail', { amt: formatTonFull(availableTon) }))
         return
       }
       setErrorMessage(error instanceof Error ? error.message : t('err.place'))
     },
   })
 
-  if (marketQuery.isPending) {
+  const forbidden = isApiError(marketQuery.error) && marketQuery.error.code === 'forbidden'
+  if (marketQuery.isPending || !market || marketQuery.isError) {
     return (
-      <StatusMessage tone="loading" title={t('loading')}>
-        {t('loading.body')}
-      </StatusMessage>
-    )
-  }
-
-  if (!market || marketQuery.isError) {
-    const forbidden = isApiError(marketQuery.error) && marketQuery.error.code === 'forbidden'
-    return (
-      <StatusMessage tone="error" title={forbidden ? t('err.forbidden') : t('err.request')}>
-        {forbidden ? t('err.forbiddenBody') : t('err.requestBody')}
-      </StatusMessage>
+      <OwnPriceScreen
+        onBack={onBack}
+        viewState={marketQuery.isPending ? 'loading' : forbidden ? 'forbidden' : 'error'}
+        onRetry={() => { void marketQuery.refetch() }}
+      />
     )
   }
 
@@ -177,8 +173,13 @@ export function ConnectedOwnPriceScreen({
       restTon={preview?.remainingTon ?? null}
       previewMode="backend"
       submitting={mutation.isPending}
-      disabled={insufficient || !userId || mutation.isPending || success}
-      errorMessage={errorMessage}
+      disabled={!tradable || insufficient || !userId || mutation.isPending || success}
+      noticeMessage={!tradable ? t('demo.unavailable') : null}
+      bookState={bookQuery.isPending ? 'loading' : bookQuery.isError ? 'error' : 'ready'}
+      tradesState={tradesQuery.isPending ? 'loading' : tradesQuery.isError ? 'error' : 'ready'}
+      onRetryBook={() => { void bookQuery.refetch() }}
+      onRetryTrades={() => { void tradesQuery.refetch() }}
+      errorMessage={errorMessage ?? (previewQuery.isError && !isInsufficientBalanceError(previewQuery.error) ? errorDetail(previewQuery.error) : null)}
       availableTon={availableTon}
       success={success}
       onSelectSide={selectSide}
@@ -186,7 +187,7 @@ export function ConnectedOwnPriceScreen({
       onAmountChange={changeAmount}
       onSubmit={() => {
         setErrorMessage(null)
-        if (insufficient) return
+        if (insufficient || !tradable) return
         void mutation.mutateAsync()
       }}
     />
