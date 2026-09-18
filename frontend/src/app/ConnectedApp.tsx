@@ -22,6 +22,7 @@ import { ConnectedPublicProfileScreen } from './ConnectedPublicProfileScreen'
 import { CreateMarketResult } from './CreateMarketResult'
 import { AuthExpiredScreen } from '../screens/AuthExpiredScreen'
 import { HelpScreen } from '../screens/HelpScreen'
+import { SystemStateScreen } from '../screens/SystemStateScreen'
 import { WalletScreen } from '../screens/WalletScreen'
 import { currentRoute, goBack, pushRoute, resetToTab, showTelegramBackButton, type Route, type WalletTab } from './navigation'
 import { useAccount, useAuthExpired, useSession } from './session'
@@ -60,6 +61,8 @@ export function ConnectedApp() {
   const openCreator = (userId?: number | null) => { if (userId) push({ name: 'public-profile', userId }) }
 
   if (session.isExpired || authExpired) return <div className={styles.root}><AuthExpiredScreen onClose={closeTelegramWebApp} /></div>
+  if (hasInitData && session.isLoading) return <div className={styles.root}><SystemStateScreen kind="loading" /></div>
+  if (hasInitData && session.isError) return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => { void session.refetch() }} /></div>
 
   const availableTon = mappedAccount?.availableTon ?? 0
   const isAdmin = Boolean(mappedAccount?.isAdmin)
