@@ -19,5 +19,5 @@ export function ConnectedMyMarketsScreen({ userId, onBack, onOpenMarket }: { use
   const markets = useMemo(() => (query.data ?? []).map((market) => mapMarketOut(market, new Date(), locale)), [query.data, locale])
   const viewState = !userId ? 'unauthenticated' : query.isPending ? 'loading' : query.isError ? 'error' : 'ready'
 
-  return <MyEventsScreen markets={markets} viewState={viewState} errorMessage={query.isError ? errorDetail(query.error) : null} onBack={onBack} onOpenMarket={(market) => onOpenMarket(Number(market.id))} />
+  return <MyEventsScreen markets={markets} viewState={viewState} errorMessage={query.isError ? errorDetail(query.error) : null} onBack={onBack} onOpenMarket={(market) => onOpenMarket(Number(market.id))} onRetry={() => { void query.refetch() }} />
 }
