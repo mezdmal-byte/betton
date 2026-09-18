@@ -114,25 +114,29 @@ export function PortfolioScreen({
             {t('account.reserved')}: {accountState === 'ready' ? formatTon(account.inOrdersTon) : '—'}
           </p>
           <div className={styles.actions}>
-            <Button onClick={onDeposit}>{t('account.deposit')}</Button>
-            <Button variant="secondary" onClick={onWithdraw}>
+            <Button disabled={accountState !== 'ready'} onClick={onDeposit}>{t('account.deposit')}</Button>
+            <Button variant="secondary" disabled={accountState !== 'ready'} onClick={onWithdraw}>
               {t('account.withdraw')}
             </Button>
           </div>
         </section>
 
-        <Tabs
-          items={[
-            { id: 'positions', label: t('portfolio.positions') },
-            { id: 'orders', label: t('portfolio.orders') },
-            { id: 'history', label: t('portfolio.history') },
-          ]}
-          value={currentTab}
-          onChange={(id) => setCurrentTab(id as PortfolioTab)}
-          ariaLabel={t('portfolio.title')}
-        />
+        {accountState === 'unauthenticated' ? (
+          <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage>
+        ) : (
+          <>
+            <Tabs
+              items={[
+                { id: 'positions', label: t('portfolio.positions') },
+                { id: 'orders', label: t('portfolio.orders') },
+                { id: 'history', label: t('portfolio.history') },
+              ]}
+              value={currentTab}
+              onChange={(id) => setCurrentTab(id as PortfolioTab)}
+              ariaLabel={t('portfolio.title')}
+            />
 
-        {actionError ? (
+            {actionError ? (
           <StatusMessage tone="error" title={t('err.request')}>
             {actionError}
           </StatusMessage>
@@ -221,6 +225,8 @@ export function PortfolioScreen({
               </li>
             ))}
           </ul>
+        )}
+          </>
         )}
       </div>
       {hideNav ? null : <BottomNavigation active="portfolio" onChange={onNavChange} />}
