@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { mapAccountOut } from '../api/adapters'
+import { isApiError } from '../api/client'
 import { getHealth } from '../api/account'
 import { getMarketByShare } from '../api/markets'
 import { queryKeys } from '../api/query'
@@ -22,6 +23,7 @@ import { ConnectedPublicProfileScreen } from './ConnectedPublicProfileScreen'
 import { CreateMarketResult } from './CreateMarketResult'
 import { AuthExpiredScreen } from '../screens/AuthExpiredScreen'
 import { HelpScreen } from '../screens/HelpScreen'
+import { MarketDetailScreen } from '../screens/MarketDetailScreen'
 import { SystemStateScreen } from '../screens/SystemStateScreen'
 import { WalletScreen } from '../screens/WalletScreen'
 import { currentRoute, goBack, pushRoute, resetToTab, showTelegramBackButton, type Route, type WalletTab } from './navigation'
@@ -34,6 +36,8 @@ export function ConnectedApp() {
   const [hasInitData, setHasInitData] = useState(() => hasTelegramInitData())
   const [stack, setStack] = useState<Route[]>([{ name: 'markets' }])
   const [shareToken, setShareToken] = useState<string | null>(null)
+  const [shareResolveState, setShareResolveState] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
+  const [shareRetry, setShareRetry] = useState(0)
   const [feedView, setFeedView] = useState<FeedViewState>({ query: '', sort: 'new', category: 'all', status: 'open' })
   const session = useSession(hasInitData)
   const authExpired = useAuthExpired()
@@ -45,9 +49,20 @@ export function ConnectedApp() {
   useEffect(() => {
     if (!shareToken || !session.user) return
     let cancelled = false
-    void getMarketByShare(shareToken).then((market) => { if (cancelled) return; rememberShareToken(market.id, market.share_token || shareToken); setStack((current) => pushRoute(current, { name: 'detail', marketId: market.id })) }).catch(() => undefined)
+    setShareResolveState('loading')
+    void getMarketByShare(shareToken)
+      .then((market) => {
+        if (cancelled) return
+        rememberShareToken(market.id, market.share_token || shareToken)
+        setShareResolveState('idle')
+        setStack((current) => pushRoute(current, { name: 'detail', marketId: market.id }))
+      })
+      .catch((error) => {
+        if (cancelled) return
+        setShareResolveState(isApiError(error) && error.code === 'not-found' ? 'not-found' : 'error')
+      })
     return () => { cancelled = true }
-  }, [shareToken, session.user])
+  }, [shareRetry, shareToken, session.user])
   useEffect(() => syncTelegramBackButton(showTelegramBackButton(route), () => setStack(goBack)), [route])
 
   const account = accountQuery.data ?? null
@@ -59,10 +74,15 @@ export function ConnectedApp() {
   const openProfile = () => push({ name: 'profile' })
   const openMarket = (market: MarketFixture | number) => { const id = typeof market === 'number' ? market : Number(market.id); if (Number.isFinite(id)) push({ name: 'detail', marketId: id }) }
   const openCreator = (userId?: number | null) => { if (userId) push({ name: 'public-profile', userId }) }
+  const clearShare = () => { setShareToken(null); setShareResolveState('idle'); setStack([{ name: 'markets' }]) }
 
   if (session.isExpired || authExpired) return <div className={styles.root}><AuthExpiredScreen onClose={closeTelegramWebApp} /></div>
+  if (shareToken && !hasInitData) return <div className={styles.root}><SystemStateScreen kind="auth" /></div>
   if (hasInitData && session.isLoading) return <div className={styles.root}><SystemStateScreen kind="loading" /></div>
   if (hasInitData && session.isError) return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => { void session.refetch() }} /></div>
+  if (shareResolveState === 'loading') return <div className={styles.root}><SystemStateScreen kind="loading" /></div>
+  if (shareResolveState === 'not-found') return <div className={styles.root}><MarketDetailScreen viewState="not-found" onBack={clearShare} /></div>
+  if (shareResolveState === 'error') return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => setShareRetry((value) => value + 1)} /></div>
 
   const availableTon = mappedAccount?.availableTon ?? 0
   const isAdmin = Boolean(mappedAccount?.isAdmin)
