@@ -65,6 +65,7 @@ export function ConnectedOwnPriceScreen({
   })
 
   const market = marketQuery.data ? mapMarketOut(marketQuery.data, new Date(), locale) : undefined
+  const tradable = Boolean(market && marketIsTradable(market))
   const outcome = side === 'a' ? 0 : 1
   const money = moneyForOrder(amount)
   const debouncedMoney = useDebouncedValue(money, 280)
@@ -94,7 +95,6 @@ export function ConnectedOwnPriceScreen({
   const book = mapOrderBookLevels(bookQuery.data?.sides?.[outcome])
   const trades = mapTradesToRecent(tradesQuery.data, outcome)
   const insufficient = amount > availableTon
-  const tradable = Boolean(market && marketIsTradable(market))
 
   const mutation = useMutation({
     mutationFn: async () => {
