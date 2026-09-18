@@ -1,48 +1,64 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
-import { applyPersonalizedExecutableQuotes, mapAccountOut, mapMarketOut } from '../api/adapters'
+import { useEffect, useMemo, useState } from 'react'
+import { applyPersonalizedExecutableQuotes, mapAccountOut, mapMarketOut, mapTopCreator, mapUiStatusToApi } from '../api/adapters'
 import { getOrderbook, listMarkets } from '../api/markets'
+import { listTopCreators } from '../api/account'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
 import type { AccountOut } from '../api/types'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
-import { QuickTradeSheet } from '../components/QuickTradeSheet/QuickTradeSheet'
-import { marketIsTradable, outcomeIsExecutable } from '../lib/quote'
+import { FilterSheet } from '../components/FilterSheet/FilterSheet'
+import { useI18n } from '../i18n'
+import { marketIsP2P, marketIsTradable } from '../lib/quote'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { MarketsScreen } from '../screens/MarketsScreen'
 import overlayStyles from '../screens/QuickTradeScreen.module.css'
 import type { MarketFixture, OutcomeSide } from '../types/market'
+import { ConnectedQuickTradeSheet } from './ConnectedQuickTrade'
 
 export type FeedViewState = {
   query: string
   sort: string
   category: string
+  status: string
 }
 
 export type ConnectedMarketsScreenProps = {
   account?: AccountOut | null
   accountState: 'ready' | 'loading' | 'unauthenticated'
   personalized: boolean
+  userId?: number
+  availableTon?: number
   feedView: FeedViewState
   onFeedViewChange: (next: FeedViewState) => void
   onNavChange: (id: NavId) => void
   onProfileClick: () => void
   onSelectMarket: (market: MarketFixture) => void
+  onCreatorClick?: (market: MarketFixture) => void
+  onTopCreatorClick?: (userId: number) => void
+  onOwnPrice: (marketId: number, side: OutcomeSide) => void
 }
 
 export function ConnectedMarketsScreen({
   account,
   accountState,
   personalized,
+  userId,
+  availableTon = 0,
   feedView,
   onFeedViewChange,
   onNavChange,
   onProfileClick,
   onSelectMarket,
+  onCreatorClick,
+  onTopCreatorClick,
+  onOwnPrice,
 }: ConnectedMarketsScreenProps) {
+  const { locale } = useI18n()
   const [trade, setTrade] = useState<{ market: MarketFixture; side: OutcomeSide; amount: number } | null>(
     null,
   )
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const debouncedQuery = useDebouncedValue(feedView.query, 280)
   const headerUser = useMemo(() => {
     if (!account) return null
@@ -56,14 +72,28 @@ export function ConnectedMarketsScreen({
     }
   }, [account])
 
+  const topCreatorsQuery = useQuery({
+    queryKey: queryKeys.topCreators,
+    queryFn: () => listTopCreators(5),
+  })
+  const topCreators = useMemo(
+    () => (topCreatorsQuery.data ?? []).map(mapTopCreator),
+    [topCreatorsQuery.data],
+  )
+
   const feed = useInfiniteQuery({
-    queryKey: queryKeys.markets({ sort: feedView.sort, category: feedView.category, q: debouncedQuery }),
+    queryKey: queryKeys.markets({
+      sort: feedView.sort,
+      category: feedView.category,
+      q: debouncedQuery,
+      status: feedView.status,
+    }),
     queryFn: ({ pageParam }) =>
       listMarkets({
         sort: feedView.sort,
         category: feedView.category,
         q: debouncedQuery,
-        status: 'open',
+        status: mapUiStatusToApi(feedView.status) ?? null,
         offset: pageParam,
       }),
     initialPageParam: 0,
@@ -73,25 +103,34 @@ export function ConnectedMarketsScreen({
     },
   })
 
-  const markets = useMemo(() => {
-    const items = feed.data?.pages.flatMap((page) => page.items) ?? []
-    for (const item of items) {
+  const feedItems = useMemo(
+    () => feed.data?.pages.flatMap((page) => page.items) ?? [],
+    [feed.data],
+  )
+
+  useEffect(() => {
+    for (const item of feedItems) {
       if (item.share_token) rememberShareToken(item.id, item.share_token)
     }
-    return items.map((item) => mapMarketOut(item))
-  }, [feed.data])
+  }, [feedItems])
+
+  const markets = useMemo(
+    () => feedItems.map((item) => mapMarketOut(item, new Date(), locale)),
+    [feedItems, locale],
+  )
 
   const tradeMarketId = trade ? Number(trade.market.id) : NaN
   const tradeShare = Number.isFinite(tradeMarketId) ? shareTokenFor(tradeMarketId) : null
   const bookQuery = useQuery({
     queryKey: [...queryKeys.orderbook(tradeMarketId), tradeShare, 'quick-trade'],
     queryFn: () => getOrderbook(tradeMarketId, tradeShare),
-    enabled: Boolean(trade && personalized && Number.isFinite(tradeMarketId)),
+    enabled: Boolean(trade && personalized && Number.isFinite(tradeMarketId) && marketIsP2P(trade.market)),
   })
 
-  const quotesLoading = Boolean(trade && personalized && bookQuery.isPending)
+  const quotesLoading = Boolean(trade && personalized && (bookQuery.isPending || bookQuery.isError))
   const sheetMarket = useMemo(() => {
     if (!trade) return null
+    if (!marketIsP2P(trade.market)) return trade.market
     if (!personalized) return trade.market
     if (bookQuery.isPending) {
       return {
@@ -103,16 +142,6 @@ export function ConnectedMarketsScreen({
     if (bookQuery.isSuccess) return applyPersonalizedExecutableQuotes(trade.market, bookQuery.data)
     return applyPersonalizedExecutableQuotes(trade.market, { available_to_me: [[], []] })
   }, [bookQuery.data, bookQuery.isPending, bookQuery.isSuccess, personalized, trade])
-
-  const selectedOutcome = sheetMarket
-    ? trade?.side === 'a'
-      ? sheetMarket.outcomeA
-      : sheetMarket.outcomeB
-    : null
-  const tradeState =
-    !quotesLoading && sheetMarket && selectedOutcome && !outcomeIsExecutable(selectedOutcome)
-      ? 'no-liquidity'
-      : 'normal'
 
   const feedState =
     feed.isPending && markets.length === 0
@@ -133,10 +162,17 @@ export function ConnectedMarketsScreen({
         onQueryChange={(query) => onFeedViewChange({ ...feedView, query })}
         onSortChange={(sort) => onFeedViewChange({ ...feedView, sort })}
         onCategoryChange={(category) => onFeedViewChange({ ...feedView, category })}
+        filtersOpen={filtersOpen}
+        filtersActive={feedView.status !== 'open'}
+        onFiltersClick={() => setFiltersOpen(true)}
         onSelectMarket={onSelectMarket}
+        onCreatorClick={onCreatorClick}
         onSelectOutcome={(market, side) => {
-          if (!marketIsTradable(market)) return
-          setTrade({ market, side, amount: 100 })
+          if (!userId || accountState !== 'ready' || !marketIsTradable(market) || !marketIsP2P(market)) {
+            onSelectMarket(market)
+            return
+          }
+          setTrade({ market, side, amount: 0 })
         }}
         onNavChange={onNavChange}
         onProfileClick={onProfileClick}
@@ -151,19 +187,35 @@ export function ConnectedMarketsScreen({
         onLoadMore={() => {
           void feed.fetchNextPage()
         }}
+        topCreators={topCreators}
+        onTopCreatorClick={onTopCreatorClick}
+      />
+      <FilterSheet
+        open={filtersOpen}
+        status={feedView.status}
+        onClose={() => setFiltersOpen(false)}
+        onApply={(status) => onFeedViewChange({ ...feedView, status })}
       />
       {trade && sheetMarket ? (
         <div className={overlayStyles.overlay}>
-          <QuickTradeSheet
+          <ConnectedQuickTradeSheet
             market={sheetMarket}
             selectedSide={trade.side}
             amount={trade.amount}
-            state={tradeState}
-            demoMode
+            availableTon={availableTon}
+            userId={userId}
             quotesLoading={quotesLoading}
+            quotesError={Boolean(bookQuery.isError)}
+            onRetryQuotes={() => { void bookQuery.refetch() }}
             onSelectSide={(side) => setTrade({ ...trade, side })}
             onAmountChange={(amount) => setTrade({ ...trade, amount })}
             onClose={() => setTrade(null)}
+            onOwnPrice={() => {
+              const id = Number(trade.market.id)
+              const side = trade.side
+              setTrade(null)
+              if (Number.isFinite(id)) onOwnPrice(id, side)
+            }}
           />
         </div>
       ) : null}

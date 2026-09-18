@@ -7,6 +7,8 @@ import time
 from typing import Any
 from urllib.parse import parse_qsl
 
+import httpx
+
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -124,12 +126,50 @@ def validate_init_data(
     }
 
 
+def _validate_via_proxy(init_data: str) -> dict[str, Any]:
+    base = (settings.telegram_auth_proxy_url or "").strip().rstrip("/")
+    if not base:
+        raise TelegramAuthError()
+    if not base.startswith("https://"):
+        raise TelegramAuthError()
+    try:
+        response = httpx.post(
+            base + "/auth/telegram",
+            headers={"Authorization": f"tma {init_data}"},
+            timeout=5.0,
+        )
+    except httpx.HTTPError:
+        raise TelegramAuthError() from None
+    if response.status_code != 200:
+        raise TelegramAuthError()
+    try:
+        payload = response.json()
+    except ValueError:
+        raise TelegramAuthError() from None
+    if not isinstance(payload, dict):
+        raise TelegramAuthError()
+    telegram_id = _require_positive_int(payload.get("telegram_id"))
+    return {
+        "id": telegram_id,
+        "username": payload.get("telegram_username") if isinstance(payload.get("telegram_username"), str) else None,
+        "display_name": payload.get("display_name") if isinstance(payload.get("display_name"), str) else None,
+        "photo_url": payload.get("photo_url") if isinstance(payload.get("photo_url"), str) else None,
+        "is_admin": bool(payload.get("is_admin")),
+    }
+
+
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     from app.services import market_service
 
     init_data = parse_tma_authorization(request.headers.get("Authorization"))
-    tg_user = validate_init_data(init_data, settings.bot_token)
-    return market_service.get_or_create_telegram_user(
+    token = (settings.bot_token or "").strip()
+    using_proxy = not token
+    if token:
+        tg_user = validate_init_data(init_data, token)
+    else:
+        tg_user = _validate_via_proxy(init_data)
+
+    user = market_service.get_or_create_telegram_user(
         db,
         telegram_id=tg_user["id"],
         username=tg_user.get("username"),
@@ -137,6 +177,28 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
         last_name=tg_user.get("last_name"),
         photo_url=tg_user.get("photo_url"),
     )
+
+    if using_proxy:
+        changed = False
+        display_name = tg_user.get("display_name")
+        if isinstance(display_name, str) and display_name.strip() and user.display_name != display_name.strip():
+            user.display_name = display_name.strip()
+            changed = True
+        photo_url = tg_user.get("photo_url")
+        if isinstance(photo_url, str) and photo_url.strip().startswith("https://") and user.photo_url != photo_url.strip():
+            user.photo_url = photo_url.strip()
+            changed = True
+        if changed:
+            db.commit()
+            db.refresh(user)
+
+    # Preview-only: production's /auth/telegram is authoritative for admin status.
+    # Persist the verified admin Telegram ID in this process so service functions
+    # that reload the local user still see the same admin identity.
+    if settings.telegram_auth_proxy_url and tg_user.get("is_admin"):
+        settings.admin_telegram_id = int(tg_user["id"])
+
+    return user
 
 
 def get_optional_user(request: Request, db: Session = Depends(get_db)) -> User | None:

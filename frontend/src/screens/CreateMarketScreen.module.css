@@ -10,7 +10,8 @@
   align-items: center;
   gap: var(--space-8);
   min-height: var(--header-height);
-  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
+  padding: var(--pad-header-top) var(--page-padding) 8px;
+  background: var(--color-canvas);
 }
 
 .header strong {
@@ -23,15 +24,28 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  gap: var(--space-16);
-  padding: 0 var(--page-padding) var(--space-16);
+  gap: 14px;
+  padding: 2px var(--page-padding) 16px;
   overflow: auto;
+}
+
+.questionBlock {
+  position: relative;
+}
+
+.counter {
+  position: absolute;
+  right: 12px;
+  bottom: 9px;
+  font-size: 10px;
+  color: var(--color-text-disabled);
+  font-variant-numeric: tabular-nums;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: 8px;
 }
 
 .sectionLabel {
@@ -42,56 +56,91 @@
 
 .pills {
   display: flex;
-  gap: var(--space-4);
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .outcomes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.outcomeA :global(input),
+.outcomeB :global(input) {
+  min-height: 44px;
 }
 
 .outcomeA :global(input) {
   background: var(--color-outcome-a-tint);
+  border-color: rgba(32, 163, 158, 0.12);
 }
 
 .outcomeB :global(input) {
   background: var(--color-outcome-b-tint);
+  border-color: rgba(239, 91, 91, 0.12);
 }
 
 .fee {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-12);
+  background: var(--color-surface);
 }
 
 .feeRow {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  min-height: var(--touch-min);
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 4px 0 12px;
+  color: var(--color-text-secondary);
 }
 
 .feeRow p {
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 12px;
-  font-weight: var(--font-weight-medium);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.feeDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+
+.feeDetail p {
+  margin: 0;
+  font-size: 11px;
   line-height: 1.4;
   color: var(--color-text-secondary);
 }
 
-.fee > p {
-  margin: 0;
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  line-height: 1.4;
-  color: var(--color-text-disabled);
+.actions {
+  flex: 0 0 auto;
+  padding: 10px var(--page-padding);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-faint);
 }
 
-.actions {
-  padding: var(--space-12) var(--page-padding) var(--pad-bar-bottom);
-  background: var(--color-canvas);
-  border-top: 1px solid var(--color-border-faint);
+.visibilityNote,
+.error {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.error {
+  color: var(--color-warning);
+  padding-bottom: var(--space-8);
+}
+
+@media (max-width: 340px) {
+  .body {
+    gap: 12px;
+  }
 }

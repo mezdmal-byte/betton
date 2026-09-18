@@ -3,7 +3,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
-  min-height: 32px;
+  min-height: 28px;
   padding: 0 var(--space-12);
   overflow: hidden;
 }
@@ -19,8 +19,10 @@
 .odds,
 .available {
   position: relative;
+  min-width: 0;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .odds {

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import MarketStatus
 
-MarketCategory = Literal["sport", "politics", "unique"]
+MarketCategory = Literal["sport", "politics", "crypto", "unique"]
 OutcomeRef = Union[str, int]
 
 
@@ -237,10 +237,12 @@ class OrderPreviewRequest(BaseModel):
     outcome: int = Field(ge=0, le=1)
     money: Decimal
     odds: Decimal
+    # Same matching limit as place(): odds is the minimum acceptable coefficient.
+    # Quick Trade sends kind=ioc with the protocol floor so preview and IOC walk the same book.
+    kind: Literal["limit", "ioc"] = "limit"
 
 
 class OrderRequest(OrderPreviewRequest):
-    kind: Literal["limit", "ioc"] = "limit"
     request_id: str = Field(min_length=8, max_length=64)
 
 
@@ -261,6 +263,21 @@ class P2PMoneyEntryOut(BaseModel):
     origin_key: Optional[str] = None
     reason: Optional[str] = None
     created_at: Optional[datetime] = None
+
+
+class MarketTradeOut(BaseModel):
+    """Read-only executed P2P fill. Odds come from the stored fill price tick."""
+
+    id: int
+    created_at: Optional[str] = None
+    maker_outcome: int
+    taker_outcome: int
+    maker_odds: float
+    taker_odds: float
+    maker_stake: float
+    taker_stake: float
+    maker_stake_nano: int
+    taker_stake_nano: int
 
 
 class P2PReconciliationOut(BaseModel):

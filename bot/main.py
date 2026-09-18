@@ -16,7 +16,13 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, CommandStart
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    MenuButtonWebApp,
+    Message,
+    WebAppInfo,
+)
 
 from app.config import settings
 
@@ -133,11 +139,34 @@ def get_bot() -> Bot:
 
 
 def mini_app_url() -> str:
-    return settings.webapp_base() + "/"
+    return settings.webapp_base().rstrip("/") + "/v2/"
+
+
+MENU_BUTTON_TEXT = "BetTON v2"
+
+
+async def sync_menu_button(bot: Bot) -> None:
+    """Point Telegram's persistent chat menu at the current Mini App /v2/ URL."""
+    url = mini_app_url()
+    menu = MenuButtonWebApp(text=MENU_BUTTON_TEXT, web_app=WebAppInfo(url=url))
+    try:
+        await bot.set_chat_menu_button(menu_button=menu)
+        logger.info("Telegram default menu button -> %s", url)
+    except Exception:
+        logger.warning("Could not sync default Telegram menu button to %s", url, exc_info=True)
+
+    admin_id = settings.admin_tg_id()
+    if admin_id is None:
+        return
+    try:
+        await bot.set_chat_menu_button(chat_id=admin_id, menu_button=menu)
+        logger.info("Telegram admin chat menu button -> %s", url)
+    except Exception:
+        logger.warning("Could not sync admin chat Telegram menu button to %s", url, exc_info=True)
 
 
 def share_webapp_url(token: str) -> str:
-    return settings.webapp_base().rstrip("/") + "/?share=" + token
+    return settings.webapp_base().rstrip("/") + "/v2/?share=" + token
 
 
 def start_payload_token(payload: str | None) -> str | None:
@@ -191,6 +220,7 @@ async def run_bot() -> None:
         await instance.delete_webhook(drop_pending_updates=False)
     except Exception:
         logger.warning("Не удалось снять webhook перед polling")
+    await sync_menu_button(instance)
     logger.info("Mini App URL: %s", mini_app_url())
     await dp.start_polling(instance)
 

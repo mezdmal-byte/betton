@@ -1,7 +1,9 @@
+import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { Avatar } from '../components/Avatar/Avatar'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import { Button } from '../components/Button/Button'
+import { IconButton } from '../components/IconButton/IconButton'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { Tabs } from '../components/Tabs/Tabs'
 import {
@@ -11,6 +13,8 @@ import {
   portfolioPositions,
 } from '../fixtures/account'
 import { formatOdds, formatTon, formatTonFull } from '../lib/format'
+import { formatHistoryTime } from '../lib/time'
+import { isMessageKey, useI18n, useT } from '../i18n'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import type {
   AccountFixture,
@@ -21,27 +25,6 @@ import type {
 } from '../types/account'
 import styles from './PortfolioScreen.module.css'
 
-const TABS = [
-  { id: 'positions', label: 'Позиции' },
-  { id: 'orders', label: 'Заявки' },
-  { id: 'history', label: 'История' },
-] as const
-
-const EMPTY: Record<PortfolioTab, { title: string; body: string }> = {
-  positions: {
-    title: 'Нет позиций',
-    body: 'Исполненные ставки появятся здесь.',
-  },
-  orders: {
-    title: 'Нет активных заявок',
-    body: 'Когда вы разместите свою цену, заявка появится здесь.',
-  },
-  history: {
-    title: 'История пуста',
-    body: 'Операции по ставкам и выплатам появятся здесь.',
-  },
-}
-
 export type PortfolioScreenProps = {
   account?: AccountFixture
   tab?: PortfolioTab
@@ -50,7 +33,17 @@ export type PortfolioScreenProps = {
   history?: HistoryFixture[]
   onNavChange?: (id: NavId) => void
   onProfileClick?: () => void
+  onCancelOrder?: (order: OrderFixture) => void
+  onSelectMarket?: (marketId: number) => void
+  onDeposit?: () => void
+  onWithdraw?: () => void
+  onBack?: () => void
+  variant?: 'tab' | 'history'
   accountState?: 'ready' | 'loading' | 'unauthenticated'
+  listState?: 'ready' | 'loading' | 'error'
+  onRetry?: () => void
+  cancellingOrderId?: string | null
+  actionError?: string | null
 }
 
 export function PortfolioScreen({
@@ -61,76 +54,132 @@ export function PortfolioScreen({
   history = portfolioHistory,
   onNavChange,
   onProfileClick,
+  onCancelOrder,
+  onSelectMarket,
+  onDeposit,
+  onWithdraw,
+  onBack,
+  variant = 'tab',
   accountState = 'ready',
+  listState = 'ready',
+  onRetry,
+  cancellingOrderId = null,
+  actionError = null,
 }: PortfolioScreenProps) {
-  const [currentTab, setCurrentTab] = useState<PortfolioTab>(tab)
-  const items =
-    currentTab === 'positions' ? positions : currentTab === 'orders' ? orders : history
+  const t = useT()
+  const { locale } = useI18n()
+  const [currentTab, setCurrentTab] = useState<PortfolioTab>(variant === 'history' ? 'history' : tab)
+  const hideNav = variant === 'history'
+  const items = currentTab === 'positions' ? positions : currentTab === 'orders' ? orders : history
+  const emptyCopy = {
+    positions: { title: t('empty.positionsTitle'), body: t('empty.positionsBody') },
+    orders: { title: t('empty.ordersTitle'), body: t('empty.ordersBody') },
+    history: { title: t('empty.historyTitle'), body: t('empty.historyBody') },
+  }
 
   return (
     <div className={styles.screen}>
-      <header className={styles.header}>
-        <h1 className={styles.brand}>
-          Bet<span>TON</span>
-        </h1>
-        <Avatar
-          initials={account.initials}
-          name={account.displayName}
-          src={account.photoUrl}
-          size="md"
-          onClick={onProfileClick}
-        />
+      <header className={hideNav ? `${styles.header} ${styles.headerSecondary}` : styles.header}>
+        {hideNav ? (
+          <IconButton label={t('back')} size="md" onClick={onBack}>
+            <ChevronLeft size={22} />
+          </IconButton>
+        ) : (
+          <strong>{t('portfolio.title')}</strong>
+        )}
+        {hideNav ? (
+          <strong>{t('profile.history')}</strong>
+        ) : (
+          <Avatar
+            initials={account.initials}
+            name={account.displayName}
+            src={account.photoUrl}
+            size="md"
+            onClick={onProfileClick}
+          />
+        )}
       </header>
+
       <div className={styles.body}>
         <section className={styles.hero}>
-          <span>Доступно</span>
+          <span>{t('account.available')}</span>
           <strong>
             {accountState === 'unauthenticated' || accountState === 'loading'
               ? '—'
               : formatTonFull(account.availableTon)}
           </strong>
+          <p className={styles.balanceMeta}>
+            {t('account.inPositions')}: {accountState === 'ready' ? formatTon(account.inPositionsTon) : '—'}
+            <span>·</span>
+            {t('account.reserved')}: {accountState === 'ready' ? formatTon(account.inOrdersTon) : '—'}
+          </p>
+          <div className={styles.actions}>
+            <Button disabled={accountState !== 'ready'} onClick={onDeposit}>{t('account.deposit')}</Button>
+            <Button variant="secondary" disabled={accountState !== 'ready'} onClick={onWithdraw}>
+              {t('account.withdraw')}
+            </Button>
+          </div>
         </section>
-        <dl className={styles.metrics}>
-          <div>
-            <dt>В позициях</dt>
-            <dd>{accountState === 'ready' ? formatTon(account.inPositionsTon) : '—'}</dd>
-          </div>
-          <div>
-            <dt>В заявках</dt>
-            <dd>{accountState === 'ready' ? formatTon(account.inOrdersTon) : '—'}</dd>
-          </div>
-          <div>
-            <dt>Доход автора</dt>
-            <dd>{accountState === 'ready' ? formatTon(account.creatorIncomeTon) : '—'}</dd>
-          </div>
-        </dl>
-        <div className={styles.actions}>
-          <Button>Пополнить</Button>
-          <Button variant="secondary">Вывести</Button>
-        </div>
-        <Tabs
-          items={[...TABS]}
-          value={currentTab}
-          onChange={(id) => setCurrentTab(id as PortfolioTab)}
-          ariaLabel="Портфель"
-        />
-        {items.length === 0 ? (
-          <StatusMessage title={EMPTY[currentTab].title}>{EMPTY[currentTab].body}</StatusMessage>
+
+        {accountState === 'unauthenticated' ? (
+          <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage>
+        ) : (
+          <>
+            <Tabs
+              items={[
+                { id: 'positions', label: t('portfolio.positions') },
+                { id: 'orders', label: t('portfolio.orders') },
+                { id: 'history', label: t('portfolio.history') },
+              ]}
+              value={currentTab}
+              onChange={(id) => setCurrentTab(id as PortfolioTab)}
+              ariaLabel={t('portfolio.title')}
+            />
+
+            {actionError ? (
+          <StatusMessage tone="error" title={t('err.request')}>
+            {actionError}
+          </StatusMessage>
+        ) : null}
+
+        {currentTab === 'history' && accountState === 'ready' && account.creatorIncomeTon > 0 ? (
+          <section className={styles.creatorIncome}>
+            <span>{t('account.creatorIncome')}</span>
+            <strong>+{formatTonFull(account.creatorIncomeTon)}</strong>
+          </section>
+        ) : null}
+
+        {listState === 'loading' ? (
+          <StatusMessage tone="loading" title={t('loading')}>
+            {t('loading.body')}
+          </StatusMessage>
+        ) : listState === 'error' ? (
+          <>
+            <StatusMessage tone="error" title={t('err.request')}>
+              {t('err.requestBody')}
+            </StatusMessage>
+            {onRetry ? (
+              <Button variant="secondary" onClick={onRetry}>
+                {t('retry')}
+              </Button>
+            ) : null}
+          </>
+        ) : items.length === 0 ? (
+          <StatusMessage title={emptyCopy[currentTab].title}>{emptyCopy[currentTab].body}</StatusMessage>
         ) : currentTab === 'positions' ? (
           <ul className={styles.list}>
             {positions.map((item) => (
               <li key={item.id} className={styles.row}>
-                <p className={styles.question}>{item.question}</p>
-                <p className={styles.meta}>
-                  {item.outcomeLabel}
-                  <span>{formatTonFull(item.amountTon)}</span>
-                </p>
-                <p className={styles.detail}>
-                  Средний коэффициент {formatOdds(item.avgOdds)}
-                </p>
-                <p className={styles.detail}>
-                  Потенциальная выплата {formatTonFull(item.potentialPayoutTon)}
-                </p>
+                <button type="button" className={styles.rowButton} onClick={() => onSelectMarket?.(item.marketId)}>
+                  <p className={styles.question}>{item.question}</p>
+                  <p className={styles.meta}>
+                    <span className={styles.side}>{item.outcomeLabel}</span>
+                    <strong>{formatTonFull(item.amountTon)}</strong>
+                  </p>
+                  <p className={styles.detail}>
+                    {t('pos.avgOdds')} {formatOdds(item.avgOdds)} · {t('pos.payout')} {formatTonFull(item.potentialPayoutTon)}
+                  </p>
+                </button>
               </li>
             ))}
           </ul>
@@ -140,14 +189,23 @@ export function PortfolioScreen({
               <li key={item.id} className={styles.row}>
                 <p className={styles.question}>{item.question}</p>
                 <p className={styles.meta}>
-                  {item.outcomeLabel} · {formatOdds(item.odds)}
-                  <span>{formatTonFull(item.remainingTon)}</span>
+                  <span>{item.outcomeLabel} · {formatOdds(item.odds)}</span>
+                  <strong>{formatTonFull(item.remainingTon)}</strong>
                 </p>
                 <div className={styles.orderFoot}>
-                  <span className={styles.status}>{item.status}</span>
-                  <Button variant="ghost" size="md">
-                    Отменить
-                  </Button>
+                  <span className={styles.status}>
+                    {item.filledTon > 0 && item.remainingTon > 0 ? t('order.partial') : t('order.wait')}
+                  </span>
+                  {item.canCancel ? (
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      disabled={cancellingOrderId === item.id}
+                      onClick={() => onCancelOrder?.(item)}
+                    >
+                      {cancellingOrderId === item.id ? t('order.cancelling') : t('order.cancel')}
+                    </Button>
+                  ) : null}
                 </div>
               </li>
             ))}
@@ -156,20 +214,30 @@ export function PortfolioScreen({
           <ul className={styles.list}>
             {history.map((item) => (
               <li key={item.id} className={styles.row}>
-                <p className={styles.question}>{item.question}</p>
+                <div className={styles.historyHead}>
+                  <p className={styles.question}>{item.question}</p>
+                  <p className={styles.time}>{formatHistoryTime(item.createdAt ?? item.time, locale)}</p>
+                </div>
                 <p className={styles.meta}>
-                  {item.action}
-                  <span className={styles.amount}>{formatSigned(item.amountTon)}</span>
+                  <span>{historyAction(item, t)}</span>
+                  <strong className={styles.amount}>{formatSigned(item.amountTon)}</strong>
                 </p>
-                <p className={styles.time}>{item.time}</p>
               </li>
             ))}
           </ul>
         )}
+          </>
+        )}
       </div>
-      <BottomNavigation active="portfolio" onChange={onNavChange} />
+      {hideNav ? null : <BottomNavigation active="portfolio" onChange={onNavChange} />}
     </div>
   )
+}
+
+function historyAction(item: HistoryFixture, t: ReturnType<typeof useT>): string {
+  const key = item.actionKey ? `tx.${item.actionKey}` : ''
+  if (key && isMessageKey(key)) return t(key)
+  return item.action
 }
 
 function formatSigned(amount: number): string {

@@ -2,7 +2,9 @@ html,
 body,
 #root {
   height: 100%;
+  height: var(--tg-viewport-stable-height, 100%);
   min-height: 100%;
+  overflow: hidden;
 }
 
 body {

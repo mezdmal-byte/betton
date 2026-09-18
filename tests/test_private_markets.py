@@ -161,16 +161,24 @@ def test_bot_share_deep_link_uses_current_webapp_base(monkeypatch):
     assert start_payload_token("market_" + token) == token
     assert start_payload_token("market_") is None
     assert start_payload_token("help") is None
-    assert share_webapp_url(token) == "https://fresh-tunnel.trycloudflare.com/?share=" + token
+    assert share_webapp_url(token) == "https://fresh-tunnel.trycloudflare.com/v2/?share=" + token
 
     monkeypatch.setattr(settings, "public_base_url", "https://other-tunnel.trycloudflare.com/")
-    assert share_webapp_url(token) == "https://other-tunnel.trycloudflare.com/?share=" + token
+    assert share_webapp_url(token) == "https://other-tunnel.trycloudflare.com/v2/?share=" + token
 
 
 def test_health_exposes_bot_username(client: TestClient, monkeypatch):
     monkeypatch.setattr(settings, "telegram_bot_username", "@SobakaPesBot")
     health = client.get("/health").json()
     assert health["bot_username"] == "SobakaPesBot"
+    assert health["webapp"]
+
+
+def test_health_bot_username_may_be_empty(client: TestClient, monkeypatch):
+    monkeypatch.setattr(settings, "telegram_bot_username", "")
+    health = client.get("/health").json()
+    assert "bot_username" in health
+    assert health["bot_username"] == ""
 
 
 def test_private_share_ui_boot_and_create_chips():

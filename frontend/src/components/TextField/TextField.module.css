@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: 6px;
   width: 100%;
 }
 
@@ -14,14 +14,25 @@
 .control {
   width: 100%;
   min-height: var(--touch-preferred);
-  padding: 0 var(--space-16);
-  border: 1px solid var(--color-border-faint);
+  padding: 0 14px;
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-14);
   background: var(--color-surface);
   color: var(--color-text-primary);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: var(--font-weight-regular);
   overflow-wrap: anywhere;
+  outline: none;
+}
+
+.control:focus {
+  border-color: var(--color-action-primary);
+  box-shadow: 0 0 0 2px rgba(17, 117, 111, 0.08);
+}
+
+.control:disabled {
+  background: var(--color-surface-muted);
+  color: var(--color-text-disabled);
 }
 
 .control::placeholder {
@@ -30,15 +41,15 @@
 }
 
 .area {
-  min-height: 72px;
-  padding: var(--space-12) var(--space-16);
+  min-height: 88px;
+  padding: 12px 14px;
   resize: none;
   line-height: 1.4;
 }
 
 .hint {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--font-weight-regular);
   line-height: 1.4;
   color: var(--color-text-disabled);

@@ -23,6 +23,10 @@ export const Ghost: Story = {
   args: { variant: 'ghost', children: 'Отмена' },
 }
 
+export const Link: Story = {
+  args: { variant: 'link', children: 'Своя цена →' },
+}
+
 export const Loading: Story = {
   args: { loading: true, children: 'Ставим…' },
 }

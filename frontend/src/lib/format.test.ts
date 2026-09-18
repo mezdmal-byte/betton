@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatTon, formatTonFull } from './format'
+import { formatCompactAmount, formatTon, formatTonFull } from './format'
 
 describe('formatTon', () => {
   it('keeps compact K formatting for large values', () => {
@@ -18,6 +18,13 @@ describe('formatTon', () => {
 
   it('still renders exact zero as 0 TON', () => {
     expect(formatTon(0)).toBe('0 TON')
+  })
+})
+
+describe('formatCompactAmount', () => {
+  it('compacts large creator volumes without a TON suffix', () => {
+    expect(formatCompactAmount(18200)).toBe('18.2K')
+    expect(formatCompactAmount(320)).toBe('320')
   })
 })
 

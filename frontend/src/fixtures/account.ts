@@ -51,13 +51,14 @@ export const privateCreateDraft: CreateMarketDraft = {
   outcomeA: 'Да',
   outcomeB: 'Нет',
   closeAt: '20 сен 2026 · 20:00',
-  visibility: 'private',
+  visibility: 'unlisted',
   description: 'Победит команда, забившая больше голов в основное время. Ничья считается исходом «Нет».',
 }
 
 export const portfolioPositions: PositionFixture[] = [
   {
     id: 'pos-spartak',
+    marketId: 1,
     question: 'Спартак обыграет Зенит?',
     outcomeLabel: 'Да',
     amountTon: 100,
@@ -66,6 +67,7 @@ export const portfolioPositions: PositionFixture[] = [
   },
   {
     id: 'pos-cska',
+    marketId: 2,
     question: 'Кто выиграет матч?',
     outcomeLabel: 'ЦСКА',
     amountTon: 50,
@@ -77,19 +79,27 @@ export const portfolioPositions: PositionFixture[] = [
 export const portfolioOrders: OrderFixture[] = [
   {
     id: 'ord-active',
+    marketId: 1,
     question: 'Спартак обыграет Зенит?',
     outcomeLabel: 'Да',
     odds: 1.9,
     remainingTon: 40,
+    amountTon: 40,
+    filledTon: 0,
     status: 'Активна',
+    canCancel: true,
   },
   {
     id: 'ord-partial',
+    marketId: 3,
     question: 'BTC будет выше $100k?',
     outcomeLabel: 'Выше',
     odds: 1.62,
     remainingTon: 20,
+    amountTon: 80,
+    filledTon: 60,
     status: 'Частично исполнена',
+    canCancel: true,
   },
 ]
 
