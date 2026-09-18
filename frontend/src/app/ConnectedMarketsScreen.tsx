@@ -127,7 +127,7 @@ export function ConnectedMarketsScreen({
     enabled: Boolean(trade && personalized && Number.isFinite(tradeMarketId) && marketIsP2P(trade.market)),
   })
 
-  const quotesLoading = Boolean(trade && personalized && bookQuery.isPending)
+  const quotesLoading = Boolean(trade && personalized && (bookQuery.isPending || bookQuery.isError))
   const sheetMarket = useMemo(() => {
     if (!trade) return null
     if (!marketIsP2P(trade.market)) return trade.market
@@ -205,6 +205,8 @@ export function ConnectedMarketsScreen({
             availableTon={availableTon}
             userId={userId}
             quotesLoading={quotesLoading}
+            quotesError={Boolean(bookQuery.isError)}
+            onRetryQuotes={() => { void bookQuery.refetch() }}
             onSelectSide={(side) => setTrade({ ...trade, side })}
             onAmountChange={(amount) => setTrade({ ...trade, amount })}
             onClose={() => setTrade(null)}
