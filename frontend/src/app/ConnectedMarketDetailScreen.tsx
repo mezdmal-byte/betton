@@ -169,6 +169,7 @@ export function ConnectedMarketDetailScreen({
         }}
         banner={
           <>
+            {!userId && !lmsr ? <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage> : null}
             {shareMessage ? <StatusMessage title={shareMessage} /> : null}
             {lmsr ? (
               <StatusMessage title={t('lmsr.title')}>{t('lmsr.body')}</StatusMessage>
