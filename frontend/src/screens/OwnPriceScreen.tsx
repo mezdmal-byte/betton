@@ -1,6 +1,8 @@
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
+import { Button } from '../components/Button/Button'
 import { IconButton } from '../components/IconButton/IconButton'
+import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { OwnPricePanel } from '../components/OwnPricePanel/OwnPricePanel'
 import { marketYesNo, orderBookA, orderBookB, recentTrades } from '../fixtures/markets'
 import { useT } from '../i18n'
@@ -27,6 +29,13 @@ export type OwnPriceScreenProps = {
   errorMessage?: string | null
   availableTon?: number | null
   success?: boolean
+  viewState?: 'ready' | 'loading' | 'error' | 'forbidden'
+  onRetry?: () => void
+  noticeMessage?: string | null
+  bookState?: 'ready' | 'loading' | 'error'
+  tradesState?: 'ready' | 'loading' | 'error'
+  onRetryBook?: () => void
+  onRetryTrades?: () => void
 }
 
 export function OwnPriceScreen({
@@ -49,6 +58,13 @@ export function OwnPriceScreen({
   errorMessage = null,
   availableTon = null,
   success = false,
+  viewState = 'ready',
+  onRetry,
+  noticeMessage = null,
+  bookState = 'ready',
+  tradesState = 'ready',
+  onRetryBook,
+  onRetryTrades,
 }: OwnPriceScreenProps) {
   const t = useT()
   const [side, setSide] = useState<OutcomeSide>(selectedSide ?? 'a')
@@ -68,34 +84,52 @@ export function OwnPriceScreen({
         <strong>{t('advanced.title')}</strong>
       </header>
       <div className={styles.body}>
-        <OwnPricePanel
-          question={market.question}
-          outcomeALabel={market.outcomeA.label}
-          outcomeBLabel={market.outcomeB.label}
-          selectedSide={activeSide}
-          odds={activeOdds}
-          amount={activeAmount}
-          book={activeBook}
-          trades={trades}
-          matchedTon={matchedTon}
-          restTon={restTon}
-          previewMode={previewMode}
-          submitting={submitting}
-          disabled={disabled}
-          errorMessage={errorMessage}
-          availableTon={availableTon}
-          success={success}
-          onSelectSide={(next) => {
-            if (onSelectSide) onSelectSide(next)
-            else {
-              setSide(next)
-              setLocalOdds((next === 'a' ? market.outcomeA.odds : market.outcomeB.odds) ?? localOdds)
-            }
-          }}
-          onOddsChange={onOddsChange ?? setLocalOdds}
-          onAmountChange={onAmountChange ?? setLocalAmount}
-          onSubmit={onSubmit}
-        />
+        {viewState === 'loading' ? (
+          <StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage>
+        ) : viewState === 'forbidden' ? (
+          <StatusMessage tone="warning" title={t('err.forbidden')}>{t('err.forbiddenBody')}</StatusMessage>
+        ) : viewState === 'error' ? (
+          <>
+            <StatusMessage tone="error" title={t('err.request')}>{t('err.requestBody')}</StatusMessage>
+            {onRetry ? <Button variant="secondary" onClick={onRetry}>{t('retry')}</Button> : null}
+          </>
+        ) : (
+          <>
+            {noticeMessage ? <StatusMessage tone="warning" title={noticeMessage} /> : null}
+            <OwnPricePanel
+              question={market.question}
+              outcomeALabel={market.outcomeA.label}
+              outcomeBLabel={market.outcomeB.label}
+              selectedSide={activeSide}
+              odds={activeOdds}
+              amount={activeAmount}
+              book={activeBook}
+              trades={trades}
+              matchedTon={matchedTon}
+              restTon={restTon}
+              previewMode={previewMode}
+              submitting={submitting}
+              disabled={disabled}
+              errorMessage={errorMessage}
+              availableTon={availableTon}
+              success={success}
+              bookState={bookState}
+              tradesState={tradesState}
+              onRetryBook={onRetryBook}
+              onRetryTrades={onRetryTrades}
+              onSelectSide={(next) => {
+                if (onSelectSide) onSelectSide(next)
+                else {
+                  setSide(next)
+                  setLocalOdds((next === 'a' ? market.outcomeA.odds : market.outcomeB.odds) ?? localOdds)
+                }
+              }}
+              onOddsChange={onOddsChange ?? setLocalOdds}
+              onAmountChange={onAmountChange ?? setLocalAmount}
+              onSubmit={onSubmit}
+            />
+          </>
+        )}
       </div>
     </div>
   )
