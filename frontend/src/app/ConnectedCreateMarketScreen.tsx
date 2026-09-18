@@ -4,6 +4,7 @@ import { buildCreateMarketPayload } from '../api/adapters'
 import { errorDetail } from '../api/errors'
 import { createMarket } from '../api/markets'
 import { rememberShareToken } from '../api/share'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { useT } from '../i18n'
 import { hapticNotification } from '../telegram/webapp'
 import { defaultCloseAt, formatCloseAtLabel, fromDatetimeLocalValue, toDatetimeLocalValue } from '../lib/datetime'
@@ -15,6 +16,7 @@ export type ConnectedCreateMarketScreenProps = {
   onBack: () => void
   onCreated: (market: MarketOut) => void
   enabled: boolean
+  onNavChange?: (id: NavId) => void
 }
 
 export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavChange }: ConnectedCreateMarketScreenProps) {
@@ -56,6 +58,7 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
   return (
     <CreateMarketScreen
       onBack={onBack}
+      onNavChange={onNavChange}
       submitDisabled={!enabled || mutation.isPending}
       submitting={mutation.isPending}
       errorMessage={errorMessage}
