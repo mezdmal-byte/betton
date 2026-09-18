@@ -29,3 +29,19 @@ export const Withdraw: Story = {
     </PhoneShell>
   ),
 }
+
+export const SolanaDeposit: Story = {
+  render: () => (
+    <PhoneShell>
+      <WalletScreen tab="deposit" network="solana" />
+    </PhoneShell>
+  ),
+}
+
+export const SolanaWithdraw: Story = {
+  render: () => (
+    <PhoneShell>
+      <WalletScreen tab="withdraw" network="solana" />
+    </PhoneShell>
+  ),
+}

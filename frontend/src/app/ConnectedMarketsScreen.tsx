@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { applyPersonalizedExecutableQuotes, mapAccountOut, mapMarketOut, mapTopCreator, mapUiStatusToApi } from '../api/adapters'
 import { getOrderbook, listMarkets } from '../api/markets'
 import { listTopCreators } from '../api/account'
@@ -103,13 +103,21 @@ export function ConnectedMarketsScreen({
     },
   })
 
-  const markets = useMemo(() => {
-    const items = feed.data?.pages.flatMap((page) => page.items) ?? []
-    for (const item of items) {
+  const feedItems = useMemo(
+    () => feed.data?.pages.flatMap((page) => page.items) ?? [],
+    [feed.data],
+  )
+
+  useEffect(() => {
+    for (const item of feedItems) {
       if (item.share_token) rememberShareToken(item.id, item.share_token)
     }
-    return items.map((item) => mapMarketOut(item, new Date(), locale))
-  }, [feed.data, locale])
+  }, [feedItems])
+
+  const markets = useMemo(
+    () => feedItems.map((item) => mapMarketOut(item, new Date(), locale)),
+    [feedItems, locale],
+  )
 
   const tradeMarketId = trade ? Number(trade.market.id) : NaN
   const tradeShare = Number.isFinite(tradeMarketId) ? shareTokenFor(tradeMarketId) : null

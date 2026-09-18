@@ -67,9 +67,15 @@ export function mapUiStatusToApi(status: string | null | undefined): MarketOut['
   return undefined
 }
 
-export function mapApiCategoryToLabel(category: string | null | undefined): string {
-  if (!category) return API_CATEGORY_TO_LABEL.unique
-  return API_CATEGORY_TO_LABEL[category] ?? category
+export function mapApiCategoryToLabel(
+  category: string | null | undefined,
+  locale: Locale = 'ru',
+): string {
+  if (category === 'sport') return translate(locale, 'cat.sport')
+  if (category === 'politics') return translate(locale, 'cat.politics')
+  if (category === 'crypto') return translate(locale, 'cat.crypto')
+  if (!category || category === 'unique') return translate(locale, 'cat.other')
+  return category
 }
 
 export function initialsFromName(name: string): string {
@@ -149,7 +155,7 @@ export function mapMarketOut(dto: MarketOut, now: Date = new Date(), locale: Loc
 
   return {
     id: String(dto.id),
-    category: mapApiCategoryToLabel(dto.category),
+    category: mapApiCategoryToLabel(dto.category, locale),
     categoryKey: dto.category,
     timeLeft: timeLeft || '—',
     question: dto.question,

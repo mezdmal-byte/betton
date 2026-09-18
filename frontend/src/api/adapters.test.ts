@@ -68,6 +68,8 @@ describe('category mapping', () => {
     expect(mapApiCategoryToLabel('politics')).toBe('Политика')
     expect(mapApiCategoryToLabel('crypto')).toBe('Крипто')
     expect(mapApiCategoryToLabel('unique')).toBe('Другое')
+    expect(mapApiCategoryToLabel('crypto', 'en')).toBe('Crypto')
+    expect(mapApiCategoryToLabel('sport', 'zh')).toBe('体育')
   })
 })
 
