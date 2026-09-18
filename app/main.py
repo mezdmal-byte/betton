@@ -140,6 +140,9 @@ async def expire_orders_task():
 async def async_lifespan(app: FastAPI):
     ensure_schema()
     assert_money_ready()
+    if settings.betton_preview_seed:
+        from app.preview_seed import seed_preview_data
+        seed_preview_data()
     task = asyncio.create_task(setup_webhook_task())
     expiry = asyncio.create_task(expire_orders_task())
     yield
