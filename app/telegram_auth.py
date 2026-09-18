@@ -163,6 +163,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
 
     init_data = parse_tma_authorization(request.headers.get("Authorization"))
     token = (settings.bot_token or "").strip()
+    using_proxy = not token
     if token:
         tg_user = validate_init_data(init_data, token)
     else:
@@ -177,18 +178,19 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
         photo_url=tg_user.get("photo_url"),
     )
 
-    changed = False
-    display_name = tg_user.get("display_name")
-    if isinstance(display_name, str) and display_name.strip() and user.display_name != display_name.strip():
-        user.display_name = display_name.strip()
-        changed = True
-    photo_url = tg_user.get("photo_url")
-    if isinstance(photo_url, str) and photo_url.strip() and user.photo_url != photo_url.strip():
-        user.photo_url = photo_url.strip()
-        changed = True
-    if changed:
-        db.commit()
-        db.refresh(user)
+    if using_proxy:
+        changed = False
+        display_name = tg_user.get("display_name")
+        if isinstance(display_name, str) and display_name.strip() and user.display_name != display_name.strip():
+            user.display_name = display_name.strip()
+            changed = True
+        photo_url = tg_user.get("photo_url")
+        if isinstance(photo_url, str) and photo_url.strip().startswith("https://") and user.photo_url != photo_url.strip():
+            user.photo_url = photo_url.strip()
+            changed = True
+        if changed:
+            db.commit()
+            db.refresh(user)
 
     # Preview-only: production's /auth/telegram is authoritative for admin status.
     # Persist the verified admin Telegram ID in this process so service functions
