@@ -20,9 +20,10 @@ export type ModerationScreenProps = {
   onApprove?: (marketId: number) => void
   onReject?: (marketId: number, reason: string) => void
   onReasonChange?: (marketId: number, reason: string) => void
+  onRetry?: () => void
 }
 
-export function ModerationScreen({ markets = [], viewState = 'ready', reasonById = {}, busyMarketId = null, errorMessage, onBack, onOpenMarket, onApprove, onReject, onReasonChange }: ModerationScreenProps) {
+export function ModerationScreen({ markets = [], viewState = 'ready', reasonById = {}, busyMarketId = null, errorMessage, onBack, onOpenMarket, onApprove, onReject, onReasonChange, onRetry }: ModerationScreenProps) {
   const t = useT()
   const [rejectingId, setRejectingId] = useState<number | null>(null)
   return (
@@ -34,7 +35,7 @@ export function ModerationScreen({ markets = [], viewState = 'ready', reasonById
       <div className={styles.body}>
         {viewState === 'no-access' ? <StatusMessage tone="warning" title={t('err.noAccess')}>{t('mod.adminOnly')}</StatusMessage> : null}
         {viewState === 'loading' ? <StatusMessage tone="loading" title={t('loading')}>{t('loading.events')}</StatusMessage> : null}
-        {viewState === 'error' ? <StatusMessage tone="error" title={t('err.request')}>{errorMessage || t('err.requestBody')}</StatusMessage> : null}
+        {viewState === 'error' ? <><StatusMessage tone="error" title={t('err.request')}>{errorMessage || t('err.requestBody')}</StatusMessage>{onRetry ? <Button variant="secondary" size="md" onClick={onRetry}>{t('retry')}</Button> : null}</> : null}
         {viewState === 'ready' && markets.length === 0 ? <StatusMessage title={t('mod.empty')} /> : null}
         {viewState === 'ready' ? markets.map((market) => {
           const marketId = Number(market.id)
