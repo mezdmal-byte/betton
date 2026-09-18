@@ -59,6 +59,7 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
   return (
     <CreateMarketScreen
       onBack={onBack}
+      unauthenticated={!enabled}
       onNavChange={onNavChange}
       submitDisabled={!enabled || mutation.isPending}
       submitting={mutation.isPending}
