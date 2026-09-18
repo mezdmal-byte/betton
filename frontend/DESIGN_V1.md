@@ -1,10 +1,10 @@
 # BetTON Design v1
 
-Frozen visual prototype for `feature/react-ui`. Backend integration must reuse this system, not restyle it.
+Frozen product/design contract for the React Mini App. Backend integration and visual polishing should reuse this system instead of restyling it from scratch.
 
 ## Principles
 
-Premium consumer fintech + prediction market + Telegram-native. Canvas / surface / faint outcome tints. No glass, gradients, neon, crypto chrome, or large card shadows. System font stack. 4px spacing. Semantic Side A/B color, never profit/loss green-red.
+Premium consumer fintech + prediction market + Telegram-native. Canvas / surface / faint outcome tints. No glass, gradients, neon, casino styling, crypto chrome, or large card shadows. System font stack. 4px spacing. Semantic Side A/B color, never profit/loss green-red.
 
 ## Tokens
 
@@ -13,9 +13,9 @@ Source: `src/styles/tokens.css`.
 - Canvas `#f7f8fa`, surface `#ffffff`, text `#15171a` / `#667085`
 - Brand plum / teal, primary action `#11756f`
 - Outcome A teal, Outcome B coral
-- Radius 14 for controls, 16 for sheets, pill for chips
+- Radius 12–14 for controls/cards, 20 for sheets, pill for chips
 - Touch 44px min, 48px preferred
-- Safe areas: `--safe-top` / `--safe-bottom` via `env(safe-area-inset-*)`. Bottom nav and sticky action bars use `padding-bottom: max(existing, env(safe-area-inset-bottom))`. Do not hardcode iPhone inset values.
+- Safe areas: `--safe-top` / `--safe-bottom` via `env(safe-area-inset-*)`. Bottom nav and sticky action bars use the safe-area tokens. Do not hardcode iPhone inset values.
 
 ## Outcome A / B
 
@@ -23,36 +23,53 @@ Source: `src/styles/tokens.css`.
 
 ## Navigation
 
-Bottom tabs: Рынки · Создать · Портфель. Profile is pushed (back header), not a tab. Create Market uses back + sticky CTA, no tab bar.
+Bottom tabs: **Рынки · Создать · Портфель**. Profile is pushed from the avatar and uses a back header, not a fourth bottom tab. Create is a top-level tab: its primary CTA sits above the bottom navigation. Secondary flows such as Market Detail, Own Price, Wallet, Help, moderation and public profiles use a back header.
 
 ## Quick Trade vs Own Price
 
-- **Quick Trade:** sheet over the feed. Best executable quote, amount, presets, payout, primary CTA. «Своя цена →» is tertiary.
-- **Own Price:** full screen. Odds stepper, execution summary (исполнится сейчас / останется заявкой), book, recent trades. No IOC/LIMIT wording.
+- **Quick Trade:** bottom sheet over the feed/detail. Amount starts empty. Presets are `10 / 50 / 100 / Макс. X`. It consumes executable counterparty liquidity immediately; backend preview is the source of truth. If an IOC quick trade is only partially filled, the unfilled remainder is refunded. It must never silently become a resting order. «Своя цена →» is tertiary.
+- **Own Price:** full screen LIMIT flow. Odds stepper, amount, execution summary (исполнится сейчас / останется заявкой), order book, recent trades. Eligible liquidity can fill immediately; the remaining amount stays as a resting order until matched or cancelled. Do not expose IOC/LIMIT jargon in primary consumer copy.
+
+## Categories
+
+Supported product categories are `sport`, `politics`, `crypto`, and `unique` (shown as «Другое»). A visible category must map to the same backend category; never show a category chip that silently saves as another category.
+
+## Wallet / networks
+
+**TON and Solana are both required product networks.** Keep the `TON | Solana` network switch in the Wallet UI.
+
+The current Wallet is intentionally an honest production-looking shell:
+- do not connect TON Connect, Solana wallet adapters, RPC/indexers, deposits or withdrawals until that implementation is explicitly scheduled;
+- do not generate fake addresses, QR codes or on-chain balances;
+- disabled deposit/withdraw controls must explain that blockchain functionality is not connected;
+- the existing BetTON test balance remains separate from the selected future deposit/withdraw network.
 
 ## Screen patterns
 
-- Header 56px. Back screens: `IconButton` md + 16px semibold title.
+- Header: compact Telegram-native header. Back screens: `IconButton` md + 16px semibold title.
 - Page padding 16px.
-- Section labels: 12px medium secondary.
-- Form controls: 48px, radius 14, faint border. Amount field stays 56px / 28px numeral.
-- Sticky bars: 12px top, 16px bottom (plus safe area), faint top border.
-- Tabs: 400 inactive, 600 + plum underline active.
+- Section labels: 11–12px medium secondary.
+- Form controls: 44–48px, radius 12–14, faint border. Amount fields can use larger financial numerals.
+- Sticky bars: faint top border; respect Telegram/iOS safe areas.
+- Tabs: inactive secondary text, active semibold + plum/teal underline according to component token.
 - Primary filled teal, secondary outlined surface, ghost/tertiary muted text with 44px hit area.
-- Financial numbers: tabular nums. 700 only for hero amounts / CTA figures.
+- Financial numbers: tabular nums. 700 only for hero amounts / key CTA figures.
+- Prefer flat sections and thin borders to stacking many large grey cards.
 
 ## Canonical fee copy
 
-Compact: `Вознаграждение автору: 75% сервисного сбора`
+Compact:
+`Сервисный сбор — 1% только с чистой прибыли победителя.`
 
-Detail (Create Market, expanded only): `Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли.`
+Detail:
+`Автор события получает 75% сервисного сбора, начисленного с выигрыша другого пользователя. 25% получает платформа. Общий сервисный сбор для победителя не меняется — 1% от чистой прибыли. Автор не получает долю со своего собственного выигрыша.`
 
-Winner service fee remains 1% of net profit. This is not a second creator fee.
+There is one winner service fee only. The creator share is a split of that fee, not an additional fee.
 
-## Master screens
+## Current master flows
 
-Markets, QuickTrade, MarketDetail, OwnPrice, CreateMarket, Portfolio, Profile.
+Markets, Market Detail, Quick Trade, Own Price, Create Market + Result, Portfolio, Profile, My Events, Public Creator, Help, Wallet, Moderation, onboarding/session states, and market/order/trade edge states.
 
-## Do not casually change during backend integration
+## Do not casually change during UI work
 
-Matching, integer money, ledger, settlement, 75/25 split, auth, private-market rules, or `app/static`. Do not invent movement %, social/gamification, or exchange jargon (IOC/LIMIT). Do not restyle tokens, A/B semantics, or the seven master layouts to match a new component library.
+Matching, integer money, ledger, settlement, 75/25 fee split, auth, visibility/share-token rules, Quick Trade IOC semantics, Own Price resting-order semantics, or legacy `app/static`. Do not invent movement percentages, fake wallet data, social/gamification, or exchange jargon.

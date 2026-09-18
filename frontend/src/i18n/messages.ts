@@ -3,9 +3,9 @@ export type Locale = 'ru' | 'en' | 'zh'
 export const LOCALES: Locale[] = ['ru', 'en', 'zh']
 
 export const ru = {
-  'nav.feed': 'Лента',
+  'nav.feed': 'Рынки',
   'nav.create': 'Создать',
-  'nav.mine': 'Мои',
+  'nav.mine': 'Портфель',
   'nav.profile': 'Профиль',
   'nav.main': 'Основное меню',
   'header.available': 'Доступно',
@@ -307,9 +307,9 @@ export const ru = {
 } as const
 
 export const en: Record<keyof typeof ru, string> = {
-  'nav.feed': 'Feed',
+  'nav.feed': 'Markets',
   'nav.create': 'Create',
-  'nav.mine': 'Mine',
+  'nav.mine': 'Portfolio',
   'nav.profile': 'Profile',
   'nav.main': 'Main menu',
   'header.available': 'Available',
@@ -610,9 +610,9 @@ export const en: Record<keyof typeof ru, string> = {
 }
 
 export const zh: Record<keyof typeof ru, string> = {
-  'nav.feed': '动态',
+  'nav.feed': '市场',
   'nav.create': '创建',
-  'nav.mine': '我的',
+  'nav.mine': '资产',
   'nav.profile': '资料',
   'nav.main': '主导航',
   'header.available': '可用',
