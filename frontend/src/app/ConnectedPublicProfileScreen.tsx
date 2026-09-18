@@ -52,6 +52,7 @@ export function ConnectedPublicProfileScreen({
       markets={(query.data?.markets ?? []).map((item) => mapMarketOut(item, new Date(), locale))}
       onBack={onBack}
       onOpenMarket={(market) => onOpenMarket(Number(market.id))}
+      onRetry={() => { void query.refetch() }}
     />
   )
 }
