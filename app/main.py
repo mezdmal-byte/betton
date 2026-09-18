@@ -240,10 +240,24 @@ def health():
 async def telegram_webhook(request: Request):
     from aiogram import types
 
+    payload = await request.json()
     bot, dp = _maybe_bot()
     if bot is None or dp is None:
+        proxy = (settings.telegram_webhook_proxy_url or "").strip().rstrip("/")
+        if proxy:
+            if not proxy.startswith("https://"):
+                raise HTTPException(status_code=503, detail="Webhook proxy is invalid")
+            import httpx
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(proxy + "/webhook", json=payload)
+            except httpx.HTTPError:
+                raise HTTPException(status_code=502, detail="Webhook proxy unavailable") from None
+            if response.status_code >= 400:
+                raise HTTPException(status_code=502, detail="Webhook proxy rejected update")
+            return {"status": "proxied"}
         return {"status": "bot_disabled"}
-    update = types.Update.model_validate(await request.json(), context={"bot": bot})
+    update = types.Update.model_validate(payload, context={"bot": bot})
     await dp.feed_update(bot, update)
     return {"status": "ok"}
 
