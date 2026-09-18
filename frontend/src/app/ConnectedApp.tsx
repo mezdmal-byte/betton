@@ -80,6 +80,7 @@ export function ConnectedApp() {
   if (shareToken && !hasInitData) return <div className={styles.root}><SystemStateScreen kind="auth" /></div>
   if (hasInitData && session.isLoading) return <div className={styles.root}><SystemStateScreen kind="loading" /></div>
   if (hasInitData && session.isError) return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => { void session.refetch() }} /></div>
+  if (session.user && accountQuery.isError) return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => { void accountQuery.refetch() }} /></div>
   if (shareResolveState === 'loading') return <div className={styles.root}><SystemStateScreen kind="loading" /></div>
   if (shareResolveState === 'not-found') return <div className={styles.root}><MarketDetailScreen viewState="not-found" onBack={clearShare} /></div>
   if (shareResolveState === 'error') return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => setShareRetry((value) => value + 1)} /></div>
