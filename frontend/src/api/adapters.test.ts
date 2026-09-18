@@ -18,6 +18,7 @@ import {
   mapUiSortToApi,
   mapUiStatusToApi,
   mapTradesToChartPoints,
+  mapTradesToRecent,
   moneyForOrder,
 } from './adapters'
 import type { MarketOut } from './types'
@@ -534,5 +535,12 @@ describe('trade history adapter', () => {
     expect(seriesA[0]?.odds).toBe(2.2)
     expect(seriesB[0]?.odds).toBe(1.83333)
     expect(seriesA[0]?.volume).toBe(41.6667)
+  })
+
+  it('localizes recent trade relative time', () => {
+    const at = Date.parse('2026-09-16T12:30:00.000Z')
+    expect(mapTradesToRecent([fill], 0, 'ru', at)[0]?.timeAgo).toBe('30 мин')
+    expect(mapTradesToRecent([fill], 0, 'en', at)[0]?.timeAgo).toBe('30 min')
+    expect(mapTradesToRecent([fill], 0, 'zh', at)[0]?.timeAgo).toBe('30 分钟')
   })
 })
