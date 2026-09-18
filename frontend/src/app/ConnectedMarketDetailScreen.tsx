@@ -201,7 +201,9 @@ export function ConnectedMarketDetailScreen({
             amount={tradeAmount}
             availableTon={availableTon}
             userId={userId}
-            quotesLoading={bookQuery.isPending}
+            quotesLoading={bookQuery.isPending || bookQuery.isError}
+            quotesError={bookQuery.isError}
+            onRetryQuotes={() => { void bookQuery.refetch() }}
             onSelectSide={setSide}
             onAmountChange={setTradeAmount}
             onClose={() => setTrading(false)}
