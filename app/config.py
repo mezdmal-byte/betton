@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     betton_preview_seed: bool = False
     telegram_auth_proxy_url: str = ""
     telegram_webhook_proxy_url: str = ""
+    preview_root_to_v2: bool = False
 
     def admin_tg_id(self) -> int | None:
         raw = self.admin_telegram_id
