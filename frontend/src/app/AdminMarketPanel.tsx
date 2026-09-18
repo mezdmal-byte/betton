@@ -60,7 +60,7 @@ export function AdminMarketPanel({
           <Button
             variant="secondary"
             fullWidth
-            disabled={run.isPending}
+            disabled={run.isPending || !reason.trim()}
             onClick={() => run.mutate(() => rejectMarket(market.id, reason.trim()))}
           >
             {t('mod.reject')}
@@ -80,7 +80,12 @@ export function AdminMarketPanel({
               variant="secondary"
               fullWidth
               disabled={run.isPending}
-              onClick={() => run.mutate(() => resolveMarket(market.id, index))}
+              onClick={() => {
+                if (typeof window !== 'undefined' && !window.confirm(t('mod.resolveConfirm', { name }))) {
+                  return
+                }
+                run.mutate(() => resolveMarket(market.id, index))
+              }}
             >
               {t('mod.resolve', { name })}
             </Button>
@@ -93,7 +98,7 @@ export function AdminMarketPanel({
           <Button
             variant="secondary"
             fullWidth
-            disabled={run.isPending}
+            disabled={run.isPending || !reason.trim()}
             onClick={() => {
               if (typeof window !== 'undefined' && !window.confirm(t('mod.voidConfirm'))) {
                 return
