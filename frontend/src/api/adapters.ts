@@ -479,7 +479,7 @@ export function mapTradesToChartPoints(trades: MarketTradeOut[] | null | undefin
     .filter((point): point is ChartPoint => point != null)
 }
 
-export function mapTradesToRecent(trades: MarketTradeOut[] | null | undefined, outcomeIndex: number, now = Date.now()): RecentTrade[] {
+export function mapTradesToRecent(trades: MarketTradeOut[] | null | undefined, outcomeIndex: number, locale: Locale = 'ru', now = Date.now()): RecentTrade[] {
   if (!Array.isArray(trades)) return []
   return [...trades].reverse().slice(0, 8).flatMap((trade) => {
     const odds = oddsForOutcome(trade, outcomeIndex)
@@ -490,21 +490,20 @@ export function mapTradesToRecent(trades: MarketTradeOut[] | null | undefined, o
         id: trade.id,
         odds,
         amountTon: stakeForOutcome(trade, outcomeIndex),
-        timeAgo: formatRelativeTime(created, now),
+        timeAgo: formatRelativeTime(created, now, locale),
         createdAt: trade.created_at ?? undefined,
       },
     ]
   })
 }
 
-function formatRelativeTime(created: number, now: number): string {
+function formatRelativeTime(created: number, now: number, locale: Locale): string {
   if (!Number.isFinite(created)) return '—'
   const mins = Math.max(0, Math.round((now - created) / 60000))
-  if (mins < 1) return '1 мин'
-  if (mins < 60) return `${mins} мин`
+  if (mins < 60) return translate(locale, 'time.m', { m: Math.max(1, mins) })
   const hours = Math.round(mins / 60)
-  if (hours < 24) return `${hours} ч`
-  return `${Math.round(hours / 24)} д`
+  if (hours < 24) return translate(locale, 'time.h', { h: hours })
+  return translate(locale, 'time.d', { d: Math.round(hours / 24) })
 }
 
 export function hasFakeChartSeries(points: ChartPoint[] | null | undefined): boolean {
