@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     starting_balance: float = 1000.0
     admin_telegram_id: str | int | None = None
     betton_preview_seed: bool = False
+    telegram_auth_proxy_url: str = ""
+    telegram_webhook_proxy_url: str = ""
 
     def admin_tg_id(self) -> int | None:
         raw = self.admin_telegram_id
