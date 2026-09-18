@@ -37,11 +37,15 @@ export function ProfileScreen({
   const t = i18n.t
   const activeLocale = locale ?? i18n.locale
   const menu = [
-    { id: 'public', label: t('profile.public') },
-    { id: 'events', label: t('profile.events') },
-            { id: 'wallet', label: t('profile.wallet') },
-            { id: 'history', label: t('profile.history') },
-            ...(account.isAdmin ? [{ id: 'moderation', label: t('profile.moderation') }] : []),
+    ...(accountState === 'ready'
+      ? [
+          { id: 'public', label: t('profile.public') },
+          { id: 'events', label: t('profile.events') },
+          { id: 'wallet', label: t('profile.wallet') },
+          { id: 'history', label: t('profile.history') },
+          ...(account.isAdmin ? [{ id: 'moderation', label: t('profile.moderation') }] : []),
+        ]
+      : []),
     { id: 'help', label: t('profile.help') },
   ]
 
