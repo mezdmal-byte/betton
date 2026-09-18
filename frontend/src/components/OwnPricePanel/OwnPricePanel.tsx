@@ -34,6 +34,10 @@ export type OwnPricePanelProps = {
   errorMessage?: string | null
   availableTon?: number | null
   success?: boolean
+  bookState?: 'ready' | 'loading' | 'error'
+  tradesState?: 'ready' | 'loading' | 'error'
+  onRetryBook?: () => void
+  onRetryTrades?: () => void
 }
 
 export function OwnPricePanel({
@@ -57,6 +61,10 @@ export function OwnPricePanel({
   errorMessage = null,
   availableTon = null,
   success = false,
+  bookState = 'ready',
+  tradesState = 'ready',
+  onRetryBook,
+  onRetryTrades,
 }: OwnPricePanelProps) {
   const t = useT()
   const maxAvailable = Math.max(...book.map((level) => level.availableTon), 1)
@@ -163,7 +171,14 @@ export function OwnPricePanel({
           <span>{t('book.coef')}</span>
           <span>{t('book.availCol')}</span>
         </div>
-        {book.length === 0 ? (
+        {bookState === 'loading' ? (
+          <p className={styles.empty}>{t('book.loading')}</p>
+        ) : bookState === 'error' ? (
+          <>
+            <p className={styles.empty}>{t('book.error')}</p>
+            {onRetryBook ? <Button variant="link" size="md" onClick={onRetryBook}>{t('retry')}</Button> : null}
+          </>
+        ) : book.length === 0 ? (
           <p className={styles.empty}>{t('advanced.noBook')}</p>
         ) : (
           book.map((level, index) => (
@@ -177,16 +192,25 @@ export function OwnPricePanel({
         )}
       </section>
 
-      {trades.length > 0 ? (
+      {tradesState !== 'ready' || trades.length > 0 ? (
         <section className={styles.trades}>
           <h3>{t('advanced.recent')}</h3>
-          {trades.map((trade) => (
-            <div key={`${trade.odds}-${trade.timeAgo}`} className={styles.trade}>
-              <span className={styles.tradeOdds}>{formatOdds(trade.odds)}</span>
-              <span className={styles.tradeAmount}>{formatTon(trade.amountTon)}</span>
-              <span className={styles.tradeTime}>{trade.timeAgo}</span>
-            </div>
-          ))}
+          {tradesState === 'loading' ? (
+            <p className={styles.empty}>{t('loading.body')}</p>
+          ) : tradesState === 'error' ? (
+            <>
+              <p className={styles.empty}>{t('event.tradesError')}</p>
+              {onRetryTrades ? <Button variant="link" size="md" onClick={onRetryTrades}>{t('retry')}</Button> : null}
+            </>
+          ) : (
+            trades.map((trade) => (
+              <div key={trade.id ?? `${trade.odds}-${trade.timeAgo}`} className={styles.trade}>
+                <span className={styles.tradeOdds}>{formatOdds(trade.odds)}</span>
+                <span className={styles.tradeAmount}>{formatTon(trade.amountTon)}</span>
+                <span className={styles.tradeTime}>{trade.timeAgo}</span>
+              </div>
+            ))
+          )}
         </section>
       ) : null}
     </div>
