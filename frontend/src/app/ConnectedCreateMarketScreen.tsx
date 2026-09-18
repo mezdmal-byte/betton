@@ -27,7 +27,8 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
   const mutation = useMutation({
     mutationFn: async (draft: CreateMarketDraft) => {
       const visibility = draft.visibility === 'unlisted' ? 'unlisted' : 'public'
-      if (draft.question.trim().length < 8) throw new Error(t('create.qShort'))
+      const questionLength = draft.question.trim().length
+      if (questionLength < 8 || questionLength > 512) throw new Error(t('create.qShort'))
       if (closeAt.getTime() <= Date.now()) throw new Error(t('create.closePast'))
       if (draft.outcomeA.trim() === draft.outcomeB.trim()) throw new Error(t('create.uniqOutcomes'))
       return createMarket(
