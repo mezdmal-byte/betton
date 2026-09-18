@@ -12,3 +12,7 @@
 .time, .meta, .unlisted { display: flex; align-items: center; gap: 4px; color: var(--color-text-secondary); font-size: var(--text-caption); }
 .question { font-size: var(--text-question); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
 .card:active { background: var(--color-surface-muted); }
+
+.card:disabled { cursor: default; opacity: 1; }
+.card:disabled:active { background: var(--color-surface); }
+.reason { margin: 0; color: var(--color-outcome-b-text); font-size: var(--text-caption); line-height: var(--leading-normal); }
