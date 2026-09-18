@@ -168,7 +168,7 @@ export function ConnectedMarketsScreen({
         onSelectMarket={onSelectMarket}
         onCreatorClick={onCreatorClick}
         onSelectOutcome={(market, side) => {
-          if (!marketIsTradable(market) || !marketIsP2P(market)) {
+          if (!userId || accountState !== 'ready' || !marketIsTradable(market) || !marketIsP2P(market)) {
             onSelectMarket(market)
             return
           }
