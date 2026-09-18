@@ -7,9 +7,9 @@ import { queryKeys } from '../api/query'
 import { useI18n } from '../i18n'
 import { ModerationScreen } from '../screens/ModerationScreen'
 
-export type ConnectedModerationScreenProps = { enabled: boolean; onBack: () => void; onOpenMarket: (marketId: number) => void }
+export type ConnectedModerationScreenProps = { enabled: boolean; onBack: () => void }
 
-export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: ConnectedModerationScreenProps) {
+export function ConnectedModerationScreen({ enabled, onBack }: ConnectedModerationScreenProps) {
   const { locale } = useI18n()
   const queryClient = useQueryClient()
   const [reasonById, setReasonById] = useState<Record<number, string>>({})
@@ -22,5 +22,5 @@ export function ConnectedModerationScreen({ enabled, onBack, onOpenMarket }: Con
   const busyMarketId = approve.isPending ? approve.variables ?? null : reject.isPending ? reject.variables?.marketId ?? null : null
   const viewState = !enabled ? 'no-access' : queue.isPending ? 'loading' : queue.isError ? 'error' : 'ready'
 
-  return <ModerationScreen markets={markets} viewState={viewState} reasonById={reasonById} busyMarketId={busyMarketId} errorMessage={queue.isError ? errorDetail(queue.error) : errorMessage} onBack={onBack} onOpenMarket={onOpenMarket} onApprove={(marketId) => { setErrorMessage(null); approve.mutate(marketId) }} onReject={(marketId, reason) => { setErrorMessage(null); reject.mutate({ marketId, reason }) }} onReasonChange={(marketId, reason) => setReasonById((current) => ({ ...current, [marketId]: reason }))} onRetry={() => { void queue.refetch() }} />
+  return <ModerationScreen markets={markets} viewState={viewState} reasonById={reasonById} busyMarketId={busyMarketId} errorMessage={queue.isError ? errorDetail(queue.error) : errorMessage} onBack={onBack} onApprove={(marketId) => { setErrorMessage(null); approve.mutate(marketId) }} onReject={(marketId, reason) => { setErrorMessage(null); reject.mutate({ marketId, reason }) }} onReasonChange={(marketId, reason) => setReasonById((current) => ({ ...current, [marketId]: reason }))} onRetry={() => { void queue.refetch() }} />
 }
