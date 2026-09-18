@@ -93,7 +93,7 @@ export function ConnectedOwnPriceScreen({
 
   const preview = previewQuery.data ? mapOrderPreview(previewQuery.data) : null
   const book = mapOrderBookLevels(bookQuery.data?.sides?.[outcome])
-  const trades = mapTradesToRecent(tradesQuery.data, outcome)
+  const trades = mapTradesToRecent(tradesQuery.data, outcome, locale)
   const insufficient = amount > availableTon
 
   const mutation = useMutation({
