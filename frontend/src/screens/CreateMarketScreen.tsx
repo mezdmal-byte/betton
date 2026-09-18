@@ -6,6 +6,7 @@ import { Button } from '../components/Button/Button'
 import { Chip } from '../components/Chip/Chip'
 import { DateTimeField } from '../components/DateTimeField/DateTimeField'
 import { IconButton } from '../components/IconButton/IconButton'
+import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { TextField } from '../components/TextField/TextField'
 import { defaultCreateDraft } from '../fixtures/account'
 import { useT } from '../i18n'
@@ -26,6 +27,7 @@ export type CreateMarketScreenProps = {
   onCloseAtChange?: (localValue: string) => void
   onSubmit?: (draft: CreateMarketDraft) => void
   visibilityNote?: string | null
+  unauthenticated?: boolean
 }
 
 export function CreateMarketScreen({
@@ -42,6 +44,7 @@ export function CreateMarketScreen({
   onCloseAtChange,
   onSubmit,
   visibilityNote,
+  unauthenticated = false,
 }: CreateMarketScreenProps) {
   const t = useT()
   const [question, setQuestion] = useState(draft.question)
@@ -80,6 +83,7 @@ export function CreateMarketScreen({
       </header>
 
       <div className={styles.body}>
+        {unauthenticated ? <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage> : null}
         <div className={styles.questionBlock}>
           <TextField
             id="create-question"
