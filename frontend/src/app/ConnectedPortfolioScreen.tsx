@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { mapOpenOrder, mapPositions, mapTransaction } from '../api/adapters'
+import { errorDetail } from '../api/errors'
 import { cancelOrder, listOrders } from '../api/orders'
 import { listPositions, listTransactions } from '../api/portfolio'
 import { queryKeys } from '../api/query'
@@ -53,6 +54,7 @@ export function ConnectedPortfolioScreen({
   const t = useT()
   const queryClient = useQueryClient()
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const enabled = Boolean(userId)
 
   const positionsQuery = useQuery({
@@ -95,11 +97,15 @@ export function ConnectedPortfolioScreen({
 
   const cancelMutation = useMutation({
     mutationFn: (order: OrderFixture) => cancelOrder(order.id),
-    onMutate: (order) => setCancellingOrderId(order.id),
+    onMutate: (order) => {
+      setActionError(null)
+      setCancellingOrderId(order.id)
+    },
     onSettled: () => setCancellingOrderId(null),
     onSuccess: (_result, order) => {
       invalidateAfterTrade(queryClient, { userId, marketId: order.marketId })
     },
+    onError: (error) => setActionError(errorDetail(error)),
   })
 
   return (
@@ -111,6 +117,7 @@ export function ConnectedPortfolioScreen({
       history={accountState === 'unauthenticated' ? [] : history}
       listState={listState}
       cancellingOrderId={cancellingOrderId}
+      actionError={actionError}
       tab={variant === 'history' ? 'history' : undefined}
       onNavChange={onNavChange}
       onProfileClick={onProfileClick}
