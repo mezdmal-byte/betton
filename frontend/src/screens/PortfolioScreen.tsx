@@ -43,6 +43,7 @@ export type PortfolioScreenProps = {
   listState?: 'ready' | 'loading' | 'error'
   onRetry?: () => void
   cancellingOrderId?: string | null
+  actionError?: string | null
 }
 
 export function PortfolioScreen({
@@ -63,6 +64,7 @@ export function PortfolioScreen({
   listState = 'ready',
   onRetry,
   cancellingOrderId = null,
+  actionError = null,
 }: PortfolioScreenProps) {
   const t = useT()
   const { locale } = useI18n()
@@ -129,6 +131,12 @@ export function PortfolioScreen({
           onChange={(id) => setCurrentTab(id as PortfolioTab)}
           ariaLabel={t('portfolio.title')}
         />
+
+        {actionError ? (
+          <StatusMessage tone="error" title={t('err.request')}>
+            {actionError}
+          </StatusMessage>
+        ) : null}
 
         {currentTab === 'history' && accountState === 'ready' && account.creatorIncomeTon > 0 ? (
           <section className={styles.creatorIncome}>
