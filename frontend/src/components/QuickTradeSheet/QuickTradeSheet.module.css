@@ -2,8 +2,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
   max-height: 82%;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   padding: 4px var(--page-padding) var(--pad-bar-bottom);
   background: var(--color-surface);
   border-bottom: 0;
