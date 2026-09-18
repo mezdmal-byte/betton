@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     tip_cap: float = 0.01
     starting_balance: float = 1000.0
     admin_telegram_id: str | int | None = None
+    betton_preview_seed: bool = False
 
     def admin_tg_id(self) -> int | None:
         raw = self.admin_telegram_id
