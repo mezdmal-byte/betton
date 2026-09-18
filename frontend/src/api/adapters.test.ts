@@ -59,12 +59,14 @@ describe('category mapping', () => {
     expect(mapUiCategoryToApi('all')).toBeUndefined()
     expect(mapUiCategoryToApi('sport')).toBe('sport')
     expect(mapUiCategoryToApi('politics')).toBe('politics')
+    expect(mapUiCategoryToApi('crypto')).toBe('crypto')
     expect(mapUiCategoryToApi('other')).toBe('unique')
   })
 
   it('maps backend categories onto frozen UI labels', () => {
     expect(mapApiCategoryToLabel('sport')).toBe('Спорт')
     expect(mapApiCategoryToLabel('politics')).toBe('Политика')
+    expect(mapApiCategoryToLabel('crypto')).toBe('Крипто')
     expect(mapApiCategoryToLabel('unique')).toBe('Другое')
   })
 })
@@ -449,6 +451,19 @@ describe('create market payload', () => {
       close_at: closeAt.toISOString(),
       visibility: 'unlisted',
     })
+  })
+
+  it('keeps crypto as a real backend category instead of silently collapsing it into other', () => {
+    const payload = buildCreateMarketPayload({
+      question: 'Bitcoin выше $100,000 к концу месяца?',
+      category: 'crypto',
+      outcomeA: 'Да',
+      outcomeB: 'Нет',
+      closeAt: new Date('2026-09-20T17:00:00.000Z'),
+      visibility: 'public',
+      description: 'По публичному индексу цены.',
+    })
+    expect(payload.category).toBe('crypto')
   })
 
   it('does not send UI-only private visibility', () => {

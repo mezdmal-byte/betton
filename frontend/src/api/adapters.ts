@@ -31,6 +31,7 @@ export const UI_CATEGORY_TO_API: Record<string, string | undefined> = {
   all: undefined,
   sport: 'sport',
   politics: 'politics',
+  crypto: 'crypto',
   other: 'unique',
 }
 
@@ -45,6 +46,7 @@ export const UI_STATUS_TO_API: Record<string, MarketOut['status'] | null> = {
 export const API_CATEGORY_TO_LABEL: Record<string, string> = {
   sport: 'Спорт',
   politics: 'Политика',
+  crypto: 'Крипто',
   unique: 'Другое',
 }
 
@@ -399,8 +401,8 @@ export function mapTransaction(dto: TransactionOut): HistoryFixture {
   }
 }
 
-export function mapUiCategoryToCreateApi(category: string): 'sport' | 'politics' | 'unique' {
-  if (category === 'sport' || category === 'politics') return category
+export function mapUiCategoryToCreateApi(category: string): 'sport' | 'politics' | 'crypto' | 'unique' {
+  if (category === 'sport' || category === 'politics' || category === 'crypto') return category
   return 'unique'
 }
 

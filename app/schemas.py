@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import MarketStatus
 
-MarketCategory = Literal["sport", "politics", "unique"]
+MarketCategory = Literal["sport", "politics", "crypto", "unique"]
 OutcomeRef = Union[str, int]
 
 

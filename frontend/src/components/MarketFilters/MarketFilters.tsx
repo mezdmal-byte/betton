@@ -29,6 +29,7 @@ export function MarketFilters({
     { id: 'all', label: t('cat.all') },
     { id: 'sport', label: t('cat.sport') },
     { id: 'politics', label: t('cat.politics') },
+    { id: 'crypto', label: t('cat.crypto') },
     { id: 'other', label: t('cat.other') },
   ]
 

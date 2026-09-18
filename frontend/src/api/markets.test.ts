@@ -22,6 +22,9 @@ describe('markets query string', () => {
     expect(popular.get('sort')).toBe('popular')
     expect(popular.get('category')).toBe('sport')
 
+    const crypto = new URLSearchParams(buildMarketsQuery({ sort: 'new', category: 'crypto' }))
+    expect(crypto.get('category')).toBe('crypto')
+
     const closing = new URLSearchParams(
       buildMarketsQuery({ sort: 'closing', category: 'other', q: ' зенит ' }),
     )

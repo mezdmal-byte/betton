@@ -181,6 +181,7 @@ export function MarketDetailScreen({
 function categoryLabel(market: MarketFixture, t: (key: MessageKey) => string): string {
   if (market.categoryKey === 'sport') return t('cat.sport')
   if (market.categoryKey === 'politics') return t('cat.politics')
+  if (market.categoryKey === 'crypto') return t('cat.crypto')
   if (market.categoryKey === 'unique') return t('cat.other')
   return market.category
 }
