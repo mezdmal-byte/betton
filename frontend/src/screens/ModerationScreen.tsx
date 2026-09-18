@@ -16,14 +16,13 @@ export type ModerationScreenProps = {
   busyMarketId?: number | null
   errorMessage?: string | null
   onBack?: () => void
-  onOpenMarket?: (marketId: number) => void
   onApprove?: (marketId: number) => void
   onReject?: (marketId: number, reason: string) => void
   onReasonChange?: (marketId: number, reason: string) => void
   onRetry?: () => void
 }
 
-export function ModerationScreen({ markets = [], viewState = 'ready', reasonById = {}, busyMarketId = null, errorMessage, onBack, onOpenMarket, onApprove, onReject, onReasonChange, onRetry }: ModerationScreenProps) {
+export function ModerationScreen({ markets = [], viewState = 'ready', reasonById = {}, busyMarketId = null, errorMessage, onBack, onApprove, onReject, onReasonChange, onRetry }: ModerationScreenProps) {
   const t = useT()
   const [rejectingId, setRejectingId] = useState<number | null>(null)
   return (
@@ -46,7 +45,6 @@ export function ModerationScreen({ markets = [], viewState = 'ready', reasonById
               <div className={styles.top}><span>{market.category}</span><span>{market.closeLabel}</span></div>
               <strong className={styles.question}>{market.question}</strong>
               <div className={styles.actions}>
-                <Button variant="secondary" size="md" disabled={busy} onClick={() => onOpenMarket?.(marketId)}>{t('mod.open')}</Button>
                 <Button size="md" disabled={busy} onClick={() => onApprove?.(marketId)}>{t('mod.approve')}</Button>
               </div>
               {rejectingId === marketId ? (
