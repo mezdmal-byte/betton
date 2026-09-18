@@ -6,4 +6,5 @@
 .top { display: flex; justify-content: space-between; gap: var(--space-8); color: var(--color-text-secondary); font-size: var(--text-caption); }
 .question { font-size: var(--text-question); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-8); }
+.rejectPanel { display: grid; gap: var(--space-8); padding-top: 2px; }
 @media (max-width: 340px) { .actions { grid-template-columns: 1fr; } }

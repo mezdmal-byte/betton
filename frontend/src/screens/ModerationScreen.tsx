@@ -1,4 +1,5 @@
 import { ChevronLeft } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '../components/Button/Button'
 import { IconButton } from '../components/IconButton/IconButton'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
@@ -23,6 +24,7 @@ export type ModerationScreenProps = {
 
 export function ModerationScreen({ markets = [], viewState = 'ready', reasonById = {}, busyMarketId = null, errorMessage, onBack, onOpenMarket, onApprove, onReject, onReasonChange }: ModerationScreenProps) {
   const t = useT()
+  const [rejectingId, setRejectingId] = useState<number | null>(null)
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
@@ -46,8 +48,26 @@ export function ModerationScreen({ markets = [], viewState = 'ready', reasonById
                 <Button variant="secondary" size="md" disabled={busy} onClick={() => onOpenMarket?.(marketId)}>{t('mod.open')}</Button>
                 <Button size="md" disabled={busy} onClick={() => onApprove?.(marketId)}>{t('mod.approve')}</Button>
               </div>
-              <TextField id={`reject-${marketId}`} label={t('mod.reasonPh')} value={reason} onChange={(value) => onReasonChange?.(marketId, value)} />
-              <Button variant="secondary" size="md" disabled={busy} onClick={() => onReject?.(marketId, reason.trim())}>{t('mod.reject')}</Button>
+              {rejectingId === marketId ? (
+                <div className={styles.rejectPanel}>
+                  <TextField id={`reject-${marketId}`} label={t('mod.reasonPh')} value={reason} onChange={(value) => onReasonChange?.(marketId, value)} />
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    disabled={busy || !reason.trim()}
+                    onClick={() => {
+                      onReject?.(marketId, reason.trim())
+                      if (reason.trim()) setRejectingId(null)
+                    }}
+                  >
+                    {t('mod.reject')}
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="ghost" size="md" disabled={busy} onClick={() => setRejectingId(marketId)}>
+                  {t('mod.reject')}
+                </Button>
+              )}
             </section>
           )
         }) : null}
