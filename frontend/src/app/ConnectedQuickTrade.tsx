@@ -6,7 +6,7 @@ import {
   moneyForOrder,
   type IocPlacementResult,
 } from '../api/adapters'
-import { isInsufficientBalanceError } from '../api/errors'
+import { errorDetail, isInsufficientBalanceError } from '../api/errors'
 import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
 import { placeOrder, previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
@@ -32,6 +32,8 @@ type Props = {
   availableTon: number
   userId?: number
   quotesLoading?: boolean
+  quotesError?: boolean
+  onRetryQuotes?: () => void
   onSelectSide: (side: OutcomeSide) => void
   onAmountChange: (amount: number) => void
   onClose: () => void
@@ -45,6 +47,8 @@ export function ConnectedQuickTradeSheet({
   availableTon,
   userId,
   quotesLoading = false,
+  quotesError = false,
+  onRetryQuotes,
   onSelectSide,
   onAmountChange,
   onClose,
@@ -88,6 +92,15 @@ export function ConnectedQuickTradeSheet({
   })
 
   const preview = previewQuery.data ? mapOrderPreview(previewQuery.data) : null
+  const previewRequestError = previewQuery.isError && !isInsufficientBalanceError(previewQuery.error)
+  const requestError = quotesError || previewRequestError
+  const requestErrorMessage = quotesError
+    ? t('err.requestBody')
+    : previewRequestError
+      ? errorDetail(previewQuery.error) || t('err.requestBody')
+      : errorMessage
+  const effectiveState: QuickTradeState =
+    requestError && state !== 'processing' && state !== 'success' ? 'error' : state
   // During the debounce window React Query still exposes the previous amount's preview.
   // Never let that stale plan be confirmed for a newly typed amount.
   const previewSettling =
@@ -213,7 +226,7 @@ export function ConnectedQuickTradeSheet({
       market={market}
       selectedSide={selectedSide}
       amount={amount}
-      state={state}
+      state={effectiveState}
       quotesLoading={quotesLoading || previewSettling}
       availableTon={availableTon}
       previewMatchedTon={previewSettling ? null : (preview?.matchedTon ?? null)}
@@ -222,7 +235,7 @@ export function ConnectedQuickTradeSheet({
       previewAverageOdds={previewSettling ? null : (preview?.averageOdds ?? null)}
       previewWorstOdds={previewSettling ? null : (preview?.worstOdds ?? null)}
       previewFills={previewSettling ? null : (preview?.fills ?? null)}
-      errorMessage={errorMessage}
+      errorMessage={requestErrorMessage}
       placeResult={placeResult}
       onSelectSide={onSelectSide}
       onAmountChange={onAmountChange}
@@ -230,6 +243,8 @@ export function ConnectedQuickTradeSheet({
       onOwnPrice={onOwnPrice}
       onRefreshQuote={() => {
         setState('normal')
+        setErrorMessage(null)
+        onRetryQuotes?.()
         void previewQuery.refetch()
       }}
       onPlace={() => {
