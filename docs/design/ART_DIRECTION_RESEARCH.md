@@ -296,3 +296,25 @@ These gaps do not invalidate the three systems above. They limit how far DNA cla
 7. Live creator / reputation surfaces for "top creators" under Issue's sparse feed (product need, visual pattern still thin).
 
 Next step, when a direction is chosen, is to test it on Feed, Market Detail, and Trade inside the product. Not to expand a full design system first, and not to treat the current React or the first Figma frames as the answer.
+
+## Stage 6. Art direction sprint in Figma
+
+Exploration only. No direction is selected. Production React was not changed.
+
+File: [BetTON — Art Direction Sprint](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw). Page `BetTON — Art Direction Sprint` (`1:2`). Nine frames, width 390, one shared demo fixture (Zenit, 64%, volume 1 240 TON, available 85 TON, @marina_k, close 12 May 2027). Numbers are labeled as a demo fixture, not a backend quote.
+
+| System | Section | Feed | Market Detail | Trade |
+|---|---|---|---|---|
+| Tape | [01 Tape](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=2-2) `2:2` | [Feed](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=2-3) `2:3` | [Detail](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=2-50) `2:50` | [Trade](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=2-101) `2:101` |
+| Issue | [02 Issue](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=3-2) `3:2` | [Feed](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=3-3) `3:3` | [Detail](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=3-35) `3:35` | [Trade](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=3-81) `3:81` |
+| Instrument | [03 Instrument](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=4-2) `4:2` | [Feed](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=4-3) `4:3` | [Detail](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=4-20) `4:20` | [Trade](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw?node-id=4-67) `4:67` |
+
+What actually landed, after art-director review and a product check:
+
+- **Tape.** Cool paper, IBM Plex Sans plus IBM Plex Mono, text tabs, hairline rows, probability on the right of the row. Detail stays one column: stepped ink line, ladder book (Да then Нет, four levels, "Ещё уровни"), flat blue IOC commit. Feed repeats two extra rows so the list is denser than the other two.
+- **Issue.** Warm paper, Newsreader question, Libre Franklin figures, search and sort as text. The lead occupies the first view; three markets sit under a rule. Detail puts criteria before a two-column book. Trade is the last block of the column, with a text commit in `#8B1E1E`, not a filled bar.
+- **Instrument.** Warm-gray canvas, three off-white plates (radius about 10), question small above a balance-sized Roboto Mono percent. Trade keeps that percent visible above the amount. Commit is `#0F6E56` on the same radius. Metro is not on the first feed paint.
+
+Chart note. Thin SVG strokes collapsed to an unreadable hairline. The frames now use an 8px stepped ink line (58% to 64%) plus the numeric caption. Instrument adds a light same-ink wash behind that line and does not put the chart on a second plate.
+
+Product check against the 2026-09-22 exploration contract: compatible. No CONFIRMED conflict. Partial IOC, available size, average/worst, payout on the fillable part, and the 1% winner-net-profit line are on the trade frames. Wallet success and Top Creators are absent. Own Price is not a separate frame; the ticket states that the unfilled IOC remainder does not rest.
