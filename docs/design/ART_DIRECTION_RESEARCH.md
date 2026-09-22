@@ -299,7 +299,9 @@ Next step, when a direction is chosen, is to test it on Feed, Market Detail, and
 
 ## Stage 6. Art direction sprint in Figma
 
-Exploration only. No direction is selected. Production React was not changed.
+**Status: REJECTED as visual direction by the human on 2026-09-22.** Retain these frames only as research history / anti-reference. Do not continue, blend, or implement Tape / Issue / Instrument.
+
+Exploration only. No direction was selected. Production React was not changed.
 
 File: [BetTON — Art Direction Sprint](https://www.figma.com/design/ZvAdNtvkinjSyfEho5YTnw). Page `BetTON — Art Direction Sprint` (`1:2`). Nine frames, width 390, one shared demo fixture (Zenit, 64%, volume 1 240 TON, available 85 TON, @marina_k, close 12 May 2027). Numbers are labeled as a demo fixture, not a backend quote.
 
@@ -318,3 +320,11 @@ What actually landed, after art-director review and a product check:
 Chart note. Thin SVG strokes collapsed to an unreadable hairline. The frames now use an 8px stepped ink line (58% to 64%) plus the numeric caption. Instrument adds a light same-ink wash behind that line and does not put the chart on a second plate.
 
 Product check against the 2026-09-22 exploration contract: compatible. No CONFIRMED conflict. Partial IOC, available size, average/worst, payout on the fillable part, and the 1% winner-net-profit line are on the trade frames. Wallet success and Top Creators are absent. Own Price is not a separate frame; the ticket states that the unfilled IOC remainder does not rest.
+
+### What this failed experiment taught us
+
+- Product correctness did not guarantee visual quality.
+- Textual design DNA plus broad brand references was insufficient; too many mobile/product-specific reference gaps remained.
+- Building nine Figma frames before validating one strong live Feed surface spread craft too thin.
+- A subagent self-review is not a substitute for Impeccable's real design modes plus rendered screenshot inspection.
+- Next exploration follows `docs/design/DESIGN_PIPELINE.md` and starts in an isolated live Feed prototype, not another nine-frame Figma sprint.
