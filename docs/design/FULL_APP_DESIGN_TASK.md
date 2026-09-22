@@ -46,9 +46,21 @@ Inspect the actual current routes and screens before designing:
 - `frontend/src/screens/`
 - `frontend/src/app/`
 
-The current product navigation is authoritative.
+The current routes/screens are authoritative for **existing functionality**, but the prototype must also include the newly confirmed target bottom navigation.
 
-Important: the current real bottom navigation is **Markets / Create / Portfolio**. Do not invent a five-tab navigation from image references. Profile is opened from the account/avatar flow.
+### CONFIRMED target bottom navigation (2026-09-23)
+
+Use the five-button navigation from the selected visual direction:
+
+1. **Рынки / Markets**
+2. **Портфель / Portfolio**
+3. **Создать / Create** — central primary action
+4. **Уведомления / Notifications**
+5. **Профиль / Profile**
+
+This is a forward product/navigation requirement even though current production React only has Markets / Create / Portfolio and Notifications is not implemented yet.
+
+Do not treat the five-button bar as decorative. The prototype must include a real Notifications destination/surface and Profile as a bottom-level destination. Do not change production navigation in this prototype pass.
 
 ## Working visual system
 
@@ -230,7 +242,31 @@ Design own profile:
 - Public profile preview;
 - Moderation entry only for admin.
 
-### 11. Public creator profile
+### 11. Notifications
+Design a real future Notifications surface connected to the new bottom-navigation item.
+
+For this prototype, use deterministic fixtures only. Do not invent backend delivery infrastructure.
+
+Include useful product notification types such as:
+- order partially filled;
+- order fully filled;
+- order cancelled/refunded;
+- market approaching close;
+- market resolved / payout result;
+- created market approved;
+- created market rejected with reason;
+- moderation/admin item only when the fixture is admin.
+
+Include:
+- unread/read state;
+- timestamp;
+- tap-through destination where applicable;
+- empty state;
+- mark-as-read interaction in the prototype.
+
+Avoid noisy social-style notification chrome.
+
+### 12. Public creator profile
 Design:
 - creator identity;
 - markets/events created;
@@ -239,7 +275,7 @@ Design:
 
 Do not invent a reputation score or ranking model.
 
-### 12. My Markets
+### 13. My Markets
 Design:
 - pending;
 - open;
@@ -248,14 +284,14 @@ Design:
 - clear status language;
 - open market action.
 
-### 13. Wallet shell
+### 14. Wallet shell
 Design both current tabs:
 - deposit;
 - withdraw.
 
 Important: wallet/on-chain deposits and withdrawals are not a finished production system. Keep this an honest shell/placeholder matching current product scope. Do not fake successful blockchain settlement.
 
-### 14. Help
+### 15. Help
 Design the existing help/explanation surface:
 - P2P;
 - order book;
@@ -263,7 +299,7 @@ Design the existing help/explanation surface:
 - fee model;
 - concise, scannable mobile structure.
 
-### 15. Moderation / admin
+### 16. Moderation / admin
 Design the current admin flow:
 - queue;
 - market review;
@@ -277,7 +313,7 @@ Design the current admin flow:
 
 Irreversible actions must look meaningfully different from ordinary navigation.
 
-### 16. System states
+### 17. System states
 Create a coherent state family for:
 - loading;
 - empty;
@@ -312,7 +348,7 @@ Do not hand-style every screen independently.
 Create a prototype-only design system layer for:
 - app shell;
 - top bar;
-- real 3-item bottom navigation;
+- confirmed 5-item bottom navigation: Markets / Portfolio / central Create / Notifications / Profile;
 - typography scale;
 - colors;
 - spacing;
@@ -358,6 +394,7 @@ At minimum inspect:
 - Portfolio;
 - Create;
 - Profile;
+- Notifications;
 - Moderation.
 
 Use one bounded correction pass across the system, then a confirm pass.
