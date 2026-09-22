@@ -66,24 +66,59 @@ For P2P markets:
 
 The presentation layer may move away from bookmaker-style coefficients such as **2.08** as the primary representation.
 
-Directions to test:
-- implied probability / percentage as primary market signal;
-- contract price as primary signal;
-- payout / coefficient as secondary information inside the trade ticket.
+**Current design exploration (2026-09-22) — not CONFIRMED, not a backend change:**
+- **Primary** market representation: implied **probability (%)**.
+- **Secondary** inside the trade flow: contract price, coefficient, and expected payout / execution economics.
+
+This exploration choice does **not** permanently close probability vs contract price vs coefficient vs hybrid. A later CONFIRMED decision is still required. Backend pricing, matching, settlement and fee math are unchanged.
 
 Reason: the visual and conceptual model should communicate "market" before "betting".
+
+### EXPERIMENT — Feed vs Detail information (2026-09-22)
+
+For the current design exploration only:
+
+**Feed shows:**
+- question;
+- probability;
+- liquidity;
+- close time;
+- category;
+- compact creator identity;
+- optional trend **only** when real data exists (no fabricated trend).
+
+**Not on Feed** (live on Market Detail instead):
+- resolution criteria / description depth;
+- order book;
+- recent trades;
+- detailed execution economics.
+
+Does **not** permanently close every Feed vs Detail nuance (e.g. search result density, sorting cues, or whether liquidity format on Feed stays as-is). Backend discovery/access rules are unchanged.
+
+### EXPERIMENT — Order book default depth (2026-09-22)
+
+On Market Detail, the order book is **compact by default**: about **3–4 best levels per side**, with a way to expand and show more.
+
+Does **not** change matching, self-match protection, or how much of the book the backend returns — only default presentation for normal users in this exploration.
+
+### EXPERIMENT — Creator identity vs reputation ranking (2026-09-22)
+
+- Show creator **identity / profile** where the product already supports it.
+- **Compact creator identity on Feed is allowed** in this exploration.
+- New art direction **must not depend** on a Top Creators block or reputation ranking as a required part of the visual system until a creator reputation model is **CONFIRMED**.
+- Public creator surfaces (profile, creator events, backend-supported stats) remain in scope; ranking / Top Creators as mandatory visual chrome does not.
 
 ## 4. Core user flows
 
 These flows must ultimately be complete and visually coherent:
 
 1. **Discover**
-   - feed;
+   - feed (see §3 EXPERIMENT — Feed vs Detail);
    - search;
    - filters;
    - sorting;
    - public creator surfaces;
-   - top creators.
+   - top creators — optional product surface; **not** a required art-direction dependency until reputation is CONFIRMED (see §3).
 
 2. **Understand a market**
    - question;
@@ -91,10 +126,10 @@ These flows must ultimately be complete and visually coherent:
    - creator;
    - status;
    - close time;
-   - probability / price representation;
+   - probability as primary representation in current exploration (§3); contract price / coefficient / payout secondary in trade flow;
    - liquidity;
    - chart;
-   - order book;
+   - order book (compact default depth in current exploration — §3);
    - recent trades.
 
 3. **Quick Trade**
@@ -210,7 +245,8 @@ Avoid by default:
 - sportsbook-style odds as the dominant visual language unless deliberately chosen;
 - excessive badges and pills;
 - generic Inter/SF layout with no distinctive hierarchy;
-- inconsistent spacing invented screen by screen.
+- inconsistent spacing invented screen by screen;
+- treating Top Creators / reputation ranking as mandatory visual system chrome before the reputation model is CONFIRMED.
 
 ## 6. Pixel-accurate design → code protocol
 
@@ -450,10 +486,18 @@ This functional work is valuable even if visual art direction is replaced.
 
 Keep unresolved questions here rather than solving them inconsistently in UI:
 
-- What is the primary market representation: probability, contract price, coefficient, or hybrid?
-- What information belongs on Feed vs Detail?
-- How much of the order book should a normal user see by default?
-- What is the final creator reputation model?
+- **Primary market representation (probability vs contract price vs coefficient vs hybrid)?**  
+  **EXPERIMENT (2026-09-22, design exploration only):** probability (%) is primary; contract price, coefficient and expected payout are secondary inside the trade flow. **Still OPEN** for a lasting CONFIRMED choice. Not a backend change.
+
+- **What information belongs on Feed vs Detail?**  
+  **EXPERIMENT (2026-09-22, design exploration only):** Feed = question, probability, liquidity, close time, category, compact creator identity, optional trend only with real data. Criteria, order book, recent trades and detailed execution economics stay on Detail. **Still OPEN** for remaining nuances (e.g. search-result density, exact liquidity formatting, other discovery surfaces).
+
+- **How much of the order book should a normal user see by default?**  
+  **EXPERIMENT (2026-09-22, design exploration only):** Market Detail shows ~3–4 best levels per side by default, with expand-to-see-more. **Still OPEN** for the final default depth and whether expanded depth should be sticky per user. Presentation only — matching unchanged.
+
+- **What is the final creator reputation model?**  
+  **Still OPEN / not CONFIRMED.** Identity and profile display are in scope; compact creator identity on Feed is allowed in the current exploration. Art direction must **not** require Top Creators or reputation ranking until this model is CONFIRMED.
+
 - What is the correct event verification / evidence model?
 - What parts of moderation should eventually move on-chain?
 - What wallet UX belongs in v1 vs later?
@@ -468,6 +512,10 @@ Append important decisions; do not erase old reasoning without recording replace
 - **Unlisted markets use share-token access and are hidden from public feed.**
 - **Visual direction is being reset; current clean teal/light UI is not considered final.**
 - **Design implementation must gain a screenshot-diff visual quality gate before the product is considered visually finished.**
+- **2026-09-22 EXPERIMENT (design exploration only):** Primary market representation = probability (%); contract price, coefficient and expected payout are secondary inside the trade flow. Does not change backend pricing/matching/settlement; lasting CONFIRMED choice still OPEN.
+- **2026-09-22 EXPERIMENT (design exploration only):** Feed shows question, probability, liquidity, close time, category, compact creator identity, and optional trend only with real data; criteria, order book, recent trades and detailed execution economics stay on Detail. Remaining Feed/Detail nuances still OPEN.
+- **2026-09-22 EXPERIMENT (design exploration only):** Market Detail order book defaults to ~3–4 best levels per side with expand-for-more. Presentation only; matching unchanged. Final default depth still OPEN.
+- **2026-09-22 EXPERIMENT (design exploration only):** Show creator identity/profile; compact creator on Feed allowed. Art direction must not depend on Top Creators / reputation ranking until the reputation model is CONFIRMED. Reputation model remains OPEN.
 
 ## 14. How to maintain this file
 

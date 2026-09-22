@@ -42,6 +42,17 @@ Backend остаётся источником истины для денег, ma
 
 Установленный hook `.cursor/hooks.json` оставить. Срабатывание детектора не повод менять денежную логику и не повод запускать init.
 
+## BetTON subagents
+
+Один subagent не забирает чужую стадию. Результат передаётся следующему.
+
+- Product question / change → `betton-product-guardian`
+- Reference research / art direction / Figma concept → `betton-art-director`
+- Approved design → React → `betton-ui-engineer`
+- Figma ↔ React comparison / final polish → `betton-visual-qa`
+
+Роли и запреты лежат в `.cursor/agents/`. Здесь их не дублировать.
+
 ## Design → code
 
 Один экран за раз:
