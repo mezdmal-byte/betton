@@ -207,6 +207,25 @@ They are implementation scaffolding only.
 
 We explicitly rejected the idea that "clean + rounded + Inter + teal" is enough.
 
+### Current visual direction for full-surface exploration — EXPERIMENT (2026-09-23)
+
+The human selected the **Rail** live-feed structure as the working direction for expanding across the whole product.
+
+Current working visual DNA:
+- dark, near-black mobile surface;
+- compact market-first information hierarchy;
+- thin separators / restrained containers rather than card grids everywhere;
+- probability and real market data stay visually dominant;
+- mint/green for YES/positive and coral/red for NO/negative are **provisional palette choices**, not final brand colors;
+- typography remains clean and dense, with strong numeric hierarchy;
+- real product navigation and product mechanics from the existing app must be preserved.
+
+This is a **design-system exploration choice**, not a backend or product-mechanics change.
+
+The previous Tape / Issue / Instrument Figma sprint remains rejected. Do not revive it.
+
+Next design step: extend the chosen Rail visual system to **all existing BetTON product surfaces in an isolated live prototype**, then stop for human review before production React replacement or final Figma freeze.
+
 ### Direction-finding process
 
 The 2026-09-22 Tape / Issue / Instrument Figma sprint was reviewed by the human and **rejected as visual direction**. Keep it as research history only; do not continue, blend, or implement those frames.
@@ -519,6 +538,7 @@ Append important decisions; do not erase old reasoning without recording replace
 - **2026-09-22 EXPERIMENT (design exploration only):** Market Detail order book defaults to ~3–4 best levels per side with expand-for-more. Presentation only; matching unchanged. Final default depth still OPEN.
 - **2026-09-22 EXPERIMENT (design exploration only):** Show creator identity/profile; compact creator on Feed allowed. Art direction must not depend on Top Creators / reputation ranking until the reputation model is CONFIRMED. Reputation model remains OPEN.
 - **2026-09-22 DESIGN PROCESS:** Tape / Issue / Instrument Figma exploration was rejected as a visual direction. Future exploration starts with one live 390px Feed surface, specific screenshot references, isolated prototype variants, and rendered visual critique before Figma/production expansion.
+- **2026-09-23 EXPERIMENT — VISUAL SYSTEM:** Human selected the Rail live Feed structure as the working direction for full-product exploration. Dark palette is provisional and may change later; structure/hierarchy are the current basis. Expand this system across all existing app surfaces in an isolated prototype before freezing final Figma or changing production React.
 
 ## 14. How to maintain this file
 
