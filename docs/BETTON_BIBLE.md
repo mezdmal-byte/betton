@@ -188,7 +188,16 @@ These flows must ultimately be complete and visually coherent:
    - creator events;
    - stats that are actually supported by backend data.
 
-9. **System states**
+9. **Notifications**
+   - target bottom-navigation destination;
+   - order partial/full fill;
+   - cancel/refund;
+   - market close / resolution / payout;
+   - creator market moderation result;
+   - read/unread state and relevant deep-link;
+   - backend delivery mechanism is not yet implied or CONFIRMED by this UI requirement.
+
+10. **System states**
    - loading;
    - empty;
    - network error + retry;
@@ -218,7 +227,8 @@ Current working visual DNA:
 - probability and real market data stay visually dominant;
 - mint/green for YES/positive and coral/red for NO/negative are **provisional palette choices**, not final brand colors;
 - typography remains clean and dense, with strong numeric hierarchy;
-- real product navigation and product mechanics from the existing app must be preserved.
+- product mechanics from the existing app must be preserved;
+- target bottom navigation is now **CONFIRMED** as five destinations: **Markets / Portfolio / Create / Notifications / Profile**. Create is the central primary action. Current production navigation has not caught up yet; the isolated design prototype must include the target navigation before production migration.
 
 This is a **design-system exploration choice**, not a backend or product-mechanics change.
 
@@ -539,6 +549,7 @@ Append important decisions; do not erase old reasoning without recording replace
 - **2026-09-22 EXPERIMENT (design exploration only):** Show creator identity/profile; compact creator on Feed allowed. Art direction must not depend on Top Creators / reputation ranking until the reputation model is CONFIRMED. Reputation model remains OPEN.
 - **2026-09-22 DESIGN PROCESS:** Tape / Issue / Instrument Figma exploration was rejected as a visual direction. Future exploration starts with one live 390px Feed surface, specific screenshot references, isolated prototype variants, and rendered visual critique before Figma/production expansion.
 - **2026-09-23 EXPERIMENT — VISUAL SYSTEM:** Human selected the Rail live Feed structure as the working direction for full-product exploration. Dark palette is provisional and may change later; structure/hierarchy are the current basis. Expand this system across all existing app surfaces in an isolated prototype before freezing final Figma or changing production React.
+- **2026-09-23 CONFIRMED — NAVIGATION:** Target bottom navigation is five destinations: **Markets / Portfolio / Create / Notifications / Profile**, with Create as the central primary action. Current production React has only three bottom-nav destinations; the full-app isolated prototype should design the future five-item navigation and a Notifications surface without inventing backend notification infrastructure.
 
 ## 14. How to maintain this file
 
