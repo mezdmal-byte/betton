@@ -6,8 +6,10 @@
 
 1. Продуктовый source of truth: `docs/BETTON_BIBLE.md`
 2. Технический handoff: `docs/HANDOFF.md`
+3. Design process: `docs/design/DESIGN_PIPELINE.md`
+4. Impeccable adapter context: `PRODUCT.md` + `DESIGN.md`
 
-Продуктовые решения брать из библии. Где лежит код, как устроены API и как запускать preview — из handoff.
+Продуктовые решения брать из библии. Где лежит код, как устроены API и как запускать preview — из handoff. `PRODUCT.md` и `DESIGN.md` существуют как адаптеры для design skills и не имеют права переопределять библию.
 
 ## Приоритет
 
@@ -25,37 +27,58 @@ UI не имеет права переписывать механику ради
 - Не merge PR #15 без явного разрешения.
 - Не deploy production без явного разрешения.
 - Рабочая ветка: `feature/react-full-preview`. Это Draft PR #15, не `main` и не production.
-- Текущий визуал не финальный. Нынешний React-стиль и первые Figma-основы — черновик, не утверждённая арт-дирекция.
+- Текущий React visual style не финальный.
+- Figma sprint Tape / Issue / Instrument от 2026-09-22 — отвергнутый exploration, не направление для продолжения и не источник визуальной истины.
 
 Backend остаётся источником истины для денег, matching, settlement, комиссий и доступа. Frontend вызывает контракты, а не пересчитывает их сам.
 
 ## Дизайн
 
-- `design-taste-frontend` — поиск арт-дирекции и работа с референсами: design read, DNA референсов, три разных направления для Feed, Market Detail и Trade.
-- Impeccable — critique, audit и polish уже выбранного интерфейса.
-- Не запускать `/impeccable init` автоматически.
-- Не создавать второй `PRODUCT.md` вместо `docs/BETTON_BIBLE.md`. Если skill просит PRODUCT.md, читать библию.
-- Figma — точный визуальный spec после выбора арт-дирекции: размеры, токены, состояния. Figma не заменяет проверку живого Mini App.
-- Экран не готов, пока не проверен реальный React/Telegram результат.
+BetTON — product UI. Для ключевых рабочих экранов режим Impeccable = **Operate**: scanability, consistency, native expectations and real usage outrank decorative expression.
 
-Стек preview уже есть: React, TypeScript, Vite, CSS Modules. Не подменять его дефолтным стеком skill (Next.js, Tailwind, новая библиотека компонентов).
+Роли skills:
 
-Установленный hook `.cursor/hooks.json` оставить. Срабатывание детектора не повод менять денежную логику и не повод запускать init.
+- `design-taste-frontend` — вспомогательный reference/anti-slop skill. Использовать для design read, разбора конкретных референсов, типографики и борьбы с LLM-defaults. **Не использовать как основной архитектор multi-step product UI** и не переносить его default stack в BetTON.
+- **Impeccable** — основной design/redesign skill для product UI. В начале design-сессии запускать его `context` один раз. Для нового visual world читать `reference/new-work.md`; перед UI-edit читать `reference/craft-floor.md`. Использовать его реальные режимы (`shape`, `critique`, `bolder`, `typeset`, `layout`, `delight`, `polish`) по назначению, а не заменять их одним self-review.
+- `emil-design-eng` — interaction/component/motion craft: responsive press states, easing, sheets, gestures, perceived quality, reduced motion.
+- `prototype` (Emil Kowalski) — основной инструмент divergence. Один high-leverage surface за запуск, 3 действительно разных варианта в изолированном live prototype с picker. Production code во время exploration не менять.
+- Figma — фиксация **выбранного** visual direction: exact measurements, tokens, states and handoff. Не использовать Figma как место, где модель впервые придумывает девять экранов из текстового research.
+- Browser / screenshots / Playwright — глаза design loop. Дизайн нельзя принимать только по текстовому описанию агента.
+
+Стек production preview уже есть: React, TypeScript, Vite, CSS Modules. Не подменять его дефолтным стеком skill (Next.js, Tailwind, новая библиотека компонентов).
+
+Установленный hook `.cursor/hooks.json` оставить. Срабатывание детектора не повод менять денежную логику.
+
+## Design exploration protocol
+
+До выбора визуального направления:
+
+1. Product Guardian фиксирует product constraints для **одной** поверхности.
+2. Art Director собирает небольшой board из конкретных визуальных референсов/screenshots и выписывает применимый DNA. Названий брендов без визуального доказательства недостаточно.
+3. `prototype` создаёт 3 полноразмерных, интерактивных варианта одной поверхности в изолированном route/harness; не side-by-side thumbnails.
+4. Impeccable делает bounded visual pass: inspect screenshot → один пакет исправлений → максимум один confirm pass.
+5. Emil design engineering проверяет interaction/motion детали там, где они реально нужны.
+6. Human выбирает направление. До этого не расширять его на Detail/Trade/весь продукт.
+7. Выбранный вариант фиксируется в Figma и только затем идёт в production React.
+
+Не создавать снова 9 экранов до выбора сильного Feed.
 
 ## BetTON subagents
 
 Один subagent не забирает чужую стадию. Результат передаётся следующему.
 
-- Product question / change → `betton-product-guardian`
-- Reference research / art direction / Figma concept → `betton-art-director`
-- Approved design → React → `betton-ui-engineer`
-- Figma ↔ React comparison / final polish → `betton-visual-qa`
+- Product question / constraints → `betton-product-guardian`
+- References / design direction / prototype exploration → `betton-art-director`
+- Approved design → production React → `betton-ui-engineer`
+- Figma ↔ React comparison / final visual QA → `betton-visual-qa`
 
-Роли и запреты лежат в `.cursor/agents/`. Здесь их не дублировать.
+`betton-art-director` обязан использовать design skills по правилам выше; его собственный текстовый self-review не заменяет Impeccable/browser verification.
+
+Роли и запреты лежат в `.cursor/agents/`.
 
 ## Design → code
 
-Один экран за раз:
+После human selection — один production screen за раз:
 
 1. Зафиксировать viewport, fixture, тему, локаль и состояние.
 2. Зафиксировать один Figma-фрейм этого состояния.
@@ -78,4 +101,6 @@ Backend остаётся источником истины для денег, ma
 
 ## Не трогать
 
-Пока не просят, не удалять и не изменять локальные untracked QA и скрипты: `.agents/`, `.cursor/`, `skills-lock.json`, `frontend/qa-pass11/`, локальные launcher/fix-скрипты в корне и `bot/main.py.before-v2-start-fix.bak`.
+Пока не просят, не удалять и не изменять локальные untracked QA и скрипты: `frontend/qa-pass11/`, локальные launcher/fix-скрипты в корне и `bot/main.py.before-v2-start-fix.bak`.
+
+Project design skills under `.agents/` and `.cursor/` are part of the harness and may be changed only by an explicit harness/design-skill task.
