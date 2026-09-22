@@ -6,9 +6,10 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
@@ -24,6 +25,7 @@ from app.schemas import (
     CancelMarketRequest,
     MarketCreate,
     MarketOut,
+    MarketTradeOut,
     PositionOut,
     QuoteOut,
     QuoteRequest,
@@ -40,6 +42,46 @@ from app.services import discovery, history, market_access, market_service, p2p_
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+REACT_DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+_bot_username_resolved = ""
+
+
+def _configured_bot_username() -> str:
+    return (settings.telegram_bot_username or "").lstrip("@").strip()
+
+
+def public_bot_username() -> str:
+    return _configured_bot_username() or _bot_username_resolved
+
+
+class ReactPreviewStatic(StaticFiles):
+    """Serve the Vite production build under /v2/ without replacing legacy /."""
+
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code == 404 and not Path(path).suffix:
+                return await super().get_response("index.html", scope)
+            raise
+
+
+def mount_react_preview(application: FastAPI, dist_dir: Path | None = None) -> None:
+    """Host frontend/dist at /v2/. Does not mount over /, /static/, or API routes."""
+    root = REACT_DIST_DIR if dist_dir is None else dist_dir
+    index = root / "index.html"
+    if not index.is_file():
+        @application.get("/v2", include_in_schema=False)
+        @application.get("/v2/", include_in_schema=False)
+        @application.get("/v2/{rest:path}", include_in_schema=False)
+        def react_preview_unbuilt(rest: str = ""):
+            _ = rest
+            raise HTTPException(
+                status_code=503,
+                detail="React preview is not built. From frontend/ run: npm run build",
+            )
+        return
+    application.mount("/v2", ReactPreviewStatic(directory=str(root), html=True), name="v2")
 
 
 def _maybe_bot():
@@ -51,8 +93,27 @@ def _maybe_bot():
         return None, None
 
 
+async def _cache_bot_username() -> None:
+    global _bot_username_resolved
+    configured = _configured_bot_username()
+    if configured:
+        _bot_username_resolved = configured
+        return
+    if not settings.is_public_https():
+        return
+    bot, _dp = _maybe_bot()
+    if bot is None:
+        return
+    try:
+        me = await bot.get_me()
+        _bot_username_resolved = (getattr(me, "username", None) or "").lstrip("@")
+    except Exception:
+        logging.getLogger(__name__).warning("Could not resolve Telegram bot username from getMe")
+
+
 async def setup_webhook_task():
     await asyncio.sleep(1)
+    await _cache_bot_username()
     bot, _dp = _maybe_bot()
     if bot is None or not settings.is_public_https():
         print("Webhook пропущен: нужен BOT_TOKEN и публичный HTTPS (MINI_APP_URL / RENDER_EXTERNAL_URL).")
@@ -60,7 +121,10 @@ async def setup_webhook_task():
     url = settings.webapp_base() + "/webhook"
     await bot.set_webhook(url=url)
     print(f"Вебхук Telegram: {url}")
-    print(f"Mini App: {settings.webapp_base()}/")
+    print(f"Mini App: {settings.webapp_base()}/v2/")
+    from bot.main import sync_menu_button
+
+    await sync_menu_button(bot)
 
 
 async def expire_orders_task():
@@ -76,6 +140,9 @@ async def expire_orders_task():
 async def async_lifespan(app: FastAPI):
     ensure_schema()
     assert_money_ready()
+    if settings.betton_preview_seed:
+        from app.preview_seed import seed_preview_data
+        seed_preview_data()
     task = asyncio.create_task(setup_webhook_task())
     expiry = asyncio.create_task(expire_orders_task())
     yield
@@ -157,6 +224,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.get("/", include_in_schema=False)
 def mini_app():
+    if settings.preview_root_to_v2:
+        return RedirectResponse(url="/v2/", status_code=307)
     return FileResponse(STATIC_DIR / "miniapp.html")
 
 
@@ -165,7 +234,7 @@ def health():
     return {
         "status": "ok",
         "webapp": settings.webapp_base(),
-        "bot_username": (settings.telegram_bot_username or "").lstrip("@"),
+        "bot_username": public_bot_username(),
     }
 
 
@@ -173,10 +242,24 @@ def health():
 async def telegram_webhook(request: Request):
     from aiogram import types
 
+    payload = await request.json()
     bot, dp = _maybe_bot()
     if bot is None or dp is None:
+        proxy = (settings.telegram_webhook_proxy_url or "").strip().rstrip("/")
+        if proxy:
+            if not proxy.startswith("https://"):
+                raise HTTPException(status_code=503, detail="Webhook proxy is invalid")
+            import httpx
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(proxy + "/webhook", json=payload)
+            except httpx.HTTPError:
+                raise HTTPException(status_code=502, detail="Webhook proxy unavailable") from None
+            if response.status_code >= 400:
+                raise HTTPException(status_code=502, detail="Webhook proxy rejected update")
+            return {"status": "proxied"}
         return {"status": "bot_disabled"}
-    update = types.Update.model_validate(await request.json(), context={"bot": bot})
+    update = types.Update.model_validate(payload, context={"bot": bot})
     await dp.feed_update(bot, update)
     return {"status": "ok"}
 
@@ -495,6 +578,25 @@ def orderbook_endpoint(
     )
 
 
+@app.get("/markets/{market_id}/trades", response_model=list[MarketTradeOut])
+def market_trades_endpoint(
+    market_id: int,
+    request: Request,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    """Read-only completed P2P fills for the trade-history chart. No money side effects."""
+    viewer_id = current_user.id if current_user is not None else None
+    return p2p_service.list_trades(
+        db,
+        market_id,
+        viewer_id=viewer_id,
+        share_token=market_access.share_token_from_request(request),
+        limit=limit,
+    )
+
+
 @app.post("/markets/{market_id}/orders/quote")
 def order_quote_endpoint(
     market_id: int,
@@ -511,6 +613,7 @@ def order_quote_endpoint(
         req.money,
         req.odds,
         share_token=market_access.share_token_from_request(request),
+        kind=req.kind,
     )
 
 
@@ -545,3 +648,6 @@ def list_orders_endpoint(user_id: int, current_user: User = Depends(get_current_
     if user_id != current_user.id:
         raise HTTPException(403, "Недостаточно прав")
     return p2p_service.list_orders(db, user_id)
+
+
+mount_react_preview(app)

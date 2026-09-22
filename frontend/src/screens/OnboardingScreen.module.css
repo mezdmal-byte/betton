@@ -1,0 +1,18 @@
+.screen { box-sizing: border-box; min-height: 100%; display: flex; flex-direction: column; background: var(--color-canvas); color: var(--color-text-primary); }
+.main { flex: 1; display: grid; align-content: center; gap: var(--space-24); padding: var(--space-24) var(--page-padding); }
+.intro { display: grid; justify-items: center; gap: var(--space-8); text-align: center; }
+.mark { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 17px; background: var(--color-brand-plum); color: white; font-size: 24px; font-weight: var(--font-weight-bold); }
+.brand { color: var(--color-brand-plum); font-size: 26px; font-weight: var(--font-weight-bold); letter-spacing: var(--tracking-tight); }
+.brand span { color: var(--color-brand-teal); }
+.eyebrow { color: var(--color-action-primary); font-size: var(--text-micro); font-weight: var(--font-weight-semibold); letter-spacing: .055em; text-transform: uppercase; }
+.intro p { max-width: 300px; margin: 4px 0 0; color: var(--color-text-secondary); font-size: var(--text-callout); line-height: var(--leading-body); }
+.benefits { display: grid; gap: var(--space-8); }
+.benefit { display: flex; gap: var(--space-12); align-items: flex-start; padding: var(--space-12); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-12); background: var(--color-surface); }
+.icon { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: var(--color-outcome-a-tint); color: var(--color-action-primary); }
+.benefit div { min-width: 0; display: grid; gap: 3px; }
+.benefit strong { font-size: var(--text-callout); }
+.benefit p { margin: 0; color: var(--color-text-secondary); font-size: var(--text-caption); line-height: var(--leading-body); }
+.footer { display: grid; gap: var(--space-8); padding: var(--space-12) var(--page-padding) var(--pad-bar-bottom); border-top: 1px solid var(--color-border-faint); background: var(--color-surface); }
+.footer button { width: 100%; }
+.footer small { color: var(--color-text-secondary); font-size: var(--text-micro); line-height: 1.35; text-align: center; }
+@media (max-width: 340px) { .main { gap: var(--space-16); padding-top: var(--space-16); } .benefit { padding: 10px; } }

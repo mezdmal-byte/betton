@@ -1,6 +1,6 @@
 export type OutcomeSide = 'a' | 'b'
 
-export type MarketStatus = 'open' | 'closing' | 'closed' | 'resolved' | 'cancelled'
+export type MarketStatus = 'open' | 'closing' | 'closed' | 'resolved' | 'cancelled' | 'pending' | 'rejected'
 
 export type OutcomeQuoteState =
   | 'default'
@@ -19,17 +19,21 @@ export type OutcomeFixture = {
 }
 
 export type CreatorFixture = {
+  id?: number
   handle: string
   displayName: string
   initials: string
+  photoUrl?: string
 }
 
 export type MarketFixture = {
   id: string
   category: string
+  categoryKey?: string
   timeLeft: string
   question: string
   creator: CreatorFixture
+  creatorId?: number
   volumeTon: number
   participants: number
   status: MarketStatus
@@ -39,6 +43,11 @@ export type MarketFixture = {
   description: string
   resolution: string
   closeLabel: string
+  mechanism?: string
+  visibility?: string
+  shareToken?: string | null
+  acceptingBets?: boolean
+  rejectionReason?: string | null
 }
 
 export type OrderBookLevel = {
@@ -47,9 +56,11 @@ export type OrderBookLevel = {
 }
 
 export type RecentTrade = {
+  id?: number
   odds: number
   amountTon: number
   timeAgo: string
+  createdAt?: string
 }
 
 export type ChartPoint = {

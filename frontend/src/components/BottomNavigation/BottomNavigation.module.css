@@ -3,7 +3,7 @@
   grid-template-columns: repeat(3, 1fr);
   min-height: var(--nav-height);
   padding: 4px 8px var(--pad-nav-bottom);
-  background: var(--color-surface);
+  background: #ffffff;
   border-top: 1px solid var(--color-border-faint);
 }
 
@@ -21,7 +21,35 @@
   font-weight: var(--font-weight-medium);
 }
 
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.createIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.create.active .createIcon,
+.active .createIcon {
+  background: var(--color-outcome-a-tint);
+  color: var(--color-action-primary);
+}
+
 .active {
   color: var(--color-action-primary);
   font-weight: var(--font-weight-semibold);
+}
+
+html[data-theme="dark"] .root,
+html[data-theme="dark"] .createIcon {
+  background: var(--color-surface);
 }

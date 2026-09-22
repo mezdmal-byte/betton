@@ -1,9 +1,15 @@
+import { createElement } from 'react'
 import type { Preview } from '@storybook/react'
+import { I18nProvider } from '../src/i18n'
 import '../src/styles/tokens.css'
 import '../src/styles/reset.css'
 import '../src/styles/global.css'
 
 const preview: Preview = {
+  decorators: [
+    (Story) =>
+      createElement(I18nProvider, { initialLocale: 'ru' }, createElement(Story)),
+  ],
   parameters: {
     layout: 'centered',
     controls: {
@@ -21,6 +27,18 @@ const preview: Preview = {
     },
     viewport: {
       viewports: {
+        phone320: {
+          name: '320×700',
+          styles: { width: '320px', height: '700px' },
+        },
+        phone360: {
+          name: '360×800',
+          styles: { width: '360px', height: '800px' },
+        },
+        phone380: {
+          name: '380×720',
+          styles: { width: '380px', height: '720px' },
+        },
         phone390: {
           name: '390×844',
           styles: { width: '390px', height: '844px' },

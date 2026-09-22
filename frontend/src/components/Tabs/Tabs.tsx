@@ -11,11 +11,12 @@ export type TabsProps = {
   value: string
   onChange?: (id: string) => void
   ariaLabel?: string
+  equal?: boolean
 }
 
-export function Tabs({ items, value, onChange, ariaLabel }: TabsProps) {
+export function Tabs({ items, value, onChange, ariaLabel, equal = false }: TabsProps) {
   return (
-    <div className={styles.list} role="tablist" aria-label={ariaLabel}>
+    <div className={cx(styles.list, equal && styles.equal)} role="tablist" aria-label={ariaLabel}>
       {items.map((item) => {
         const selected = item.id === value
         return (

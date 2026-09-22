@@ -1,6 +1,7 @@
 from app.money import adjust_balance_nano, add_pot_nano
 """Binary, fully funded orders. Stakes use nanoTON integers; price ticks are 1e-6."""
 import math
+import json
 import secrets
 from collections import defaultdict
 from decimal import Decimal, InvalidOperation, ROUND_FLOOR
@@ -103,7 +104,48 @@ def _guard_unlisted(db, market, user_id=None, share_token=None):
     market_access.require_unlisted_access(market, viewer=viewer, share_token=share_token)
 
 
-def preview(db, market_id, user_id, outcome, amount, odds, share_token=None):
+def odds_for_taker_tick(tick):
+    """Taker odds whose parse_terms tick is this complementary price."""
+    return Decimal(PRICE) / Decimal(tick)
+
+
+def json_odds_for_taker_tick(tick):
+    """Float odds that JSON-round-trip through parse_terms back to this tick."""
+    low = float(odds_for_taker_tick(tick + 1))
+    high = float(odds_for_taker_tick(tick))
+    for candidate in ((low + high) / 2, high, low, float(format(odds_for_taker_tick(tick), '.12f'))):
+        dumped = json.loads(json.dumps(candidate))
+        _atomic, got = parse_terms('1', dumped)
+        if got == tick:
+            return dumped
+    x = (low + high) / 2
+    for _ in range(64):
+        dumped = json.loads(json.dumps(x))
+        _atomic, got = parse_terms('1', dumped)
+        if got == tick:
+            return dumped
+        x = math.nextafter(x, 1.0 if got < tick else 10000.0)
+    return json.loads(json.dumps((low + high) / 2))
+
+
+def taker_odds_for_maker(maker_price):
+    return json_odds_for_taker_tick(PRICE - maker_price)
+
+
+def _fill_legs(plan):
+    legs = []
+    for maker, _maker_stake, taker_stake in plan:
+        tick = PRICE - maker.price
+        if legs and legs[-1][0] == tick:
+            legs[-1] = (tick, legs[-1][1] + taker_stake)
+        else:
+            legs.append((tick, taker_stake))
+    return [dict(odds=json_odds_for_taker_tick(tick), matched=stake / ATOM) for tick, stake in legs]
+
+
+def preview(db, market_id, user_id, outcome, amount, odds, share_token=None, kind='limit'):
+    if kind not in ('limit', 'ioc'):
+        raise HTTPException(400, 'Некорректный тип заявки')
     market = legacy.get_market(db, market_id)
     require_p2p(market)
     _guard_unlisted(db, market, user_id, share_token)
@@ -111,6 +153,7 @@ def preview(db, market_id, user_id, outcome, amount, odds, share_token=None):
     idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
     atomic, tick = parse_terms(amount, odds)
     orders = candidates(db, market, idx, user_id)
+    # requested uses the same price limit as place() with these odds — preview is not a second policy.
     plan, remaining = plan_matches(orders, atomic, tick)
     best, best_remaining = plan_matches(orders, atomic, PRICE-1)
     def stats(plan, left):
@@ -118,8 +161,9 @@ def preview(db, market_id, user_id, outcome, amount, odds, share_token=None):
         payout = sum(a+b for _, a, b in plan)
         return dict(matched=spent/ATOM, remaining=left/ATOM,
                     payout=payout/ATOM, average_odds=payout/spent if spent else None,
-                    worst_odds=min((PRICE/(PRICE-m.price) for m, _, _ in plan), default=None))
-    return dict(limit_odds=PRICE/tick, requested=stats(plan, remaining), available=stats(best, best_remaining))
+                    worst_odds=min((taker_odds_for_maker(m.price) for m, _, _ in plan), default=None),
+                    fills=_fill_legs(plan))
+    return dict(limit_odds=PRICE/tick, kind=kind, requested=stats(plan, remaining), available=stats(best, best_remaining))
 
 
 def _refund(db, order, status='cancelled', reason='cancel'):
@@ -415,6 +459,46 @@ def book(db, market_id, viewer_id=None, share_token=None):
         mine, _queued = _accumulate_book(orders, accepting=accepting, exclude_user_id=viewer_id)
         payload['available_to_me'] = mine
     return payload
+
+
+def _trade_out(fill: P2PFill) -> dict:
+    maker_tick = int(fill.price)
+    taker_tick = PRICE - maker_tick
+    maker_odds = (PRICE / maker_tick) if maker_tick else 0.0
+    taker_odds = (PRICE / taker_tick) if taker_tick else 0.0
+    created = fill.created_at
+    created_at = created.isoformat() if created is not None and hasattr(created, 'isoformat') else None
+    return dict(
+        id=fill.id,
+        created_at=created_at,
+        maker_outcome=int(fill.maker_outcome),
+        taker_outcome=1 - int(fill.maker_outcome),
+        maker_odds=maker_odds,
+        taker_odds=taker_odds,
+        maker_stake=fill.maker_stake / ATOM,
+        taker_stake=fill.taker_stake / ATOM,
+        maker_stake_nano=int(fill.maker_stake),
+        taker_stake_nano=int(fill.taker_stake),
+    )
+
+
+def list_trades(db, market_id, viewer_id=None, share_token=None, limit=100):
+    """Read-only executed fills. Does not change money, matching, or orders."""
+    market = legacy.get_market(db, market_id)
+    require_p2p(market)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(404, 'Рынок не найден')
+    _guard_unlisted(db, market, viewer_id, share_token)
+    cap = max(1, min(int(limit or 100), 200))
+    fills = (
+        db.query(P2PFill)
+        .filter_by(market_id=market_id)
+        .order_by(P2PFill.id.desc())
+        .limit(cap)
+        .all()
+    )
+    fills.reverse()
+    return [_trade_out(fill) for fill in fills]
 
 
 def settle(db, market, winning_outcome):

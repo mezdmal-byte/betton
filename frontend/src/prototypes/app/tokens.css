@@ -1,0 +1,27 @@
+:root {
+  --bg: #0c1016;
+  --bg-2: #141a22;
+  --ink: #f3f6f8;
+  --muted: #8d98a4;
+  --line: #26313b;
+  --yes: #3dbe8b;
+  --no: #e15b55;
+  --fill: #1b242e;
+  --font: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --pad: 14px;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; background: #07090c; color: var(--ink); }
+body { font-family: var(--font); font-variant-numeric: tabular-nums; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:active { transform: scale(0.98); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}

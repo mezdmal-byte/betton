@@ -1,6 +1,6 @@
 import { apiRequest, parseTotalCount } from './client'
 import { mapUiCategoryToApi, mapUiSortToApi } from './adapters'
-import type { MarketOut, MarketsPage, MarketsQuery, OrderbookOut } from './types'
+import type { CreateMarketBody, MarketOut, MarketTradeOut, MarketsPage, MarketsQuery, OrderbookOut } from './types'
 
 export const FEED_PAGE_SIZE = 20
 
@@ -58,5 +58,21 @@ export async function getOrderbook(
   shareToken?: string | null,
 ): Promise<OrderbookOut> {
   const { data } = await apiRequest<OrderbookOut>(`/markets/${marketId}/orderbook`, { shareToken })
+  return data
+}
+
+export async function getMarketTrades(
+  marketId: number | string,
+  shareToken?: string | null,
+): Promise<MarketTradeOut[]> {
+  const { data } = await apiRequest<MarketTradeOut[]>(`/markets/${marketId}/trades`, { shareToken })
+  return Array.isArray(data) ? data : []
+}
+
+export async function createMarket(body: CreateMarketBody): Promise<MarketOut> {
+  const { data } = await apiRequest<MarketOut>('/markets', {
+    method: 'POST',
+    jsonBody: body,
+  })
   return data
 }

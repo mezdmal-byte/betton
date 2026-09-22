@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildMarketsQuery, listMarkets } from './markets'
+import { buildMarketsQuery, getMarketTrades, listMarkets } from './markets'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -15,9 +15,15 @@ describe('markets query string', () => {
     expect(newest.get('limit')).toBe('20')
     expect(newest.get('offset')).toBe('0')
 
+    const allStatus = new URLSearchParams(buildMarketsQuery({ sort: 'new', category: 'all', status: null }))
+    expect(allStatus.get('status')).toBeNull()
+
     const popular = new URLSearchParams(buildMarketsQuery({ sort: 'popular', category: 'sport' }))
     expect(popular.get('sort')).toBe('popular')
     expect(popular.get('category')).toBe('sport')
+
+    const crypto = new URLSearchParams(buildMarketsQuery({ sort: 'new', category: 'crypto' }))
+    expect(crypto.get('category')).toBe('crypto')
 
     const closing = new URLSearchParams(
       buildMarketsQuery({ sort: 'closing', category: 'other', q: ' зенит ' }),
@@ -48,5 +54,16 @@ describe('listMarkets', () => {
     expect(page.total).toBe(41)
     expect(page.items).toHaveLength(1)
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+})
+
+describe('getMarketTrades', () => {
+  it('treats an empty fill list as success', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toBe('/markets/7/trades')
+      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(getMarketTrades(7)).resolves.toEqual([])
   })
 })

@@ -1,0 +1,18 @@
+.page {
+  min-height: 100dvh;
+  background: #d7d3cc;
+}
+
+.phone {
+  width: 390px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding-top: 72px;
+  box-sizing: border-box;
+  background: #fff;
+  overflow-x: hidden;
+}
+
+.phone > div {
+  min-height: 100dvh;
+}

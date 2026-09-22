@@ -1,140 +1,28 @@
-.screen {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: var(--color-canvas);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  min-height: var(--header-height);
-  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
-}
-
-.header strong {
-  font-size: 16px;
-  font-weight: var(--font-weight-semibold);
-}
-
-.body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  flex-direction: column;
-  gap: var(--space-16);
-  padding: 0 var(--page-padding) max(var(--space-24), var(--safe-bottom));
-  overflow: auto;
-}
-
-.identity {
-  display: flex;
-  align-items: center;
-  gap: var(--space-12);
-}
-
-.identityText {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.identityText strong,
-.identityText span {
-  overflow-wrap: anywhere;
-}
-
-.identityText strong {
-  font-size: 18px;
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.01em;
-}
-
-.identityText span {
-  font-size: 13px;
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
-}
-
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-8);
-  margin: 0;
-}
-
-.metrics div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.metrics dt {
-  font-size: 11px;
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-disabled);
-}
-
-.metrics dd {
-  margin: 0;
-  font-size: 15px;
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-}
-
-.fee {
-  margin: 0;
-  font-size: 12px;
-  font-weight: var(--font-weight-medium);
-  line-height: 1.4;
-  color: var(--color-text-secondary);
-}
-
-.menu {
-  display: flex;
-  flex-direction: column;
-}
-
-.menuItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-12);
-  min-height: var(--touch-min);
-  padding: 0;
-  border: 0;
-  border-bottom: 1px solid var(--color-border-faint);
-  background: transparent;
-  color: var(--color-text-primary);
-  font-size: 15px;
-  font-weight: var(--font-weight-medium);
-  text-align: left;
-}
-
-.menuItem:last-child {
-  border-bottom: 0;
-}
-
-.menuItem svg {
-  color: var(--color-text-disabled);
-}
-
-.lang {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
-
-.sectionLabel {
-  font-size: 12px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.pills {
-  display: flex;
-  gap: var(--space-4);
-}
+.screen { display: flex; flex-direction: column; height: 100%; background: var(--color-canvas); }
+.header { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; min-height: var(--header-height); padding: var(--pad-header-top) var(--page-padding) 8px; background: var(--color-surface); border-bottom: 1px solid var(--color-border-faint); }
+.header strong { text-align: center; font-size: 16px; font-weight: var(--font-weight-semibold); }
+.body { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 12px; padding: 14px var(--page-padding) max(var(--space-24), var(--safe-bottom)); overflow: auto; }
+.identity { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 12px 8px; text-align: center; }
+.identityText { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 2px; }
+.identityText strong, .identityText span { overflow-wrap: anywhere; }
+.identityText strong { font-size: 18px; font-weight: var(--font-weight-semibold); letter-spacing: -0.01em; }
+.identityText span { font-size: 13px; color: var(--color-text-secondary); }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-12); background: var(--color-surface); }
+.metrics div { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 10px 6px; text-align: center; }
+.metrics div + div { border-left: 1px solid var(--color-border-faint); }
+.metrics dt { font-size: 10px; line-height: 1.2; color: var(--color-text-secondary); }
+.metrics dd { margin: 0; font-size: 14px; font-weight: var(--font-weight-semibold); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fee { margin: 0; font-size: 12px; color: var(--color-text-secondary); }
+.menu { display: flex; flex-direction: column; overflow: hidden; border-top: 1px solid var(--color-border-faint); border-bottom: 1px solid var(--color-border-faint); background: var(--color-surface); }
+.menuItem { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); width: 100%; min-height: 48px; padding: 0 10px; border: 0; border-bottom: 1px solid var(--color-border-faint); background: var(--color-surface); color: var(--color-text-primary); font-size: 13px; font-weight: var(--font-weight-medium); line-height: 1.3; text-align: left; }
+.menuItem:last-child { border-bottom: 0; }
+.menuItem small { color: var(--color-text-secondary); font-size: 11px; font-weight: var(--font-weight-regular); }
+.menuItem svg { flex: 0 0 auto; color: var(--color-text-disabled); }
+.lang { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; border-top: 1px solid var(--color-border-faint); border-bottom: 1px solid var(--color-border-faint); background: var(--color-surface); }
+.sectionLabel { font-size: 13px; font-weight: var(--font-weight-medium); color: var(--color-text-primary); }
+.pills { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.adminCard { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-12); background: var(--color-surface); }
+.adminCard p { margin: 0; font-size: 13px; line-height: 1.4; color: var(--color-text-secondary); }
+.adminCard p strong { color: var(--color-text-primary); font-size: 15px; }
+.adminActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 340px) { .metrics dd { font-size: 12px; } .pills { gap: 4px; } }

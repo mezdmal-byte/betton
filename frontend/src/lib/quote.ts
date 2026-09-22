@@ -19,11 +19,21 @@ export function outcomeIsExecutable(outcome: OutcomeFixture): boolean {
 }
 
 export function marketIsLocked(market: Pick<MarketFixture, 'status'>): boolean {
-  return market.status === 'closed' || market.status === 'cancelled' || market.status === 'resolved'
+  return (
+    market.status === 'closed' ||
+    market.status === 'cancelled' ||
+    market.status === 'resolved' ||
+    market.status === 'pending' ||
+    market.status === 'rejected'
+  )
 }
 
-export function marketIsTradable(market: Pick<MarketFixture, 'status'>): boolean {
-  return !marketIsLocked(market)
+export function marketIsP2P(market: Pick<MarketFixture, 'mechanism'>): boolean {
+  return (market.mechanism ?? 'p2p') === 'p2p'
+}
+
+export function marketIsTradable(market: Pick<MarketFixture, 'status' | 'mechanism'>): boolean {
+  return marketIsP2P(market) && !marketIsLocked(market)
 }
 
 export function marketOutcomeQuoteState(

@@ -8,6 +8,8 @@ export const CREATOR_SHARE_DETAIL =
 
 export const AMOUNT_PRESETS = [10, 50, 100, 500] as const
 
+export const QUICK_TRADE_AMOUNT_PRESETS = [10, 50, 100] as const
+
 export const COPY = {
   authExpiredTitle: 'Сессия закончилась',
   authExpiredBody: 'Чтобы безопасно продолжить работу, откройте BetTON заново через Telegram.',
