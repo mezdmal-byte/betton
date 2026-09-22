@@ -209,12 +209,12 @@ We explicitly rejected the idea that "clean + rounded + Inter + teal" is enough.
 
 ### Direction-finding process
 
+The 2026-09-22 Tape / Issue / Instrument Figma sprint was reviewed by the human and **rejected as visual direction**. Keep it as research history only; do not continue, blend, or implement those frames.
+
 Before finalizing a design system:
 
-1. Collect strong references from:
-   - prediction markets / trading products for information architecture;
-   - unrelated premium digital products for art direction.
-2. Extract design DNA rather than copying screens:
+1. Collect **specific visual references/screenshots**, prioritizing real mobile product UI rather than brand-name lists.
+2. Extract transferable design DNA rather than copying screens:
    - hierarchy;
    - density;
    - rhythm;
@@ -225,13 +225,13 @@ Before finalizing a design system:
    - motion;
    - use of color;
    - amount of chrome.
-3. Produce **3 genuinely different art directions** for only:
-   - Feed;
-   - Market Detail;
-   - Trade.
-4. Test these directions in the actual product environment.
-5. Select or combine one direction.
-6. Only then expand into the full design system.
+3. Work on **one high-leverage surface first: Markets Feed at 390px**.
+4. Explore 3 genuinely different directions as full-size, live, isolated prototypes with realistic BetTON data and a visual picker.
+5. Inspect screenshots and run bounded Impeccable critique/refinement on the actual rendered prototypes.
+6. Human selects/rejects the Feed direction.
+7. Only after selection: freeze it in Figma, implement the production Feed with screenshot-diff validation, then derive Market Detail and Trade from the approved visual system.
+
+Detailed procedure: `docs/design/DESIGN_PIPELINE.md`.
 
 ### Anti-patterns
 
@@ -434,12 +434,14 @@ This functional work is valuable even if visual art direction is replaced.
 ## 11. Current roadmap
 
 ### Phase A — establish visual direction
-- [ ] Install/select project-local design skills.
-- [ ] Build reference board.
+- [x] Install Taste and Impeccable project-local design skills.
+- [ ] Install Emil Kowalski project skills used for product craft/prototyping.
+- [ ] Build a screenshot-based mobile reference board.
 - [ ] Extract design DNA from selected references.
-- [ ] Create 3 distinct Feed / Detail / Trade directions.
-- [ ] Test directions in real React/Telegram environment.
-- [ ] Select final direction.
+- [ ] Create 3 distinct **live Feed** variants in an isolated 390px prototype picker.
+- [ ] Run screenshot-based Impeccable refinement on those variants.
+- [ ] Human selects/rejects the Feed direction.
+- [ ] Freeze the selected Feed direction in Figma.
 
 ### Phase B — make implementation reproducible
 - [ ] Define exact canonical mobile viewport(s).
@@ -516,6 +518,7 @@ Append important decisions; do not erase old reasoning without recording replace
 - **2026-09-22 EXPERIMENT (design exploration only):** Feed shows question, probability, liquidity, close time, category, compact creator identity, and optional trend only with real data; criteria, order book, recent trades and detailed execution economics stay on Detail. Remaining Feed/Detail nuances still OPEN.
 - **2026-09-22 EXPERIMENT (design exploration only):** Market Detail order book defaults to ~3–4 best levels per side with expand-for-more. Presentation only; matching unchanged. Final default depth still OPEN.
 - **2026-09-22 EXPERIMENT (design exploration only):** Show creator identity/profile; compact creator on Feed allowed. Art direction must not depend on Top Creators / reputation ranking until the reputation model is CONFIRMED. Reputation model remains OPEN.
+- **2026-09-22 DESIGN PROCESS:** Tape / Issue / Instrument Figma exploration was rejected as a visual direction. Future exploration starts with one live 390px Feed surface, specific screenshot references, isolated prototype variants, and rendered visual critique before Figma/production expansion.
 
 ## 14. How to maintain this file
 
