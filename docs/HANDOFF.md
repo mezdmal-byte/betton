@@ -1,3 +1,5 @@
+> **READ FIRST:** `docs/BETTON_BIBLE.md` is the living product source of truth for product direction, UX, design quality gates, open questions and roadmap. Read it before this technical handoff and update it when product decisions change.
+
 # BetTON handoff
 
 Актуально для передачи проекта новому разработчику.
