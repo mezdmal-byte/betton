@@ -248,7 +248,6 @@ export function LivePilot() {
   )
 
   const sideIndex = route.side === 'a' ? 0 : 1
-  const sidePoints = route.side === 'a' ? chartA : chartB
   const sideLevels =
     bookQuery.data?.available_to_me?.[sideIndex]?.length
       ? bookQuery.data.available_to_me[sideIndex]
