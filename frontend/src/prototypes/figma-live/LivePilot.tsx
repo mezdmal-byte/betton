@@ -222,7 +222,6 @@ export function LivePilot() {
     [marketQuery.data],
   )
   const chartA = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 0), [tradesQuery.data])
-  const chartB = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 1), [tradesQuery.data])
   const detailMarket = useMemo(
     () => (detailFixture ? addMovement(marketToPilot(detailFixture), chartA) : null),
     [chartA, detailFixture],
