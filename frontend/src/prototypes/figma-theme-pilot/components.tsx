@@ -34,17 +34,24 @@ export function ThemeToggle() {
   </div>
 }
 
-export function AppShell({ children, screen, navigate, notice, dismissNotice }: {
-  children: ReactNode; screen: Screen; navigate: (screen: Screen) => void; notice: string; dismissNotice: () => void
+export function AppShell({ children, screen, navigate, notice, dismissNotice, showStatusBar = true }: {
+  children: ReactNode
+  screen: Screen
+  navigate: (screen: Screen) => void
+  notice: string
+  dismissNotice: () => void
+  showStatusBar?: boolean
 }) {
   const comparison = new URLSearchParams(location.search).get('compare') === '1'
   return <div className={styles.phone} data-testid="app-shell" data-screen={screen}>
     <div className={styles.viewport}>
-      <div className={cx(styles.statusBar, (screen === 'markets' || screen === 'detail') && styles.smallStatus)}>
-        <span>9:41</span>
-        {!comparison && <ThemeToggle />}
-        <span aria-hidden="true">{'▮▮▮  Wi‑Fi  92%'}</span>
-      </div>
+      {showStatusBar ? (
+        <div className={cx(styles.statusBar, (screen === 'markets' || screen === 'detail') && styles.smallStatus)}>
+          <span>9:41</span>
+          {!comparison && <ThemeToggle />}
+          <span aria-hidden="true">{'▮▮▮  Wi‑Fi  92%'}</span>
+        </div>
+      ) : null}
       {children}
     </div>
     {screen !== 'detail' && <BottomNav screen={screen} navigate={navigate} />}
@@ -124,7 +131,7 @@ export function AmountInput() {
   </label>
 }
 
-function BottomNav({ screen, navigate }: { screen: Screen; navigate: (screen: Screen) => void }) {
+export function BottomNav({ screen, navigate }: { screen: Screen; navigate: (screen: Screen) => void }) {
   const active = screen === 'quick' ? 'markets' : screen
   const items = [
     ['markets', 'Markets'], ['portfolio', 'Portfolio'], ['create', 'Create'], ['notifications', 'Notifications'], ['profile', 'Profile'],
