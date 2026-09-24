@@ -1,0 +1,34 @@
+{
+  "dark-markets": {
+    "meanAbsoluteChannelDifference": 1.79,
+    "pixelsWithAnyChannelDifferenceOver32Pct": 1.55
+  },
+  "dark-detail": {
+    "meanAbsoluteChannelDifference": 1.51,
+    "pixelsWithAnyChannelDifferenceOver32Pct": 1.23
+  },
+  "dark-quick": {
+    "meanAbsoluteChannelDifference": 1.68,
+    "pixelsWithAnyChannelDifferenceOver32Pct": 1.45
+  },
+  "dark-portfolio": {
+    "meanAbsoluteChannelDifference": 1.44,
+    "pixelsWithAnyChannelDifferenceOver32Pct": 1.27
+  },
+  "light-markets": {
+    "meanAbsoluteChannelDifference": 1.3,
+    "pixelsWithAnyChannelDifferenceOver32Pct": 1.2
+  },
+  "light-detail": {
+    "meanAbsoluteChannelDifference": 0.98,
+    "pixelsWithAnyChannelDifferenceOver32Pct": 0.86
+  },
+  "light-quick": {
+    "meanAbsoluteChannelDifference": 1.15,
+    "pixelsWithAnyChannelDifferenceOver32Pct": 1.22
+  },
+  "light-portfolio": {
+    "meanAbsoluteChannelDifference": 0.88,
+    "pixelsWithAnyChannelDifferenceOver32Pct": 0.88
+  }
+}

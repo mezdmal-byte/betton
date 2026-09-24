@@ -1,0 +1,53 @@
+/* Figma: GRbVHwppYxx5c7N5WG1BVA / Dark A and Light C — Porcelain & Cobalt.
+   Theme differences live here; geometry, content and components are shared. */
+:root {
+  --bg: #060b0e;
+  --surface: #0b1115;
+  --surface-raised: #111a20;
+  --text-primary: #f3f7f5;
+  --text-secondary: #94a3ad;
+  --text-muted: #75848d;
+  --border: #20303a;
+  --accent: #4ae7bb;
+  --on-accent: #061510;
+  --yes: #4ae7bb;
+  --no: #ff5e6c;
+  --warning: #f0b856;
+  --info: #67afff;
+  --input-bg: #0b1115;
+  --selected-bg: #142a25;
+  --yes-surface: #12392d;
+  --no-surface: #3d1c25;
+  --warning-surface: #372e18;
+  --disabled-bg: #172127;
+  --disabled-text: #75848d;
+  --scrim: #000000;
+  --probability: #4ae7bb;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-raised: #eef1f5;
+  --text-primary: #192027;
+  --text-secondary: #596772;
+  --text-muted: #63717c;
+  --border: #d4dbe2;
+  --accent: #245cde;
+  --on-accent: #ffffff;
+  --yes: #087c61;
+  --no: #bc3d4c;
+  --warning: #996800;
+  --info: #245cde;
+  --input-bg: #ffffff;
+  --selected-bg: #e7eeff;
+  --yes-surface: #ddf3e9;
+  --no-surface: #fbe8eb;
+  --warning-surface: #fff3d6;
+  --disabled-bg: #e5e8eb;
+  --disabled-text: #6a7580;
+  --scrim: #192027;
+  --probability: #192027;
+  color-scheme: light;
+}

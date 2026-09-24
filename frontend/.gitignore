@@ -27,3 +27,6 @@ playwright/.cache
 *.njsproj
 *.sln
 *.sw?
+
+# Isolated Figma validation build
+dist-theme-pilot/

@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.pilot.tsbuildinfo"
+  },
+  "include": ["src/prototypes/figma-theme-pilot", "src/vite-env.d.ts"]
+}

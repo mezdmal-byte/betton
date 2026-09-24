@@ -12,7 +12,11 @@
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
     "test:visual": "playwright test",
-    "test:visual:update": "playwright test --update-snapshots"
+    "test:visual:update": "playwright test --update-snapshots",
+    "dev:theme-pilot": "vite --config vite.pilot.config.ts",
+    "build:theme-pilot": "tsc -p tsconfig.pilot.json && vite build --config vite.pilot.config.ts",
+    "preview:theme-pilot": "vite preview --config vite.pilot.config.ts",
+    "check:theme-pilot": "node scripts/check-theme-pilot.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.103.1",
