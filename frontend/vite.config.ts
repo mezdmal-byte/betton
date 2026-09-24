@@ -15,6 +15,14 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    build: {
+      rollupOptions: {
+        input: {
+          app: fileURLToPath(new URL('./index.html', import.meta.url)),
+          figmaLive: fileURLToPath(new URL('./prototypes/figma-live.html', import.meta.url)),
+        },
+      },
+    },
     server: {
       proxy: {
         '/auth': proxyTarget,
