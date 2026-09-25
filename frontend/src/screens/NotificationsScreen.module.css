@@ -81,6 +81,14 @@
   overflow-y: auto;
 }
 
+.dateGroup {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  font-weight: var(--font-weight-bold);
+  line-height: normal;
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -113,8 +121,7 @@
 }
 
 .copy,
-.detailRow > span,
-.detailRowStatic > span {
+.detailCopy {
   display: flex;
   min-width: 0;
   flex: 1;
@@ -151,6 +158,13 @@
   white-space: nowrap;
 }
 
+.index {
+  flex: 0 0 20px;
+  color: var(--color-accent-mint);
+  font-size: 9px;
+  line-height: normal;
+}
+
 .disclosure,
 .detailRow b {
   flex: 0 0 auto;
@@ -159,15 +173,11 @@
   font-weight: var(--font-weight-regular);
 }
 
-.detailRow:disabled {
-  opacity: 1;
-}
-
 .eventSummary {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 18px 0;
+  gap: 5px;
+  padding: 10px 0 14px;
 }
 
 .eventSummary strong {
@@ -175,11 +185,19 @@
   font-size: 28px;
   font-weight: var(--font-weight-regular);
   line-height: 1.12;
+  overflow-wrap: anywhere;
 }
 
 .eventSummary span {
   color: var(--color-text-secondary);
   font-size: 12px;
+  line-height: 1.4;
+}
+
+.deliveryNote {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
   line-height: 1.4;
 }
 
