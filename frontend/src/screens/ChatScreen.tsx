@@ -1,5 +1,5 @@
 import { MessageCircle, Paperclip, Reply, Send, Trash2, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChatMessageOut } from '../api/types'
 import styles from './ChatScreen.module.css'
 
@@ -50,6 +50,24 @@ export function ChatScreen({
   const [replyToId, setReplyToId] = useState<number | undefined>()
   const [attachOpen, setAttachOpen] = useState(false)
   const [attachedMarketId, setAttachedMarketId] = useState<number | undefined>()
+  const messagesRef = useRef<HTMLElement | null>(null)
+  const initializedScrollRef = useRef(false)
+  const nearBottomRef = useRef(true)
+  const lastMessageId = messages[messages.length - 1]?.id ?? 0
+
+  useEffect(() => {
+    const element = messagesRef.current
+    if (!element) return
+    if (!initializedScrollRef.current) {
+      element.scrollTop = element.scrollHeight
+      initializedScrollRef.current = true
+      nearBottomRef.current = true
+      return
+    }
+    if (nearBottomRef.current) {
+      element.scrollTop = element.scrollHeight
+    }
+  }, [lastMessageId])
 
   const replyTo = useMemo(
     () => messages.find((message) => message.id === replyToId),
@@ -77,7 +95,15 @@ export function ChatScreen({
         </div>
       </header>
 
-      <main className={styles.messages}>
+      <main
+        ref={messagesRef}
+        className={styles.messages}
+        onScroll={(event) => {
+          const element = event.currentTarget
+          nearBottomRef.current =
+            element.scrollHeight - element.scrollTop - element.clientHeight < 90
+        }}
+      >
         {lobby ? <p className={styles.limitNote}>Показываем последние 100 сообщений.</p> : null}
         {!lobby && hasMore ? (
           <button type="button" className={styles.loadOlder} onClick={onLoadOlder}>
