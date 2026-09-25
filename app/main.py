@@ -57,12 +57,24 @@ def public_bot_username() -> str:
 class ReactPreviewStatic(StaticFiles):
     """Serve the Vite production build under /v2/ without replacing legacy /."""
 
+    @staticmethod
+    def _apply_cache_headers(response):
+        # Never cache HTML across deploys: Vite asset filenames are content-hashed,
+        # so a stale index.html would point at assets that no longer exist.
+        if getattr(response, "media_type", None) == "text/html":
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
     async def get_response(self, path: str, scope):
         try:
-            return await super().get_response(path, scope)
+            response = await super().get_response(path, scope)
+            return self._apply_cache_headers(response)
         except StarletteHTTPException as exc:
             if exc.status_code == 404 and not Path(path).suffix:
-                return await super().get_response("index.html", scope)
+                response = await super().get_response("index.html", scope)
+                return self._apply_cache_headers(response)
             raise
 
 
