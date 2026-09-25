@@ -69,7 +69,7 @@ class User(Base):
 
     @property
     def is_admin(self) -> bool:
-        return settings.is_admin_telegram(self.telegram_id)
+        return settings.is_admin_telegram_identity(self.telegram_id, self.telegram_username)
 
 
 class Market(Base):
