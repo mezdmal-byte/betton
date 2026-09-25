@@ -376,3 +376,82 @@
   font: inherit;
   font-size: 11px;
 }
+
+
+.historyDisclosure {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border: 0;
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.historyDisclosure > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.historyDisclosure strong {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+}
+
+.historyDisclosure small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.historyDisclosure b {
+  flex: 0 0 auto;
+  color: var(--color-accent-mint);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+}
+
+.historyContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.historyTools {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.historyTools button {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-mint);
+  font: inherit;
+  font-size: 11px;
+}
+
+.chartExplanation {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.metrics dd {
+  letter-spacing: -0.01em;
+}
