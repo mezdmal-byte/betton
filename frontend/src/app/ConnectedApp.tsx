@@ -106,7 +106,7 @@ export function ConnectedApp() {
       {route.name === 'history' ? <ConnectedPortfolioScreen userId={session.user?.id} mappedAccount={mappedAccount} accountState={accountState} variant="history" onBack={back} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={(marketId) => push({ name: 'detail', marketId })} onDeposit={() => push({ name: 'wallet', tab: 'deposit' })} onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })} /> : null}
       {route.name === 'wallet' ? <WalletScreen account={mappedAccount} tab={route.tab} onBack={back} onTabChange={(tab: WalletTab) => push({ name: 'wallet', tab })} /> : null}
       {route.name === 'public-profile' ? <ConnectedPublicProfileScreen userId={route.userId} onBack={back} onOpenMarket={(marketId) => push({ name: 'detail', marketId })} /> : null}
-      {route.name === 'detail' ? <ConnectedMarketDetailScreen marketId={route.marketId} isAdmin={isAdmin} userId={session.user?.id} availableTon={availableTon} botUsername={botUsername} webapp={webapp} onBack={back} onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })} onCreatorClick={(creatorId) => openCreator(creatorId)} /> : null}
+      {route.name === 'detail' ? <ConnectedMarketDetailScreen marketId={route.marketId} isAdmin={isAdmin} userId={session.user?.id} availableTon={availableTon} botUsername={botUsername} webapp={webapp} onBack={back} onNavChange={goTab} onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })} onCreatorClick={(creatorId) => openCreator(creatorId)} /> : null}
       {route.name === 'own-price' ? <ConnectedOwnPriceScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} /> : null}
     </div>
   )

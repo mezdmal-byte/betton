@@ -1,169 +1,293 @@
 .screen {
   display: flex;
-  flex-direction: column;
   height: 100%;
-  overflow: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  background: var(--color-canvas);
-}
-
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  min-height: var(--header-height);
-  padding: var(--pad-header-top) var(--page-padding) 6px;
-  background: var(--color-canvas);
-}
-
-.title {
-  flex: 1;
-  min-width: 0;
-  font-size: 16px;
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--tracking-tight);
-}
-
-.body {
-  display: flex;
-  flex: 1 0 auto;
-  min-height: 0;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 var(--page-padding) calc(var(--action-bar-space) + var(--space-16) + var(--tg-bottom));
-  overflow: visible;
+  overflow: hidden;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
 }
 
-.kicker {
+.header,
+.simpleHeader {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pad-header-top) var(--page-padding) 12px;
 }
 
-.catChip {
-  display: inline-flex;
+.simpleHeader {
+  min-height: 52px;
+  flex-direction: row;
   align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
 }
 
-.time {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+}
+
+.titleRow h1 {
   min-width: 0;
-  color: var(--color-text-secondary);
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  text-align: right;
-}
-
-.closing {
-  color: var(--color-outcome-b-accent);
-}
-
-.question {
+  flex: 1;
+  margin: 0;
+  color: var(--color-text-primary);
   font-size: 20px;
-  font-weight: var(--font-weight-bold);
-  line-height: 1.22;
+  font-weight: var(--font-weight-semibold);
+  line-height: 26px;
   letter-spacing: var(--tracking-tight);
   overflow-wrap: anywhere;
 }
 
-.creatorRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.back,
+.more,
+.morePlaceholder {
+  width: 24px;
+  min-width: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
+  font: inherit;
+  line-height: 26px;
+  text-align: center;
+}
+
+.back {
+  font-size: 24px;
   cursor: pointer;
 }
 
-.statsRow {
+.more,
+.morePlaceholder {
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.more {
+  cursor: pointer;
+}
+
+.marketMeta {
+  width: 100%;
+  padding: 0 32px;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marketMeta:disabled {
+  opacity: 1;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px var(--page-padding) 24px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eyebrow {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+}
+
+.outcomes,
+.buyActions,
+.destinations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.historyTitle,
+.sectionTitleRow h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: 17px;
+}
+
+.sectionTitleRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.stat {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  min-width: 0;
-}
-
-.stat b {
-  font-size: 13px;
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-primary);
-}
-
-.stat span {
+.sectionTitleRow button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-mint);
+  font: inherit;
   font-size: 11px;
-  color: var(--color-text-secondary);
 }
 
-.statsDivider {
-  width: 1px;
-  height: 12px;
-  background: var(--color-border-subtle);
-  flex: 0 0 auto;
-}
-
-.outcomes {
+.sideSwitch {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.sideSwitch button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+}
+
+.sideSwitch .sideActiveA {
+  border-color: var(--color-outcome-1);
+  color: var(--color-outcome-1);
+}
+
+.sideSwitch .sideActiveB {
+  border-color: var(--color-outcome-2);
+  color: var(--color-outcome-2);
+}
+
+.historyEmpty {
+  display: flex;
+  height: 92px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--color-surface-base);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+
+.lastTrade {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.metrics div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metrics dt {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 9px;
+  line-height: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metrics dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 21px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.criteria p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  line-height: 17px;
+  overflow-wrap: anywhere;
+}
+
+.buyActions button {
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--color-text-on-accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+}
+
+.buyA {
+  border-color: var(--color-outcome-1) !important;
+  background: var(--color-outcome-1);
+}
+
+.buyB {
+  border-color: var(--color-outcome-2) !important;
+  background: var(--color-outcome-2);
+}
+
+.buyActions button:disabled {
+  opacity: 0.45;
 }
 
 .retryBlock {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
-}
-
-.info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.info h2 {
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-disabled);
-}
-
-.info p {
-  font-size: 13px;
-  font-weight: var(--font-weight-regular);
-  line-height: 1.4;
-  color: var(--color-text-primary);
-  overflow-wrap: anywhere;
-}
-
-.actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  padding: 8px var(--page-padding) var(--pad-bar-bottom);
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border-faint);
+}
+
+@media (max-width: 360px) {
+  .titleRow h1 {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .marketMeta {
+    padding: 0 30px;
+  }
+
+  .metrics dd {
+    font-size: 13px;
+  }
 }

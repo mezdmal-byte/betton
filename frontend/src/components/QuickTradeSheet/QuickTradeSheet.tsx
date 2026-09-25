@@ -1,23 +1,19 @@
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
-import { QUICK_TRADE_AMOUNT_PRESETS } from '../../lib/constants'
+import type { NavId } from '../BottomNavigation/BottomNavigation'
+import { BottomNavigation } from '../BottomNavigation/BottomNavigation'
+import { AmountInput } from '../AmountInput/AmountInput'
+import { Button } from '../Button/Button'
+import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
+import { cx } from '../../lib/cx'
 import { formatOdds, formatTon, formatTonFull } from '../../lib/format'
 import { useT } from '../../i18n'
 import { outcomeIsExecutable } from '../../lib/quote'
 import {
   amountInputValue,
-  formatMaxPreset,
   presetExceedsBalance,
   quickTradeCtaDisabled,
-  topExecutableTon,
 } from '../../lib/quickTrade'
 import type { MarketFixture, OutcomeSide } from '../../types/market'
-import { AmountInput } from '../AmountInput/AmountInput'
-import { Button } from '../Button/Button'
-import { Chip } from '../Chip/Chip'
-import { IconButton } from '../IconButton/IconButton'
-import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
-import { cx } from '../../lib/cx'
 import styles from './QuickTradeSheet.module.css'
 
 export type QuickTradeState =
@@ -46,9 +42,11 @@ export type QuickTradeSheetProps = {
   onOwnPrice?: () => void
   onRefreshQuote?: () => void
   onPlace?: () => void
+  onNavChange?: (id: NavId) => void
   demoMode?: boolean
   quotesLoading?: boolean
   availableTon?: number | null
+  totalAvailableTon?: number | null
   previewMatchedTon?: number | null
   previewRestTon?: number | null
   previewPayoutTon?: number | null
@@ -67,9 +65,9 @@ function outcomeOf(market: MarketFixture, side: OutcomeSide) {
   return side === 'a' ? market.outcomeA : market.outcomeB
 }
 
-function formatAverageOdds(odds: number | null | undefined): string {
-  if (odds == null || Number.isNaN(odds)) return '—'
-  return odds.toFixed(3)
+function quoteValue(value: number | null | undefined, suffix = ''): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  return value.toFixed(2) + suffix
 }
 
 export function QuickTradeSheet({
@@ -83,9 +81,11 @@ export function QuickTradeSheet({
   onOwnPrice,
   onRefreshQuote,
   onPlace,
+  onNavChange,
   demoMode = false,
   quotesLoading = false,
   availableTon = null,
+  totalAvailableTon = null,
   previewMatchedTon = null,
   previewRestTon = null,
   previewPayoutTon = null,
@@ -97,23 +97,30 @@ export function QuickTradeSheet({
 }: QuickTradeSheetProps) {
   const t = useT()
   const [amountDraft, setAmountDraft] = useState(() => amountInputValue(amount))
+  const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
     setAmountDraft(amountInputValue(amount))
-  }, [amount])
+    setConfirming(false)
+  }, [amount, selectedSide])
+
+  useEffect(() => {
+    if (state !== 'normal' && state !== 'partial') setConfirming(false)
+  }, [state])
 
   const selected = outcomeOf(market, selectedSide)
   const executable = !quotesLoading && outcomeIsExecutable(selected)
   const terminalState = state === 'success' || state === 'processing' || state === 'error'
   const noLiquidity = !quotesLoading && !terminalState && (state === 'no-liquidity' || !executable)
   const stale = state === 'stale-quote'
-  const insufficient = state === 'insufficient-balance' || (amount > 0 && presetExceedsBalance(amount, availableTon))
+  const insufficient =
+    state === 'insufficient-balance' ||
+    (amount > 0 && presetExceedsBalance(amount, availableTon))
   const amountEntered = amount > 0
   const matched = previewMatchedTon
   const rest = previewRestTon
   const hasBackendPreview = matched != null && rest != null
   const showPreview = amountEntered && executable && !stale && hasBackendPreview && (matched ?? 0) > 0
-  const maxTon = topExecutableTon(selected)
   const canPlace = !quickTradeCtaDisabled({
     amount,
     executable,
@@ -126,7 +133,12 @@ export function QuickTradeSheet({
   const primaryIsOwnPrice = noLiquidity && !stale
   const primaryIsRefresh = stale || state === 'error'
   const partialFill = state === 'success' && placeResult?.kind === 'partial'
-  const cta = demoMode
+  const primaryDisabled =
+    demoMode ||
+    state === 'success' ||
+    (primaryIsRefresh || primaryIsOwnPrice ? false : !canPlace)
+
+  const primaryLabel = demoMode
     ? t('demo.unavailable')
     : state === 'processing'
       ? t('market.processing')
@@ -138,190 +150,159 @@ export function QuickTradeSheet({
             ? t('market.refreshQuote')
             : primaryIsOwnPrice
               ? t('market.ownOdds')
-              : amountEntered
-                ? t('market.betCtaAmount', { amt: formatMaxPreset(amount) })
-                : t('market.betCta')
-  const primaryDisabled =
-    demoMode || state === 'success' || (primaryIsRefresh || primaryIsOwnPrice ? false : !canPlace)
+              : confirming
+                ? 'Подтвердить покупку'
+                : 'Проверить покупку'
+
+  const totalNow = totalAvailableTon ?? selected.liquidityTon
 
   return (
-    <section className={styles.sheet} aria-label={t('market.quickTrade')}>
-      <div className={styles.handle} aria-hidden="true" />
+    <section className={styles.screen} aria-label={t('market.quickTrade')}>
       <header className={styles.header}>
-        <h2 className={styles.question}>{market.question}</h2>
-        <IconButton label={t('close')} size="md" onClick={onClose}>
-          <X size={18} />
-        </IconButton>
+        <strong className={styles.marketQuestion}>{market.question}</strong>
+        <h1>Быстрый вход</h1>
       </header>
 
-      {stale ? (
-        <p className={styles.banner}>
-          {errorMessage || t('market.quoteChanged')}
-        </p>
-      ) : null}
-      {partialFill && placeResult ? (
-        <p className={cx(styles.banner, styles.successBanner)}>
-          {t('market.filledLine', { filled: formatTonFull(placeResult.filledTon) })}
-          <br />
-          {t('market.refundedLine', { refunded: formatTonFull(placeResult.refundedTon) })}
-        </p>
-      ) : null}
-      {state === 'success' && !partialFill ? (
-        <p className={cx(styles.banner, styles.successBanner)}>{t('market.processed')}</p>
-      ) : null}
-      {state === 'error' && errorMessage ? <p className={styles.banner}>{errorMessage}</p> : null}
-
-      <div className={styles.outcomes}>
-        <OutcomeQuote
-          label={market.outcomeA.label}
-          odds={market.outcomeA.odds}
-          liquidity={market.outcomeA.liquidityTon}
-          side="a"
-          density="compact"
-          state={quotesLoading ? 'loading' : selectedSide === 'a' ? 'selected' : 'default'}
-          onClick={() => onSelectSide?.('a')}
-        />
-        <OutcomeQuote
-          label={market.outcomeB.label}
-          odds={market.outcomeB.odds}
-          liquidity={market.outcomeB.liquidityTon}
-          side="b"
-          density="compact"
-          state={quotesLoading ? 'loading' : selectedSide === 'b' ? 'selected' : 'default'}
-          onClick={() => onSelectSide?.('b')}
-        />
-      </div>
-
-      {state === 'success' ? null : (
-        <p className={cx(styles.liquidity, noLiquidity && !stale && styles.noLiquidity)}>
-          {quotesLoading
-            ? t('market.atOddsAvailable', { odds: '…', amt: '…' })
-            : executable
-              ? t('market.atOddsAvailable', {
-                  odds: formatOdds(selected.odds),
-                  amt: formatTon(selected.liquidityTon),
-                })
-              : t('market.noLiquidityNow')}
-        </p>
-      )}
-
-      <AmountInput
-        value={amountDraft}
-        placeholder="0"
-        label={t('wallet.amount')}
-        onChange={(value) => {
-          let normalized = value.replace(',', '.')
-          if (normalized.startsWith('.')) normalized = `0${normalized}`
-          if (!/^\d*(?:\.\d{0,4})?$/.test(normalized)) return
-          setAmountDraft(normalized)
-          onAmountChange?.(Number(normalized) || 0)
-        }}
-        error={
-          insufficient
-            ? t('err.fundsAvail', { amt: formatTonFull(availableTon) })
-            : undefined
-        }
-      />
-
-      <div className={styles.presets}>
-        {QUICK_TRADE_AMOUNT_PRESETS.map((preset) => (
-          <Chip
-            key={preset}
-            compact
-            selected={preset === amount}
-            disabled={presetExceedsBalance(preset, availableTon)}
-            onClick={() => onAmountChange?.(preset)}
-          >
-            {preset}
-          </Chip>
-        ))}
-        {maxTon > 0 ? (
-          <Chip
-            compact
-            selected={Math.abs(amount - maxTon) < 1e-9}
-            disabled={presetExceedsBalance(maxTon, availableTon)}
-            onClick={() => onAmountChange?.(maxTon)}
-          >
-            {t('market.maxPreset', { amt: formatMaxPreset(maxTon) })}
-          </Chip>
+      <main className={styles.body}>
+        {stale ? <p className={styles.banner}>{errorMessage || t('market.quoteChanged')}</p> : null}
+        {partialFill && placeResult ? (
+          <p className={cx(styles.banner, styles.successBanner)}>
+            {t('market.filledLine', { filled: formatTonFull(placeResult.filledTon) })}
+            <br />
+            {t('market.refundedLine', { refunded: formatTonFull(placeResult.refundedTon) })}
+          </p>
         ) : null}
-      </div>
+        {state === 'success' && !partialFill ? (
+          <p className={cx(styles.banner, styles.successBanner)}>{t('market.processed')}</p>
+        ) : null}
+        {state === 'error' && errorMessage ? <p className={styles.banner}>{errorMessage}</p> : null}
 
-      {showPreview ? (
-        <div className={styles.summary}>
-          <div className={styles.summaryRow}>
-            <span>{t('preview.entered')}</span>
-            <b>{formatTon(amount)}</b>
-          </div>
-          <div className={styles.summaryRow}>
-            <span>{t('preview.willFillNow')}</span>
-            <b>{formatTon(matched)}</b>
-          </div>
-          {(rest ?? 0) > 0.0001 ? (
-            <div className={styles.summaryRow}>
-              <span>{t('preview.wontFill')}</span>
-              <b>{formatTon(rest)}</b>
-            </div>
-          ) : null}
-          <div className={styles.summaryRow}>
-            <span>{t('preview.avgOdds')}</span>
-            <b>{formatAverageOdds(previewAverageOdds)}</b>
-          </div>
-          <div className={styles.summaryRow}>
-            <span>{t('preview.worstOdds')}</span>
-            <b>{formatOdds(previewWorstOdds)}</b>
-          </div>
-          <div className={cx(styles.summaryRow, styles.payoutRow)}>
-            <span>{t('preview.expectedPayout')}</span>
-            <b>~{formatTon(previewPayoutTon)}</b>
-          </div>
-          {previewFills && previewFills.length > 0
-            ? previewFills.map((leg, index) => (
-                <div className={styles.summaryRow} key={`${leg.odds}-${index}`}>
-                  <span>{formatTon(leg.matchedTon)}</span>
-                  <b>× {formatOdds(leg.odds)}</b>
-                </div>
-              ))
-            : null}
+        <div className={styles.outcomes}>
+          <OutcomeQuote
+            label={market.outcomeA.label}
+            odds={market.outcomeA.odds}
+            liquidity={market.outcomeA.liquidityTon}
+            side="a"
+            density="compact"
+            showLiquidity={false}
+            state={quotesLoading ? 'loading' : selectedSide === 'a' ? 'selected' : 'default'}
+            onClick={() => onSelectSide?.('a')}
+          />
+          <OutcomeQuote
+            label={market.outcomeB.label}
+            odds={market.outcomeB.odds}
+            liquidity={market.outcomeB.liquidityTon}
+            side="b"
+            density="compact"
+            showLiquidity={false}
+            state={quotesLoading ? 'loading' : selectedSide === 'b' ? 'selected' : 'default'}
+            onClick={() => onSelectSide?.('b')}
+          />
         </div>
-      ) : (
-        <div className={styles.payout}>
-          <span>{t('preview.expectedPayout')}</span>
-          <b>—</b>
-        </div>
-      )}
 
-      <Button
-        fullWidth
-        loading={!demoMode && state === 'processing'}
-        disabled={primaryDisabled}
-        onClick={
-          state === 'success'
-            ? undefined
-            : demoMode
-              ? undefined
-              : primaryIsRefresh
-                ? onRefreshQuote
-                : primaryIsOwnPrice
-                  ? onOwnPrice
-                  : onPlace
-        }
-      >
-        {cta}
-      </Button>
-      {primaryIsOwnPrice ? null : (
+        <AmountInput
+          value={amountDraft}
+          placeholder="0"
+          label={
+            availableTon == null
+              ? 'Сумма покупки'
+              : 'Сумма покупки · баланс ' + formatTonFull(availableTon)
+          }
+          onChange={(value) => {
+            let normalized = value.replace(',', '.')
+            if (normalized.startsWith('.')) normalized = '0' + normalized
+            if (!/^\d*(?:\.\d{0,4})?$/.test(normalized)) return
+            setAmountDraft(normalized)
+            setConfirming(false)
+            onAmountChange?.(Number(normalized) || 0)
+          }}
+          error={
+            insufficient
+              ? t('err.fundsAvail', { amt: formatTonFull(availableTon) })
+              : undefined
+          }
+        />
+
+        <div className={styles.quote}>
+          <QuoteRow label="Лучший коэффициент" value={quotesLoading ? '…' : formatOdds(selected.odds) + '×'} />
+          <QuoteRow label="Доступно по лучшему" value={quotesLoading ? '…' : formatTon(selected.liquidityTon)} />
+          <QuoteRow label="Всего доступно сейчас" value={quotesLoading ? '…' : formatTon(totalNow)} />
+          <QuoteRow
+            label="Средний коэффициент исполнения"
+            value={showPreview ? quoteValue(previewAverageOdds) + '×' : '—'}
+          />
+          <QuoteRow
+            label="Худший коэффициент исполнения"
+            value={showPreview ? formatOdds(previewWorstOdds) + '×' : '—'}
+          />
+          <QuoteRow label="Исполнится сейчас" value={showPreview ? formatTon(matched) : '—'} />
+          <QuoteRow label="Выплата до комиссии" value={showPreview ? formatTon(previewPayoutTon) : '—'} />
+        </div>
+
+        {previewFills && previewFills.length > 1 ? (
+          <div className={styles.fillBreakdown}>
+            {previewFills.map((leg, index) => (
+              <span key={String(leg.odds) + '-' + index}>
+                {formatTon(leg.matchedTon)} по {formatOdds(leg.odds)}×
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <p className={styles.note}>
+          Доступная часть исполнится сразу. Неисполненный остаток отменится и не останется в стакане.
+        </p>
+
+        {confirming && showPreview ? (
+          <div className={styles.confirmation}>
+            <strong>Проверьте покупку</strong>
+            <span>
+              {selected.label} · {formatTon(amount)} · средний коэффициент {quoteValue(previewAverageOdds)}×
+            </span>
+          </div>
+        ) : null}
+
         <Button
-          variant="link"
-          size="md"
           fullWidth
-          className={styles.ownPrice}
-          disabled={demoMode}
-          onClick={demoMode ? undefined : onOwnPrice}
+          loading={!demoMode && state === 'processing'}
+          disabled={primaryDisabled}
+          onClick={
+            state === 'success'
+              ? undefined
+              : demoMode
+                ? undefined
+                : primaryIsRefresh
+                  ? onRefreshQuote
+                  : primaryIsOwnPrice
+                    ? onOwnPrice
+                    : confirming
+                      ? onPlace
+                      : () => setConfirming(true)
+          }
         >
-          {t('market.ownPriceCta')}
+          {primaryLabel}
         </Button>
-      )}
-      <p className={styles.fee}>{t('account.fee')}</p>
+
+        <div className={styles.destinations}>
+          <Button variant="secondary" fullWidth disabled={demoMode} onClick={demoMode ? undefined : onOwnPrice}>
+            Своя цена
+          </Button>
+          <Button variant="secondary" fullWidth onClick={onClose}>
+            Назад к рынку
+          </Button>
+        </div>
+      </main>
+
+      <BottomNavigation active="markets" onChange={onNavChange} />
     </section>
+  )
+}
+
+function QuoteRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={styles.quoteRow}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   )
 }

@@ -12,6 +12,7 @@ import { placeOrder, previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
 import { shareTokenFor } from '../api/share'
 import { QuickTradeSheet } from '../components/QuickTradeSheet/QuickTradeSheet'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import type { QuickTradeState } from '../components/QuickTradeSheet/QuickTradeSheet'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { outcomeIsExecutable } from '../lib/quote'
@@ -30,6 +31,7 @@ type Props = {
   selectedSide: OutcomeSide
   amount: number
   availableTon: number
+  totalAvailableTon?: number | null
   userId?: number
   quotesLoading?: boolean
   quotesError?: boolean
@@ -38,6 +40,7 @@ type Props = {
   onAmountChange: (amount: number) => void
   onClose: () => void
   onOwnPrice: () => void
+  onNavChange?: (id: NavId) => void
 }
 
 export function ConnectedQuickTradeSheet({
@@ -45,6 +48,7 @@ export function ConnectedQuickTradeSheet({
   selectedSide,
   amount,
   availableTon,
+  totalAvailableTon = null,
   userId,
   quotesLoading = false,
   quotesError = false,
@@ -53,6 +57,7 @@ export function ConnectedQuickTradeSheet({
   onAmountChange,
   onClose,
   onOwnPrice,
+  onNavChange,
 }: Props) {
   const t = useT()
   const queryClient = useQueryClient()
@@ -229,6 +234,8 @@ export function ConnectedQuickTradeSheet({
       state={effectiveState}
       quotesLoading={quotesLoading || previewSettling}
       availableTon={availableTon}
+      totalAvailableTon={totalAvailableTon}
+      onNavChange={onNavChange}
       previewMatchedTon={previewSettling ? null : (preview?.matchedTon ?? null)}
       previewRestTon={previewSettling ? null : (preview?.remainingTon ?? null)}
       previewPayoutTon={previewSettling ? null : (preview?.payoutTon ?? null)}

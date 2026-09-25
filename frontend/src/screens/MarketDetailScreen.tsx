@@ -1,19 +1,13 @@
-import { ChevronLeft, Clock } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Avatar } from '../components/Avatar/Avatar'
 import { Button } from '../components/Button/Button'
-import { IconButton } from '../components/IconButton/IconButton'
 import { MarketChart } from '../components/MarketChart/MarketChart'
 import { MarketStatusPanel } from '../components/MarketStatusPanel/MarketStatusPanel'
 import { OrderBookPanel } from '../components/OrderBookPanel/OrderBookPanel'
 import { OutcomeQuote } from '../components/OutcomeQuote/OutcomeQuote'
-import { RangeSelector } from '../components/RangeSelector/RangeSelector'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
-import { Tabs } from '../components/Tabs/Tabs'
 import { chartSpartakA, chartSpartakB, marketYesNo } from '../fixtures/markets'
 import { useT, type MessageKey } from '../i18n'
 import { formatInteger, formatTon } from '../lib/format'
-import { cx } from '../lib/cx'
 import { marketIsLocked, marketOutcomeQuoteState } from '../lib/quote'
 import type { ChartPoint, MarketFixture, OrderBookLevel, OutcomeSide } from '../types/market'
 import styles from './MarketDetailScreen.module.css'
@@ -56,7 +50,6 @@ export function MarketDetailScreen({
   selectedSide = 'a',
   chartSeriesA = chartSpartakA,
   chartSeriesB = chartSpartakB,
-  priceHistoryAvailable = true,
   tradeHistoryState = 'hidden',
   orderbookA,
   orderbookB,
@@ -73,7 +66,6 @@ export function MarketDetailScreen({
   onCreatorClick,
   onShare,
   shareAvailable = false,
-  showMarketDataSwitch = false,
   onRetryTrades,
   onRetryBook,
   banner,
@@ -81,20 +73,21 @@ export function MarketDetailScreen({
 }: MarketDetailScreenProps) {
   const t = useT()
   const [side, setSide] = useState<OutcomeSide>(selectedSide)
-  const [range, setRange] = useState('1d')
   const [localPane, setLocalPane] = useState<MarketDetailPane>('chart')
   const activeSide = onSelectSide ? selectedSide : side
   const selected = activeSide === 'a' ? market.outcomeA : market.outcomeB
   const series = activeSide === 'a' ? chartSeriesA : chartSeriesB
-  const liveHistory = tradeHistoryState !== 'hidden'
-  const currentOdds = liveHistory
-    ? (series[series.length - 1]?.odds ?? selected.odds ?? 0)
-    : (selected.odds ?? series[series.length - 1]?.odds ?? 0)
+  const activePane = pane ?? localPane
   const locked = marketIsLocked(market)
   const actionsOff = actionsDisabled || locked
-  const showSwitch = showMarketDataSwitch || orderbookA != null || orderbookB != null || orderbookState != null
-  const activePane = pane ?? localPane
-  const resolutionBits = [market.description, market.resolution].map((text) => (text || '').trim()).filter(Boolean)
+  const resolutionBits = [market.description, market.resolution]
+    .map((value) => (value || '').trim())
+    .filter(Boolean)
+
+  const setPane = (next: MarketDetailPane) => {
+    if (onPaneChange) onPaneChange(next)
+    else setLocalPane(next)
+  }
 
   const chooseSide = (next: OutcomeSide) => {
     if (locked) return
@@ -102,31 +95,43 @@ export function MarketDetailScreen({
     else setSide(next)
   }
 
-  if (viewState === 'loading') {
-    return (
-      <div className={styles.screen}>
-        <header className={styles.header}>
-          <IconButton label={t('back')} size="md" onClick={onBack}><ChevronLeft size={22} /></IconButton>
-          <strong className={styles.title}>{t('event.title')}</strong>
-        </header>
-        <div className={styles.body}><StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage></div>
-      </div>
-    )
+  const buy = (next: OutcomeSide) => {
+    chooseSide(next)
+    onPlace?.()
   }
 
-  if (viewState === 'not-found' || viewState === 'forbidden' || viewState === 'error') {
-    const title = viewState === 'not-found' ? t('err.missing') : viewState === 'forbidden' ? t('err.forbidden') : t('err.request')
-    const body = viewState === 'not-found' ? t('err.missingBody') : viewState === 'forbidden' ? t('err.forbiddenBody') : t('err.requestBody')
+  if (viewState !== 'ready') {
+    const title =
+      viewState === 'not-found'
+        ? t('err.missing')
+        : viewState === 'forbidden'
+          ? t('err.forbidden')
+          : viewState === 'loading'
+            ? t('loading')
+            : t('err.request')
+    const body =
+      viewState === 'not-found'
+        ? t('err.missingBody')
+        : viewState === 'forbidden'
+          ? t('err.forbiddenBody')
+          : viewState === 'loading'
+            ? t('loading.body')
+            : t('err.requestBody')
+
     return (
       <div className={styles.screen}>
-        <header className={styles.header}>
-          <IconButton label={t('back')} size="md" onClick={onBack}><ChevronLeft size={22} /></IconButton>
-          <strong className={styles.title}>{t('event.title')}</strong>
+        <header className={styles.simpleHeader}>
+          <button type="button" className={styles.back} onClick={onBack}>‹</button>
+          <strong>{t('event.title')}</strong>
         </header>
-        <div className={styles.body}>
-          <StatusMessage tone="error" title={title}>{body}</StatusMessage>
-          {onRetry ? <Button variant="secondary" onClick={onRetry}>{t('retry')}</Button> : null}
-        </div>
+        <main className={styles.body}>
+          <StatusMessage tone={viewState === 'loading' ? 'loading' : 'error'} title={title}>
+            {body}
+          </StatusMessage>
+          {viewState === 'error' && onRetry ? (
+            <Button variant="secondary" onClick={onRetry}>{t('retry')}</Button>
+          ) : null}
+        </main>
       </div>
     )
   }
@@ -134,46 +139,170 @@ export function MarketDetailScreen({
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <IconButton label={t('back')} size="md" onClick={onBack}><ChevronLeft size={22} /></IconButton>
-        <strong className={styles.title}>{t('event.title')}</strong>
-        {shareAvailable && onShare ? <Button variant="ghost" size="md" onClick={onShare}>{t('share')}</Button> : null}
+        <div className={styles.titleRow}>
+          <button type="button" className={styles.back} onClick={onBack}>‹</button>
+          <h1>{market.question}</h1>
+          {shareAvailable && onShare ? (
+            <button type="button" className={styles.more} aria-label={t('share')} onClick={onShare}>•••</button>
+          ) : (
+            <span className={styles.morePlaceholder}>•••</span>
+          )}
+        </div>
+        <button
+          type="button"
+          className={styles.marketMeta}
+          onClick={onCreatorClick}
+          disabled={!onCreatorClick}
+        >
+          @{market.creator.handle} · {categoryLabel(market, t)} · {market.closeLabel}
+        </button>
       </header>
-      <div className={styles.body}>
-        <div className={styles.kicker}>
-          <span className={styles.catChip}>{categoryLabel(market, t)}</span>
-          <span className={cx(styles.time, market.status === 'closing' && styles.closing)}><Clock size={13} strokeWidth={2.2} aria-hidden="true" />{market.closeLabel}</span>
+
+      <main className={styles.scroll}>
+        <div className={styles.body}>
+          {banner}
+
+          <section className={styles.section}>
+            <span className={styles.eyebrow}>ТЕКУЩИЕ ПРЕДЛОЖЕНИЯ</span>
+            <div className={styles.outcomes}>
+              <OutcomeQuote
+                label={market.outcomeA.label}
+                odds={market.outcomeA.odds}
+                liquidity={market.outcomeA.liquidityTon}
+                side="a"
+                density="feed"
+                state={marketOutcomeQuoteState(market, 'a', null)}
+                onClick={() => chooseSide('a')}
+              />
+              <OutcomeQuote
+                label={market.outcomeB.label}
+                odds={market.outcomeB.odds}
+                liquidity={market.outcomeB.liquidityTon}
+                side="b"
+                density="feed"
+                state={marketOutcomeQuoteState(market, 'b', null)}
+                onClick={() => chooseSide('b')}
+              />
+            </div>
+          </section>
+
+          {activePane === 'book' ? (
+            <section className={styles.section}>
+              <div className={styles.sectionTitleRow}>
+                <h2>Стакан</h2>
+                <button type="button" onClick={() => setPane('chart')}>Назад к обзору</button>
+              </div>
+              <OrderBookPanel
+                outcomeALabel={market.outcomeA.label}
+                outcomeBLabel={market.outcomeB.label}
+                sideA={orderbookA ?? []}
+                sideB={orderbookB ?? []}
+                state={orderbookState === 'loading' || orderbookState === 'error' ? orderbookState : 'ready'}
+                hint={t('book.depthHint')}
+                onRetry={onRetryBook ?? onRetry}
+              />
+            </section>
+          ) : (
+            <>
+              <section className={styles.section}>
+                <h2 className={styles.historyTitle}>Коэффициент по сделкам · {selected.label}</h2>
+                <div className={styles.sideSwitch}>
+                  <button
+                    type="button"
+                    className={activeSide === 'a' ? styles.sideActiveA : undefined}
+                    onClick={() => chooseSide('a')}
+                  >
+                    {market.outcomeA.label}
+                  </button>
+                  <button
+                    type="button"
+                    className={activeSide === 'b' ? styles.sideActiveB : undefined}
+                    onClick={() => chooseSide('b')}
+                  >
+                    {market.outcomeB.label}
+                  </button>
+                </div>
+
+                {tradeHistoryState === 'loading' ? (
+                  <StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage>
+                ) : tradeHistoryState === 'error' ? (
+                  <div className={styles.retryBlock}>
+                    <StatusMessage tone="error" title={t('event.tradesError')} />
+                    {onRetryTrades ? <Button variant="secondary" onClick={onRetryTrades}>{t('retry')}</Button> : null}
+                  </div>
+                ) : tradeHistoryState === 'ready' && series.length > 0 ? (
+                  <MarketChart
+                    series={series}
+                    currentOdds={series[series.length - 1]?.odds ?? selected.odds ?? 0}
+                    outcomeLabel={selected.label}
+                    volumeTon={market.volumeTon}
+                    title={'Коэффициент по сделкам · ' + selected.label}
+                  />
+                ) : (
+                  <>
+                    <div className={styles.historyEmpty}>История сделок недоступна</div>
+                    <p className={styles.lastTrade}>Последняя сделка: нет данных</p>
+                  </>
+                )}
+              </section>
+
+              <dl className={styles.metrics}>
+                <div>
+                  <dt>ОБЪЁМ СДЕЛОК</dt>
+                  <dd>{formatTon(market.volumeTon)}</dd>
+                </div>
+                <div>
+                  <dt>УЧАСТНИКИ</dt>
+                  <dd>{formatInteger(market.participants)}</dd>
+                </div>
+                <div>
+                  <dt>ЗАКРЫТИЕ</dt>
+                  <dd>{market.closeLabel}</dd>
+                </div>
+              </dl>
+
+              {resolutionBits.length > 0 ? (
+                <section className={styles.criteria}>
+                  <span className={styles.eyebrow}>КРИТЕРИИ · ИСТОЧНИК</span>
+                  {resolutionBits.map((text) => <p key={text}>{text}</p>)}
+                </section>
+              ) : null}
+
+              <MarketStatusPanel market={market} />
+
+              <div className={styles.buyActions}>
+                <button
+                  type="button"
+                  className={styles.buyA}
+                  disabled={actionsOff}
+                  onClick={() => buy('a')}
+                >
+                  Купить «{market.outcomeA.label}»
+                </button>
+                <button
+                  type="button"
+                  className={styles.buyB}
+                  disabled={actionsOff}
+                  onClick={() => buy('b')}
+                >
+                  Купить «{market.outcomeB.label}»
+                </button>
+              </div>
+
+              <div className={styles.destinations}>
+                <Button variant="secondary" fullWidth onClick={() => setPane('book')}>
+                  Стакан
+                </Button>
+                <Button variant="secondary" fullWidth disabled={actionsOff} onClick={onOwnPrice}>
+                  Своя цена
+                </Button>
+              </div>
+
+              {extra}
+            </>
+          )}
         </div>
-        <h1 className={styles.question}>{market.question}</h1>
-        {banner}
-        <div className={styles.creatorRow} onClick={onCreatorClick} role={onCreatorClick ? 'button' : undefined} tabIndex={onCreatorClick ? 0 : undefined} onKeyDown={onCreatorClick ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onCreatorClick() } } : undefined}>
-          <Avatar initials={market.creator.initials} name={market.creator.displayName} size="sm" /><span>@{market.creator.handle}</span>
-        </div>
-        <div className={styles.statsRow}>
-          <div className={styles.stat}><b>{formatTon(market.volumeTon)}</b><span>{t('market.volume')}</span></div>
-          <span className={styles.statsDivider} aria-hidden="true" />
-          <div className={styles.stat}><b>{formatInteger(market.participants)}</b><span>{t('market.people')}</span></div>
-        </div>
-        <div className={styles.outcomes}>
-          <OutcomeQuote label={market.outcomeA.label} odds={market.outcomeA.odds} liquidity={market.outcomeA.liquidityTon} side="a" state={marketOutcomeQuoteState(market, 'a', locked ? null : activeSide)} onClick={() => chooseSide('a')} />
-          <OutcomeQuote label={market.outcomeB.label} odds={market.outcomeB.odds} liquidity={market.outcomeB.liquidityTon} side="b" state={marketOutcomeQuoteState(market, 'b', locked ? null : activeSide)} onClick={() => chooseSide('b')} />
-        </div>
-        <MarketStatusPanel market={market} />
-        {showSwitch ? <Tabs equal items={[{ id: 'chart', label: t('event.tradesTitleShort') }, { id: 'book', label: t('event.book') }]} value={activePane} onChange={(id) => { const next = id as MarketDetailPane; if (onPaneChange) onPaneChange(next); else setLocalPane(next) }} ariaLabel={t('event.tradesTitleShort')} /> : null}
-        {(!showSwitch || activePane === 'chart') && liveHistory ? (
-          tradeHistoryState === 'loading' ? <StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage>
-            : tradeHistoryState === 'error' ? <div className={styles.retryBlock}><StatusMessage tone="error" title={t('event.tradesError')} />{onRetryTrades ? <Button variant="secondary" onClick={onRetryTrades}>{t('retry')}</Button> : onRetry ? <Button variant="secondary" onClick={onRetry}>{t('retry')}</Button> : null}</div>
-              : tradeHistoryState === 'empty' || series.length === 0 ? <StatusMessage tone="empty" title={t('event.tradesEmpty')} />
-                : <MarketChart series={series} currentOdds={currentOdds} outcomeLabel={selected.label} volumeTon={market.volumeTon} title={`${t('event.tradesTitle')} · ${selected.label}`} />
-        ) : null}
-        {(!showSwitch || activePane === 'chart') && !liveHistory ? (priceHistoryAvailable ? <><RangeSelector value={range} onChange={setRange} /><MarketChart series={series} currentOdds={currentOdds} outcomeLabel={selected.label} volumeTon={market.volumeTon} /></> : <StatusMessage tone="empty" title={t('event.tradesEmpty')} />) : null}
-        {showSwitch && activePane === 'book' ? <OrderBookPanel outcomeALabel={market.outcomeA.label} outcomeBLabel={market.outcomeB.label} sideA={orderbookA ?? []} sideB={orderbookB ?? []} state={orderbookState === 'loading' || orderbookState === 'error' ? orderbookState : 'ready'} hint={t('book.depthHint')} onRetry={onRetryBook ?? onRetry} /> : null}
-        {resolutionBits.length > 0 ? <section className={styles.info}><h2>{t('event.how')}</h2>{resolutionBits.map((text) => <p key={text}>{text}</p>)}</section> : null}
-        {extra}
-      </div>
-      <div className={styles.actions}>
-        <Button variant="secondary" size="md" disabled={actionsOff} onClick={onOwnPrice}>{t('market.ownOdds')}</Button>
-        <Button size="md" disabled={actionsOff} onClick={onPlace}>{t('market.betCta')}</Button>
-      </div>
+      </main>
     </div>
   )
 }
