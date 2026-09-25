@@ -209,7 +209,8 @@ export function OwnPriceScreen({
                 )}
               </>
             ) : (
-            <OwnPricePanel
+              <>
+                <OwnPricePanel
               question={market.question}
               outcomeALabel={market.outcomeA.label}
               outcomeBLabel={market.outcomeB.label}
@@ -264,11 +265,12 @@ export function OwnPriceScreen({
               </div>
             ) : null}
 
-            {success ? (
-              <Button variant="secondary" fullWidth onClick={onBack}>
-                Назад к рынку
-              </Button>
-            ) : null}
+                {success ? (
+                  <Button variant="secondary" fullWidth onClick={onBack}>
+                    Назад к рынку
+                  </Button>
+                ) : null}
+              </>
             )}
           </>
         )}
