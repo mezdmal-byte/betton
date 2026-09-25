@@ -1,11 +1,58 @@
 .root {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heading strong {
+  color: var(--color-text-primary);
+  font-size: 21px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 27px;
+}
+
+.heading span {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.stateCard,
+.dangerCard {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--color-border-faint);
-  border-radius: var(--radius-14);
-  background: var(--color-surface);
+  padding: 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-surface-raised);
+}
+
+.dangerCard {
+  border-color: var(--color-status-danger);
+  background: var(--color-status-danger-surface);
+}
+
+.stateCard strong,
+.dangerCard strong {
+  color: var(--color-text-primary);
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.35;
+}
+
+.stateCard p,
+.dangerCard p,
+.metric p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .actions {
@@ -20,8 +67,20 @@
   gap: 8px;
 }
 
-@media (max-width: 340px) {
-  .resolveGrid {
-    grid-template-columns: 1fr;
-  }
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+}
+
+.metric strong {
+  color: var(--color-accent-mint);
+  font-size: 38px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+}
+
+@media (max-width: 360px) {
+  .resolveGrid { grid-template-columns: 1fr; }
 }

@@ -17,6 +17,14 @@ import { useT } from '../i18n'
 import { invalidateAfterTrade } from './invalidate'
 import styles from './AdminMarketPanel.module.css'
 
+type Intent =
+  | { kind: 'approve' }
+  | { kind: 'reject' }
+  | { kind: 'close' }
+  | { kind: 'void' }
+  | { kind: 'resolve'; outcomeIndex: number; outcomeName: string }
+  | null
+
 export function AdminMarketPanel({
   market,
   userId,
@@ -27,6 +35,7 @@ export function AdminMarketPanel({
   const t = useT()
   const queryClient = useQueryClient()
   const [reason, setReason] = useState('')
+  const [intent, setIntent] = useState<Intent>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const invalidate = () => {
@@ -36,80 +45,160 @@ export function AdminMarketPanel({
 
   const run = useMutation({
     mutationFn: (fn: () => Promise<MarketOut>) => fn(),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setIntent(null)
+      setReason('')
+      invalidate()
+    },
     onError: (error) => setErrorMessage(errorDetail(error)),
   })
 
   const p2p = (market.mechanism ?? 'p2p') === 'p2p'
   const names = market.outcomes?.length ? market.outcomes : [t('outcome.yes'), t('outcome.no')]
 
+  const execute = () => {
+    if (!intent || run.isPending) return
+    setErrorMessage(null)
+    if (intent.kind === 'approve') run.mutate(() => approveMarket(market.id))
+    if (intent.kind === 'reject' && reason.trim()) run.mutate(() => rejectMarket(market.id, reason.trim()))
+    if (intent.kind === 'close') run.mutate(() => closeMarket(market.id))
+    if (intent.kind === 'void' && reason.trim()) run.mutate(() => voidMarket(market.id, reason.trim()))
+    if (intent.kind === 'resolve') run.mutate(() => resolveMarket(market.id, intent.outcomeIndex))
+  }
+
   return (
     <section className={styles.root}>
-      <StatusMessage title={t('moderation.title')}>{t('mod.hint')}</StatusMessage>
+      <div className={styles.heading}>
+        <strong>{intent ? confirmationTitle(intent) : t('moderation.title')}</strong>
+        <span>BETTON · SYSTEM</span>
+      </div>
+
+      {run.isPending ? (
+        <section className={styles.metric}>
+          <strong>Обрабатываем</strong>
+          <p>Admin-действие отправлено на backend.</p>
+        </section>
+      ) : null}
+
       {errorMessage ? (
-        <StatusMessage tone="error" title={t('error')}>
-          {errorMessage}
-        </StatusMessage>
+        <StatusMessage tone="error" title={t('error')}>{errorMessage}</StatusMessage>
       ) : null}
-      {market.status === 'pending' ? (
-        <div className={styles.actions}>
-          <Button fullWidth disabled={run.isPending} onClick={() => run.mutate(() => approveMarket(market.id))}>
-            {t('mod.approve')}
-          </Button>
-          <TextField id="admin-reject" label={t('mod.reasonPh')} value={reason} onChange={setReason} />
-          <Button
-            variant="secondary"
-            fullWidth
-            disabled={run.isPending || !reason.trim()}
-            onClick={() => run.mutate(() => rejectMarket(market.id, reason.trim()))}
-          >
-            {t('mod.reject')}
-          </Button>
-        </div>
-      ) : null}
-      {market.status === 'open' ? (
-        <Button variant="secondary" fullWidth disabled={run.isPending} onClick={() => run.mutate(() => closeMarket(market.id))}>
-          {t('mod.close')}
-        </Button>
-      ) : null}
-      {market.status === 'closed' ? (
-        <div className={styles.resolveGrid}>
-          {names.map((name, index) => (
+
+      {intent ? (
+        <>
+          <section className={intent.kind === 'void' || intent.kind === 'reject' ? styles.dangerCard : styles.stateCard}>
+            <strong>{confirmationCopy(intent, market.question)}</strong>
+            {intent.kind === 'resolve' ? (
+              <p>Backend выполнит расчёт сразу после подтверждения. Отдельного settlement-preview API сейчас нет.</p>
+            ) : null}
+          </section>
+
+          {intent.kind === 'reject' || intent.kind === 'void' ? (
+            <TextField
+              id={'admin-' + intent.kind}
+              label={intent.kind === 'reject' ? t('mod.reasonPh') : t('mod.cancelPh')}
+              value={reason}
+              onChange={setReason}
+            />
+          ) : null}
+
+          <div className={styles.actions}>
             <Button
-              key={name}
-              variant="secondary"
               fullWidth
-              disabled={run.isPending}
-              onClick={() => {
-                if (typeof window !== 'undefined' && !window.confirm(t('mod.resolveConfirm', { name }))) {
-                  return
-                }
-                run.mutate(() => resolveMarket(market.id, index))
-              }}
-            >
-              {t('mod.resolve', { name })}
-            </Button>
-          ))}
-        </div>
-      ) : null}
-      {p2p && (market.status === 'open' || market.status === 'closed') ? (
-        <div className={styles.actions}>
-          <TextField id="admin-void" label={t('mod.cancelPh')} value={reason} onChange={setReason} />
-          <Button
-            variant="secondary"
-            fullWidth
-            disabled={run.isPending || !reason.trim()}
-            onClick={() => {
-              if (typeof window !== 'undefined' && !window.confirm(t('mod.voidConfirm'))) {
-                return
+              variant={intent.kind === 'void' || intent.kind === 'reject' ? 'secondary' : undefined}
+              disabled={
+                run.isPending ||
+                ((intent.kind === 'reject' || intent.kind === 'void') && !reason.trim())
               }
-              run.mutate(() => voidMarket(market.id, reason.trim()))
-            }}
-          >
-            {t('mod.cancel')}
-          </Button>
-        </div>
-      ) : null}
+              onClick={execute}
+            >
+              {confirmLabel(intent)}
+            </Button>
+            <Button variant="secondary" fullWidth disabled={run.isPending} onClick={() => setIntent(null)}>
+              Отмена
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <section className={styles.stateCard}>
+            <strong>{market.question}</strong>
+            <p>Статус · {market.status}</p>
+            <p>{t('mod.hint')}</p>
+          </section>
+
+          {market.status === 'pending' ? (
+            <div className={styles.actions}>
+              <Button fullWidth disabled={run.isPending} onClick={() => setIntent({ kind: 'approve' })}>
+                {t('mod.approve')}
+              </Button>
+              <Button variant="secondary" fullWidth disabled={run.isPending} onClick={() => setIntent({ kind: 'reject' })}>
+                {t('mod.reject')}
+              </Button>
+            </div>
+          ) : null}
+
+          {market.status === 'open' ? (
+            <div className={styles.actions}>
+              <Button variant="secondary" fullWidth disabled={run.isPending} onClick={() => setIntent({ kind: 'close' })}>
+                {t('mod.close')}
+              </Button>
+              {p2p ? (
+                <Button variant="secondary" fullWidth disabled={run.isPending} onClick={() => setIntent({ kind: 'void' })}>
+                  {t('mod.cancel')}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {market.status === 'closed' ? (
+            <>
+              <div className={styles.resolveGrid}>
+                {names.map((name, index) => (
+                  <Button
+                    key={name}
+                    variant="secondary"
+                    fullWidth
+                    disabled={run.isPending}
+                    onClick={() => setIntent({ kind: 'resolve', outcomeIndex: index, outcomeName: name })}
+                  >
+                    {t('mod.resolve', { name })}
+                  </Button>
+                ))}
+              </div>
+              {p2p ? (
+                <Button variant="secondary" fullWidth disabled={run.isPending} onClick={() => setIntent({ kind: 'void' })}>
+                  {t('mod.cancel')}
+                </Button>
+              ) : null}
+            </>
+          ) : null}
+        </>
+      )}
     </section>
   )
+}
+
+function confirmationTitle(intent: Exclude<Intent, null>): string {
+  if (intent.kind === 'approve') return 'Подтвердить одобрение'
+  if (intent.kind === 'reject') return 'Отклонить рынок'
+  if (intent.kind === 'close') return 'Остановить торговлю'
+  if (intent.kind === 'void') return 'Void рынка'
+  return 'Подтвердить расчёт'
+}
+
+function confirmationCopy(intent: Exclude<Intent, null>, question: string): string {
+  if (intent.kind === 'approve') return 'Одобрить: ' + question
+  if (intent.kind === 'reject') return 'Создатель получит указанную причину отклонения.'
+  if (intent.kind === 'close') return 'После подтверждения новые заявки на рынок приниматься не будут.'
+  if (intent.kind === 'void') return 'Все применимые P2P-средства будут возвращены по существующей backend-логике.'
+  return 'Победивший исход · ' + intent.outcomeName
+}
+
+function confirmLabel(intent: Exclude<Intent, null>): string {
+  if (intent.kind === 'approve') return 'Одобрить рынок'
+  if (intent.kind === 'reject') return 'Подтвердить отклонение'
+  if (intent.kind === 'close') return 'Остановить торговлю'
+  if (intent.kind === 'void') return 'Подтвердить void'
+  return 'Рассчитать рынок'
 }
