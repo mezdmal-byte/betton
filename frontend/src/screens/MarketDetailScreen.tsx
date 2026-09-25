@@ -35,6 +35,8 @@ export type MarketDetailScreenProps = {
   viewState?: MarketDetailViewState
   actionsDisabled?: boolean
   showInternalBack?: boolean
+  discussionUnreadReplies?: number
+  onDiscussion?: () => void
   onBack?: () => void
   onSelectSide?: (side: OutcomeSide) => void
   onOwnPrice?: () => void
@@ -70,6 +72,8 @@ export function MarketDetailScreen({
   viewState = 'ready',
   actionsDisabled = false,
   showInternalBack = true,
+  discussionUnreadReplies = 0,
+  onDiscussion,
   onBack,
   onSelectSide,
   onOwnPrice,
@@ -385,6 +389,21 @@ export function MarketDetailScreen({
                   </div>
                   {resolutionBits.map((text) => <p key={text}>{text}</p>)}
                 </section>
+              ) : null}
+
+              {onDiscussion ? (
+                <button type="button" className={styles.discussionRow} onClick={onDiscussion}>
+                  <span>
+                    <strong>Обсуждение</strong>
+                    <small>Сообщения и ответы по этому событию</small>
+                  </span>
+                  <span className={styles.discussionAction}>
+                    {discussionUnreadReplies > 0 ? (
+                      <b>{discussionUnreadReplies > 9 ? '9+' : discussionUnreadReplies}</b>
+                    ) : null}
+                    <em>Открыть ›</em>
+                  </span>
+                </button>
               ) : null}
 
               <MarketStatusPanel market={market} />
