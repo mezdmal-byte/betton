@@ -153,3 +153,85 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+
+.detailBack {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-mint);
+  font: inherit;
+  font-size: 11px;
+}
+
+.marketSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 0 14px;
+}
+
+.marketSummary strong {
+  color: var(--color-text-primary);
+  font-size: 24px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.marketSummary span {
+  font-size: 11px;
+  line-height: normal;
+}
+
+.managementRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.managementRows > div {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.managementRows > div > span {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.managementRows small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.managementRows b {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  font-weight: var(--font-weight-regular);
+}
+
+.managementRows .managementDanger span,
+.managementRows .managementDanger small {
+  color: var(--color-status-danger);
+}
+
+.managementNote {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
