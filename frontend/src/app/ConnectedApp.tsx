@@ -24,7 +24,7 @@ import { ConnectedPublicProfileScreen } from './ConnectedPublicProfileScreen'
 import { CreateMarketResult } from './CreateMarketResult'
 import { AuthExpiredScreen } from '../screens/AuthExpiredScreen'
 import { HelpScreen } from '../screens/HelpScreen'
-import { MarketDetailScreen } from '../screens/MarketDetailScreen'
+import { MarketDetailScreen, type MarketDetailPane } from '../screens/MarketDetailScreen'
 import { NotificationsScreen } from '../screens/NotificationsScreen'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { SystemStateScreen } from '../screens/SystemStateScreen'
@@ -34,6 +34,11 @@ import { useAccount, useAuthExpired, useSession } from './session'
 import styles from './ConnectedApp.module.css'
 
 const GUEST_ACCOUNT: AccountFixture = { displayName: 'Гость', handle: 'telegram', initials: '?', availableTon: 0, inPositionsTon: 0, inOrdersTon: 0, creatorIncomeTon: 0, eventsCreated: null, createdVolumeTon: null, isAdmin: false }
+
+function previousDetailPane(pane: MarketDetailPane): MarketDetailPane {
+  if (pane === 'sources') return 'criteria'
+  return 'chart'
+}
 
 export function ConnectedApp() {
   const [hasInitData, setHasInitData] = useState(() => hasTelegramInitData())
@@ -50,6 +55,7 @@ export function ConnectedApp() {
   const [shareResolveState, setShareResolveState] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
   const [shareRetry, setShareRetry] = useState(0)
   const [feedView, setFeedView] = useState<FeedViewState>({ query: '', sort: 'new', category: 'all', status: 'open' })
+  const [detailPane, setDetailPane] = useState<MarketDetailPane>('chart')
   const [showOnboarding, setShowOnboarding] = useState(() => {
     if (typeof window === 'undefined') return false
     try { return window.localStorage.getItem('betton.onboarding.v1') !== 'done' } catch { return true }
@@ -59,6 +65,7 @@ export function ConnectedApp() {
   const accountQuery = useAccount(session.user?.id)
   const healthQuery = useQuery({ queryKey: queryKeys.health, queryFn: getHealth })
   const route = currentRoute(stack)
+  const detailRouteId = route.name === 'detail' ? route.marketId : null
 
   useEffect(() => { bootTelegramWebApp(); setHasInitData(hasTelegramInitData()); setShareToken(readShareTokenFromContext()) }, [])
   useEffect(() => {
@@ -78,7 +85,20 @@ export function ConnectedApp() {
       })
     return () => { cancelled = true }
   }, [shareRetry, shareToken, session.user])
-  useEffect(() => syncTelegramBackButton(showTelegramBackButton(route), () => setStack(goBack)), [route])
+  useEffect(() => {
+    if (detailRouteId != null) setDetailPane('chart')
+  }, [detailRouteId])
+  useEffect(
+    () =>
+      syncTelegramBackButton(showTelegramBackButton(route), () => {
+        if (route.name === 'detail' && detailPane !== 'chart') {
+          setDetailPane(previousDetailPane(detailPane))
+          return
+        }
+        setStack(goBack)
+      }),
+    [detailPane, route],
+  )
 
   const account = accountQuery.data ?? null
   const mappedAccount = useMemo(() => (account ? mapAccountOut(account) : null), [account])
@@ -118,7 +138,7 @@ export function ConnectedApp() {
   if (hasInitData && session.isError) return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => { void session.refetch() }} /></div>
   if (session.user && accountQuery.isError) return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => { void accountQuery.refetch() }} /></div>
   if (shareResolveState === 'loading') return <div className={styles.root}><SystemStateScreen kind="loading" /></div>
-  if (shareResolveState === 'not-found') return <div className={styles.root}><MarketDetailScreen viewState="not-found" onBack={clearShare} /></div>
+  if (shareResolveState === 'not-found') return <div className={styles.root}><MarketDetailScreen viewState="not-found" showInternalBack={!hasInitData} onBack={clearShare} /></div>
   if (shareResolveState === 'error') return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => setShareRetry((value) => value + 1)} /></div>
 
   if (!shareToken && showOnboarding) {
@@ -163,7 +183,7 @@ export function ConnectedApp() {
       {route.name === 'history' ? <ConnectedPortfolioScreen userId={session.user?.id} mappedAccount={mappedAccount} accountState={accountState} variant="history" onBack={back} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={(marketId) => push({ name: 'detail', marketId })} onDeposit={() => push({ name: 'wallet', tab: 'deposit' })} onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })} /> : null}
       {route.name === 'wallet' ? <WalletScreen account={mappedAccount} tab={route.tab} onBack={back} onTabChange={(tab: WalletTab) => push({ name: 'wallet', tab })} /> : null}
       {route.name === 'public-profile' ? <ConnectedPublicProfileScreen userId={route.userId} onBack={back} onNavChange={goTab} onOpenMarket={(marketId) => push({ name: 'detail', marketId })} /> : null}
-      {route.name === 'detail' ? <ConnectedMarketDetailScreen marketId={route.marketId} isAdmin={isAdmin} userId={session.user?.id} botUsername={botUsername} webapp={webapp} onBack={back} onQuickTrade={(side) => push({ name: 'quick-trade', marketId: route.marketId, side })} onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })} onCreatorClick={(creatorId) => openCreator(creatorId)} /> : null}
+      {route.name === 'detail' ? <ConnectedMarketDetailScreen marketId={route.marketId} pane={detailPane} onPaneChange={setDetailPane} showInternalBack={!hasInitData} isAdmin={isAdmin} userId={session.user?.id} botUsername={botUsername} webapp={webapp} onBack={back} onQuickTrade={(side) => push({ name: 'quick-trade', marketId: route.marketId, side })} onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })} onCreatorClick={(creatorId) => openCreator(creatorId)} /> : null}
       {route.name === 'quick-trade' ? <ConnectedQuickTradeScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} onNavChange={goTab} onOwnPrice={(side) => switchTradeRoute({ name: 'own-price', marketId: route.marketId, side })} /> : null}
       {route.name === 'own-price' ? <ConnectedOwnPriceScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} onNavChange={goTab} onQuickTrade={(side) => switchTradeRoute({ name: 'quick-trade', marketId: route.marketId, side })} /> : null}
     </div>
