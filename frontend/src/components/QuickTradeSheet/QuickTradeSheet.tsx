@@ -58,6 +58,8 @@ export type QuickTradeSheetProps = {
     kind: 'empty' | 'partial' | 'full'
     filledTon: number
     refundedTon: number
+    requestedTon?: number
+    status?: string
   } | null
 }
 
@@ -98,6 +100,7 @@ export function QuickTradeSheet({
   const t = useT()
   const [amountDraft, setAmountDraft] = useState(() => amountInputValue(amount))
   const [confirming, setConfirming] = useState(false)
+  const [editingAfterInsufficient, setEditingAfterInsufficient] = useState(false)
 
   useEffect(() => {
     setAmountDraft(amountInputValue(amount))
@@ -106,6 +109,7 @@ export function QuickTradeSheet({
 
   useEffect(() => {
     if (state !== 'normal' && state !== 'partial') setConfirming(false)
+    if (state !== 'insufficient-balance') setEditingAfterInsufficient(false)
   }, [state])
 
   const selected = outcomeOf(market, selectedSide)
@@ -155,6 +159,200 @@ export function QuickTradeSheet({
                 : 'Проверить покупку'
 
   const totalNow = totalAvailableTon ?? selected.liquidityTon
+  const specialState =
+    state === 'processing' ||
+    state === 'stale-quote' ||
+    state === 'no-liquidity' ||
+    state === 'insufficient-balance' ||
+    state === 'success' ||
+    state === 'error'
+  const showSpecialState = specialState && !(state === 'insufficient-balance' && editingAfterInsufficient)
+
+  if (showSpecialState) {
+    const resultPartial = state === 'success' && placeResult?.kind === 'partial'
+    const resultFull = state === 'success' && placeResult?.kind === 'full'
+    const requestedTon = placeResult?.requestedTon ?? amount
+
+    let title = 'Быстрый вход'
+    let metric = formatTonFull(amount)
+    let metricCaption = ''
+    let tone: 'success' | 'warning' | 'danger' | 'default' = 'default'
+    let rows: string[] = []
+    let primaryLabel = 'Назад к рынку'
+    let primaryAction: (() => void) | undefined = onClose
+    let loading = false
+
+    if (state === 'processing') {
+      title = 'Покупка обрабатывается'
+      metric = formatTonFull(amount)
+      metricCaption = 'исполняем по лучшим доступным ценам'
+      rows = ['Проверяем котировку', 'Сопоставляем встречные заявки', 'Не закрывайте приложение']
+      primaryLabel = 'Обработка…'
+      primaryAction = undefined
+      loading = true
+    } else if (state === 'stale-quote') {
+      title = 'Цена изменилась'
+      metric = previewAverageOdds != null ? formatOdds(previewAverageOdds) + '×' : 'Котировка'
+      metricCaption = 'проверьте обновлённую цену перед подтверждением'
+      tone = 'warning'
+      rows = [
+        'Сумма · ' + formatTonFull(amount),
+        previewPayoutTon != null ? 'Новая выплата · ' + formatTonFull(previewPayoutTon) : 'Котировка требует обновления',
+        errorMessage || 'Проверьте обновлённую котировку',
+      ]
+      primaryLabel = 'Обновить котировку'
+      primaryAction = onRefreshQuote
+    } else if (state === 'no-liquidity') {
+      title = 'Нет встречных заявок'
+      metric = '0.00 TON'
+      metricCaption = 'сейчас нельзя исполнить'
+      rows = ['Встречных заявок нет', 'Баланс не изменён', 'Попробуйте позже или задайте свою цену']
+      primaryLabel = 'Перейти к своей цене'
+      primaryAction = onOwnPrice
+    } else if (state === 'insufficient-balance') {
+      title = 'Недостаточно TON'
+      metric = formatTonFull(availableTon ?? 0)
+      metricCaption = 'доступно · требуется ' + formatTonFull(amount)
+      tone = 'danger'
+      rows = [
+        'Не хватает · ' + formatTonFull(Math.max(0, amount - (availableTon ?? 0))),
+        'Сумма сделки · ' + formatTonFull(amount),
+        'Измените сумму и повторите',
+      ]
+      primaryLabel = 'Изменить сумму'
+      primaryAction = () => setEditingAfterInsufficient(true)
+    } else if (state === 'success' && (resultPartial || resultFull) && placeResult) {
+      title = resultPartial ? 'Исполнено частично' : 'Покупка исполнена'
+      metric = formatTonFull(placeResult.filledTon)
+      metricCaption = resultPartial
+        ? 'исполнено из ' + formatTonFull(requestedTon)
+        : 'исполнено полностью'
+      tone = 'success'
+      rows = [
+        'Исполнено · ' + formatTonFull(placeResult.filledTon),
+        ...(placeResult.refundedTon > 0
+          ? ['Возвращено · ' + formatTonFull(placeResult.refundedTon)]
+          : []),
+        resultPartial
+          ? 'Остаток не размещён в стакане'
+          : 'IOC завершён без активного остатка',
+      ]
+      primaryLabel = resultPartial ? 'Готово' : 'В портфель'
+      primaryAction = onNavChange ? () => onNavChange('portfolio') : onClose
+    } else if (state === 'error') {
+      title = 'Покупка не выполнена'
+      metric = 'Не исполнено'
+      metricCaption = 'операция не подтверждена'
+      tone = 'danger'
+      rows = [
+        errorMessage || 'Не удалось подтвердить исполнение',
+        'Повторите с новой котировкой',
+      ]
+      primaryLabel = 'Повторить'
+      primaryAction = onRefreshQuote
+    }
+
+    return (
+      <section className={styles.screen} aria-label={t('market.quickTrade')}>
+        <header className={styles.header}>
+          <strong className={styles.marketQuestion}>{market.question}</strong>
+          <h1>{title}</h1>
+        </header>
+        <main className={styles.body}>
+          <section
+            className={cx(
+              styles.stateMetric,
+              tone === 'success' && styles.stateMetricSuccess,
+              tone === 'warning' && styles.stateMetricWarning,
+              tone === 'danger' && styles.stateMetricDanger,
+            )}
+          >
+            <strong>{metric}</strong>
+            <span>{metricCaption}</span>
+          </section>
+
+          <div className={styles.stateRows}>
+            {rows.map((row, index) => (
+              <div key={String(index) + row}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <p>{row}</p>
+              </div>
+            ))}
+          </div>
+
+          {resultPartial ? (
+            <section className={styles.stateNotice}>
+              <strong>ВАЖНО</strong>
+              <p>IOC завершён: неисполненная часть уже доступна на балансе.</p>
+            </section>
+          ) : null}
+
+          <Button
+            fullWidth
+            loading={loading}
+            disabled={loading || !primaryAction}
+            onClick={primaryAction}
+          >
+            {primaryLabel}
+          </Button>
+
+          {state !== 'processing' && state !== 'success' ? (
+            <Button variant="secondary" fullWidth onClick={onClose}>
+              Назад к рынку
+            </Button>
+          ) : null}
+        </main>
+        <BottomNavigation active="markets" onChange={onNavChange} />
+      </section>
+    )
+  }
+
+  if (state === 'partial' && showPreview && !confirming) {
+    return (
+      <section className={styles.screen} aria-label={t('market.quickTrade')}>
+        <header className={styles.header}>
+          <strong className={styles.marketQuestion}>{market.question}</strong>
+          <h1>Частичное исполнение</h1>
+        </header>
+        <main className={styles.body}>
+          <section className={styles.stateMetric}>
+            <strong>{formatTonFull(matched ?? 0)}</strong>
+            <span>исполнится из {formatTonFull(amount)}</span>
+          </section>
+
+          <div className={styles.stateRows}>
+            {(previewFills ?? []).map((leg, index) => (
+              <div key={String(leg.odds) + '-' + index}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <p>{formatTonFull(leg.matchedTon)} @ {formatOdds(leg.odds)}×</p>
+              </div>
+            ))}
+            <div>
+              <span>{String((previewFills?.length ?? 0) + 1).padStart(2, '0')}</span>
+              <p>Не исполнится · {formatTonFull(rest ?? 0)}</p>
+            </div>
+            <div>
+              <span>{String((previewFills?.length ?? 0) + 2).padStart(2, '0')}</span>
+              <p>Возврат остатка · {formatTonFull(rest ?? 0)}</p>
+            </div>
+          </div>
+
+          <section className={styles.stateNotice}>
+            <strong>ВАЖНО</strong>
+            <p>Quick Trade — IOC. Остаток возвращается на баланс и не размещается в стакане.</p>
+          </section>
+
+          <Button fullWidth disabled={!canPlace} onClick={onPlace}>
+            Подтвердить IOC
+          </Button>
+          <Button variant="secondary" fullWidth onClick={onClose}>
+            Назад к рынку
+          </Button>
+        </main>
+        <BottomNavigation active="markets" onChange={onNavChange} />
+      </section>
+    )
+  }
 
   return (
     <section className={styles.screen} aria-label={t('market.quickTrade')}>
