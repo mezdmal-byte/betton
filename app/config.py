@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     tip_cap: float = 0.01
     starting_balance: float = 1000.0
     admin_telegram_id: str | int | None = None
+    admin_telegram_usernames: str = ""
     betton_preview_seed: bool = False
     telegram_auth_proxy_url: str = ""
     telegram_webhook_proxy_url: str = ""
@@ -37,6 +38,23 @@ class Settings(BaseSettings):
     def is_admin_telegram(self, telegram_id: int | None) -> bool:
         admin_id = self.admin_tg_id()
         return admin_id is not None and telegram_id is not None and int(telegram_id) == admin_id
+
+    def admin_tg_usernames(self) -> frozenset[str]:
+        raw = str(self.admin_telegram_usernames or "")
+        return frozenset(
+            part.strip().lstrip("@").lower()
+            for part in raw.replace(";", ",").split(",")
+            if part.strip().lstrip("@")
+        )
+
+    def is_admin_telegram_username(self, username: str | None) -> bool:
+        if not isinstance(username, str):
+            return False
+        normalized = username.strip().lstrip("@").lower()
+        return bool(normalized) and normalized in self.admin_tg_usernames()
+
+    def is_admin_telegram_identity(self, telegram_id: int | None, username: str | None) -> bool:
+        return self.is_admin_telegram(telegram_id) or self.is_admin_telegram_username(username)
 
     def webapp_base(self) -> str:
         """Публичный адрес бэкенда (Mini App + webhook)."""
