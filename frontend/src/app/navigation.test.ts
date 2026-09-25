@@ -14,6 +14,7 @@ const markets: Route = { name: 'markets' }
 const create: Route = { name: 'create' }
 const portfolio: Route = { name: 'portfolio' }
 const profile: Route = { name: 'profile' }
+const notifications: Route = { name: 'notifications' }
 const walletDeposit: Route = { name: 'wallet', tab: 'deposit' }
 const walletWithdraw: Route = { name: 'wallet', tab: 'withdraw' }
 const publicProfile: Route = { name: 'public-profile', userId: 7 }
@@ -51,6 +52,9 @@ describe('navigation stack', () => {
     expect(resetToTab('portfolio')).toEqual([portfolio])
     expect(isTopLevel(currentRoute(nested))).toBe(false)
     expect(isTopLevel(create)).toBe(true)
+    expect(isTopLevel(profile)).toBe(true)
+    expect(isTopLevel(notifications)).toBe(true)
+    expect(resetToTab('notifications')).toEqual([notifications])
   })
 
   it('replaces wallet tab in place and hides Telegram Back on roots', () => {
@@ -66,6 +70,8 @@ describe('navigation stack', () => {
 
     expect(showTelegramBackButton(detail)).toBe(true)
     expect(showTelegramBackButton(markets)).toBe(false)
+    expect(showTelegramBackButton(profile)).toBe(false)
+    expect(showTelegramBackButton(notifications)).toBe(false)
     expect(sameRoute(detail, { name: 'detail', marketId: 41 })).toBe(false)
   })
 })

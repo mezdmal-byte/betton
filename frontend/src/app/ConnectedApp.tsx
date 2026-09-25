@@ -24,6 +24,7 @@ import { CreateMarketResult } from './CreateMarketResult'
 import { AuthExpiredScreen } from '../screens/AuthExpiredScreen'
 import { HelpScreen } from '../screens/HelpScreen'
 import { MarketDetailScreen } from '../screens/MarketDetailScreen'
+import { NotificationsScreen } from '../screens/NotificationsScreen'
 import { SystemStateScreen } from '../screens/SystemStateScreen'
 import { WalletScreen } from '../screens/WalletScreen'
 import { currentRoute, goBack, pushRoute, resetToTab, showTelegramBackButton, type Route, type WalletTab } from './navigation'
@@ -71,7 +72,7 @@ export function ConnectedApp() {
   const back = () => setStack((current) => goBack(current))
   const goTab = (id: NavId) => setStack(resetToTab(id))
   const push = (next: Route) => setStack((current) => pushRoute(current, next))
-  const openProfile = () => push({ name: 'profile' })
+  const openProfile = () => goTab('profile')
   const openMarket = (market: MarketFixture | number) => { const id = typeof market === 'number' ? market : Number(market.id); if (Number.isFinite(id)) push({ name: 'detail', marketId: id }) }
   const openCreator = (userId?: number | null) => { if (userId) push({ name: 'public-profile', userId }) }
   const clearShare = () => { setShareToken(null); setShareResolveState('idle'); setStack([{ name: 'markets' }]) }
@@ -95,6 +96,7 @@ export function ConnectedApp() {
       {route.name === 'markets' ? <ConnectedMarketsScreen account={account} accountState={accountState} personalized={hasInitData} userId={session.user?.id} availableTon={availableTon} feedView={feedView} onFeedViewChange={setFeedView} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={openMarket} onCreatorClick={(market) => openCreator(market.creator.id ?? market.creatorId)} onTopCreatorClick={openCreator} onOwnPrice={(marketId, side) => push({ name: 'own-price', marketId, side })} /> : null}
       {route.name === 'create' ? <ConnectedCreateMarketScreen enabled={accountState === 'ready'} onBack={() => goTab('markets')} onNavChange={goTab} onCreated={(market) => push({ name: 'create-result', market })} /> : null}
       {route.name === 'create-result' ? <CreateMarketResult market={route.market} shareLink={marketShareUrl({ shareToken: route.market.share_token, botUsername, webapp })} onOpen={() => { if (route.market.share_token) rememberShareToken(route.market.id, route.market.share_token); if (route.market.status === 'pending') push({ name: 'my-markets' }); else push({ name: 'detail', marketId: route.market.id }) }} onBack={back} onToFeed={() => goTab('markets')} onNavChange={goTab} /> : null}
+      {route.name === 'notifications' ? <NotificationsScreen items={[]} onNavChange={goTab} /> : null}
       {route.name === 'portfolio' ? <ConnectedPortfolioScreen userId={session.user?.id} mappedAccount={mappedAccount} accountState={accountState} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={(marketId) => push({ name: 'detail', marketId })} onDeposit={() => push({ name: 'wallet', tab: 'deposit' })} onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })} /> : null}
       {route.name === 'profile' ? <ConnectedProfileScreen account={mappedAccount ?? GUEST_ACCOUNT} accountState={accountState === 'ready' ? 'ready' : 'unauthenticated'} userId={session.user?.id} onBack={back} onMenu={(id) => { if (id === 'events') push({ name: 'my-markets' }); else if (id === 'moderation' && isAdmin) push({ name: 'moderation' }); else if (id === 'wallet') push({ name: 'wallet', tab: 'deposit' }); else if (id === 'help') push({ name: 'help' }); else if (id === 'history') push({ name: 'history' }); else if (id === 'public' && session.user?.id) openCreator(session.user.id) }} /> : null}
       {route.name === 'my-markets' ? <ConnectedMyMarketsScreen userId={session.user?.id} onBack={back} onOpenMarket={(marketId) => push({ name: 'detail', marketId })} /> : null}

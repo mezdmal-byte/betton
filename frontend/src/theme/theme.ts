@@ -3,6 +3,11 @@ import { getTelegramWebApp, type TelegramThemeParams } from '../telegram/webapp'
 export type ColorScheme = 'light' | 'dark'
 
 export const THEME_ATTR = 'data-theme'
+export const THEME_STORAGE_KEY = 'betton.theme'
+
+export function isColorScheme(value: string | null | undefined): value is ColorScheme {
+  return value === 'light' || value === 'dark'
+}
 
 export function prefersColorScheme(): ColorScheme {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'light'
@@ -18,7 +23,31 @@ export function resolveColorScheme(input?: {
   return 'light'
 }
 
+export function readStoredTheme(storage?: Pick<Storage, 'getItem'> | null): ColorScheme | null {
+  try {
+    const value = (storage ?? (typeof localStorage === 'undefined' ? null : localStorage))?.getItem(
+      THEME_STORAGE_KEY,
+    )
+    return isColorScheme(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+export function persistTheme(scheme: ColorScheme, storage?: Pick<Storage, 'setItem'> | null): void {
+  try {
+    ;(storage ?? (typeof localStorage === 'undefined' ? null : localStorage))?.setItem(
+      THEME_STORAGE_KEY,
+      scheme,
+    )
+  } catch {
+    // Private mode / missing storage.
+  }
+}
+
 export function resolveBootColorScheme(): ColorScheme {
+  const stored = readStoredTheme()
+  if (stored) return stored
   const telegram = getTelegramWebApp()
   return resolveColorScheme({
     telegramScheme: telegram?.colorScheme,
@@ -31,6 +60,10 @@ function isHexColor(value: string | undefined): value is string {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim())
 }
 
+/**
+ * Compatibility helper retained for existing tests and integrations.
+ * The Figma implementation itself keeps Dark A / Light C as the canonical palette.
+ */
 export function telegramSurfaceVars(params: TelegramThemeParams | null | undefined): Record<string, string> {
   const vars: Record<string, string> = {}
   if (!params) return vars
@@ -57,9 +90,7 @@ export function applyDocumentTheme(
   ])
   for (const name of allowed) root.style.removeProperty(name)
   const vars = telegramSurfaceVars(params)
-  for (const [name, value] of Object.entries(vars)) {
-    root.style.setProperty(name, value)
-  }
+  for (const [name, value] of Object.entries(vars)) root.style.setProperty(name, value)
   try {
     const webApp = getTelegramWebApp()
     const canvas = vars['--color-canvas']
@@ -69,6 +100,17 @@ export function applyDocumentTheme(
     }
   } catch {
     // Host optional.
+  }
+}
+
+export function syncTelegramChrome(scheme: ColorScheme): void {
+  const background = scheme === 'dark' ? '#060b0e' : '#f6f5f1'
+  try {
+    const webApp = getTelegramWebApp()
+    webApp?.setBackgroundColor?.(background)
+    webApp?.setHeaderColor?.(background)
+  } catch {
+    // Telegram host is optional in browser preview.
   }
 }
 

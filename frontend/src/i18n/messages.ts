@@ -7,6 +7,10 @@ export const ru = {
   'nav.create': 'Создать',
   'nav.mine': 'Портфель',
   'nav.profile': 'Профиль',
+  'nav.notifications': 'Уведомления',
+  'notifications.unread': 'Непрочитанные',
+  'notifications.emptyTitle': 'Нет новых уведомлений',
+  'notifications.emptyBody': 'События по заявкам и рынкам появятся здесь.'
   'nav.main': 'Основное меню',
   'header.available': 'Доступно',
   'back': 'Назад',
@@ -312,6 +316,10 @@ export const en: Record<keyof typeof ru, string> = {
   'nav.create': 'Create',
   'nav.mine': 'Portfolio',
   'nav.profile': 'Profile',
+  'nav.notifications': 'Notifications',
+  'notifications.unread': 'Unread',
+  'notifications.emptyTitle': 'No new notifications',
+  'notifications.emptyBody': 'Order and market events will appear here.'
   'nav.main': 'Main menu',
   'header.available': 'Available',
   'back': 'Back',
@@ -616,6 +624,10 @@ export const zh: Record<keyof typeof ru, string> = {
   'nav.create': '创建',
   'nav.mine': '资产',
   'nav.profile': '资料',
+  'nav.notifications': '通知',
+  'notifications.unread': '未读',
+  'notifications.emptyTitle': '暂无新通知',
+  'notifications.emptyBody': '订单和市场事件会显示在这里。'
   'nav.main': '主导航',
   'header.available': '可用',
   'back': '返回',

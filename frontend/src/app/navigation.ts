@@ -1,7 +1,7 @@
 import type { MarketOut } from '../api/types'
 import type { OutcomeSide } from '../types/market'
 
-export type TabName = 'markets' | 'create' | 'portfolio'
+export type TabName = 'markets' | 'portfolio' | 'create' | 'notifications' | 'profile'
 
 export type WalletTab = 'deposit' | 'withdraw'
 
@@ -10,6 +10,7 @@ export type Route =
   | { name: 'create' }
   | { name: 'create-result'; market: MarketOut }
   | { name: 'portfolio' }
+  | { name: 'notifications' }
   | { name: 'profile' }
   | { name: 'detail'; marketId: number }
   | { name: 'own-price'; marketId: number; side: OutcomeSide }
@@ -20,7 +21,7 @@ export type Route =
   | { name: 'wallet'; tab: WalletTab }
   | { name: 'history' }
 
-export const TOP_LEVEL_ROUTES: ReadonlySet<Route['name']> = new Set(['markets', 'create', 'portfolio'])
+export const TOP_LEVEL_ROUTES: ReadonlySet<Route['name']> = new Set(['markets', 'portfolio', 'create', 'notifications', 'profile'])
 
 export function isTopLevel(route: Route): boolean {
   return TOP_LEVEL_ROUTES.has(route.name)
