@@ -362,19 +362,6 @@ export function QuickTradeSheet({
       </header>
 
       <main className={styles.body}>
-        {stale ? <p className={styles.banner}>{errorMessage || t('market.quoteChanged')}</p> : null}
-        {partialFill && placeResult ? (
-          <p className={cx(styles.banner, styles.successBanner)}>
-            {t('market.filledLine', { filled: formatTonFull(placeResult.filledTon) })}
-            <br />
-            {t('market.refundedLine', { refunded: formatTonFull(placeResult.refundedTon) })}
-          </p>
-        ) : null}
-        {state === 'success' && !partialFill ? (
-          <p className={cx(styles.banner, styles.successBanner)}>{t('market.processed')}</p>
-        ) : null}
-        {state === 'error' && errorMessage ? <p className={styles.banner}>{errorMessage}</p> : null}
-
         <div className={styles.outcomes}>
           <OutcomeQuote
             label={market.outcomeA.label}
@@ -462,20 +449,15 @@ export function QuickTradeSheet({
 
         <Button
           fullWidth
-          loading={!demoMode && state === 'processing'}
           disabled={primaryDisabled}
           onClick={
-            state === 'success'
+            demoMode
               ? undefined
-              : demoMode
-                ? undefined
-                : primaryIsRefresh
-                  ? onRefreshQuote
-                  : primaryIsOwnPrice
-                    ? onOwnPrice
-                    : confirming
-                      ? onPlace
-                      : () => setConfirming(true)
+              : primaryIsOwnPrice
+                ? onOwnPrice
+                : confirming
+                  ? onPlace
+                  : () => setConfirming(true)
           }
         >
           {primaryLabel}
