@@ -108,3 +108,29 @@
   gap: 0;
   padding-bottom: 8px;
 }
+
+
+.chatAction {
+  position: relative;
+  display: inline-flex;
+}
+
+.chatBadge {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  display: inline-flex;
+  min-width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 2px solid var(--color-background-primary);
+  border-radius: 999px;
+  background: var(--color-accent-mint);
+  color: var(--color-background-primary);
+  font-size: 8px;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  pointer-events: none;
+}
