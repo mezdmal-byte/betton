@@ -33,6 +33,8 @@ export type ConnectedMarketDetailScreenProps = {
   pane?: MarketDetailPane
   onPaneChange?: (pane: MarketDetailPane) => void
   showInternalBack?: boolean
+  discussionUnreadReplies?: number
+  onDiscussion?: () => void
   isAdmin?: boolean
   userId?: number
   botUsername?: string | null
@@ -48,6 +50,8 @@ export function ConnectedMarketDetailScreen({
   pane: controlledPane,
   onPaneChange,
   showInternalBack = true,
+  discussionUnreadReplies = 0,
+  onDiscussion,
   isAdmin = false,
   userId,
   botUsername,
@@ -170,6 +174,8 @@ export function ConnectedMarketDetailScreen({
         viewState={viewState}
         actionsDisabled={actionsOff}
         showInternalBack={showInternalBack}
+        discussionUnreadReplies={discussionUnreadReplies}
+        onDiscussion={onDiscussion}
         onBack={onBack}
         onOwnPrice={() => onOwnPrice(side)}
         onPlace={() => {
