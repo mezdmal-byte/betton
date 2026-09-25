@@ -26,6 +26,7 @@ function stateStory(kind: SystemStateKind, withAction = true, withCancel = false
 }
 
 export const Skeleton = stateStory('loading', false)
+export const Loading = stateStory('loading', false)
 export const InitialLoading = stateStory('initial-loading', false)
 export const Offline = stateStory('offline')
 export const Retry = stateStory('retry')

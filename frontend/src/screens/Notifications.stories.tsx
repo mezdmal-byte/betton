@@ -22,6 +22,14 @@ export const Default: Story = {
   ),
 }
 
+export const Unread: Story = {
+  render: () => (
+    <PhoneShell>
+      <NotificationsScreen items={notificationPreviewItems.slice(0, 2)} />
+    </PhoneShell>
+  ),
+}
+
 export const Read: Story = {
   render: () => (
     <PhoneShell>
