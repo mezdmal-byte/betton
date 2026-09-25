@@ -16,6 +16,7 @@ export type ConnectedChatScreenProps = {
   scope: ChatScope
   currentUserId?: number
   isAdmin?: boolean
+  showInternalBack?: boolean
   onBack: () => void
   onOpenMarket: (marketId: number) => void
 }
@@ -24,6 +25,7 @@ export function ConnectedChatScreen({
   scope,
   currentUserId,
   isAdmin = false,
+  showInternalBack = true,
   onBack,
   onOpenMarket,
 }: ConnectedChatScreenProps) {
@@ -121,6 +123,7 @@ export function ConnectedChatScreen({
       sending={sendMutation.isPending}
       lobby={scope.kind === 'lobby'}
       hasMore={Boolean(chat.hasNextPage)}
+      showInternalBack={showInternalBack}
       attachableMarkets={(attachableQuery.data?.items ?? []).map((market) => ({
         id: market.id,
         question: market.question,
