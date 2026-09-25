@@ -1,11 +1,10 @@
+import { CircleHelp, Link2 } from 'lucide-react'
 import { useState } from 'react'
-import { Check, ChevronLeft, Link2 } from 'lucide-react'
 import { copyShareLink, shareExternally } from '../api/share'
 import type { MarketOut } from '../api/types'
-import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
+import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import { Button } from '../components/Button/Button'
-import { IconButton } from '../components/IconButton/IconButton'
 import { useT } from '../i18n'
 import styles from './CreateMarketResult.module.css'
 
@@ -25,53 +24,85 @@ export function CreateMarketResult({
   onNavChange?: (id: NavId) => void
 }) {
   const t = useT()
-  const pending = market.status === 'pending'
-  const unlisted = market.visibility === 'unlisted'
-  const showShare = Boolean(shareLink) && (unlisted || !pending)
   const [copyState, setCopyState] = useState<'idle' | 'ok' | 'fail'>('idle')
+  const pending = market.status === 'pending'
+  const rejected = market.status === 'rejected'
+  const resolved = market.status === 'resolved'
+  const cancelled = market.status === 'cancelled'
+  const closed = market.status === 'closed'
+  const unlisted = market.visibility === 'unlisted'
+  const showShare = Boolean(shareLink) && !pending && !rejected
   const title = pending
-    ? t('create.resultPendingTitle')
-    : unlisted
-      ? t('create.resultUnlistedTitle')
-      : t('create.resultCreatedTitle')
-  const body = pending
-    ? t('create.resultPendingBody')
-    : unlisted
-      ? t('create.resultUnlistedBody')
-      : t('create.resultCreatedBody')
-  const category =
-    market.category === 'sport'
-      ? t('cat.sport')
-      : market.category === 'politics'
-        ? t('cat.politics')
-        : market.category === 'crypto'
-          ? t('cat.crypto')
-          : t('cat.other')
+    ? 'На модерации'
+    : rejected
+      ? 'Рынок отклонён'
+      : resolved
+        ? 'Рынок рассчитан'
+        : cancelled
+          ? 'Рынок отменён'
+          : closed
+            ? 'Рынок закрыт'
+            : unlisted
+              ? 'Unlisted рынок создан'
+              : 'Публичный рынок создан'
+
+  const statusLine = pending
+    ? 'Статус · Pending moderation'
+    : rejected
+      ? 'Статус · Rejected'
+      : resolved
+        ? 'Статус · Resolved'
+        : cancelled
+          ? 'Статус · Voided / cancelled'
+          : closed
+            ? 'Статус · Closed'
+            : 'Статус · Open'
+
+  const accentTone = rejected || cancelled ? 'danger' : pending || closed ? 'warning' : 'success'
 
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <IconButton label={t('back')} size="md" onClick={onBack}>
-          <ChevronLeft size={22} />
-        </IconButton>
-        <strong>{t('create.title')}</strong>
+        <div className={styles.contextRow}>
+          <button type="button" onClick={onBack}>← Назад</button>
+          <span className={styles.brand}><b>Bet</b><b>TON</b></span>
+        </div>
+        <h1>{title}</h1>
       </header>
 
-      <div className={styles.body}>
-        <section className={styles.hero}>
-          <span className={styles.successIcon} aria-hidden="true">
-            <Check size={24} strokeWidth={2.2} />
-          </span>
-          <h1>{title}</h1>
-          <p>{body}</p>
-          {pending ? <span className={styles.pendingBadge}>{t('status.pending')}</span> : null}
+      <main className={styles.body}>
+        <section className={styles.details}>
+          <div className={styles['tone_' + accentTone]}>Market ID · M-{market.id}</div>
+          <div>{statusLine}</div>
+          <div>Видимость · {unlisted ? 'Unlisted' : 'Public'}</div>
+          <div>
+            {pending
+              ? 'Не виден в публичной ленте'
+              : rejected
+                ? market.rejection_reason || 'Требуется правка перед повторной отправкой'
+                : cancelled
+                  ? market.cancellation_reason || 'Торги остановлены, расчёт отменён'
+                  : market.status === 'open'
+                    ? 'Торги P2P открыты'
+                    : 'Торги завершены'}
+          </div>
         </section>
 
-        <section className={styles.marketCard}>
-          <span>{category}</span>
-          <strong>{market.question}</strong>
-          <small>{unlisted ? t('type.unlisted') : pending ? t('status.pending') : t('status.open')}</small>
-        </section>
+        {pending ? (
+          <section className={styles.notice}>
+            <CircleHelp size={16} strokeWidth={1.7} aria-hidden="true" />
+            <p>Обычно проверка занимает до 24 часов. Статус можно отслеживать в «Мои рынки».</p>
+          </section>
+        ) : market.status === 'open' ? (
+          <section className={styles.notice}>
+            <CircleHelp size={16} strokeWidth={1.7} aria-hidden="true" />
+            <p>
+              {unlisted
+                ? 'Рынок доступен только по точной ссылке.'
+                : 'Рынок доступен в поиске, категории и публичной ленте.'}
+            </p>
+          </section>
+        ) : null}
 
         {showShare ? (
           <section className={styles.share}>
@@ -79,10 +110,10 @@ export function CreateMarketResult({
               <Link2 size={16} aria-hidden="true" />
               <span>{t('share.linkTitle')}</span>
             </div>
-            <input className={styles.link} readOnly value={shareLink} onFocus={(event) => event.currentTarget.select()} />
-            {copyState === 'ok' ? <p className={styles.note}>{t('share.copied')}</p> : null}
-            {copyState === 'fail' ? <p className={styles.error}>{t('share.fail')}</p> : null}
-            <div className={styles.row}>
+            <input readOnly value={shareLink} onFocus={(event) => event.currentTarget.select()} />
+            {copyState === 'ok' ? <p className={styles.successText}>{t('share.copied')}</p> : null}
+            {copyState === 'fail' ? <p className={styles.errorText}>{t('share.fail')}</p> : null}
+            <div className={styles.shareActions}>
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -94,8 +125,7 @@ export function CreateMarketResult({
               <Button
                 variant="secondary"
                 onClick={() => {
-                  const ok = shareExternally(shareLink)
-                  if (!ok) setCopyState('fail')
+                  if (!shareExternally(shareLink)) setCopyState('fail')
                 }}
               >
                 {t('share.action')}
@@ -103,16 +133,17 @@ export function CreateMarketResult({
             </div>
           </section>
         ) : null}
-      </div>
 
-      <div className={styles.actions}>
-        <Button fullWidth onClick={onOpen}>
-          {pending ? t('profile.events') : t('create.openEvent')}
-        </Button>
-        <Button variant="ghost" fullWidth onClick={onToFeed}>
-          {t('create.toFeed')}
-        </Button>
-      </div>
+        <div className={styles.actions}>
+          <Button fullWidth onClick={onOpen}>
+            {pending || rejected ? 'Мои рынки' : 'Открыть рынок'}
+          </Button>
+          <Button variant="secondary" fullWidth onClick={onToFeed}>
+            {t('create.toFeed')}
+          </Button>
+        </div>
+      </main>
+
       <BottomNavigation active="create" onChange={onNavChange} />
     </div>
   )

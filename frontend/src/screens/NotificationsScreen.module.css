@@ -7,7 +7,8 @@
   color: var(--color-text-primary);
 }
 
-.header {
+.header,
+.detailHeader {
   display: flex;
   min-height: 72px;
   flex: 0 0 auto;
@@ -16,28 +17,57 @@
   padding: var(--pad-header-top) var(--page-padding) 12px;
 }
 
-.titleRow {
+.titleRow,
+.detailTitleRow {
   display: flex;
   height: 28px;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
 }
 
-.titleRow h1 {
+.titleRow {
+  justify-content: space-between;
+}
+
+.titleRow h1,
+.detailTitleRow h1 {
   min-width: 0;
   margin: 0;
+  color: var(--color-text-primary);
   font-size: 21px;
   font-weight: var(--font-weight-semibold);
   line-height: 27px;
   letter-spacing: var(--tracking-tight);
 }
 
-.header > p {
+.detailTitleRow h1 {
+  flex: 1;
+}
+
+.detailTitleRow button {
+  width: 24px;
+  flex: 0 0 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 18px;
+}
+
+.header > p,
+.detailHeader > p {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 11px;
   line-height: normal;
+}
+
+.detailHeader > p {
+  padding-left: 32px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .body {
@@ -51,9 +81,14 @@
   overflow-y: auto;
 }
 
-.list { display: flex; flex-direction: column; }
+.list {
+  display: flex;
+  flex-direction: column;
+}
 
-.row {
+.row,
+.detailRow,
+.detailRowStatic {
   display: flex;
   width: 100%;
   min-height: 52px;
@@ -77,7 +112,9 @@
   background: var(--color-accent-mint);
 }
 
-.copy {
+.copy,
+.detailRow > span,
+.detailRowStatic > span {
   display: flex;
   min-width: 0;
   flex: 1;
@@ -85,7 +122,9 @@
   gap: 4px;
 }
 
-.copy strong {
+.copy strong,
+.detailRow strong,
+.detailRowStatic strong {
   overflow: hidden;
   color: var(--color-text-primary);
   font-size: 13px;
@@ -95,9 +134,14 @@
   white-space: nowrap;
 }
 
-.copy .unreadTitle { color: var(--color-accent-mint); }
+.copy .unreadTitle,
+.detailRow strong {
+  color: var(--color-accent-mint);
+}
 
-.copy small {
+.copy small,
+.detailRow small,
+.detailRowStatic small {
   overflow: hidden;
   color: var(--color-text-secondary);
   font-size: 10px;
@@ -107,11 +151,36 @@
   white-space: nowrap;
 }
 
-.disclosure {
+.disclosure,
+.detailRow b {
   flex: 0 0 auto;
   color: var(--color-text-muted);
   font-size: 16px;
-  line-height: normal;
+  font-weight: var(--font-weight-regular);
+}
+
+.detailRow:disabled {
+  opacity: 1;
+}
+
+.eventSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 0;
+}
+
+.eventSummary strong {
+  color: var(--color-text-primary);
+  font-size: 28px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.12;
+}
+
+.eventSummary span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .empty {
