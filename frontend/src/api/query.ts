@@ -30,6 +30,9 @@ export const queryKeys = {
   marketShare: (token: string) => ['markets', 'share', token] as const,
   orderbook: (marketId: number | string) => ['markets', String(marketId), 'orderbook'] as const,
   trades: (marketId: number | string) => ['markets', String(marketId), 'trades'] as const,
+  lobbyChat: ['chat', 'lobby'] as const,
+  marketChat: (marketId: number | string) => ['chat', 'market', String(marketId)] as const,
+  chatUnread: ['chat', 'unread-replies'] as const,
   orderPreview: (input: {
     marketId: number | string
     outcome: number
