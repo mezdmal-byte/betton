@@ -10,167 +10,376 @@ PREVIEW_CREATOR = "preview_creator"
 PREVIEW_TRADER = "preview_trader"
 
 
+def _user(db, username: str, telegram_username: str, display_name: str) -> User:
+    user = db.query(User).filter(User.username == username).one_or_none()
+    if user is None:
+        user = User(
+            telegram_id=None,
+            username=username,
+            telegram_username=telegram_username,
+            display_name=display_name,
+            balance_nano=to_nano(100_000),
+            balance_legacy=100_000.0,
+        )
+        db.add(user)
+        db.flush()
+    else:
+        user.telegram_username = telegram_username
+        user.display_name = display_name
+    return user
+
+
+def _market(
+    db,
+    creator: User,
+    *,
+    question: str,
+    description: str,
+    category: str,
+    close_at: datetime,
+    status: MarketStatus = MarketStatus.open,
+) -> Market:
+    market = (
+        db.query(Market)
+        .filter(Market.creator_id == creator.id, Market.question == question)
+        .one_or_none()
+    )
+    values = dict(
+        creator_id=creator.id,
+        mechanism="p2p",
+        b=1.0,
+        q_yes=0.0,
+        q_no=0.0,
+        q=[0.0, 0.0],
+        lock_ton=0,
+        pot=0,
+        lock_returned=True,
+        visibility="public",
+        p2p_journal_coverage="incomplete",
+        question=question,
+        description=description,
+        category=category,
+        outcomes=["Да", "Нет"],
+        close_at=close_at,
+        status=status,
+    )
+    if market is None:
+        market = Market(**values)
+        db.add(market)
+        db.flush()
+    else:
+        for key, value in values.items():
+            setattr(market, key, value)
+    return market
+
+
+def _order(
+    db,
+    *,
+    market: Market,
+    user: User,
+    request_id: str,
+    outcome: int,
+    price: int,
+    amount_ton: float,
+    remaining_ton: float,
+    filled_ton: float,
+    kind: str,
+    status: str,
+    created_at: datetime,
+) -> P2POrder:
+    order = (
+        db.query(P2POrder)
+        .filter(P2POrder.user_id == user.id, P2POrder.request_id == request_id)
+        .one_or_none()
+    )
+    values = dict(
+        market_id=market.id,
+        user_id=user.id,
+        request_id=request_id,
+        outcome=outcome,
+        price=price,
+        amount=to_nano(amount_ton),
+        remaining=to_nano(remaining_ton),
+        filled=to_nano(filled_ton),
+        refunded=0,
+        kind=kind,
+        status=status,
+        created_at=created_at,
+    )
+    if order is None:
+        order = P2POrder(**values)
+        db.add(order)
+        db.flush()
+    else:
+        for key, value in values.items():
+            setattr(order, key, value)
+    return order
+
+
+def _fill(
+    db,
+    *,
+    market: Market,
+    maker_user: User,
+    taker_user: User,
+    key: str,
+    maker_outcome: int,
+    price: int,
+    maker_stake_ton: float,
+    taker_stake_ton: float,
+    created_at: datetime,
+) -> None:
+    maker = _order(
+        db,
+        market=market,
+        user=maker_user,
+        request_id=f"{key}-maker",
+        outcome=maker_outcome,
+        price=price,
+        amount_ton=maker_stake_ton,
+        remaining_ton=0,
+        filled_ton=maker_stake_ton,
+        kind="limit",
+        status="filled",
+        created_at=created_at,
+    )
+    taker = _order(
+        db,
+        market=market,
+        user=taker_user,
+        request_id=f"{key}-taker",
+        outcome=1 - maker_outcome,
+        price=1_000_000 - price,
+        amount_ton=taker_stake_ton,
+        remaining_ton=0,
+        filled_ton=taker_stake_ton,
+        kind="ioc",
+        status="filled",
+        created_at=created_at,
+    )
+    row = (
+        db.query(P2PFill)
+        .filter(P2PFill.maker_order_id == maker.id, P2PFill.taker_order_id == taker.id)
+        .one_or_none()
+    )
+    values = dict(
+        market_id=market.id,
+        maker_order_id=maker.id,
+        taker_order_id=taker.id,
+        maker_user_id=maker_user.id,
+        taker_user_id=taker_user.id,
+        maker_outcome=maker_outcome,
+        maker_stake=to_nano(maker_stake_ton),
+        taker_stake=to_nano(taker_stake_ton),
+        price=price,
+        created_at=created_at,
+    )
+    if row is None:
+        db.add(P2PFill(**values))
+    else:
+        for field, value in values.items():
+            setattr(row, field, value)
+
+
+def _depth(
+    db,
+    *,
+    market: Market,
+    maker: User,
+    prefix: str,
+    outcome: int,
+    rows: list[tuple[int, float]],
+    now: datetime,
+) -> None:
+    for index, (price, amount) in enumerate(rows):
+        _order(
+            db,
+            market=market,
+            user=maker,
+            request_id=f"{prefix}-{index}",
+            outcome=outcome,
+            price=price,
+            amount_ton=amount,
+            remaining_ton=amount,
+            filled_ton=0,
+            kind="limit",
+            status="open",
+            created_at=now - timedelta(minutes=4 + index * 3),
+        )
+
+
 def seed_preview_data() -> None:
-    """Idempotent demo data for an explicitly enabled isolated preview database."""
+    """Idempotent demo data for the isolated Render preview only."""
     db = SessionLocal()
     try:
-        if db.query(User).filter(User.username == PREVIEW_CREATOR).one_or_none() is not None:
-            return
-
-        creator = User(
-            telegram_id=None,
-            username=PREVIEW_CREATOR,
-            telegram_username="betton_preview",
-            display_name="BetTON Preview",
-            balance_nano=to_nano(10_000),
-            balance_legacy=10_000.0,
-        )
-        trader = User(
-            telegram_id=None,
-            username=PREVIEW_TRADER,
-            telegram_username="market_maker",
-            display_name="Market Maker",
-            balance_nano=to_nano(10_000),
-            balance_legacy=10_000.0,
-        )
-        db.add_all([creator, trader])
-        db.flush()
+        creator = _user(db, PREVIEW_CREATOR, "betton_preview", "BetTON Preview")
+        trader = _user(db, PREVIEW_TRADER, "market_maker", "Market Maker")
+        trader_b = _user(db, "preview_trader_b", "depth_maker", "Depth Maker")
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
-        common = dict(
-            creator_id=creator.id,
-            mechanism="p2p",
-            b=1.0,
-            q_yes=0.0,
-            q_no=0.0,
-            q=[0.0, 0.0],
-            lock_ton=0,
-            pot=0,
-            lock_returned=True,
-            visibility="public",
-            p2p_journal_coverage="incomplete",
+        bitcoin = _market(
+            db,
+            creator,
+            question="Bitcoin будет выше $120,000 через 7 дней?",
+            description=(
+                "Демо-событие для проверки быстрого входа, стакана и истории фактически "
+                "исполненных сделок. Данные созданы только в preview."
+            ),
+            category="crypto",
+            close_at=now + timedelta(days=7),
+        )
+        rain = _market(
+            db,
+            creator,
+            question="Дождь в Москве будет завтра после 18:00?",
+            description=(
+                "Демо-событие с другим профилем коэффициентов и объёмов, чтобы сравнить "
+                "график и многоуровневый стакан."
+            ),
+            category="unique",
+            close_at=now + timedelta(days=1),
         )
 
-        liquid = Market(
-            **common,
-            question="Bitcoin будет выше $120,000 через 7 дней?",
-            description="Preview-событие для проверки стакана, графика и read-only сценариев.",
-            category="crypto",
-            outcomes=["Да", "Нет"],
-            close_at=now + timedelta(days=7),
-            status=MarketStatus.open,
+        # Five visible price levels on each side. These are real P2POrder rows in
+        # the isolated preview DB, so Quick Trade and the full orderbook read the
+        # same source instead of a decorative frontend fixture.
+        _depth(
+            db,
+            market=bitcoin,
+            maker=trader,
+            prefix="preview-btc-a-depth",
+            outcome=1,
+            rows=[
+                (600_000, 90),
+                (550_000, 110),
+                (500_000, 140),
+                (450_000, 90),
+                (400_000, 80),
+            ],
+            now=now,
         )
-        no_liquidity = Market(
-            **common,
-            question="Дождь в Москве будет завтра после 18:00?",
-            description="Preview-событие без встречных заявок.",
-            category="unique",
-            outcomes=["Да", "Нет"],
-            close_at=now + timedelta(days=1),
-            status=MarketStatus.open,
+        _depth(
+            db,
+            market=bitcoin,
+            maker=trader_b,
+            prefix="preview-btc-b-depth",
+            outcome=0,
+            rows=[
+                (650_000, 130),
+                (600_000, 120),
+                (560_000, 112),
+                (520_000, 104),
+                (480_000, 96),
+            ],
+            now=now,
         )
-        resolved = Market(
-            **common,
+        _depth(
+            db,
+            market=rain,
+            maker=trader,
+            prefix="preview-rain-a-depth",
+            outcome=1,
+            rows=[
+                (570_000, 114),
+                (530_000, 106),
+                (490_000, 98),
+                (450_000, 90),
+                (410_000, 82),
+            ],
+            now=now,
+        )
+        _depth(
+            db,
+            market=rain,
+            maker=trader_b,
+            prefix="preview-rain-b-depth",
+            outcome=0,
+            rows=[
+                (590_000, 118),
+                (550_000, 110),
+                (510_000, 102),
+                (470_000, 94),
+                (430_000, 86),
+            ],
+            now=now,
+        )
+
+        btc_history = [
+            (650_000, 65, 35),
+            (600_000, 90, 60),
+            (560_000, 70, 55),
+            (520_000, 130, 120),
+            (500_000, 90, 90),
+            (540_000, 108, 92),
+            (580_000, 87, 63),
+            (620_000, 124, 76),
+        ]
+        for index, (price, maker_stake, taker_stake) in enumerate(btc_history):
+            _fill(
+                db,
+                market=bitcoin,
+                maker_user=trader,
+                taker_user=creator,
+                key=f"preview-btc-history-{index}",
+                maker_outcome=0,
+                price=price,
+                maker_stake_ton=maker_stake,
+                taker_stake_ton=taker_stake,
+                created_at=now - timedelta(hours=16 - index * 2),
+            )
+
+        rain_history = [
+            (430_000, 43, 57),
+            (460_000, 69, 81),
+            (500_000, 60, 60),
+            (540_000, 108, 92),
+            (570_000, 57, 43),
+            (530_000, 106, 94),
+            (490_000, 73.5, 76.5),
+            (450_000, 90, 110),
+        ]
+        for index, (price, maker_stake, taker_stake) in enumerate(rain_history):
+            _fill(
+                db,
+                market=rain,
+                maker_user=trader_b,
+                taker_user=creator,
+                key=f"preview-rain-history-{index}",
+                maker_outcome=0,
+                price=price,
+                maker_stake_ton=maker_stake,
+                taker_stake_ton=taker_stake,
+                created_at=now - timedelta(hours=18 - index * 2),
+            )
+
+        # Keep non-open states available for spot-checking other UI without
+        # cluttering the default open-market feed.
+        resolved = _market(
+            db,
+            creator,
             question="TON закрыл предыдущий день выше контрольной отметки?",
             description="Preview resolved state.",
             category="crypto",
-            outcomes=["Да", "Нет"],
             close_at=now - timedelta(days=1),
             status=MarketStatus.resolved,
-            winning_outcome="Да",
-            resolved_at=now - timedelta(hours=12),
-            settlement_kind="auto",
         )
-        cancelled = Market(
-            **common,
+        resolved.winning_outcome = "Да"
+        resolved.resolved_at = now - timedelta(hours=12)
+        resolved.settlement_kind = "auto"
+
+        cancelled = _market(
+            db,
+            creator,
             question="Тестовое событие было отменено организатором?",
             description="Preview cancelled state.",
             category="unique",
-            outcomes=["Да", "Нет"],
             close_at=now - timedelta(hours=2),
             status=MarketStatus.cancelled,
-            cancellation_reason="Источник результата оказался недоступен.",
-            cancelled_at=now - timedelta(hours=1),
         )
-        db.add_all([liquid, no_liquidity, resolved, cancelled])
-        db.flush()
+        cancelled.cancellation_reason = "Источник результата оказался недоступен."
+        cancelled.cancelled_at = now - timedelta(hours=1)
 
-        # Open maker orders create visible executable depth on both outcomes.
-        open_a = P2POrder(
-            market_id=liquid.id,
-            user_id=trader.id,
-            request_id="preview-open-a",
-            outcome=1,
-            price=450_000,
-            amount=to_nano(120),
-            remaining=to_nano(120),
-            filled=0,
-            refunded=0,
-            kind="limit",
-            status="open",
-            created_at=now - timedelta(minutes=18),
-        )
-        open_b = P2POrder(
-            market_id=liquid.id,
-            user_id=creator.id,
-            request_id="preview-open-b",
-            outcome=0,
-            price=520_000,
-            amount=to_nano(90),
-            remaining=to_nano(90),
-            filled=0,
-            refunded=0,
-            kind="limit",
-            status="open",
-            created_at=now - timedelta(minutes=12),
-        )
-
-        # Closed historical pair gives the chart/recent-trades view a real fill.
-        hist_maker = P2POrder(
-            market_id=liquid.id,
-            user_id=trader.id,
-            request_id="preview-fill-maker",
-            outcome=0,
-            price=550_000,
-            amount=to_nano(55),
-            remaining=0,
-            filled=to_nano(55),
-            refunded=0,
-            kind="limit",
-            status="filled",
-            created_at=now - timedelta(hours=3),
-        )
-        hist_taker = P2POrder(
-            market_id=liquid.id,
-            user_id=creator.id,
-            request_id="preview-fill-taker",
-            outcome=1,
-            price=450_000,
-            amount=to_nano(45),
-            remaining=0,
-            filled=to_nano(45),
-            refunded=0,
-            kind="ioc",
-            status="filled",
-            created_at=now - timedelta(hours=3),
-        )
-        db.add_all([open_a, open_b, hist_maker, hist_taker])
-        db.flush()
-
-        db.add(
-            P2PFill(
-                market_id=liquid.id,
-                maker_order_id=hist_maker.id,
-                taker_order_id=hist_taker.id,
-                maker_user_id=trader.id,
-                taker_user_id=creator.id,
-                maker_outcome=0,
-                maker_stake=to_nano(55),
-                taker_stake=to_nano(45),
-                price=550_000,
-                created_at=now - timedelta(hours=3),
-            )
-        )
         db.commit()
     except Exception:
         db.rollback()
