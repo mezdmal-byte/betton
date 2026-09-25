@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Button } from '../components/Button/Button'
-import { StatusMessage } from '../components/StatusMessage/StatusMessage'
-import { useT } from '../i18n'
 import styles from './OnboardingScreen.module.css'
 
-export type OnboardingState = 'ready' | 'loading' | 'auth-required' | 'auth-error'
+export type OnboardingState = 'ready' | 'splash' | 'loading' | 'auth-required' | 'auth-error'
+
 export type OnboardingScreenProps = {
   onContinue?: () => void
   state?: OnboardingState
@@ -18,8 +17,78 @@ type Step = {
   metric?: string
   metricCaption?: string
   rows?: string[]
+  cards?: Array<{ title: string; body: string }>
   notice?: string
+  nextLabel?: string
 }
+
+const READY_STEPS: Step[] = [
+  {
+    title: 'Добро пожаловать',
+    intro: 'Торгуйте исходами напрямую с другими участниками',
+    rows: [
+      '01  Выберите ДА или НЕТ',
+      '02  Смотрите исполнимую цену',
+      '03  Контролируйте открытые ордера',
+    ],
+    nextLabel: 'Продолжить',
+  },
+  {
+    title: 'Это P2P',
+    metric: '2 стороны',
+    metricCaption: 'Позиции ДА и НЕТ сводятся между пользователями',
+    rows: [
+      'Вы выбираете исход и сумму',
+      'Заявка встречается со встречной ценой',
+      'Backend подтверждает реальное исполнение',
+    ],
+    nextLabel: 'Понятно',
+  },
+  {
+    title: 'Как работает рынок',
+    metric: 'ДА / НЕТ',
+    metricCaption: 'Коэффициент — текущее предложение другого участника',
+    rows: [
+      '1 · Рынок открыт для торговли',
+      '2 · Ордера исполняются полностью или частично',
+      '3 · После resolution рассчитываются позиции',
+    ],
+    nextLabel: 'Далее',
+  },
+  {
+    title: 'Два способа торговли',
+    cards: [
+      {
+        title: 'QUICK TRADE · IOC',
+        body: 'Исполняет доступные встречные заявки. Неисполненный остаток отменяется.',
+      },
+      {
+        title: 'СВОЯ ЦЕНА · LIMIT',
+        body: 'Вы задаёте цену. Остаток остаётся в книге и может не исполниться.',
+      },
+    ],
+    nextLabel: 'Далее',
+  },
+  {
+    title: 'Честная комиссия',
+    metric: '1%',
+    metricCaption: 'только с чистой прибыли победителя',
+    notice: 'Пример: чистая прибыль 100 TON → комиссия 1 TON.',
+    rows: [
+      'Ставка не облагается комиссией',
+      'При проигрыше сервисная комиссия — 0',
+      'При возврате или void комиссия — 0',
+    ],
+    nextLabel: 'Далее',
+  },
+  {
+    title: 'Готовы начать?',
+    metric: 'Рынок открыт',
+    metricCaption: 'Изучите цену, риск и условия resolution перед ордером.',
+    notice: 'Торговля несёт риск. Исполнение зависит от встречных заявок.',
+    nextLabel: 'Открыть рынки',
+  },
+]
 
 export function OnboardingScreen({
   onContinue,
@@ -27,112 +96,156 @@ export function OnboardingScreen({
   initialStep = 0,
   onRetry,
 }: OnboardingScreenProps) {
-  const t = useT()
-  const [step, setStep] = useState(Math.max(0, Math.min(initialStep, 5)))
+  const [step, setStep] = useState(
+    Math.max(0, Math.min(initialStep, READY_STEPS.length - 1)),
+  )
 
-  if (state !== 'ready') {
+  if (state === 'splash') {
     return (
-      <div className={styles.screen}>
-        <header className={styles.header}><h1>{state === 'loading' ? 'BetTON' : state === 'auth-required' ? 'Нужен вход' : 'Не удалось войти'}</h1></header>
-        <main className={styles.body}>
-          {state === 'loading' ? (
-            <StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage>
-          ) : state === 'auth-required' ? (
-            <>
-              <section className={styles.stateCard}>Авторизуйтесь через Telegram, чтобы продолжить.</section>
-              <Button fullWidth onClick={onRetry ?? onContinue}>Войти через Telegram</Button>
-            </>
-          ) : (
-            <>
-              <StatusMessage tone="error" title="Ошибка Telegram авторизации">
-                Проверьте, что Mini App открыт из Telegram, и повторите попытку.
-              </StatusMessage>
-              {onRetry ? <Button fullWidth onClick={onRetry}>{t('retry')}</Button> : null}
-            </>
-          )}
-        </main>
-      </div>
+      <EntryShell title="BetTON" context="P2P РЫНОК ПРОГНОЗОВ">
+        <Metric value="BetTON" caption="Рынок говорит цифрами. Быстро, честно, без казино." />
+        <Notice>CORE onboarding · текущая часть продукта</Notice>
+      </EntryShell>
     )
   }
 
-  const steps: Step[] = [
-    {
-      title: 'Добро пожаловать',
-      intro: 'Торгуйте исходами напрямую с другими участниками',
-      rows: ['01  Выберите ДА или НЕТ', '02  Смотрите исполнимую цену', '03  Контролируйте открытые ордера'],
-    },
-    {
-      title: 'P2P без букмекера',
-      intro: 'Цена формируется встречными заявками участников, а не задаётся платформой.',
-      rows: ['Вы видите реальную доступную цену', 'Сделка появляется только при встрече заявок', 'Открытые остатки можно отменить'],
-    },
-    {
-      title: 'Как устроен рынок',
-      intro: 'У каждого рынка ровно два исхода и заранее заданные критерии результата.',
-      rows: ['Проверьте критерии', 'Проверьте источник', 'Смотрите дату закрытия торговли'],
-    },
-    {
-      title: 'Quick Trade или своя цена',
-      notice: 'Всегда проверяйте итоговую цену перед подтверждением.',
-      rows: ['QUICK TRADE · IOC — исполнение сразу, остаток отменяется', 'СВОЯ ЦЕНА · LIMIT — остаток ждёт встречную заявку'],
-    },
-    {
-      title: 'Комиссия',
-      intro: t('help.fee'),
-      rows: ['Комиссия учитывается только в предусмотренных правилами случаях', 'Условия видны до подтверждения действия'],
-    },
-    {
-      title: 'Готовы начать?',
-      metric: 'Рынок открыт',
-      metricCaption: 'Изучите цену, риск и условия resolution перед ордером.',
-      notice: 'Торговля несёт риск. Исполнение зависит от встречных заявок.',
-    },
-  ]
-  const current = steps[step]
+  if (state === 'loading') {
+    return (
+      <EntryShell title="BetTON">
+        <Metric value="P2P" caption="Рынок прогнозов на TON" />
+        <Rows
+          rows={[
+            '01  Загружаем публичные рынки…',
+            '02  Проверяем Telegram-сессию',
+            '03  Баланс не изменяется оптимистично',
+          ]}
+        />
+      </EntryShell>
+    )
+  }
 
+  if (state === 'auth-required') {
+    return (
+      <EntryShell title="Нужен Telegram">
+        <Metric
+          value="Авторизация"
+          caption="Чтобы торговать и видеть свои ордера, подтвердите Telegram-сессию."
+        />
+        <Rows
+          rows={[
+            'Публичные рынки доступны без входа',
+            'Торговля требует подтверждённого профиля',
+          ]}
+        />
+        <Button fullWidth onClick={onRetry ?? onContinue}>
+          Войти через Telegram
+        </Button>
+      </EntryShell>
+    )
+  }
+
+  if (state === 'auth-error') {
+    return (
+      <EntryShell title="Не удалось войти">
+        <Metric
+          value="Сессия отклонена"
+          caption="Telegram не подтвердил авторизацию. Средства и ордера не изменены."
+        />
+        <Notice>Проверьте соединение и откройте Mini App заново.</Notice>
+        {onRetry ? <Button fullWidth onClick={onRetry}>Повторить</Button> : null}
+      </EntryShell>
+    )
+  }
+
+  const current = READY_STEPS[step]!
+
+  return (
+    <EntryShell title={current.title}>
+      {current.metric ? (
+        <Metric value={current.metric} caption={current.metricCaption ?? ''} />
+      ) : null}
+
+      {current.intro ? <p className={styles.intro}>{current.intro}</p> : null}
+
+      {current.cards ? (
+        <div className={styles.cards}>
+          {current.cards.map((card) => (
+            <section key={card.title} className={styles.card}>
+              <strong>{card.title}</strong>
+              <p>{card.body}</p>
+            </section>
+          ))}
+        </div>
+      ) : null}
+
+      {current.notice ? <Notice>{current.notice}</Notice> : null}
+      {current.rows ? <Rows rows={current.rows} /> : null}
+
+      <div className={styles.actions}>
+        {step > 0 ? (
+          <Button variant="secondary" onClick={() => setStep((value) => value - 1)}>
+            Назад
+          </Button>
+        ) : null}
+        <Button
+          fullWidth={step === 0}
+          onClick={() => {
+            if (step < READY_STEPS.length - 1) {
+              setStep((value) => value + 1)
+            } else {
+              onContinue?.()
+            }
+          }}
+        >
+          {current.nextLabel ?? 'Далее'}
+        </Button>
+      </div>
+    </EntryShell>
+  )
+}
+
+function EntryShell({
+  title,
+  context,
+  children,
+}: {
+  title: string
+  context?: string
+  children: ReactNode
+}) {
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <h1>{current.title}</h1>
-        <span>{String(step + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}</span>
+        <h1>{title}</h1>
+        {context ? <p>{context}</p> : null}
       </header>
-
-      <main className={styles.body}>
-        {current.metric ? (
-          <section className={styles.metric}>
-            <strong>{current.metric}</strong>
-            <p>{current.metricCaption}</p>
-          </section>
-        ) : null}
-
-        {current.intro ? <p className={styles.intro}>{current.intro}</p> : null}
-
-        {current.rows ? (
-          <section className={styles.rows}>
-            {current.rows.map((row) => <div key={row}>{row}</div>)}
-          </section>
-        ) : null}
-
-        {current.notice ? (
-          <section className={styles.notice}>
-            <strong>!</strong>
-            <p>{current.notice}</p>
-          </section>
-        ) : null}
-
-        <div className={styles.actions}>
-          {step > 0 ? <Button variant="secondary" onClick={() => setStep((value) => value - 1)}>Назад</Button> : null}
-          <Button
-            fullWidth={step === 0}
-            onClick={() => {
-              if (step < steps.length - 1) setStep((value) => value + 1)
-              else onContinue?.()
-            }}
-          >
-            {step === steps.length - 1 ? 'Открыть рынки' : 'Продолжить'}
-          </Button>
-        </div>
-      </main>
+      <main className={styles.body}>{children}</main>
     </div>
+  )
+}
+
+function Metric({ value, caption }: { value: string; caption: string }) {
+  return (
+    <section className={styles.metric}>
+      <strong>{value}</strong>
+      <p>{caption}</p>
+    </section>
+  )
+}
+
+function Rows({ rows }: { rows: string[] }) {
+  return (
+    <section className={styles.rows}>
+      {rows.map((row) => <div key={row}>{row}</div>)}
+    </section>
+  )
+}
+
+function Notice({ children }: { children: ReactNode }) {
+  return (
+    <section className={styles.notice}>
+      <strong>!</strong>
+      <p>{children}</p>
+    </section>
   )
 }

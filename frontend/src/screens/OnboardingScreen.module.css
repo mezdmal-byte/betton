@@ -9,11 +9,9 @@
 
 .header {
   display: flex;
-  min-height: 52px;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
   padding: var(--pad-header-top) var(--page-padding) 12px;
 }
 
@@ -26,10 +24,11 @@
   letter-spacing: var(--tracking-tight);
 }
 
-.header span {
-  flex: 0 0 auto;
-  color: var(--color-text-muted);
+.header p {
+  margin: 0;
+  color: var(--color-text-secondary);
   font-size: 10px;
+  line-height: normal;
 }
 
 .body {
@@ -50,6 +49,30 @@
   line-height: 1.5;
 }
 
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+}
+
+.metric strong {
+  width: 100%;
+  color: var(--color-status-success);
+  font-size: 38px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.metric p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .rows {
   display: flex;
   flex-direction: column;
@@ -63,6 +86,35 @@
   font-size: 12px;
   line-height: 1.4;
   white-space: pre-wrap;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: var(--color-surface-raised);
+}
+
+.card strong {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: var(--font-weight-bold);
+}
+
+.card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .notice {
@@ -80,40 +132,11 @@
   font-weight: var(--font-weight-extrabold);
 }
 
-.notice p,
-.metric p {
+.notice p {
   margin: 0;
   color: var(--color-text-primary);
   font-size: 11px;
   line-height: 1.45;
-}
-
-.metric {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 0;
-}
-
-.metric strong {
-  color: var(--color-status-success);
-  font-size: 38px;
-  font-weight: var(--font-weight-extrabold);
-  line-height: normal;
-}
-
-.metric p {
-  color: var(--color-text-secondary);
-}
-
-.stateCard {
-  padding: 16px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 14px;
-  background: var(--color-surface-raised);
-  color: var(--color-text-primary);
-  font-size: 15px;
-  line-height: 1.35;
 }
 
 .actions {
@@ -125,4 +148,10 @@
 
 .actions > :only-child {
   grid-column: 1 / -1;
+}
+
+@media (max-width: 360px) {
+  .metric strong {
+    font-size: 34px;
+  }
 }
