@@ -249,3 +249,54 @@ export type HealthOut = {
   webapp?: string
   bot_username?: string
 }
+
+
+export type ChatAuthorOut = {
+  id: number
+  display_name: string
+  telegram_username?: string | null
+  photo_url?: string | null
+  is_admin?: boolean
+}
+
+export type ChatReplyPreviewOut = {
+  id: number
+  author_name: string
+  text: string
+  deleted?: boolean
+}
+
+export type ChatMarketBriefOut = {
+  id: number
+  question: string
+  status: string
+}
+
+export type ChatMessageOut = {
+  id: number
+  author: ChatAuthorOut
+  market_id?: number | null
+  text: string
+  reply_to?: ChatReplyPreviewOut | null
+  attached_market?: ChatMarketBriefOut | null
+  deleted?: boolean
+  created_at?: string | null
+}
+
+export type ChatMessagesPage = {
+  items: ChatMessageOut[]
+  has_more: boolean
+  next_before_id?: number | null
+}
+
+export type ChatMessageCreate = {
+  text: string
+  reply_to_id?: number | null
+  attached_market_id?: number | null
+}
+
+export type ChatUnreadOut = {
+  lobby: number
+  markets: Record<string, number>
+  total: number
+}
