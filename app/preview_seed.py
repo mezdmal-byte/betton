@@ -241,9 +241,10 @@ def seed_preview_data() -> None:
             close_at=now + timedelta(days=1),
         )
 
-        # Five visible price levels on each side. These are real P2POrder rows in
-        # the isolated preview DB, so Quick Trade and the full orderbook read the
-        # same source instead of a decorative frontend fixture.
+        # Nine visible price levels on each side. Opposing maker prices are
+        # intentionally kept below PRICE in every combination, so the demo book
+        # is not crossed: these orders could coexist without matching each other.
+        # The UI initially shows five levels and can expand to the full depth.
         _depth(
             db,
             market=bitcoin,
@@ -251,11 +252,15 @@ def seed_preview_data() -> None:
             prefix="preview-btc-a-depth",
             outcome=1,
             rows=[
-                (600_000, 90),
-                (550_000, 110),
-                (500_000, 140),
-                (450_000, 90),
-                (400_000, 80),
+                (460_000, 92),
+                (450_000, 118),
+                (440_000, 76),
+                (430_000, 144),
+                (420_000, 88),
+                (410_000, 132),
+                (400_000, 64),
+                (390_000, 105),
+                (380_000, 81),
             ],
             now=now,
         )
@@ -266,11 +271,15 @@ def seed_preview_data() -> None:
             prefix="preview-btc-b-depth",
             outcome=0,
             rows=[
-                (650_000, 130),
-                (600_000, 120),
-                (560_000, 112),
-                (520_000, 104),
-                (480_000, 96),
+                (520_000, 126),
+                (510_000, 84),
+                (500_000, 138),
+                (490_000, 74),
+                (480_000, 112),
+                (470_000, 96),
+                (460_000, 68),
+                (450_000, 121),
+                (440_000, 79),
             ],
             now=now,
         )
@@ -281,11 +290,15 @@ def seed_preview_data() -> None:
             prefix="preview-rain-a-depth",
             outcome=1,
             rows=[
-                (570_000, 114),
-                (530_000, 106),
-                (490_000, 98),
-                (450_000, 90),
-                (410_000, 82),
+                (430_000, 86),
+                (420_000, 104),
+                (410_000, 73),
+                (400_000, 129),
+                (390_000, 91),
+                (380_000, 115),
+                (370_000, 67),
+                (360_000, 99),
+                (350_000, 78),
             ],
             now=now,
         )
@@ -296,11 +309,15 @@ def seed_preview_data() -> None:
             prefix="preview-rain-b-depth",
             outcome=0,
             rows=[
-                (590_000, 118),
-                (550_000, 110),
-                (510_000, 102),
-                (470_000, 94),
-                (430_000, 86),
+                (550_000, 119),
+                (540_000, 82),
+                (530_000, 136),
+                (520_000, 76),
+                (510_000, 108),
+                (500_000, 94),
+                (490_000, 71),
+                (480_000, 124),
+                (470_000, 80),
             ],
             now=now,
         )
