@@ -5,7 +5,7 @@ import { isApiError } from '../api/client'
 import { errorDetail, isInsufficientBalanceError } from '../api/errors'
 import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
 import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
-import { placeOrder, previewOrder } from '../api/orders'
+import { cancelOrder, placeOrder, previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
 import { hapticNotification } from '../telegram/webapp'
@@ -15,6 +15,7 @@ import { marketIsTradable } from '../lib/quote'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { OwnPriceScreen } from '../screens/OwnPriceScreen'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
+import type { OrderOut } from '../api/types'
 import type { OutcomeSide } from '../types/market'
 import { invalidateAfterTrade } from './invalidate'
 
@@ -45,7 +46,7 @@ export function ConnectedOwnPriceScreen({
   const [odds, setOdds] = useState(1.9)
   const [amount, setAmount] = useState(100)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [placedOrder, setPlacedOrder] = useState<OrderOut | null>(null)
   const initializedOdds = useRef(false)
   const shareToken = shareTokenFor(marketId)
 
@@ -119,10 +120,10 @@ export function ConnectedOwnPriceScreen({
       keys.current.clear(fingerprint)
       return result
     },
-    onSuccess: () => {
+    onSuccess: (order) => {
       invalidateAfterTrade(queryClient, { userId, marketId })
       hapticNotification('success')
-      setSuccess(true)
+      setPlacedOrder(order)
     },
     onError: (error) => {
       hapticNotification('error')
@@ -131,6 +132,23 @@ export function ConnectedOwnPriceScreen({
         return
       }
       setErrorMessage(error instanceof Error ? error.message : t('err.place'))
+    },
+  })
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      if (!placedOrder) throw new Error('Ордер не найден')
+      return cancelOrder(placedOrder.id)
+    },
+    onSuccess: (order) => {
+      invalidateAfterTrade(queryClient, { userId, marketId })
+      hapticNotification('success')
+      setPlacedOrder(order)
+      setErrorMessage(null)
+    },
+    onError: (error) => {
+      hapticNotification('error')
+      setErrorMessage(errorDetail(error))
     },
   })
 
@@ -150,20 +168,17 @@ export function ConnectedOwnPriceScreen({
   const selectSide = (next: OutcomeSide) => {
     setSide(next)
     setErrorMessage(null)
-    setSuccess(false)
     const nextOdds = next === 'a' ? market.outcomeA.odds : market.outcomeB.odds
     if (nextOdds) setOdds(nextOdds)
   }
 
   const changeOdds = (next: number) => {
     setErrorMessage(null)
-    setSuccess(false)
     setOdds(Math.max(1.01, Math.round(next * 100) / 100))
   }
 
   const changeAmount = (next: number) => {
     setErrorMessage(null)
-    setSuccess(false)
     setAmount(next)
   }
 
@@ -182,7 +197,7 @@ export function ConnectedOwnPriceScreen({
       restTon={preview?.remainingTon ?? null}
       previewMode="backend"
       submitting={mutation.isPending}
-      disabled={!tradable || insufficient || !userId || mutation.isPending || success}
+      disabled={!tradable || insufficient || !userId || mutation.isPending || placedOrder != null}
       noticeMessage={!tradable ? t('demo.unavailable') : null}
       bookState={bookQuery.isPending ? 'loading' : bookQuery.isError ? 'error' : 'ready'}
       tradesState={tradesQuery.isPending ? 'loading' : tradesQuery.isError ? 'error' : 'ready'}
@@ -190,7 +205,25 @@ export function ConnectedOwnPriceScreen({
       onRetryTrades={() => { void tradesQuery.refetch() }}
       errorMessage={errorMessage ?? (previewQuery.isError && !isInsufficientBalanceError(previewQuery.error) ? errorDetail(previewQuery.error) : null)}
       availableTon={availableTon}
-      success={success}
+      success={placedOrder != null}
+      placedOrder={
+        placedOrder
+          ? {
+              id: placedOrder.id,
+              odds: Number(placedOrder.odds),
+              amountTon: Number(placedOrder.amount || 0),
+              filledTon: Number(placedOrder.filled || 0),
+              remainingTon: Number(placedOrder.remaining || 0),
+              status: placedOrder.status,
+            }
+          : null
+      }
+      cancellingOrder={cancelMutation.isPending}
+      onCancelRemainder={() => {
+        setErrorMessage(null)
+        if (!placedOrder || placedOrder.remaining <= 0 || placedOrder.status !== 'open') return
+        void cancelMutation.mutateAsync()
+      }}
       onSelectSide={selectSide}
       onOddsChange={changeOdds}
       onAmountChange={changeAmount}

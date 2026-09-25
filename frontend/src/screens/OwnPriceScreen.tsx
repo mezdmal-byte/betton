@@ -6,6 +6,7 @@ import { OwnPricePanel, type OwnPriceStage } from '../components/OwnPricePanel/O
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { marketYesNo, orderBookA, orderBookB, recentTrades } from '../fixtures/markets'
 import { useT } from '../i18n'
+import { formatOdds, formatTonFull } from '../lib/format'
 import type { MarketFixture, OrderBookLevel, OutcomeSide, RecentTrade } from '../types/market'
 import styles from './OwnPriceScreen.module.css'
 
@@ -31,6 +32,16 @@ export type OwnPriceScreenProps = {
   errorMessage?: string | null
   availableTon?: number | null
   success?: boolean
+  placedOrder?: {
+    id: number
+    odds: number
+    amountTon: number
+    filledTon: number
+    remainingTon: number
+    status: string
+  } | null
+  cancellingOrder?: boolean
+  onCancelRemainder?: () => void
   viewState?: 'ready' | 'loading' | 'error' | 'forbidden'
   onRetry?: () => void
   noticeMessage?: string | null
@@ -62,6 +73,9 @@ export function OwnPriceScreen({
   errorMessage = null,
   availableTon = null,
   success = false,
+  placedOrder = null,
+  cancellingOrder = false,
+  onCancelRemainder,
   viewState = 'ready',
   onRetry,
   noticeMessage = null,
@@ -75,17 +89,24 @@ export function OwnPriceScreen({
   const [localOdds, setLocalOdds] = useState(odds ?? market.outcomeA.odds ?? 1.82)
   const [localAmount, setLocalAmount] = useState(amount ?? 100)
   const [stage, setStage] = useState<OwnPriceStage>('entry')
+  const [cancelConfirm, setCancelConfirm] = useState(false)
   const activeSide = onSelectSide ? (selectedSide ?? side) : side
   const activeOdds = onOddsChange ? (odds ?? localOdds) : localOdds
   const activeAmount = onAmountChange ? (amount ?? localAmount) : localAmount
   const activeBook = book ?? (activeSide === 'a' ? orderBookA : orderBookB)
-  const title = success
-    ? 'Ордер размещён'
-    : stage === 'preview'
-      ? 'Предпросмотр ордера'
-      : stage === 'confirm'
-        ? 'Подтверждение ордера'
-        : 'Своя цена'
+  const title = placedOrder
+    ? cancelConfirm
+      ? 'Отменить остаток?'
+      : placedOrder.status === 'open' && placedOrder.remainingTon > 0
+        ? 'Ордер размещён'
+        : 'Ордер завершён'
+    : success
+      ? 'Ордер размещён'
+      : stage === 'preview'
+        ? 'Предпросмотр ордера'
+        : stage === 'confirm'
+          ? 'Подтверждение ордера'
+          : 'Своя цена'
 
   const selectSide = (next: OutcomeSide) => {
     setStage('entry')
@@ -116,6 +137,78 @@ export function OwnPriceScreen({
         ) : (
           <>
             {noticeMessage ? <StatusMessage tone="warning" title={noticeMessage} /> : null}
+            {placedOrder ? (
+              <>
+                <section className={styles.orderMetric}>
+                  <strong>{formatTonFull(placedOrder.remainingTon)}</strong>
+                  <span>
+                    {placedOrder.status === 'open' && placedOrder.remainingTon > 0
+                      ? 'неисполненный остаток'
+                      : 'остаток после завершения'}
+                  </span>
+                </section>
+
+                {cancelConfirm ? (
+                  <>
+                    <section className={styles.orderDetails}>
+                      <OrderDetailRow label="Исполнено" value={formatTonFull(placedOrder.filledTon)} />
+                      <OrderDetailRow label="Будет отменено" value={formatTonFull(placedOrder.remainingTon)} />
+                      <OrderDetailRow label="Резерв вернётся" value={formatTonFull(placedOrder.remainingTon)} />
+                    </section>
+                    {errorMessage ? (
+                      <StatusMessage tone="error" title={t('err.request')}>{errorMessage}</StatusMessage>
+                    ) : null}
+                    <Button
+                      fullWidth
+                      loading={cancellingOrder}
+                      disabled={cancellingOrder || placedOrder.remainingTon <= 0 || !onCancelRemainder}
+                      onClick={onCancelRemainder}
+                    >
+                      Отменить {formatTonFull(placedOrder.remainingTon)}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      fullWidth
+                      disabled={cancellingOrder}
+                      onClick={() => setCancelConfirm(false)}
+                    >
+                      Назад к ордеру
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <section className={styles.orderDetails}>
+                      <OrderDetailRow label="Лимит" value={formatOdds(placedOrder.odds) + '×'} />
+                      <OrderDetailRow label="Объём ордера" value={formatTonFull(placedOrder.amountTon)} />
+                      <OrderDetailRow label="Исполнено" value={formatTonFull(placedOrder.filledTon)} />
+                      <OrderDetailRow label="Остаток" value={formatTonFull(placedOrder.remainingTon)} />
+                    </section>
+                    {errorMessage ? (
+                      <StatusMessage tone="error" title={t('err.request')}>{errorMessage}</StatusMessage>
+                    ) : null}
+                    {placedOrder.status === 'open' && placedOrder.remainingTon > 0 ? (
+                      <Button fullWidth onClick={() => setCancelConfirm(true)}>
+                        Отменить остаток
+                      </Button>
+                    ) : (
+                      <section className={styles.orderState}>
+                        <strong>
+                          {placedOrder.status === 'cancelled' ? 'ОРДЕР ОТМЕНЁН' : 'ОРДЕР ЗАВЕРШЁН'}
+                        </strong>
+                        <p>
+                          {placedOrder.remainingTon > 0
+                            ? 'Остаток больше не активен.'
+                            : 'Неисполненного остатка больше нет.'}
+                        </p>
+                      </section>
+                    )}
+                    <Button variant="secondary" fullWidth onClick={onBack}>
+                      Назад к рынку
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : (
             <OwnPricePanel
               question={market.question}
               outcomeALabel={market.outcomeA.label}
@@ -176,6 +269,7 @@ export function OwnPriceScreen({
                 Назад к рынку
               </Button>
             ) : null}
+            )}
           </>
         )}
       </main>
@@ -184,3 +278,14 @@ export function OwnPriceScreen({
     </div>
   )
 }
+
+
+function OrderDetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={styles.orderDetailRow}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
