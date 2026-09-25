@@ -1,9 +1,9 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, UserRound } from 'lucide-react'
 import { Avatar } from '../components/Avatar/Avatar'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import { Chip } from '../components/Chip/Chip'
-import { StatusMessage } from '../components/StatusMessage/StatusMessage'
+import { Button } from '../components/Button/Button'
 import { ThemeToggle } from '../components/ThemeToggle/ThemeToggle'
 import { accountUser } from '../fixtures/account'
 import { useI18n, type Locale } from '../i18n'
@@ -28,6 +28,7 @@ export type ProfileScreenProps = {
   onNavChange?: (id: NavId) => void
   locale?: Locale
   onLocaleChange?: (locale: Locale) => void
+  onLogin?: () => void
   view?: ProfileView
 }
 
@@ -38,6 +39,7 @@ export function ProfileScreen({
   onNavChange,
   locale,
   onLocaleChange,
+  onLogin,
   view = 'main',
 }: ProfileScreenProps) {
   const i18n = useI18n()
@@ -149,9 +151,14 @@ export function ProfileScreen({
 
       <main className={styles.body}>
         {accountState === 'unauthenticated' ? (
-          <StatusMessage tone="warning" title={t('err.openInTg')}>
-            {t('err.openInTgBody')}
-          </StatusMessage>
+          <section className={styles.guest}>
+            <UserRound size={52} strokeWidth={1.5} aria-hidden="true" />
+            <h2>Войдите через Telegram</h2>
+            <p>Сохраняйте позиции, создавайте рынки и управляйте настройками.</p>
+            <Button fullWidth onClick={onLogin} disabled={!onLogin}>
+              Войти через Telegram
+            </Button>
+          </section>
         ) : (
           <>
             <section className={styles.identity}>
@@ -185,26 +192,26 @@ export function ProfileScreen({
                 <dt>Объём сделок · TON</dt>
               </div>
             </dl>
+
+            <nav className={styles.menu} aria-label={t('profile.menu')}>
+              {menu.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={styles.destination}
+                  disabled={'disabled' in item && Boolean(item.disabled)}
+                  onClick={() => onMenu?.(item.id)}
+                >
+                  <span>
+                    <strong>{item.label}</strong>
+                    <small>{item.meta}</small>
+                  </span>
+                  <ChevronRight size={18} strokeWidth={1.7} aria-hidden="true" />
+                </button>
+              ))}
+            </nav>
           </>
         )}
-
-        <nav className={styles.menu} aria-label={t('profile.menu')}>
-          {menu.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={styles.destination}
-              disabled={'disabled' in item && Boolean(item.disabled)}
-              onClick={() => onMenu?.(item.id)}
-            >
-              <span>
-                <strong>{item.label}</strong>
-                <small>{item.meta}</small>
-              </span>
-              <ChevronRight size={18} strokeWidth={1.7} aria-hidden="true" />
-            </button>
-          ))}
-        </nav>
       </main>
 
       <BottomNavigation active="profile" onChange={onNavChange} />

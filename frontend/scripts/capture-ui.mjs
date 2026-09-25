@@ -24,6 +24,7 @@ const stories = [
   ['screens-portfolio--default', 'portfolio'],
   ['screens-portfolio--empty', 'portfolio-empty'],
   ['screens-profile--default', 'profile'],
+  ['screens-profile--guest', 'profile-guest'],
   ['screens-notifications--unread', 'notifications'],
   ['screens-notifications--empty', 'notifications-empty'],
   ['screens-activity--default', 'activity'],

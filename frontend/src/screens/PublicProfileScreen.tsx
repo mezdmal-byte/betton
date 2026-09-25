@@ -38,7 +38,6 @@ export function PublicProfileScreen({
   profile,
   markets = [],
   viewState = 'ready',
-  onBack,
   onOpenMarket,
   onRetry,
   onNavChange,
@@ -178,9 +177,6 @@ export function PublicProfileScreen({
         </button>
 
         <Button fullWidth onClick={() => setView('markets')}>Смотреть рынки</Button>
-        {onBack ? (
-          <button type="button" className={styles.browserBack} onClick={onBack}>← Назад</button>
-        ) : null}
       </main>
 
       <BottomNavigation active="profile" onChange={onNavChange} />

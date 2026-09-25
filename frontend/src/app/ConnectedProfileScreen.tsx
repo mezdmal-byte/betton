@@ -13,6 +13,7 @@ export function ConnectedProfileScreen({
   onBack,
   onMenu,
   onNavChange,
+  onLogin,
   view = 'main',
 }: {
   account: AccountFixture
@@ -21,6 +22,7 @@ export function ConnectedProfileScreen({
   onBack: () => void
   onMenu: (id: string) => void
   onNavChange?: (id: NavId) => void
+  onLogin?: () => void
   view?: ProfileView
 }) {
   const creator = useQuery({
@@ -37,6 +39,6 @@ export function ConnectedProfileScreen({
   }
 
   return (
-    <ProfileScreen account={merged} accountState={accountState} onBack={onBack} onMenu={onMenu} onNavChange={onNavChange} view={view} />
+    <ProfileScreen account={merged} accountState={accountState} onBack={onBack} onMenu={onMenu} onNavChange={onNavChange} onLogin={onLogin} view={view} />
   )
 }
