@@ -22,15 +22,27 @@
   font-size: 10px;
 }
 
+.description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .stateCard,
+.warningCard,
 .dangerCard {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid var(--color-border-subtle);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--color-surface-raised);
+}
+
+.warningCard {
+  border-color: var(--color-status-warning);
 }
 
 .dangerCard {
@@ -39,19 +51,25 @@
 }
 
 .stateCard strong,
+.warningCard strong,
 .dangerCard strong {
   color: var(--color-text-primary);
-  font-size: 15px;
-  font-weight: var(--font-weight-regular);
-  line-height: 1.35;
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
 }
 
+.warningCard strong { color: var(--color-status-warning); }
+.dangerCard strong { color: var(--color-status-danger); }
+
 .stateCard p,
+.warningCard p,
 .dangerCard p,
-.metric p {
+.metric p,
+.successMetric p {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -67,20 +85,57 @@
   gap: 8px;
 }
 
-.metric {
+.metric,
+.successMetric {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 10px 0;
 }
 
-.metric strong {
+.metric strong,
+.successMetric strong {
   color: var(--color-accent-mint);
   font-size: 38px;
   font-weight: var(--font-weight-extrabold);
   line-height: normal;
+  overflow-wrap: anywhere;
+}
+
+.successMetric strong {
+  color: var(--color-status-success);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.rows > div {
+  display: grid;
+  min-height: 42px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.rows span {
+  color: var(--color-accent-mint);
+  font-size: 9px;
+}
+
+.rows p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 360px) {
   .resolveGrid { grid-template-columns: 1fr; }
+  .metric strong,
+  .successMetric strong { font-size: 34px; }
 }

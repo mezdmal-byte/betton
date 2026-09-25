@@ -39,101 +39,116 @@
   overflow-y: auto;
 }
 
-.stateCard {
+.description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.stateCard,
+.warningCard,
+.dangerCard {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
+  gap: 8px;
+  padding: 14px;
   border: 1px solid var(--color-border-subtle);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--color-surface-raised);
 }
 
-.stateCard strong {
-  color: var(--color-text-primary);
-  font-size: 15px;
-  font-weight: var(--font-weight-regular);
-  line-height: 1.35;
+.warningCard {
+  border-color: var(--color-status-warning);
 }
 
-.stateCard p {
-  min-height: 20px;
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.queue {
-  display: flex;
-  flex-direction: column;
-}
-
-.queue button {
-  display: grid;
-  min-height: 38px;
-  grid-template-columns: 26px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-  padding: 6px 0;
-  border: 0;
-  border-top: 1px solid var(--color-border-subtle);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font: inherit;
-  font-size: 12px;
-  text-align: left;
-}
-
-.queue button span:first-child {
-  color: var(--color-accent-mint);
-  font-size: 10px;
-}
-
-.noticeSuccess,
-.noticeDanger {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 8px;
-}
-
-.noticeSuccess {
-  background: var(--color-status-success-surface);
-}
-
-.noticeDanger {
+.dangerCard {
+  border-color: var(--color-status-danger);
   background: var(--color-status-danger-surface);
 }
 
-.noticeSuccess strong,
-.noticeSuccess p,
-.noticeDanger strong,
-.noticeDanger p {
+.stateCard strong,
+.warningCard strong,
+.dangerCard strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+}
+
+.warningCard strong { color: var(--color-status-warning); }
+.dangerCard strong { color: var(--color-status-danger); }
+
+.stateCard p,
+.warningCard p,
+.dangerCard p {
   margin: 0;
+  color: var(--color-text-secondary);
   font-size: 11px;
   line-height: 1.45;
 }
 
-.noticeSuccess strong { color: var(--color-status-success); }
-.noticeDanger strong { color: var(--color-status-danger); }
+.queue,
+.rows {
+  display: flex;
+  flex-direction: column;
+}
 
-.metric {
+.queue button,
+.rows > div {
+  display: grid;
+  min-height: 42px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 9px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+}
+
+.queue button span:first-child,
+.rows > div > span {
+  color: var(--color-accent-mint);
+  font-size: 9px;
+}
+
+.queue button span:last-child,
+.rows p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.metric,
+.successMetric {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 10px 0;
 }
 
-.metric strong {
+.metric strong,
+.successMetric strong {
   color: var(--color-accent-mint);
   font-size: 38px;
   font-weight: var(--font-weight-extrabold);
+  line-height: normal;
 }
 
-.metric p {
+.successMetric strong {
+  color: var(--color-status-success);
+}
+
+.metric p,
+.successMetric p {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 11px;
+  line-height: 1.4;
 }
