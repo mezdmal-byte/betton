@@ -1,27 +1,52 @@
 .screen {
   display: flex;
-  flex-direction: column;
   height: 100%;
-  background: var(--color-canvas);
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
 }
 
 .header {
   display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  min-height: var(--header-height);
-  padding: var(--pad-header-top) var(--page-padding) var(--space-8);
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pad-header-top) var(--page-padding) 12px;
 }
 
-.header strong {
-  font-size: 16px;
+.marketQuestion {
+  overflow: hidden;
+  color: var(--color-accent-mint);
+  font-size: 9px;
+  font-weight: var(--font-weight-bold);
+  line-height: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 21px;
   font-weight: var(--font-weight-semibold);
+  line-height: 27px;
   letter-spacing: var(--tracking-tight);
 }
 
 .body {
+  display: flex;
   flex: 1;
   min-height: 0;
-  overflow: auto;
-  padding: 0 var(--page-padding) max(var(--space-16), var(--safe-bottom));
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px var(--page-padding) 24px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.destinations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }

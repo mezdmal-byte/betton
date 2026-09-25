@@ -18,3 +18,14 @@
   gap: var(--space-8);
   padding-top: var(--space-8);
 }
+
+
+.routeState {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px var(--page-padding);
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+}

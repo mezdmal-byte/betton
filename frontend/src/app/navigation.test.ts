@@ -21,6 +21,7 @@ const walletWithdraw: Route = { name: 'wallet', tab: 'withdraw' }
 const publicProfile: Route = { name: 'public-profile', userId: 7 }
 const myMarkets: Route = { name: 'my-markets' }
 const detail: Route = { name: 'detail', marketId: 42 }
+const quickTrade: Route = { name: 'quick-trade', marketId: 42, side: 'a' }
 const ownPrice: Route = { name: 'own-price', marketId: 42, side: 'a' }
 const help: Route = { name: 'help' }
 const history: Route = { name: 'history' }
@@ -34,6 +35,9 @@ describe('navigation stack', () => {
     const mine = pushRoute(pushRoute(pushRoute([markets], profile), myMarkets), detail)
     expect(currentRoute(goBack(mine))).toEqual(myMarkets)
     expect(currentRoute(goBack(goBack(mine)))).toEqual(profile)
+
+    const quickFromDetail = pushRoute(pushRoute([markets], detail), quickTrade)
+    expect(currentRoute(goBack(quickFromDetail))).toEqual(detail)
 
     const fromDetail = pushRoute(pushRoute([markets], detail), ownPrice)
     expect(currentRoute(goBack(fromDetail))).toEqual(detail)
@@ -77,5 +81,6 @@ describe('navigation stack', () => {
     expect(showTelegramBackButton(profile)).toBe(false)
     expect(showTelegramBackButton(notifications)).toBe(false)
     expect(sameRoute(detail, { name: 'detail', marketId: 41 })).toBe(false)
+    expect(sameRoute(quickTrade, { name: 'quick-trade', marketId: 42, side: 'b' })).toBe(false)
   })
 })

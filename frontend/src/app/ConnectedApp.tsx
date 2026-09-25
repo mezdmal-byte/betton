@@ -13,6 +13,7 @@ import { bootTelegramWebApp, closeTelegramWebApp, hasTelegramInitData, readShare
 import { ConnectedCreateMarketScreen } from './ConnectedCreateMarketScreen'
 import { ConnectedMarketDetailScreen } from './ConnectedMarketDetailScreen'
 import { ConnectedMarketsScreen } from './ConnectedMarketsScreen'
+import { ConnectedQuickTradeScreen } from './ConnectedQuickTrade'
 import type { FeedViewState } from './ConnectedMarketsScreen'
 import { ConnectedModerationScreen } from './ConnectedModerationScreen'
 import { ConnectedMyMarketsScreen } from './ConnectedMyMarketsScreen'
@@ -72,6 +73,13 @@ export function ConnectedApp() {
   const back = () => setStack((current) => goBack(current))
   const goTab = (id: NavId) => setStack(resetToTab(id))
   const push = (next: Route) => setStack((current) => pushRoute(current, next))
+  const switchTradeRoute = (next: Route) => setStack((current) => {
+    const active = current[current.length - 1]
+    if (active?.name === 'quick-trade' || active?.name === 'own-price') {
+      return [...current.slice(0, -1), next]
+    }
+    return pushRoute(current, next)
+  })
   const openProfile = () => goTab('profile')
   const openMarket = (market: MarketFixture | number) => { const id = typeof market === 'number' ? market : Number(market.id); if (Number.isFinite(id)) push({ name: 'detail', marketId: id }) }
   const openCreator = (userId?: number | null) => { if (userId) push({ name: 'public-profile', userId }) }
@@ -106,8 +114,9 @@ export function ConnectedApp() {
       {route.name === 'history' ? <ConnectedPortfolioScreen userId={session.user?.id} mappedAccount={mappedAccount} accountState={accountState} variant="history" onBack={back} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={(marketId) => push({ name: 'detail', marketId })} onDeposit={() => push({ name: 'wallet', tab: 'deposit' })} onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })} /> : null}
       {route.name === 'wallet' ? <WalletScreen account={mappedAccount} tab={route.tab} onBack={back} onTabChange={(tab: WalletTab) => push({ name: 'wallet', tab })} /> : null}
       {route.name === 'public-profile' ? <ConnectedPublicProfileScreen userId={route.userId} onBack={back} onOpenMarket={(marketId) => push({ name: 'detail', marketId })} /> : null}
-      {route.name === 'detail' ? <ConnectedMarketDetailScreen marketId={route.marketId} isAdmin={isAdmin} userId={session.user?.id} availableTon={availableTon} botUsername={botUsername} webapp={webapp} onBack={back} onNavChange={goTab} onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })} onCreatorClick={(creatorId) => openCreator(creatorId)} /> : null}
-      {route.name === 'own-price' ? <ConnectedOwnPriceScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} /> : null}
+      {route.name === 'detail' ? <ConnectedMarketDetailScreen marketId={route.marketId} isAdmin={isAdmin} userId={session.user?.id} botUsername={botUsername} webapp={webapp} onBack={back} onQuickTrade={(side) => push({ name: 'quick-trade', marketId: route.marketId, side })} onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })} onCreatorClick={(creatorId) => openCreator(creatorId)} /> : null}
+      {route.name === 'quick-trade' ? <ConnectedQuickTradeScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} onNavChange={goTab} onOwnPrice={(side) => switchTradeRoute({ name: 'own-price', marketId: route.marketId, side })} /> : null}
+      {route.name === 'own-price' ? <ConnectedOwnPriceScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} onNavChange={goTab} onQuickTrade={(side) => switchTradeRoute({ name: 'quick-trade', marketId: route.marketId, side })} /> : null}
     </div>
   )
 }

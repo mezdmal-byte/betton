@@ -14,6 +14,7 @@ export type Route =
   | { name: 'profile' }
   | { name: 'profile-settings' }
   | { name: 'detail'; marketId: number }
+  | { name: 'quick-trade'; marketId: number; side: OutcomeSide }
   | { name: 'own-price'; marketId: number; side: OutcomeSide }
   | { name: 'moderation' }
   | { name: 'my-markets' }
@@ -31,6 +32,9 @@ export function isTopLevel(route: Route): boolean {
 export function sameRoute(a: Route, b: Route): boolean {
   if (a.name !== b.name) return false
   if (a.name === 'detail' && b.name === 'detail') return a.marketId === b.marketId
+  if (a.name === 'quick-trade' && b.name === 'quick-trade') {
+    return a.marketId === b.marketId && a.side === b.side
+  }
   if (a.name === 'own-price' && b.name === 'own-price') {
     return a.marketId === b.marketId && a.side === b.side
   }

@@ -15,46 +15,39 @@ import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useT, useI18n } from '../i18n'
 import { openLegacyMiniApp } from '../lib/legacy'
 import { marketIsP2P, marketIsTradable } from '../lib/quote'
-import { QUICK_TRADE_INITIAL_AMOUNT } from '../lib/quickTrade'
 import { MarketDetailScreen } from '../screens/MarketDetailScreen'
 import type { MarketDetailPane, MarketDetailViewState, TradeHistoryState } from '../screens/MarketDetailScreen'
 import overlayStyles from '../screens/QuickTradeScreen.module.css'
 import type { OutcomeSide } from '../types/market'
-import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { AdminMarketPanel } from './AdminMarketPanel'
-import { ConnectedQuickTradeSheet } from './ConnectedQuickTrade'
 import { getHealth } from '../api/account'
 
 export type ConnectedMarketDetailScreenProps = {
   marketId: number
   onBack: () => void
   onOwnPrice: (side: OutcomeSide) => void
+  onQuickTrade: (side: OutcomeSide) => void
   onCreatorClick?: (creatorId: number) => void
   isAdmin?: boolean
   userId?: number
-  availableTon?: number
   botUsername?: string | null
   webapp?: string | null
-  onNavChange?: (id: NavId) => void
 }
 
 export function ConnectedMarketDetailScreen({
   marketId,
   onBack,
   onOwnPrice,
+  onQuickTrade,
   onCreatorClick,
   isAdmin = false,
   userId,
-  availableTon = 0,
   botUsername,
   webapp,
-  onNavChange,
 }: ConnectedMarketDetailScreenProps) {
   const t = useT()
   const { locale } = useI18n()
   const [side, setSide] = useState<OutcomeSide>('a')
-  const [tradeAmount, setTradeAmount] = useState(QUICK_TRADE_INITIAL_AMOUNT)
-  const [trading, setTrading] = useState(false)
   const [pane, setPane] = useState<MarketDetailPane>('chart')
   const [adminOpen, setAdminOpen] = useState(false)
   const [shareMessage, setShareMessage] = useState<string | null>(null)
@@ -98,11 +91,6 @@ export function ConnectedMarketDetailScreen({
 
   const chartA = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 0), [tradesQuery.data])
   const chartB = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 1), [tradesQuery.data])
-  const totalAvailableTon = useMemo(() => {
-    const levels = bookQuery.data?.available_to_me?.[side === 'a' ? 0 : 1] ?? []
-    return levels.reduce((sum, level) => sum + Number(level.available ?? 0), 0)
-  }, [bookQuery.data, side])
-
   const tradeHistoryState: TradeHistoryState = !p2p
     ? 'hidden'
     : tradesQuery.isPending
@@ -154,8 +142,7 @@ export function ConnectedMarketDetailScreen({
         onOwnPrice={() => onOwnPrice(side)}
         onPlace={() => {
           if (!market || actionsOff) return
-          setTradeAmount(QUICK_TRADE_INITIAL_AMOUNT)
-          setTrading(true)
+          onQuickTrade(side)
         }}
         onRetry={() => {
           void marketQuery.refetch()
@@ -202,29 +189,6 @@ export function ConnectedMarketDetailScreen({
           </>
         }
       />
-      {trading && market ? (
-        <div className={overlayStyles.overlay}>
-          <ConnectedQuickTradeSheet
-            market={market}
-            selectedSide={side}
-            amount={tradeAmount}
-            availableTon={availableTon}
-            totalAvailableTon={totalAvailableTon}
-            userId={userId}
-            quotesLoading={bookQuery.isPending || bookQuery.isError}
-            quotesError={bookQuery.isError}
-            onRetryQuotes={() => { void bookQuery.refetch() }}
-            onSelectSide={setSide}
-            onAmountChange={setTradeAmount}
-            onClose={() => setTrading(false)}
-            onNavChange={onNavChange}
-            onOwnPrice={() => {
-              setTrading(false)
-              onOwnPrice(side)
-            }}
-          />
-        </div>
-      ) : null}
     </div>
   )
 }

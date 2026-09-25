@@ -14,6 +14,7 @@ import { formatTonFull } from '../lib/format'
 import { marketIsTradable } from '../lib/quote'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { OwnPriceScreen } from '../screens/OwnPriceScreen'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import type { OutcomeSide } from '../types/market'
 import { invalidateAfterTrade } from './invalidate'
 
@@ -23,6 +24,8 @@ export type ConnectedOwnPriceScreenProps = {
   availableTon: number
   userId?: number
   onBack: () => void
+  onQuickTrade?: (side: OutcomeSide) => void
+  onNavChange?: (id: NavId) => void
 }
 
 export function ConnectedOwnPriceScreen({
@@ -31,6 +34,8 @@ export function ConnectedOwnPriceScreen({
   availableTon,
   userId,
   onBack,
+  onQuickTrade,
+  onNavChange,
 }: ConnectedOwnPriceScreenProps) {
   const t = useT()
   const { locale } = useI18n()
@@ -134,6 +139,8 @@ export function ConnectedOwnPriceScreen({
     return (
       <OwnPriceScreen
         onBack={onBack}
+        onQuickTrade={onQuickTrade}
+        onNavChange={onNavChange}
         viewState={marketQuery.isPending ? 'loading' : forbidden ? 'forbidden' : 'error'}
         onRetry={() => { void marketQuery.refetch() }}
       />
@@ -164,6 +171,8 @@ export function ConnectedOwnPriceScreen({
     <OwnPriceScreen
       market={market}
       onBack={onBack}
+      onQuickTrade={onQuickTrade}
+      onNavChange={onNavChange}
       selectedSide={side}
       odds={odds}
       amount={amount}
