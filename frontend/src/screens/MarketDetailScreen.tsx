@@ -207,7 +207,7 @@ export function MarketDetailScreen({
             <section className={styles.section}>
               <div className={styles.sectionTitleRow}>
                 <h2>Стакан</h2>
-                <button type="button" onClick={() => setPane('chart')}>Назад к обзору</button>
+                {showInternalBack ? <button type="button" onClick={() => setPane('chart')}>Назад к обзору</button> : null}
               </div>
               <OrderBookPanel
                 outcomeALabel={market.outcomeA.label}
@@ -226,7 +226,7 @@ export function MarketDetailScreen({
                   <strong>Исполненные сделки</strong>
                   <span>{market.question}</span>
                 </div>
-                <button type="button" onClick={() => setPane('chart')}>← Назад</button>
+                {showInternalBack ? <button type="button" onClick={() => setPane('chart')}>← Назад</button> : null}
               </div>
               <h2 className={styles.historyTitle}>История коэффициента по исполненным сделкам · {selected.label}</h2>
               <p className={styles.chartExplanation}>
@@ -267,7 +267,7 @@ export function MarketDetailScreen({
                   <strong>Критерии решения</strong>
                   <span>Проверяемое условие исхода</span>
                 </div>
-                <button type="button" onClick={() => setPane('chart')}>← Назад</button>
+                {showInternalBack ? <button type="button" onClick={() => setPane('chart')}>← Назад</button> : null}
               </div>
               <InformationRows
                 rows={criteriaText ? splitInformation(criteriaText) : ['Критерии результата не указаны.']}
@@ -283,7 +283,7 @@ export function MarketDetailScreen({
                   <strong>Источники</strong>
                   <span>Материалы для оценки события</span>
                 </div>
-                <button type="button" onClick={() => setPane('criteria')}>← Назад</button>
+                {showInternalBack ? <button type="button" onClick={() => setPane('criteria')}>← Назад</button> : null}
               </div>
               <InformationRows
                 rows={sourceRows.length > 0 ? sourceRows : ['Источник результата не указан.']}
@@ -296,7 +296,7 @@ export function MarketDetailScreen({
                   <strong>Поделиться</strong>
                   <span>Ссылка на рынок</span>
                 </div>
-                <button type="button" onClick={() => setPane('chart')}>← Назад</button>
+                {showInternalBack ? <button type="button" onClick={() => setPane('chart')}>← Назад</button> : null}
               </div>
               {shareValue ? (
                 <input
