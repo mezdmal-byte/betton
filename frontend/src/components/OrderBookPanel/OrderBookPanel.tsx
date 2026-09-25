@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useT } from '../../i18n'
 import type { OrderBookLevel } from '../../types/market'
 import { OrderBookRow } from '../OrderBookRow/OrderBookRow'
@@ -24,6 +25,8 @@ export function OrderBookPanel({
   onRetry,
 }: OrderBookPanelProps) {
   const t = useT()
+  const [expanded, setExpanded] = useState(false)
+  const canExpand = sideA.length > 5 || sideB.length > 5
   if (state === 'loading') {
     return (
       <StatusMessage tone="loading" title={t('book.loading')}>
@@ -47,15 +50,29 @@ export function OrderBookPanel({
   return (
     <section className={styles.root} aria-label={t('event.book')}>
       {hint ? <p className={styles.hint}>{hint}</p> : null}
-      <OutcomeBook label={outcomeALabel} levels={sideA} />
-      <OutcomeBook label={outcomeBLabel} levels={sideB} />
+      <OutcomeBook label={outcomeALabel} levels={sideA} expanded={expanded} />
+      <OutcomeBook label={outcomeBLabel} levels={sideB} expanded={expanded} />
+      {canExpand ? (
+        <button type="button" className={styles.expandButton} onClick={() => setExpanded((value) => !value)}>
+          {expanded ? 'Свернуть стакан ↑' : 'Показать весь стакан ↓'}
+        </button>
+      ) : null}
     </section>
   )
 }
 
-function OutcomeBook({ label, levels }: { label: string; levels: OrderBookLevel[] }) {
+function OutcomeBook({
+  label,
+  levels,
+  expanded,
+}: {
+  label: string
+  levels: OrderBookLevel[]
+  expanded: boolean
+}) {
   const t = useT()
   const sortedLevels = [...levels].sort((a, b) => b.odds - a.odds)
+  const visibleLevels = expanded ? sortedLevels : sortedLevels.slice(0, 5)
   const maxAvailable = Math.max(...sortedLevels.map((level) => level.availableTon), 1)
   return (
     <div className={styles.side}>
@@ -67,7 +84,7 @@ function OutcomeBook({ label, levels }: { label: string; levels: OrderBookLevel[
       {sortedLevels.length === 0 ? (
         <p className={styles.empty}>{t('book.noOrders')}</p>
       ) : (
-        sortedLevels.map((level, index) => (
+        visibleLevels.map((level, index) => (
           <OrderBookRow key={`${level.odds}-${index}`} level={level} maxAvailable={maxAvailable} active={index === 0} />
         ))
       )}
