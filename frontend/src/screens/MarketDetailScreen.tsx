@@ -34,6 +34,7 @@ export type MarketDetailScreenProps = {
   onPaneChange?: (pane: MarketDetailPane) => void
   viewState?: MarketDetailViewState
   actionsDisabled?: boolean
+  showInternalBack?: boolean
   onBack?: () => void
   onSelectSide?: (side: OutcomeSide) => void
   onOwnPrice?: () => void
@@ -68,6 +69,7 @@ export function MarketDetailScreen({
   onPaneChange,
   viewState = 'ready',
   actionsDisabled = false,
+  showInternalBack = true,
   onBack,
   onSelectSide,
   onOwnPrice,
@@ -86,6 +88,7 @@ export function MarketDetailScreen({
   const t = useT()
   const [side, setSide] = useState<OutcomeSide>(selectedSide)
   const [localPane, setLocalPane] = useState<MarketDetailPane>('chart')
+  const [historyOpen, setHistoryOpen] = useState(false)
   const activeSide = onSelectSide ? selectedSide : side
   const selected = activeSide === 'a' ? market.outcomeA : market.outcomeB
   const series = activeSide === 'a' ? chartSeriesA : chartSeriesB
@@ -137,7 +140,7 @@ export function MarketDetailScreen({
     return (
       <div className={styles.screen}>
         <header className={styles.simpleHeader}>
-          <button type="button" className={styles.back} onClick={onBack}>‹</button>
+          {showInternalBack ? <button type="button" className={styles.back} onClick={onBack}>‹</button> : null}
           <strong>{t('event.title')}</strong>
         </header>
         <main className={styles.body}>
@@ -156,7 +159,7 @@ export function MarketDetailScreen({
     <div className={styles.screen}>
       <header className={styles.header}>
         <div className={styles.titleRow}>
-          <button type="button" className={styles.back} onClick={onBack}>‹</button>
+          {showInternalBack ? <button type="button" className={styles.back} onClick={onBack}>‹</button> : null}
           <h1>{market.question}</h1>
           {shareAvailable && onShare ? (
             <button type="button" className={styles.more} aria-label={t('share')} onClick={() => setPane('share')}>•••</button>
@@ -225,7 +228,10 @@ export function MarketDetailScreen({
                 </div>
                 <button type="button" onClick={() => setPane('chart')}>← Назад</button>
               </div>
-              <h2 className={styles.historyTitle}>Коэффициент по сделкам · {selected.label}</h2>
+              <h2 className={styles.historyTitle}>История коэффициента по исполненным сделкам · {selected.label}</h2>
+              <p className={styles.chartExplanation}>
+                Линия — коэффициент каждой исполненной сделки. Столбики снизу — объём этой сделки.
+              </p>
               {tradeHistoryState === 'ready' && series.length > 0 ? (
                 <MarketChart
                   series={series}
@@ -239,9 +245,8 @@ export function MarketDetailScreen({
                 <div className={styles.historyEmpty}>История сделок недоступна</div>
               )}
               <p className={styles.supportingNote}>
-                {demoHistory
-                  ? 'Демо-симуляция для проверки интерфейса. Эти сделки не записаны в базу.'
-                  : 'Здесь отображаются только исполненные сделки выбранного исхода.'}
+                Здесь отображаются только уже исполненные сделки выбранного исхода.
+                {demoHistory ? ' Сейчас показаны демонстрационные данные preview-рынка.' : ''}
               </p>
               {recentTrades.length > 0 ? (
                 <div className={styles.tradeList}>
@@ -310,32 +315,51 @@ export function MarketDetailScreen({
           ) : (
             <>
               <section className={styles.section}>
-                <div className={styles.sectionTitleRow}>
-                  <h2 className={styles.historyTitle}>Коэффициент по сделкам · {selected.label}</h2>
-                  <button type="button" onClick={() => setPane('trades')}>Все сделки</button>
-                </div>
-                {tradeHistoryState === 'loading' ? (
-                  <StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage>
-                ) : tradeHistoryState === 'error' ? (
-                  <div className={styles.retryBlock}>
-                    <StatusMessage tone="error" title={t('event.tradesError')} />
-                    {onRetryTrades ? <Button variant="secondary" onClick={onRetryTrades}>{t('retry')}</Button> : null}
+                <button
+                  type="button"
+                  className={styles.historyDisclosure}
+                  aria-expanded={historyOpen}
+                  onClick={() => setHistoryOpen((open) => !open)}
+                >
+                  <span>
+                    <strong>История коэффициента</strong>
+                    <small>По исполненным сделкам · {selected.label}</small>
+                  </span>
+                  <b>{historyOpen ? 'Скрыть ↑' : 'Показать ›'}</b>
+                </button>
+
+                {historyOpen ? (
+                  <div className={styles.historyContent}>
+                    <div className={styles.historyTools}>
+                      <p className={styles.chartExplanation}>
+                        Линия — коэффициент сделки. Столбики снизу — объём каждой сделки.
+                      </p>
+                      <button type="button" onClick={() => setPane('trades')}>Все сделки</button>
+                    </div>
+                    {tradeHistoryState === 'loading' ? (
+                      <StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage>
+                    ) : tradeHistoryState === 'error' ? (
+                      <div className={styles.retryBlock}>
+                        <StatusMessage tone="error" title={t('event.tradesError')} />
+                        {onRetryTrades ? <Button variant="secondary" onClick={onRetryTrades}>{t('retry')}</Button> : null}
+                      </div>
+                    ) : tradeHistoryState === 'ready' && series.length > 0 ? (
+                      <MarketChart
+                        series={series}
+                        currentOdds={series[series.length - 1]?.odds ?? selected.odds ?? 0}
+                        outcomeLabel={selected.label}
+                        volumeTon={chartVolumeTon ?? market.volumeTon}
+                        title={'История коэффициента · ' + selected.label}
+                        demo={demoHistory}
+                      />
+                    ) : (
+                      <>
+                        <div className={styles.historyEmpty}>Исполненных сделок пока нет</div>
+                        <p className={styles.lastTrade}>График появится после первой сделки.</p>
+                      </>
+                    )}
                   </div>
-                ) : tradeHistoryState === 'ready' && series.length > 0 ? (
-                  <MarketChart
-                    series={series}
-                    currentOdds={series[series.length - 1]?.odds ?? selected.odds ?? 0}
-                    outcomeLabel={selected.label}
-                    volumeTon={chartVolumeTon ?? market.volumeTon}
-                    title={'Коэффициент по сделкам · ' + selected.label}
-                    demo={demoHistory}
-                  />
-                ) : (
-                  <>
-                    <div className={styles.historyEmpty}>История сделок недоступна</div>
-                    <p className={styles.lastTrade}>Последняя сделка: нет данных</p>
-                  </>
-                )}
+                ) : null}
               </section>
 
               <dl className={styles.metrics}>
@@ -349,7 +373,7 @@ export function MarketDetailScreen({
                 </div>
                 <div>
                   <dt>ЗАКРЫТИЕ</dt>
-                  <dd>{market.closeLabel}</dd>
+                  <dd>{market.closeAtLabel ?? market.closeLabel}</dd>
                 </div>
               </dl>
 
