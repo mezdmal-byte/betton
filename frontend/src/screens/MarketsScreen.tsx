@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal } from 'lucide-react'
+import { MessageCircle, Search, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
@@ -60,6 +60,8 @@ export type MarketsScreenProps = {
   onLoadMore?: () => void
   topCreators?: FeedCreator[]
   onTopCreatorClick?: (userId: number) => void
+  chatUnreadReplies?: number
+  onChatClick?: () => void
 }
 
 export function MarketsScreen({
@@ -80,6 +82,8 @@ export function MarketsScreen({
   hasMore = false,
   loadingMore = false,
   onLoadMore,
+  chatUnreadReplies = 0,
+  onChatClick,
 }: MarketsScreenProps) {
   const t = useT()
   const [internalQuery, setInternalQuery] = useState(query)
@@ -97,6 +101,16 @@ export function MarketsScreen({
           <h1>{t('nav.feed')}</h1>
           <div className={styles.headerActions}>
             <ThemeToggle />
+            {onChatClick ? (
+              <span className={styles.chatAction}>
+                <IconButton label="Лобби BetTON" variant="plain" size="md" onClick={onChatClick}>
+                  <MessageCircle size={21} strokeWidth={1.8} />
+                </IconButton>
+                {chatUnreadReplies > 0 ? (
+                  <span className={styles.chatBadge}>{chatUnreadReplies > 9 ? '9+' : chatUnreadReplies}</span>
+                ) : null}
+              </span>
+            ) : null}
             <IconButton
               label={t('feed.searchPh')}
               variant="plain"
