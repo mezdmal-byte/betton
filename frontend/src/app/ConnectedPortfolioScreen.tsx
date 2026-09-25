@@ -139,7 +139,6 @@ export function ConnectedPortfolioScreen({
       listState={listState}
       cancellingOrderId={cancellingOrderId}
       actionError={actionError}
-      tab={variant === 'history' ? 'history' : undefined}
       onNavChange={onNavChange}
       onProfileClick={onProfileClick}
       onSelectMarket={onSelectMarket}

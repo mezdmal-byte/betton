@@ -16,17 +16,19 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: () => (
+  args: { history: portfolioHistory },
+  render: (args) => (
     <PhoneShell>
-      <ActivityScreen history={portfolioHistory} />
+      <ActivityScreen {...args} />
     </PhoneShell>
   ),
 }
 
 export const Empty: Story = {
-  render: () => (
+  args: { history: [] },
+  render: (args) => (
     <PhoneShell>
-      <ActivityScreen history={[]} />
+      <ActivityScreen {...args} />
     </PhoneShell>
   ),
 }

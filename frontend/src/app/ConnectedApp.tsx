@@ -116,6 +116,20 @@ export function ConnectedApp() {
   const isAdmin = Boolean(mappedAccount?.isAdmin)
   const botUsername = healthQuery.data?.bot_username
   const webapp = healthQuery.data?.webapp
+  const openTelegramLogin = botUsername
+    ? () => {
+        const username = botUsername.replace(/^@/, '').trim()
+        if (!username) return
+        const url = 'https://t.me/' + username
+        try {
+          const host = getTelegramWebApp()
+          if (host?.openTelegramLink) host.openTelegramLink(url)
+          else if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer')
+        } catch {
+          if (typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer')
+        }
+      }
+    : undefined
 
   return (
     <div className={styles.root}>
