@@ -37,6 +37,13 @@
   letter-spacing: -0.03em;
 }
 
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .volumeLabel {
   font-size: 12px;
   font-weight: var(--font-weight-regular);
@@ -44,10 +51,26 @@
   font-variant-numeric: tabular-nums;
 }
 
+.demoBadge {
+  padding: 2px 5px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+}
+
+.chartWrap {
+  position: relative;
+}
+
 .svg {
   display: block;
   width: 100%;
   height: auto;
+  cursor: crosshair;
+  touch-action: pan-y;
 }
 
 .grid {
@@ -67,14 +90,27 @@
   stroke-linecap: square;
 }
 
-.dotRing {
+.dotRing,
+.activeDotRing {
   fill: var(--color-surface);
   stroke: var(--color-chart-line);
   stroke-width: 1.25;
 }
 
-.dot {
+.dot,
+.activeDot {
   fill: var(--color-chart-line);
+}
+
+.activeDotRing {
+  stroke-width: 1.6;
+}
+
+.guide {
+  stroke: var(--color-text-disabled);
+  stroke-width: 0.8;
+  stroke-dasharray: 3 3;
+  opacity: 0.75;
 }
 
 .volume {
@@ -84,4 +120,42 @@
 .volumeNow {
   fill: var(--color-brand-teal);
   opacity: 0.35;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  top: 4px;
+  display: flex;
+  min-width: 92px;
+  transform: translateX(-50%);
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-background-primary);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 10%);
+  pointer-events: none;
+}
+
+.tooltip strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip span,
+.tooltip small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+.interactionHint {
+  margin: 5px 0 0;
+  color: var(--color-text-disabled);
+  font-size: 10px;
+  line-height: 1.35;
 }
