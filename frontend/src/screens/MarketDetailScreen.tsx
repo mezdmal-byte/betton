@@ -25,6 +25,8 @@ export type MarketDetailScreenProps = {
   recentTradesB?: RecentTrade[]
   priceHistoryAvailable?: boolean
   tradeHistoryState?: TradeHistoryState
+  demoHistory?: boolean
+  chartVolumeTon?: number
   orderbookA?: OrderBookLevel[]
   orderbookB?: OrderBookLevel[]
   orderbookState?: 'ready' | 'loading' | 'error'
@@ -57,6 +59,8 @@ export function MarketDetailScreen({
   recentTradesA = [],
   recentTradesB = [],
   tradeHistoryState = 'hidden',
+  demoHistory = false,
+  chartVolumeTon,
   orderbookA,
   orderbookB,
   orderbookState,
@@ -227,14 +231,17 @@ export function MarketDetailScreen({
                   series={series}
                   currentOdds={series[series.length - 1]?.odds ?? selected.odds ?? 0}
                   outcomeLabel={selected.label}
-                  volumeTon={market.volumeTon}
+                  volumeTon={chartVolumeTon ?? market.volumeTon}
                   title={'Коэффициент по сделкам · ' + selected.label}
+                  demo={demoHistory}
                 />
               ) : (
                 <div className={styles.historyEmpty}>История сделок недоступна</div>
               )}
               <p className={styles.supportingNote}>
-                Здесь отображаются только исполненные сделки выбранного исхода.
+                {demoHistory
+                  ? 'Демо-симуляция для проверки интерфейса. Эти сделки не записаны в базу.'
+                  : 'Здесь отображаются только исполненные сделки выбранного исхода.'}
               </p>
               {recentTrades.length > 0 ? (
                 <div className={styles.tradeList}>
@@ -319,8 +326,9 @@ export function MarketDetailScreen({
                     series={series}
                     currentOdds={series[series.length - 1]?.odds ?? selected.odds ?? 0}
                     outcomeLabel={selected.label}
-                    volumeTon={market.volumeTon}
+                    volumeTon={chartVolumeTon ?? market.volumeTon}
                     title={'Коэффициент по сделкам · ' + selected.label}
+                    demo={demoHistory}
                   />
                 ) : (
                   <>
