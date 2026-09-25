@@ -450,8 +450,7 @@ def get_market_endpoint(
     market_access.require_unlisted_access(
         market, viewer=current_user, share_token=market_access.share_token_from_request(request)
     )
-    unlisted = (getattr(market, "visibility", None) or "public") == "unlisted"
-    return discovery.attach_market_views(db, [market], include_share_token=unlisted)[0]
+    return discovery.attach_market_views(db, [market], include_share_token=True)[0]
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)
