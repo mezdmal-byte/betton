@@ -263,3 +263,116 @@
     font-size: 13px;
   }
 }
+
+
+.supportingPane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.supportingHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.supportingHeader > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.supportingHeader strong {
+  color: var(--color-text-primary);
+  font-size: 21px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 27px;
+}
+
+.supportingHeader span,
+.supportingNote {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.supportingHeader button {
+  flex: 0 0 auto;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 11px;
+}
+
+.informationRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.informationRows > div {
+  display: flex;
+  min-height: 64px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.informationRows span {
+  color: var(--color-accent-mint);
+  font-size: 9px;
+}
+
+.informationRows p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.tradeList {
+  display: flex;
+  flex-direction: column;
+}
+
+.tradeRow {
+  display: grid;
+  min-height: 44px;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.tradeRow strong {
+  color: var(--color-accent-mint);
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.tradeRow span,
+.tradeRow small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.shareInput {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--color-input-background);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 11px;
+}

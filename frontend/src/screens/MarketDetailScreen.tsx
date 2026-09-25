@@ -9,11 +9,11 @@ import { chartSpartakA, chartSpartakB, marketYesNo } from '../fixtures/markets'
 import { useT, type MessageKey } from '../i18n'
 import { formatInteger, formatTon } from '../lib/format'
 import { marketIsLocked, marketOutcomeQuoteState } from '../lib/quote'
-import type { ChartPoint, MarketFixture, OrderBookLevel, OutcomeSide } from '../types/market'
+import type { ChartPoint, MarketFixture, OrderBookLevel, OutcomeSide, RecentTrade } from '../types/market'
 import styles from './MarketDetailScreen.module.css'
 
 export type MarketDetailViewState = 'ready' | 'loading' | 'not-found' | 'forbidden' | 'error'
-export type MarketDetailPane = 'chart' | 'book'
+export type MarketDetailPane = 'chart' | 'book' | 'trades' | 'criteria' | 'sources' | 'share'
 export type TradeHistoryState = 'hidden' | 'loading' | 'empty' | 'ready' | 'error'
 
 export type MarketDetailScreenProps = {
@@ -21,6 +21,8 @@ export type MarketDetailScreenProps = {
   selectedSide?: OutcomeSide
   chartSeriesA?: ChartPoint[]
   chartSeriesB?: ChartPoint[]
+  recentTradesA?: RecentTrade[]
+  recentTradesB?: RecentTrade[]
   priceHistoryAvailable?: boolean
   tradeHistoryState?: TradeHistoryState
   orderbookA?: OrderBookLevel[]
@@ -37,7 +39,9 @@ export type MarketDetailScreenProps = {
   onRetry?: () => void
   onCreatorClick?: () => void
   onShare?: () => void
+  onExternalShare?: () => void
   shareAvailable?: boolean
+  shareValue?: string
   showMarketDataSwitch?: boolean
   onRetryTrades?: () => void
   onRetryBook?: () => void
@@ -50,6 +54,8 @@ export function MarketDetailScreen({
   selectedSide = 'a',
   chartSeriesA = chartSpartakA,
   chartSeriesB = chartSpartakB,
+  recentTradesA = [],
+  recentTradesB = [],
   tradeHistoryState = 'hidden',
   orderbookA,
   orderbookB,
@@ -65,7 +71,9 @@ export function MarketDetailScreen({
   onRetry,
   onCreatorClick,
   onShare,
+  onExternalShare,
   shareAvailable = false,
+  shareValue = '',
   onRetryTrades,
   onRetryBook,
   banner,
@@ -77,12 +85,16 @@ export function MarketDetailScreen({
   const activeSide = onSelectSide ? selectedSide : side
   const selected = activeSide === 'a' ? market.outcomeA : market.outcomeB
   const series = activeSide === 'a' ? chartSeriesA : chartSeriesB
+  const recentTrades = activeSide === 'a' ? recentTradesA : recentTradesB
   const activePane = pane ?? localPane
   const locked = marketIsLocked(market)
   const actionsOff = actionsDisabled || locked
-  const resolutionBits = [market.description, market.resolution]
+  const structured = parseMarketDescription(market.description)
+  const criteriaText = structured.criteria || structured.body || market.resolution || ''
+  const sourceRows = [structured.primarySource, structured.additionalSource].filter(Boolean)
+  const resolutionBits = [criteriaText, market.resolution]
     .map((value) => (value || '').trim())
-    .filter(Boolean)
+    .filter((value, index, all) => Boolean(value) && all.indexOf(value) === index)
 
   const setPane = (next: MarketDetailPane) => {
     if (onPaneChange) onPaneChange(next)
@@ -143,7 +155,7 @@ export function MarketDetailScreen({
           <button type="button" className={styles.back} onClick={onBack}>‹</button>
           <h1>{market.question}</h1>
           {shareAvailable && onShare ? (
-            <button type="button" className={styles.more} aria-label={t('share')} onClick={onShare}>•••</button>
+            <button type="button" className={styles.more} aria-label={t('share')} onClick={() => setPane('share')}>•••</button>
           ) : (
             <span className={styles.morePlaceholder}>•••</span>
           )}
@@ -202,10 +214,101 @@ export function MarketDetailScreen({
                 onRetry={onRetryBook ?? onRetry}
               />
             </section>
+          ) : activePane === 'trades' ? (
+            <section className={styles.supportingPane}>
+              <div className={styles.supportingHeader}>
+                <div>
+                  <strong>Исполненные сделки</strong>
+                  <span>{market.question}</span>
+                </div>
+                <button type="button" onClick={() => setPane('chart')}>← Назад</button>
+              </div>
+              <h2 className={styles.historyTitle}>Коэффициент по сделкам · {selected.label}</h2>
+              {tradeHistoryState === 'ready' && series.length > 0 ? (
+                <MarketChart
+                  series={series}
+                  currentOdds={series[series.length - 1]?.odds ?? selected.odds ?? 0}
+                  outcomeLabel={selected.label}
+                  volumeTon={market.volumeTon}
+                  title={'Коэффициент по сделкам · ' + selected.label}
+                />
+              ) : (
+                <div className={styles.historyEmpty}>История сделок недоступна</div>
+              )}
+              <p className={styles.supportingNote}>
+                Здесь отображаются только исполненные сделки выбранного исхода.
+              </p>
+              {recentTrades.length > 0 ? (
+                <div className={styles.tradeList}>
+                  {recentTrades.map((trade) => (
+                    <div key={trade.id} className={styles.tradeRow}>
+                      <strong>{trade.odds.toFixed(2)}×</strong>
+                      <span>{formatTon(trade.amountTon)}</span>
+                      <small>{trade.timeAgo}</small>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : activePane === 'criteria' ? (
+            <section className={styles.supportingPane}>
+              <div className={styles.supportingHeader}>
+                <div>
+                  <strong>Критерии решения</strong>
+                  <span>Проверяемое условие исхода</span>
+                </div>
+                <button type="button" onClick={() => setPane('chart')}>← Назад</button>
+              </div>
+              <InformationRows
+                rows={criteriaText ? splitInformation(criteriaText) : ['Критерии результата не указаны.']}
+              />
+              <Button variant="secondary" fullWidth onClick={() => setPane('sources')}>
+                Источники
+              </Button>
+            </section>
+          ) : activePane === 'sources' ? (
+            <section className={styles.supportingPane}>
+              <div className={styles.supportingHeader}>
+                <div>
+                  <strong>Источники</strong>
+                  <span>Материалы для оценки события</span>
+                </div>
+                <button type="button" onClick={() => setPane('criteria')}>← Назад</button>
+              </div>
+              <InformationRows
+                rows={sourceRows.length > 0 ? sourceRows : ['Источник результата не указан.']}
+              />
+            </section>
+          ) : activePane === 'share' ? (
+            <section className={styles.supportingPane}>
+              <div className={styles.supportingHeader}>
+                <div>
+                  <strong>Поделиться</strong>
+                  <span>Ссылка на рынок</span>
+                </div>
+                <button type="button" onClick={() => setPane('chart')}>← Назад</button>
+              </div>
+              {shareValue ? (
+                <input
+                  className={styles.shareInput}
+                  readOnly
+                  value={shareValue}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+              ) : null}
+              <InformationRows rows={['Скопировать ссылку', 'Отправить в Telegram']} />
+              <Button fullWidth onClick={onShare}>Скопировать ссылку</Button>
+              <Button variant="secondary" fullWidth disabled={!onExternalShare} onClick={onExternalShare}>
+                Отправить в Telegram
+              </Button>
+            </section>
           ) : (
             <>
               <section className={styles.section}>
-                <h2 className={styles.historyTitle}>Коэффициент по сделкам · {selected.label}</h2>
+                <div className={styles.sectionTitleRow}>
+                  <h2 className={styles.historyTitle}>Коэффициент по сделкам · {selected.label}</h2>
+                  <button type="button" onClick={() => setPane('trades')}>Все сделки</button>
+                </div>
                 {tradeHistoryState === 'loading' ? (
                   <StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage>
                 ) : tradeHistoryState === 'error' ? (
@@ -246,7 +349,10 @@ export function MarketDetailScreen({
 
               {resolutionBits.length > 0 ? (
                 <section className={styles.criteria}>
-                  <span className={styles.eyebrow}>КРИТЕРИИ · ИСТОЧНИК</span>
+                  <div className={styles.sectionTitleRow}>
+                    <span className={styles.eyebrow}>КРИТЕРИИ · ИСТОЧНИК</span>
+                    <button type="button" onClick={() => setPane('criteria')}>Подробнее</button>
+                  </div>
                   {resolutionBits.map((text) => <p key={text}>{text}</p>)}
                 </section>
               ) : null}
@@ -288,6 +394,55 @@ export function MarketDetailScreen({
       </main>
     </div>
   )
+}
+
+
+function InformationRows({ rows }: { rows: string[] }) {
+  return (
+    <div className={styles.informationRows}>
+      {rows.map((row, index) => (
+        <div key={String(index) + row}>
+          <span>{String(index + 1).padStart(2, '0')}</span>
+          <p>{row}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function parseMarketDescription(description: string): {
+  body: string
+  criteria: string
+  primarySource: string
+  additionalSource: string
+} {
+  const parts = (description || '')
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+  let criteria = ''
+  let primarySource = ''
+  let additionalSource = ''
+  const body: string[] = []
+  for (const part of parts) {
+    if (part.startsWith('Критерии результата:')) {
+      criteria = part.slice('Критерии результата:'.length).trim()
+    } else if (part.startsWith('Основной источник:')) {
+      primarySource = part.slice('Основной источник:'.length).trim()
+    } else if (part.startsWith('Дополнительный источник:')) {
+      additionalSource = part.slice('Дополнительный источник:'.length).trim()
+    } else {
+      body.push(part)
+    }
+  }
+  return { body: body.join('\n\n'), criteria, primarySource, additionalSource }
+}
+
+function splitInformation(value: string): string[] {
+  return value
+    .split(/\n+|(?<=[.!?])\s+(?=[А-ЯA-Z0-9])/)
+    .map((part) => part.trim())
+    .filter(Boolean)
 }
 
 function categoryLabel(market: MarketFixture, t: (key: MessageKey) => string): string {

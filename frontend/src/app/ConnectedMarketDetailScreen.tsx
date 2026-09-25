@@ -5,11 +5,12 @@ import {
   mapMarketOut,
   mapOrderBookLevels,
   mapTradesToChartPoints,
+  mapTradesToRecent,
 } from '../api/adapters'
 import { isApiError } from '../api/client'
 import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
 import { queryKeys } from '../api/query'
-import { copyShareLink, marketShareUrl, rememberShareToken, shareTokenFor } from '../api/share'
+import { copyShareLink, marketShareUrl, rememberShareToken, shareExternally, shareTokenFor } from '../api/share'
 import { Button } from '../components/Button/Button'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useT, useI18n } from '../i18n'
@@ -91,6 +92,8 @@ export function ConnectedMarketDetailScreen({
 
   const chartA = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 0), [tradesQuery.data])
   const chartB = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 1), [tradesQuery.data])
+  const recentA = useMemo(() => mapTradesToRecent(tradesQuery.data, 0, locale), [locale, tradesQuery.data])
+  const recentB = useMemo(() => mapTradesToRecent(tradesQuery.data, 1, locale), [locale, tradesQuery.data])
   const tradeHistoryState: TradeHistoryState = !p2p
     ? 'hidden'
     : tradesQuery.isPending
@@ -128,6 +131,8 @@ export function ConnectedMarketDetailScreen({
         onSelectSide={setSide}
         chartSeriesA={chartA}
         chartSeriesB={chartB}
+        recentTradesA={recentA}
+        recentTradesB={recentB}
         tradeHistoryState={tradeHistoryState}
         orderbookA={mapOrderBookLevels(bookQuery.data?.sides?.[0])}
         orderbookB={mapOrderBookLevels(bookQuery.data?.sides?.[1])}
@@ -157,10 +162,15 @@ export function ConnectedMarketDetailScreen({
         }}
         onCreatorClick={creatorId ? () => onCreatorClick?.(creatorId) : undefined}
         shareAvailable={Boolean(shareLink)}
+        shareValue={shareLink}
         onShare={() => {
           void copyShareLink(shareLink).then((ok) => {
             setShareMessage(ok ? t('share.copied') : t('share.fail'))
           })
+        }}
+        onExternalShare={() => {
+          const ok = shareExternally(shareLink)
+          setShareMessage(ok ? null : t('share.fail'))
         }}
         banner={
           <>
