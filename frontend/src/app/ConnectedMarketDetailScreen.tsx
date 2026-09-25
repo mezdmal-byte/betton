@@ -14,6 +14,7 @@ import { copyShareLink, marketShareUrl, rememberShareToken, shareExternally, sha
 import { Button } from '../components/Button/Button'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useT, useI18n } from '../i18n'
+import { buildDemoMarketActivity } from '../lib/demoMarketActivity'
 import { openLegacyMiniApp } from '../lib/legacy'
 import { marketIsP2P, marketIsTradable } from '../lib/quote'
 import { MarketDetailScreen } from '../screens/MarketDetailScreen'
@@ -94,13 +95,28 @@ export function ConnectedMarketDetailScreen({
   const chartB = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 1), [tradesQuery.data])
   const recentA = useMemo(() => mapTradesToRecent(tradesQuery.data, 0, locale), [locale, tradesQuery.data])
   const recentB = useMemo(() => mapTradesToRecent(tradesQuery.data, 1, locale), [locale, tradesQuery.data])
+  const demoActivity = useMemo(
+    () => (market && p2p ? buildDemoMarketActivity(marketId, market) : null),
+    [market, marketId, p2p],
+  )
+  const demoHistory =
+    Boolean(demoActivity) &&
+    p2p &&
+    !tradesQuery.isPending &&
+    !tradesQuery.isError &&
+    chartA.length === 0 &&
+    chartB.length === 0
+  const displayChartA = demoHistory ? demoActivity?.seriesA ?? [] : chartA
+  const displayChartB = demoHistory ? demoActivity?.seriesB ?? [] : chartB
+  const displayRecentA = demoHistory ? demoActivity?.recentA ?? [] : recentA
+  const displayRecentB = demoHistory ? demoActivity?.recentB ?? [] : recentB
   const tradeHistoryState: TradeHistoryState = !p2p
     ? 'hidden'
     : tradesQuery.isPending
       ? 'loading'
       : tradesQuery.isError
         ? 'error'
-        : (chartA.length === 0 && chartB.length === 0)
+        : (displayChartA.length === 0 && displayChartB.length === 0)
           ? 'empty'
           : 'ready'
 
@@ -129,11 +145,13 @@ export function ConnectedMarketDetailScreen({
         market={market}
         selectedSide={side}
         onSelectSide={setSide}
-        chartSeriesA={chartA}
-        chartSeriesB={chartB}
-        recentTradesA={recentA}
-        recentTradesB={recentB}
+        chartSeriesA={displayChartA}
+        chartSeriesB={displayChartB}
+        recentTradesA={displayRecentA}
+        recentTradesB={displayRecentB}
         tradeHistoryState={tradeHistoryState}
+        demoHistory={demoHistory}
+        chartVolumeTon={demoHistory ? demoActivity?.volumeTon : market?.volumeTon}
         orderbookA={mapOrderBookLevels(bookQuery.data?.sides?.[0])}
         orderbookB={mapOrderBookLevels(bookQuery.data?.sides?.[1])}
         orderbookState={bookQuery.isPending ? 'loading' : bookQuery.isError ? 'error' : 'ready'}
