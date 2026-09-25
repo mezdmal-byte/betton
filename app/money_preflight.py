@@ -95,6 +95,11 @@ def inspect_money(conn):
                       'maker_stake', 'taker_stake'},
     }
     tables = set(inspector.get_table_names())
+    if 'money_migrations' in tables:
+        report['issues'].append(dict(kind='integer_accounting_active',
+            message='Legacy float fields are snapshots; use nano columns and P2P reconciliation.'))
+        report['amounts_convertible_without_rounding'] = False
+        return report
     for table, columns in required.items():
         present = {c['name'] for c in inspector.get_columns(table)} if table in tables else set()
         if columns - present:
