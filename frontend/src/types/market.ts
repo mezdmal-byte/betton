@@ -43,6 +43,7 @@ export type MarketFixture = {
   description: string
   resolution: string
   closeLabel: string
+  closeAtLabel?: string
   mechanism?: string
   visibility?: string
   shareToken?: string | null
