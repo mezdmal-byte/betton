@@ -4,6 +4,7 @@ import { BottomNavigation } from '../BottomNavigation/BottomNavigation'
 import { AmountInput } from '../AmountInput/AmountInput'
 import { Button } from '../Button/Button'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
+import { MarketChart } from '../MarketChart/MarketChart'
 import { cx } from '../../lib/cx'
 import { formatOdds, formatTon, formatTonFull } from '../../lib/format'
 import { useT } from '../../i18n'
@@ -13,7 +14,7 @@ import {
   presetExceedsBalance,
   quickTradeCtaDisabled,
 } from '../../lib/quickTrade'
-import type { MarketFixture, OutcomeSide } from '../../types/market'
+import type { ChartPoint, MarketFixture, OutcomeSide } from '../../types/market'
 import styles from './QuickTradeSheet.module.css'
 
 export type QuickTradeState =
@@ -53,6 +54,10 @@ export type QuickTradeSheetProps = {
   previewAverageOdds?: number | null
   previewWorstOdds?: number | null
   previewFills?: QuickTradeFillLeg[] | null
+  historySeries?: ChartPoint[]
+  historyLoading?: boolean
+  historyError?: boolean
+  historyDemo?: boolean
   errorMessage?: string | null
   placeResult?: {
     kind: 'empty' | 'partial' | 'full'
@@ -94,6 +99,10 @@ export function QuickTradeSheet({
   previewAverageOdds = null,
   previewWorstOdds = null,
   previewFills = null,
+  historySeries = [],
+  historyLoading = false,
+  historyError = false,
+  historyDemo = false,
   errorMessage = null,
   placeResult = null,
 }: QuickTradeSheetProps) {
@@ -101,6 +110,7 @@ export function QuickTradeSheet({
   const [amountDraft, setAmountDraft] = useState(() => amountInputValue(amount))
   const [confirming, setConfirming] = useState(false)
   const [editingAfterInsufficient, setEditingAfterInsufficient] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   useEffect(() => {
     setAmountDraft(amountInputValue(amount))
@@ -159,6 +169,8 @@ export function QuickTradeSheet({
                 : 'Проверить покупку'
 
   const totalNow = totalAvailableTon ?? selected.liquidityTon
+  const historyVolumeTon = historySeries.reduce((sum, point) => sum + point.volume, 0)
+  const historyCurrentOdds = historySeries[historySeries.length - 1]?.odds ?? selected.odds ?? 0
   const specialState =
     state === 'processing' ||
     state === 'stale-quote' ||
@@ -421,6 +433,18 @@ export function QuickTradeSheet({
           <QuoteRow label="Лучший коэффициент" value={quotesLoading ? '…' : formatOdds(selected.odds) + '×'} />
           <QuoteRow label="Доступно по лучшему" value={quotesLoading ? '…' : formatTon(selected.liquidityTon)} />
           <QuoteRow label="Всего доступно сейчас" value={quotesLoading ? '…' : formatTon(totalNow)} />
+          <button
+            type="button"
+            className={styles.historyToggle}
+            aria-expanded={historyOpen}
+            onClick={() => setHistoryOpen((open) => !open)}
+          >
+            <span>
+              История коэффициента
+              <small>Фактические сделки · {selected.label}</small>
+            </span>
+            <strong>{historyOpen ? 'Скрыть ↑' : 'Показать ›'}</strong>
+          </button>
           <QuoteRow
             label="Средний коэффициент исполнения"
             value={showPreview ? quoteValue(previewAverageOdds) + '×' : '—'}
@@ -432,6 +456,27 @@ export function QuickTradeSheet({
           <QuoteRow label="Исполнится сейчас" value={showPreview ? formatTon(matched) : '—'} />
           <QuoteRow label="Выплата до комиссии" value={showPreview ? formatTon(previewPayoutTon) : '—'} />
         </div>
+
+        {historyOpen ? (
+          <div className={styles.historyPanel}>
+            {historyLoading ? (
+              <div className={styles.historyEmpty}>Загружаем историю сделок…</div>
+            ) : historyError ? (
+              <div className={styles.historyEmpty}>Не удалось загрузить историю сделок.</div>
+            ) : historySeries.length > 0 ? (
+              <MarketChart
+                series={historySeries}
+                currentOdds={historyCurrentOdds}
+                outcomeLabel={selected.label}
+                volumeTon={historyVolumeTon}
+                title={'История коэффициента · ' + selected.label}
+                demo={historyDemo}
+              />
+            ) : (
+              <div className={styles.historyEmpty}>Сделок по этому исходу пока нет.</div>
+            )}
+          </div>
+        ) : null}
 
         {previewFills && previewFills.length > 1 ? (
           <div className={styles.fillBreakdown}>
