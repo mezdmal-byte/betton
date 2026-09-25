@@ -134,6 +134,22 @@ function mapResolvedSide(dto: MarketOut): MarketFixture['resolvedSide'] {
   return undefined
 }
 
+function formatCloseAtLabel(value: string | null | undefined, locale: Locale): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US'
+  const datePart = new Intl.DateTimeFormat(localeTag, {
+    day: 'numeric',
+    month: 'short',
+  }).format(date).replace(/\./g, '')
+  const timePart = new Intl.DateTimeFormat(localeTag, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+  return `${datePart} · ${timePart}`
+}
+
 export function mapMarketOut(dto: MarketOut, now: Date = new Date(), locale: Locale = 'ru'): MarketFixture {
   const timeLeft = formatTimeLeft(dto.close_at, now, dto.status, locale)
   const status = mapStatus(dto, now)
@@ -177,6 +193,7 @@ export function mapMarketOut(dto: MarketOut, now: Date = new Date(), locale: Loc
           ? `${translate(locale, 'status.resolvedOne')}: ${dto.winning_outcome}`
           : '',
     closeLabel,
+    closeAtLabel: formatCloseAtLabel(dto.close_at, locale),
     mechanism: dto.mechanism ?? 'p2p',
     visibility: dto.visibility,
     shareToken: dto.share_token ?? null,
