@@ -156,9 +156,7 @@ export function MarketDetailScreen({
           <h1>{market.question}</h1>
           {shareAvailable && onShare ? (
             <button type="button" className={styles.more} aria-label={t('share')} onClick={() => setPane('share')}>•••</button>
-          ) : (
-            <span className={styles.morePlaceholder}>•••</span>
-          )}
+          ) : null}
         </div>
         <button
           type="button"
