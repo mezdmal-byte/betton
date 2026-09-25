@@ -30,6 +30,9 @@ export type ConnectedMarketDetailScreenProps = {
   onOwnPrice: (side: OutcomeSide) => void
   onQuickTrade: (side: OutcomeSide) => void
   onCreatorClick?: (creatorId: number) => void
+  pane?: MarketDetailPane
+  onPaneChange?: (pane: MarketDetailPane) => void
+  showInternalBack?: boolean
   isAdmin?: boolean
   userId?: number
   botUsername?: string | null
@@ -42,6 +45,9 @@ export function ConnectedMarketDetailScreen({
   onOwnPrice,
   onQuickTrade,
   onCreatorClick,
+  pane: controlledPane,
+  onPaneChange,
+  showInternalBack = true,
   isAdmin = false,
   userId,
   botUsername,
@@ -50,7 +56,9 @@ export function ConnectedMarketDetailScreen({
   const t = useT()
   const { locale } = useI18n()
   const [side, setSide] = useState<OutcomeSide>('a')
-  const [pane, setPane] = useState<MarketDetailPane>('chart')
+  const [localPane, setLocalPane] = useState<MarketDetailPane>('chart')
+  const pane = controlledPane ?? localPane
+  const setPane = onPaneChange ?? setLocalPane
   const [adminOpen, setAdminOpen] = useState(false)
   const [shareMessage, setShareMessage] = useState<string | null>(null)
   const shareToken = shareTokenFor(marketId)
@@ -161,6 +169,7 @@ export function ConnectedMarketDetailScreen({
         showMarketDataSwitch={p2p}
         viewState={viewState}
         actionsDisabled={actionsOff}
+        showInternalBack={showInternalBack}
         onBack={onBack}
         onOwnPrice={() => onOwnPrice(side)}
         onPlace={() => {
