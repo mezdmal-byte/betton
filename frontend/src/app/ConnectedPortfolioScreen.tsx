@@ -8,6 +8,7 @@ import { queryKeys } from '../api/query'
 import type { AccountOut } from '../api/types'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { PortfolioScreen } from '../screens/PortfolioScreen'
+import { ActivityScreen } from '../screens/ActivityScreen'
 import type { AccountFixture, OrderFixture } from '../types/account'
 import { confirmCancelOrder, invalidateAfterTrade } from './invalidate'
 import { useT } from '../i18n'
@@ -60,12 +61,12 @@ export function ConnectedPortfolioScreen({
   const positionsQuery = useQuery({
     queryKey: userId ? queryKeys.positions(userId) : ['users', 'positions', 'idle'],
     queryFn: () => listPositions(userId as number),
-    enabled,
+    enabled: enabled && variant !== 'history',
   })
   const ordersQuery = useQuery({
     queryKey: userId ? queryKeys.orders(userId) : ['users', 'orders', 'idle'],
     queryFn: () => listOrders(userId as number),
-    enabled,
+    enabled: enabled && variant !== 'history',
   })
   const historyQuery = useQuery({
     queryKey: userId ? queryKeys.transactions(userId) : ['users', 'transactions', 'idle'],
@@ -94,6 +95,26 @@ export function ConnectedPortfolioScreen({
         : positionsQuery.isError || ordersQuery.isError || historyQuery.isError
           ? 'error'
           : 'ready'
+
+  if (variant === 'history') {
+    const activityState =
+      !enabled && accountState === 'unauthenticated'
+        ? 'ready'
+        : historyQuery.isPending
+          ? 'loading'
+          : historyQuery.isError
+            ? 'error'
+            : 'ready'
+
+    return (
+      <ActivityScreen
+        history={accountState === 'unauthenticated' ? [] : history}
+        listState={activityState}
+        onNavChange={onNavChange}
+        onRetry={() => { void historyQuery.refetch() }}
+      />
+    )
+  }
 
   const cancelMutation = useMutation({
     mutationFn: (order: OrderFixture) => cancelOrder(order.id),

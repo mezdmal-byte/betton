@@ -26,6 +26,7 @@ import { AuthExpiredScreen } from '../screens/AuthExpiredScreen'
 import { HelpScreen } from '../screens/HelpScreen'
 import { MarketDetailScreen } from '../screens/MarketDetailScreen'
 import { NotificationsScreen } from '../screens/NotificationsScreen'
+import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { SystemStateScreen } from '../screens/SystemStateScreen'
 import { WalletScreen } from '../screens/WalletScreen'
 import { currentRoute, goBack, pushRoute, resetToTab, showTelegramBackButton, type Route, type WalletTab } from './navigation'
@@ -41,6 +42,10 @@ export function ConnectedApp() {
   const [shareResolveState, setShareResolveState] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
   const [shareRetry, setShareRetry] = useState(0)
   const [feedView, setFeedView] = useState<FeedViewState>({ query: '', sort: 'new', category: 'all', status: 'open' })
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try { return window.localStorage.getItem('betton.onboarding.v1') !== 'done' } catch { return true }
+  })
   const session = useSession(hasInitData)
   const authExpired = useAuthExpired()
   const accountQuery = useAccount(session.user?.id)
@@ -93,6 +98,19 @@ export function ConnectedApp() {
   if (shareResolveState === 'loading') return <div className={styles.root}><SystemStateScreen kind="loading" /></div>
   if (shareResolveState === 'not-found') return <div className={styles.root}><MarketDetailScreen viewState="not-found" onBack={clearShare} /></div>
   if (shareResolveState === 'error') return <div className={styles.root}><SystemStateScreen kind="network" onRetry={() => setShareRetry((value) => value + 1)} /></div>
+
+  if (!shareToken && showOnboarding) {
+    return (
+      <div className={styles.root}>
+        <OnboardingScreen
+          onContinue={() => {
+            try { window.localStorage.setItem('betton.onboarding.v1', 'done') } catch { /* storage optional */ }
+            setShowOnboarding(false)
+          }}
+        />
+      </div>
+    )
+  }
 
   const availableTon = mappedAccount?.availableTon ?? 0
   const isAdmin = Boolean(mappedAccount?.isAdmin)
