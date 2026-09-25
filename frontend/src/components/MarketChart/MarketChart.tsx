@@ -22,13 +22,11 @@ const PAD_RIGHT = 12
 const PAD_TOP = 8
 const PAD_BOTTOM = 4
 
-function stepLine(points: Array<{ x: number; y: number }>): string {
+function brokenLine(points: Array<{ x: number; y: number }>): string {
   if (points.length === 0) return ''
-  let path = `M ${points[0].x} ${points[0].y}`
-  for (let index = 1; index < points.length; index += 1) {
-    path += ` H ${points[index].x} V ${points[index].y}`
-  }
-  return path
+  return points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .join(' ')
 }
 
 function pointTimeLabel(value: number, index: number): string {
@@ -74,14 +72,14 @@ export function MarketChart({
     return { x, y, volume: point.volume }
   })
 
-  const line = stepLine(mapped)
+  const line = brokenLine(mapped)
   const fill = `${line} V ${plotBottom} H ${mapped[0]?.x ?? PAD_LEFT} Z`
   const lastX = mapped[mapped.length - 1]?.x ?? PAD_LEFT
   const lastY = mapped[mapped.length - 1]?.y ?? PAD_TOP
   const barWidth = singlePoint
     ? Math.min(92, plotWidth * 0.28)
     : Math.max(plotWidth / Math.max(series.length, 1) - 6, 4)
-  const heading = title ?? (outcomeLabel ? `Цена · ${outcomeLabel}` : 'Цена')
+  const heading = title ?? (outcomeLabel ? `Коэффициент · ${outcomeLabel}` : 'Коэффициент')
   const active = activeIndex == null ? null : series[activeIndex]
   const activeMapped = activeIndex == null ? null : mapped[activeIndex]
 
