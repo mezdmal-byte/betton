@@ -55,7 +55,8 @@ def get_bot() -> Bot:
 
 
 def mini_app_url() -> str:
-    return settings.webapp_base() + "/"
+    configured = (settings.mini_app_url or "").strip().rstrip("/")
+    return (configured or settings.webapp_base()) + "/"
 
 
 def mini_app_keyboard() -> InlineKeyboardMarkup:
