@@ -12,7 +12,6 @@ import {
 import { queryKeys } from '../api/query'
 import type { MarketOut } from '../api/types'
 import { Button } from '../components/Button/Button'
-import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { TextField } from '../components/TextField/TextField'
 import { useT } from '../i18n'
 import { invalidateAfterTrade } from './invalidate'
