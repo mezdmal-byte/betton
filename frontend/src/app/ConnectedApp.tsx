@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { mapAccountOut } from '../api/adapters'
 import { isApiError } from '../api/client'
 import { getHealth } from '../api/account'
+import { getChatUnreadReplies } from '../api/chat'
 import { getMarketByShare } from '../api/markets'
 import { queryKeys } from '../api/query'
 import { marketShareUrl, rememberShareToken } from '../api/share'
@@ -10,6 +11,7 @@ import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import type { AccountFixture } from '../types/account'
 import type { MarketFixture } from '../types/market'
 import { bootTelegramWebApp, closeTelegramWebApp, getTelegramWebApp, hasTelegramInitData, readShareTokenFromContext, syncTelegramBackButton } from '../telegram/webapp'
+import { ConnectedChatScreen } from './ConnectedChatScreen'
 import { ConnectedCreateMarketScreen } from './ConnectedCreateMarketScreen'
 import { ConnectedMarketDetailScreen } from './ConnectedMarketDetailScreen'
 import { ConnectedMarketsScreen } from './ConnectedMarketsScreen'
@@ -64,6 +66,12 @@ export function ConnectedApp() {
   const authExpired = useAuthExpired()
   const accountQuery = useAccount(session.user?.id)
   const healthQuery = useQuery({ queryKey: queryKeys.health, queryFn: getHealth })
+  const chatUnreadQuery = useQuery({
+    queryKey: queryKeys.chatUnread,
+    queryFn: getChatUnreadReplies,
+    enabled: Boolean(session.user),
+    refetchInterval: 5000,
+  })
   const route = currentRoute(stack)
   const detailRouteId = route.name === 'detail' ? route.marketId : null
 
@@ -151,6 +159,7 @@ export function ConnectedApp() {
 
   const availableTon = mappedAccount?.availableTon ?? 0
   const isAdmin = Boolean(mappedAccount?.isAdmin)
+  const chatUnread = chatUnreadQuery.data ?? { lobby: 0, markets: {}, total: 0 }
   const botUsername = healthQuery.data?.bot_username
   const webapp = healthQuery.data?.webapp
   const openTelegramLogin = botUsername
@@ -170,7 +179,7 @@ export function ConnectedApp() {
 
   return (
     <div className={styles.root}>
-      {route.name === 'markets' ? <ConnectedMarketsScreen account={account} accountState={accountState} personalized={hasInitData} userId={session.user?.id} availableTon={availableTon} feedView={feedView} onFeedViewChange={setFeedView} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={openMarket} onCreatorClick={(market) => openCreator(market.creator.id ?? market.creatorId)} onTopCreatorClick={openCreator} onOwnPrice={(marketId, side) => push({ name: 'own-price', marketId, side })} /> : null}
+      {route.name === 'markets' ? <ConnectedMarketsScreen account={account} accountState={accountState} personalized={hasInitData} userId={session.user?.id} availableTon={availableTon} feedView={feedView} onFeedViewChange={setFeedView} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={openMarket} onCreatorClick={(market) => openCreator(market.creator.id ?? market.creatorId)} onTopCreatorClick={openCreator} onOwnPrice={(marketId, side) => push({ name: 'own-price', marketId, side })} chatUnreadReplies={chatUnread.lobby} onChatClick={session.user ? () => push({ name: 'chat-lobby' }) : undefined} /> : null}
       {route.name === 'create' ? <ConnectedCreateMarketScreen enabled={accountState === 'ready'} onBack={() => goTab('markets')} onNavChange={goTab} onCreated={(market) => push({ name: 'create-result', market })} /> : null}
       {route.name === 'create-result' ? <CreateMarketResult market={route.market} shareLink={marketShareUrl({ shareToken: route.market.share_token, botUsername, webapp })} onOpen={() => { if (route.market.share_token) rememberShareToken(route.market.id, route.market.share_token); if (route.market.status === 'pending' || route.market.status === 'rejected') push({ name: 'my-markets' }); else push({ name: 'detail', marketId: route.market.id }) }} onBack={back} onToFeed={() => goTab('markets')} onNavChange={goTab} /> : null}
       {route.name === 'notifications' ? <NotificationsScreen items={[]} onNavChange={goTab} /> : null}
@@ -183,7 +192,9 @@ export function ConnectedApp() {
       {route.name === 'history' ? <ConnectedPortfolioScreen userId={session.user?.id} mappedAccount={mappedAccount} accountState={accountState} variant="history" onBack={back} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={(marketId) => push({ name: 'detail', marketId })} onDeposit={() => push({ name: 'wallet', tab: 'deposit' })} onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })} /> : null}
       {route.name === 'wallet' ? <WalletScreen account={mappedAccount} tab={route.tab} onBack={back} onTabChange={(tab: WalletTab) => push({ name: 'wallet', tab })} /> : null}
       {route.name === 'public-profile' ? <ConnectedPublicProfileScreen userId={route.userId} onBack={back} onNavChange={goTab} onOpenMarket={(marketId) => push({ name: 'detail', marketId })} /> : null}
-      {route.name === 'detail' ? <ConnectedMarketDetailScreen marketId={route.marketId} pane={detailPane} onPaneChange={setDetailPane} showInternalBack={!hasInitData} isAdmin={isAdmin} userId={session.user?.id} botUsername={botUsername} webapp={webapp} onBack={back} onQuickTrade={(side) => push({ name: 'quick-trade', marketId: route.marketId, side })} onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })} onCreatorClick={(creatorId) => openCreator(creatorId)} /> : null}
+      {route.name === 'detail' ? <ConnectedMarketDetailScreen marketId={route.marketId} pane={detailPane} onPaneChange={setDetailPane} showInternalBack={!hasInitData} discussionUnreadReplies={chatUnread.markets[String(route.marketId)] ?? 0} onDiscussion={session.user ? () => push({ name: 'chat-market', marketId: route.marketId }) : undefined} isAdmin={isAdmin} userId={session.user?.id} botUsername={botUsername} webapp={webapp} onBack={back} onQuickTrade={(side) => push({ name: 'quick-trade', marketId: route.marketId, side })} onOwnPrice={(side) => push({ name: 'own-price', marketId: route.marketId, side })} onCreatorClick={(creatorId) => openCreator(creatorId)} /> : null}
+      {route.name === 'chat-lobby' ? <ConnectedChatScreen scope={{ kind: 'lobby' }} currentUserId={session.user?.id} isAdmin={isAdmin} showInternalBack={!hasInitData} onBack={back} onOpenMarket={(marketId) => push({ name: 'detail', marketId })} /> : null}
+      {route.name === 'chat-market' ? <ConnectedChatScreen scope={{ kind: 'market', marketId: route.marketId }} currentUserId={session.user?.id} isAdmin={isAdmin} showInternalBack={!hasInitData} onBack={back} onOpenMarket={(marketId) => push({ name: 'detail', marketId })} /> : null}
       {route.name === 'quick-trade' ? <ConnectedQuickTradeScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} onNavChange={goTab} onOwnPrice={(side) => switchTradeRoute({ name: 'own-price', marketId: route.marketId, side })} /> : null}
       {route.name === 'own-price' ? <ConnectedOwnPriceScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} onNavChange={goTab} onQuickTrade={(side) => switchTradeRoute({ name: 'quick-trade', marketId: route.marketId, side })} /> : null}
     </div>
