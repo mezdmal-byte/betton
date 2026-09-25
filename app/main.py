@@ -17,6 +17,10 @@ from app.models import Market, MarketStatus, User
 from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
     AccountOut,
+    ChatMessageCreate,
+    ChatMessageOut,
+    ChatMessagesPage,
+    ChatUnreadOut,
     BuySharesRequest,
     ClaimWinningsRequest,
     CloseMarketRequest,
@@ -38,7 +42,7 @@ from app.schemas import (
     TransactionOut,
     UserOut,
 )
-from app.services import discovery, history, market_access, market_service, p2p_service
+from app.services import chat_service, discovery, history, market_access, market_service, p2p_service
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -451,6 +455,129 @@ def get_market_endpoint(
         market, viewer=current_user, share_token=market_access.share_token_from_request(request)
     )
     return discovery.attach_market_views(db, [market], include_share_token=True)[0]
+
+
+@app.get("/chat/lobby", response_model=ChatMessagesPage)
+def lobby_chat_messages(
+    limit: int = 100,
+    before_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = current_user
+    return chat_service.list_messages(db, market_id=None, limit=limit, before_id=before_id)
+
+
+@app.post("/chat/lobby", response_model=ChatMessageOut)
+def create_lobby_chat_message(
+    payload: ChatMessageCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        return chat_service.create_message(
+            db,
+            user=current_user,
+            market_id=None,
+            text=payload.text,
+            reply_to_id=payload.reply_to_id,
+            attached_market_id=payload.attached_market_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/markets/{market_id}/chat", response_model=ChatMessagesPage)
+def market_chat_messages(
+    market_id: int,
+    request: Request,
+    limit: int = 50,
+    before_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    return chat_service.list_messages(db, market_id=market_id, limit=limit, before_id=before_id)
+
+
+@app.post("/markets/{market_id}/chat", response_model=ChatMessageOut)
+def create_market_chat_message(
+    market_id: int,
+    payload: ChatMessageCreate,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    try:
+        return chat_service.create_message(
+            db,
+            user=current_user,
+            market_id=market_id,
+            text=payload.text,
+            reply_to_id=payload.reply_to_id,
+            attached_market_id=payload.attached_market_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/chat/messages/{message_id}", response_model=ChatMessageOut)
+def delete_chat_message(
+    message_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        return chat_service.delete_message(db, user=current_user, message_id=message_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@app.get("/chat/unread-replies", response_model=ChatUnreadOut)
+def unread_chat_replies(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return chat_service.unread_replies(db, user_id=current_user.id)
+
+
+@app.post("/chat/lobby/read")
+def mark_lobby_chat_read(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return {"last_read_message_id": chat_service.mark_read(db, user_id=current_user.id, market_id=None)}
+
+
+@app.post("/markets/{market_id}/chat/read")
+def mark_market_chat_read(
+    market_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    return {
+        "last_read_message_id": chat_service.mark_read(
+            db, user_id=current_user.id, market_id=market_id
+        )
+    }
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)
