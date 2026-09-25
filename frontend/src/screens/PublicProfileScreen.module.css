@@ -1,0 +1,215 @@
+.screen {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+}
+
+.header {
+  display: flex;
+  min-height: 72px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pad-header-top) var(--page-padding) 12px;
+}
+
+.header h1,
+.titleRow h1 {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 21px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 27px;
+  letter-spacing: var(--tracking-tight);
+}
+
+.header > p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back {
+  width: 24px;
+  flex: 0 0 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 18px;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 var(--page-padding) 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 14px;
+}
+
+.identityText {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.identityText strong {
+  overflow: hidden;
+  font-size: 28px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identityText span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.dataRow,
+.dataRowStatic {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+}
+
+.dataRow span,
+.dataRowStatic span {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.dataRow .accent {
+  color: var(--color-accent-mint);
+}
+
+.dataRow b,
+.dataRowStatic b {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  font-weight: var(--font-weight-regular);
+}
+
+.primaryMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 0;
+}
+
+.primaryMetric strong {
+  overflow-wrap: anywhere;
+  color: var(--color-text-primary);
+  font-size: 38px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.primaryMetric span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.marketList {
+  display: flex;
+  flex-direction: column;
+}
+
+.marketList button {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 58px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 24px 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+}
+
+.marketList strong {
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.marketList span {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.marketList b {
+  position: absolute;
+  right: 0;
+  top: 19px;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  font-weight: var(--font-weight-regular);
+}
+
+.mutedNote,
+.browserBack {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.browserBack {
+  align-self: flex-start;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 11px;
+}
+
+@media (max-width: 360px) {
+  .identityText strong { font-size: 24px; }
+  .primaryMetric strong { font-size: 32px; }
+}
