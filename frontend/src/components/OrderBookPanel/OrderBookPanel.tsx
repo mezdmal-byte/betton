@@ -55,7 +55,8 @@ export function OrderBookPanel({
 
 function OutcomeBook({ label, levels }: { label: string; levels: OrderBookLevel[] }) {
   const t = useT()
-  const maxAvailable = Math.max(...levels.map((level) => level.availableTon), 1)
+  const sortedLevels = [...levels].sort((a, b) => b.odds - a.odds)
+  const maxAvailable = Math.max(...sortedLevels.map((level) => level.availableTon), 1)
   return (
     <div className={styles.side}>
       <strong className={styles.sideTitle}>{label}</strong>
@@ -63,10 +64,10 @@ function OutcomeBook({ label, levels }: { label: string; levels: OrderBookLevel[
         <span>{t('book.coef')}</span>
         <span>{t('book.availCol')}</span>
       </div>
-      {levels.length === 0 ? (
+      {sortedLevels.length === 0 ? (
         <p className={styles.empty}>{t('book.noOrders')}</p>
       ) : (
-        levels.map((level, index) => (
+        sortedLevels.map((level, index) => (
           <OrderBookRow key={`${level.odds}-${index}`} level={level} maxAvailable={maxAvailable} active={index === 0} />
         ))
       )}

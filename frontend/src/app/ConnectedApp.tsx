@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { mapAccountOut } from '../api/adapters'
 import { isApiError } from '../api/client'
@@ -38,6 +38,14 @@ const GUEST_ACCOUNT: AccountFixture = { displayName: 'Гость', handle: 'tele
 export function ConnectedApp() {
   const [hasInitData, setHasInitData] = useState(() => hasTelegramInitData())
   const [stack, setStack] = useState<Route[]>([{ name: 'markets' }])
+  const activeTabRef = useRef<NavId>('markets')
+  const tabStacksRef = useRef<Record<NavId, Route[]>>({
+    markets: [{ name: 'markets' }],
+    portfolio: [{ name: 'portfolio' }],
+    create: [{ name: 'create' }],
+    notifications: [{ name: 'notifications' }],
+    profile: [{ name: 'profile' }],
+  })
   const [shareToken, setShareToken] = useState<string | null>(null)
   const [shareResolveState, setShareResolveState] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
   const [shareRetry, setShareRetry] = useState(0)
@@ -76,7 +84,11 @@ export function ConnectedApp() {
   const mappedAccount = useMemo(() => (account ? mapAccountOut(account) : null), [account])
   const accountState: 'ready' | 'loading' | 'unauthenticated' = !hasInitData ? 'unauthenticated' : session.isExpired ? 'unauthenticated' : session.isLoading || Boolean(session.user && accountQuery.isPending) ? 'loading' : mappedAccount ? 'ready' : 'unauthenticated'
   const back = () => setStack((current) => goBack(current))
-  const goTab = (id: NavId) => setStack(resetToTab(id))
+  const goTab = (id: NavId) => setStack((current) => {
+    tabStacksRef.current[activeTabRef.current] = current
+    activeTabRef.current = id
+    return tabStacksRef.current[id] ?? resetToTab(id)
+  })
   const push = (next: Route) => setStack((current) => pushRoute(current, next))
   const switchTradeRoute = (next: Route) => setStack((current) => {
     const active = current[current.length - 1]
@@ -88,7 +100,17 @@ export function ConnectedApp() {
   const openProfile = () => goTab('profile')
   const openMarket = (market: MarketFixture | number) => { const id = typeof market === 'number' ? market : Number(market.id); if (Number.isFinite(id)) push({ name: 'detail', marketId: id }) }
   const openCreator = (userId?: number | null) => { if (userId) push({ name: 'public-profile', userId }) }
-  const clearShare = () => { setShareToken(null); setShareResolveState('idle'); setStack([{ name: 'markets' }]) }
+  const clearShare = () => {
+    setShareToken(null)
+    setShareResolveState('idle')
+    activeTabRef.current = 'markets'
+    tabStacksRef.current.markets = [{ name: 'markets' }]
+    setStack([{ name: 'markets' }])
+  }
+  const finishOnboarding = () => {
+    try { window.localStorage.setItem('betton.onboarding.v1', 'done') } catch { /* storage optional */ }
+    setShowOnboarding(false)
+  }
 
   if (session.isExpired || authExpired) return <div className={styles.root}><AuthExpiredScreen onClose={closeTelegramWebApp} /></div>
   if (shareToken && !hasInitData) return <div className={styles.root}><SystemStateScreen kind="auth" /></div>
@@ -102,12 +124,7 @@ export function ConnectedApp() {
   if (!shareToken && showOnboarding) {
     return (
       <div className={styles.root}>
-        <OnboardingScreen
-          onContinue={() => {
-            try { window.localStorage.setItem('betton.onboarding.v1', 'done') } catch { /* storage optional */ }
-            setShowOnboarding(false)
-          }}
-        />
+        <OnboardingScreen onContinue={finishOnboarding} onSkip={finishOnboarding} />
       </div>
     )
   }

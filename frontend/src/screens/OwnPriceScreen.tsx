@@ -121,7 +121,10 @@ export function OwnPriceScreen({
     <div className={styles.screen}>
       <header className={styles.header}>
         {viewState === 'ready' ? <strong className={styles.marketQuestion}>{market.question}</strong> : null}
-        <h1>{title}</h1>
+        <div className={styles.titleRow}>
+          <button type="button" className={styles.backButton} onClick={onBack} aria-label={t('back')}>←</button>
+          <h1>{title}</h1>
+        </div>
       </header>
 
       <main className={styles.body}>

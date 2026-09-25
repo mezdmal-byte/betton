@@ -225,3 +225,30 @@
     font-size: 34px;
   }
 }
+
+
+.titleRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleRow h1 {
+  min-width: 0;
+  flex: 1;
+}
+
+.backButton {
+  width: 24px;
+  height: 28px;
+  flex: 0 0 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 18px;
+  line-height: 28px;
+  text-align: left;
+}

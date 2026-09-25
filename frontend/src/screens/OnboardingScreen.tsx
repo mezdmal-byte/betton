@@ -6,6 +6,7 @@ export type OnboardingState = 'ready' | 'splash' | 'loading' | 'auth-required' |
 
 export type OnboardingScreenProps = {
   onContinue?: () => void
+  onSkip?: () => void
   state?: OnboardingState
   initialStep?: number
   onRetry?: () => void
@@ -92,6 +93,7 @@ const READY_STEPS: Step[] = [
 
 export function OnboardingScreen({
   onContinue,
+  onSkip,
   state = 'ready',
   initialStep = 0,
   onRetry,
@@ -200,6 +202,11 @@ export function OnboardingScreen({
           {current.nextLabel ?? 'Далее'}
         </Button>
       </div>
+      {onSkip ? (
+        <button type="button" className={styles.skip} onClick={onSkip}>
+          Пропустить
+        </button>
+      ) : null}
     </EntryShell>
   )
 }

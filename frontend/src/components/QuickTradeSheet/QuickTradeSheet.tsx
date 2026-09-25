@@ -256,7 +256,10 @@ export function QuickTradeSheet({
       <section className={styles.screen} aria-label={t('market.quickTrade')}>
         <header className={styles.header}>
           <strong className={styles.marketQuestion}>{market.question}</strong>
-          <h1>{title}</h1>
+          <div className={styles.titleRow}>
+            <button type="button" className={styles.backButton} onClick={onClose} aria-label={t('back')}>←</button>
+            <h1>{title}</h1>
+          </div>
         </header>
         <main className={styles.body}>
           <section
@@ -312,7 +315,10 @@ export function QuickTradeSheet({
       <section className={styles.screen} aria-label={t('market.quickTrade')}>
         <header className={styles.header}>
           <strong className={styles.marketQuestion}>{market.question}</strong>
-          <h1>Частичное исполнение</h1>
+          <div className={styles.titleRow}>
+            <button type="button" className={styles.backButton} onClick={onClose} aria-label={t('back')}>←</button>
+            <h1>Частичное исполнение</h1>
+          </div>
         </header>
         <main className={styles.body}>
           <section className={styles.stateMetric}>
@@ -358,7 +364,10 @@ export function QuickTradeSheet({
     <section className={styles.screen} aria-label={t('market.quickTrade')}>
       <header className={styles.header}>
         <strong className={styles.marketQuestion}>{market.question}</strong>
-        <h1>Быстрый вход</h1>
+        <div className={styles.titleRow}>
+          <button type="button" className={styles.backButton} onClick={onClose} aria-label={t('back')}>←</button>
+          <h1>Быстрый вход</h1>
+        </div>
       </header>
 
       <main className={styles.body}>
