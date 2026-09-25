@@ -59,28 +59,59 @@
   overflow-y: auto;
 }
 
-.details {
+.metric {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 14px;
-  background: var(--color-surface-raised);
+  gap: 3px;
+  padding: 8px 0;
 }
 
-.details > div {
-  min-height: 46px;
-  padding: 13px 14px;
+.metric strong {
+  font-size: 38px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.metric span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.rows > div {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
   border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.rows > div > span {
+  flex: 0 0 22px;
+  color: var(--color-accent-mint);
+  font-size: 9px;
+}
+
+.rows p {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
   color: var(--color-text-primary);
   font-size: 14px;
   line-height: 20px;
+  overflow-wrap: anywhere;
 }
 
-.details > div:last-child { border-bottom: 0; }
-.details .tone_success { color: var(--color-status-success); }
-.details .tone_warning { color: var(--color-status-warning); }
-.details .tone_danger { color: var(--color-status-danger); }
+.tone_success { color: var(--color-status-success) !important; }
+.tone_warning { color: var(--color-status-warning) !important; }
+.tone_danger { color: var(--color-status-danger) !important; }
 
 .notice {
   display: flex;
@@ -104,21 +135,7 @@
   line-height: 1.4;
 }
 
-.share {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.shareTitle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-text-secondary);
-  font-size: 11px;
-}
-
-.share input {
+.shareInput {
   min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--color-border-subtle);
@@ -130,23 +147,6 @@
   font-size: 11px;
 }
 
-.shareActions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.successText,
-.errorText {
-  margin: 0;
-  font-size: 11px;
-}
-
-.successText { color: var(--color-status-success); }
-.errorText { color: var(--color-status-danger); }
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+@media (max-width: 360px) {
+  .metric strong { font-size: 34px; }
 }
