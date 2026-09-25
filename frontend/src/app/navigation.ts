@@ -22,6 +22,8 @@ export type Route =
   | { name: 'help' }
   | { name: 'wallet'; tab: WalletTab }
   | { name: 'history' }
+  | { name: 'chat-lobby' }
+  | { name: 'chat-market'; marketId: number }
 
 export const TOP_LEVEL_ROUTES: ReadonlySet<Route['name']> = new Set(['markets', 'portfolio', 'create', 'notifications', 'profile'])
 
@@ -32,6 +34,7 @@ export function isTopLevel(route: Route): boolean {
 export function sameRoute(a: Route, b: Route): boolean {
   if (a.name !== b.name) return false
   if (a.name === 'detail' && b.name === 'detail') return a.marketId === b.marketId
+  if (a.name === 'chat-market' && b.name === 'chat-market') return a.marketId === b.marketId
   if (a.name === 'quick-trade' && b.name === 'quick-trade') {
     return a.marketId === b.marketId && a.side === b.side
   }
