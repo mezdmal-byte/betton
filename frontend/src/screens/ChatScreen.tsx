@@ -17,6 +17,7 @@ export type ChatScreenProps = {
   lobby?: boolean
   hasMore?: boolean
   attachableMarkets?: ChatAttachableMarket[]
+  showInternalBack?: boolean
   onBack?: () => void
   onLoadOlder?: () => void
   onRetry?: () => void
@@ -37,6 +38,7 @@ export function ChatScreen({
   lobby = false,
   hasMore = false,
   attachableMarkets = [],
+  showInternalBack = true,
   onBack,
   onLoadOlder,
   onRetry,
@@ -68,7 +70,7 @@ export function ChatScreen({
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <button type="button" className={styles.back} onClick={onBack}>‹</button>
+        {showInternalBack ? <button type="button" className={styles.back} onClick={onBack}>‹</button> : null}
         <div>
           <strong>{title}</strong>
           {subtitle ? <span>{subtitle}</span> : null}
