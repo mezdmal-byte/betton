@@ -1,20 +1,165 @@
 .screen {
+  position: relative;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+}
+
+.startHeader {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pad-header-top) var(--page-padding) 12px;
+}
+
+.contextRow {
+  display: flex;
+  min-height: 18px;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 90px;
+}
+
+.backText {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  line-height: normal;
+}
+
+.brand {
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+}
+
+.brand b:first-child {
+  color: var(--color-text-primary);
+}
+
+.brand b:last-child {
+  color: var(--color-accent-mint);
+}
+
+.startTitleRow {
+  display: flex;
+  height: 28px;
+  align-items: center;
+}
+
+.startTitleRow h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 27px;
+  letter-spacing: var(--tracking-tight);
+}
+
+.themeToggle {
+  position: absolute;
+  top: 32px;
+  right: 15px;
+}
+
+.startBody {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px var(--page-padding) 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.eyebrow {
+  color: var(--color-accent-mint);
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  line-height: normal;
+}
+
+.startIntro {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.startDetails {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  background: var(--color-canvas);
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-surface-raised);
 }
 
-.header {
+.startDetails > div {
   display: flex;
+  min-height: 46px;
+  align-items: center;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.startDetails > div:last-child {
+  border-bottom: 0;
+}
+
+.startDetails span {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.startDetails > div:first-child span {
+  color: var(--color-accent-mint);
+}
+
+.notice {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--color-accent-mint);
+  border-radius: 12px;
+  background: var(--color-background-primary);
+}
+
+.notice svg {
+  flex: 0 0 16px;
+  color: var(--color-accent-mint);
+}
+
+.notice p {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.formHeader {
+  display: flex;
+  min-height: var(--header-height);
+  flex: 0 0 auto;
   align-items: center;
   gap: var(--space-8);
-  min-height: var(--header-height);
   padding: var(--pad-header-top) var(--page-padding) 8px;
-  background: var(--color-canvas);
 }
 
-.header strong {
+.formHeader strong {
   font-size: 16px;
   font-weight: var(--font-weight-semibold);
 }
@@ -26,19 +171,18 @@
   flex-direction: column;
   gap: 14px;
   padding: 2px var(--page-padding) 16px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
-.questionBlock {
-  position: relative;
-}
+.questionBlock { position: relative; }
 
 .counter {
   position: absolute;
   right: 12px;
   bottom: 9px;
+  color: var(--color-disabled-text);
   font-size: 10px;
-  color: var(--color-text-disabled);
   font-variant-numeric: tabular-nums;
 }
 
@@ -49,9 +193,9 @@
 }
 
 .sectionLabel {
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
 }
 
 .pills {
@@ -72,34 +216,34 @@
 }
 
 .outcomeA :global(input) {
-  background: var(--color-outcome-a-tint);
-  border-color: rgba(32, 163, 158, 0.12);
+  border-color: var(--color-outcome-1);
+  background: var(--color-outcome-1-surface);
 }
 
 .outcomeB :global(input) {
-  background: var(--color-outcome-b-tint);
-  border-color: rgba(239, 91, 91, 0.12);
+  border-color: var(--color-outcome-2);
+  background: var(--color-outcome-2-surface);
 }
 
 .fee {
   overflow: hidden;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-12);
-  background: var(--color-surface);
+  background: var(--color-surface-base);
 }
 
 .feeRow {
   display: flex;
+  min-height: 44px;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
   padding: 0 4px 0 12px;
   color: var(--color-text-secondary);
 }
 
 .feeRow p {
-  flex: 1;
   min-width: 0;
+  flex: 1;
   margin: 0;
   font-size: 11px;
   line-height: 1.35;
@@ -114,32 +258,33 @@
 
 .feeDetail p {
   margin: 0;
+  color: var(--color-text-secondary);
   font-size: 11px;
   line-height: 1.4;
-  color: var(--color-text-secondary);
 }
 
 .actions {
   flex: 0 0 auto;
   padding: 10px var(--page-padding);
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border-faint);
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-base);
 }
 
 .visibilityNote,
 .error {
   margin: 0;
+  color: var(--color-text-secondary);
   font-size: 11px;
   line-height: 1.4;
-  color: var(--color-text-secondary);
 }
 
 .error {
-  color: var(--color-warning);
   padding-bottom: var(--space-8);
+  color: var(--color-status-warning);
 }
 
-@media (max-width: 340px) {
+@media (max-width: 360px) {
+  .startBody,
   .body {
     gap: 12px;
   }

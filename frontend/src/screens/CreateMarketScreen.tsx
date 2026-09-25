@@ -1,4 +1,4 @@
-import { ChevronLeft, Info } from 'lucide-react'
+import { ChevronLeft, CircleHelp, Info } from 'lucide-react'
 import { useState } from 'react'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
@@ -8,6 +8,7 @@ import { DateTimeField } from '../components/DateTimeField/DateTimeField'
 import { IconButton } from '../components/IconButton/IconButton'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { TextField } from '../components/TextField/TextField'
+import { ThemeToggle } from '../components/ThemeToggle/ThemeToggle'
 import { defaultCreateDraft } from '../fixtures/account'
 import { useT } from '../i18n'
 import type { CreateMarketDraft, VisibilityId } from '../types/account'
@@ -47,6 +48,7 @@ export function CreateMarketScreen({
   unauthenticated = false,
 }: CreateMarketScreenProps) {
   const t = useT()
+  const [step, setStep] = useState<'start' | 'form'>('start')
   const [question, setQuestion] = useState(draft.question)
   const [category, setCategory] = useState(draft.category)
   const [outcomeA, setOutcomeA] = useState(draft.outcomeA)
@@ -73,10 +75,61 @@ export function CreateMarketScreen({
     visibilityNote ??
     (visibility === 'unlisted' ? t('create.visibilityHintUnlisted') : t('create.visibilityHintPublic'))
 
+  if (step === 'start') {
+    return (
+      <div className={styles.screen}>
+        <header className={styles.startHeader}>
+          <div className={styles.contextRow}>
+            <button type="button" className={styles.backText} onClick={onBack}>← Назад</button>
+            <span className={styles.brand}><b>Bet</b><b>TON</b></span>
+          </div>
+          <div className={styles.startTitleRow}>
+            <h1>Создать рынок</h1>
+          </div>
+          <ThemeToggle className={styles.themeToggle} />
+        </header>
+
+        <main className={styles.startBody}>
+          <strong className={styles.eyebrow}>P2P PREDICTION MARKET</strong>
+          <p className={styles.startIntro}>
+            Сформулируйте проверяемый вопрос, задайте ровно два исхода и источник результата.
+          </p>
+
+          <section className={styles.startDetails}>
+            <div><span>8 шагов · около 3 минут</span></div>
+            <div><span>Комиссия создания · 0 TON</span></div>
+            <div><span>Рынок нельзя изменить после открытия</span></div>
+          </section>
+
+          <section className={styles.notice}>
+            <CircleHelp size={16} strokeWidth={1.7} aria-hidden="true" />
+            <p>Публичные рынки проходят модерацию. Unlisted доступны только по точной ссылке.</p>
+          </section>
+
+          {unauthenticated ? (
+            <StatusMessage tone="warning" title={t('err.openInTg')}>
+              {t('err.openInTgBody')}
+            </StatusMessage>
+          ) : null}
+
+          <Button
+            fullWidth
+            disabled={unauthenticated}
+            onClick={() => setStep('form')}
+          >
+            Начать
+          </Button>
+        </main>
+
+        <BottomNavigation active="create" onChange={onNavChange} />
+      </div>
+    )
+  }
+
   return (
     <div className={styles.screen}>
-      <header className={styles.header}>
-        <IconButton label={t('back')} size="md" onClick={onBack}>
+      <header className={styles.formHeader}>
+        <IconButton label={t('back')} size="md" onClick={() => setStep('start')}>
           <ChevronLeft size={22} />
         </IconButton>
         <strong>{t('create.title')}</strong>
@@ -223,6 +276,7 @@ export function CreateMarketScreen({
               : t('create.submit')}
         </Button>
       </div>
+
       <BottomNavigation active="create" onChange={onNavChange} />
     </div>
   )
