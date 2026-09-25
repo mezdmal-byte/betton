@@ -5,12 +5,13 @@ import {
   classifyIocPlacement,
   mapMarketOut,
   mapOrderPreview,
+  mapTradesToChartPoints,
   moneyForOrder,
   type IocPlacementResult,
 } from '../api/adapters'
 import { errorDetail, isInsufficientBalanceError } from '../api/errors'
 import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
-import { getMarket, getOrderbook } from '../api/markets'
+import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
 import { placeOrder, previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
@@ -102,6 +103,17 @@ export function ConnectedQuickTradeSheet({
       ),
     enabled: previewEnabled,
   })
+
+  const tradesQuery = useQuery({
+    queryKey: [...queryKeys.trades(marketId), shareToken],
+    queryFn: () => getMarketTrades(marketId, shareToken),
+    enabled: Number.isFinite(marketId) && marketId > 0 && market.mechanism === 'p2p',
+  })
+  const historySeries = useMemo(
+    () => mapTradesToChartPoints(tradesQuery.data, outcome),
+    [outcome, tradesQuery.data],
+  )
+  const historyDemo = market.creator.handle === 'betton_preview'
 
   const preview = previewQuery.data ? mapOrderPreview(previewQuery.data) : null
   const previewRequestError = previewQuery.isError && !isInsufficientBalanceError(previewQuery.error)
@@ -249,6 +261,10 @@ export function ConnectedQuickTradeSheet({
       previewAverageOdds={previewSettling ? null : (preview?.averageOdds ?? null)}
       previewWorstOdds={previewSettling ? null : (preview?.worstOdds ?? null)}
       previewFills={previewSettling ? null : (preview?.fills ?? null)}
+      historySeries={historySeries}
+      historyLoading={tradesQuery.isPending || tradesQuery.isFetching}
+      historyError={tradesQuery.isError}
+      historyDemo={historyDemo}
       errorMessage={requestErrorMessage}
       placeResult={placeResult}
       onSelectSide={onSelectSide}
