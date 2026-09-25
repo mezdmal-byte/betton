@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { mapOpenOrder, mapPositions, mapTransaction } from '../api/adapters'
+import { mapOpenOrder, mapPositions, mapSettlement, mapTransaction } from '../api/adapters'
 import { errorDetail } from '../api/errors'
 import { cancelOrder, listOrders } from '../api/orders'
-import { listPositions, listTransactions } from '../api/portfolio'
+import { listPositions, listSettlements, listTransactions } from '../api/portfolio'
 import { queryKeys } from '../api/query'
 import type { AccountOut } from '../api/types'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
@@ -73,6 +73,11 @@ export function ConnectedPortfolioScreen({
     queryFn: () => listTransactions(userId as number),
     enabled,
   })
+  const settlementsQuery = useQuery({
+    queryKey: userId ? queryKeys.settlements(userId) : ['users', 'settlements', 'idle'],
+    queryFn: () => listSettlements(userId as number),
+    enabled: enabled && variant !== 'history',
+  })
 
   const positions = useMemo(
     () => (positionsQuery.data ?? []).flatMap(mapPositions),
@@ -86,13 +91,17 @@ export function ConnectedPortfolioScreen({
     () => (historyQuery.data ?? []).map(mapTransaction),
     [historyQuery.data],
   )
+  const settlements = useMemo(
+    () => (settlementsQuery.data ?? []).map(mapSettlement),
+    [settlementsQuery.data],
+  )
 
   const listState =
     !enabled && accountState === 'unauthenticated'
       ? 'ready'
-      : positionsQuery.isPending || ordersQuery.isPending || historyQuery.isPending
+      : positionsQuery.isPending || ordersQuery.isPending || historyQuery.isPending || settlementsQuery.isPending
         ? 'loading'
-        : positionsQuery.isError || ordersQuery.isError || historyQuery.isError
+        : positionsQuery.isError || ordersQuery.isError || historyQuery.isError || settlementsQuery.isError
           ? 'error'
           : 'ready'
 
@@ -136,6 +145,7 @@ export function ConnectedPortfolioScreen({
       positions={accountState === 'unauthenticated' ? [] : positions}
       orders={accountState === 'unauthenticated' ? [] : orders}
       history={accountState === 'unauthenticated' ? [] : history}
+      settlements={accountState === 'unauthenticated' ? [] : settlements}
       listState={listState}
       cancellingOrderId={cancellingOrderId}
       actionError={actionError}
@@ -150,6 +160,7 @@ export function ConnectedPortfolioScreen({
         void positionsQuery.refetch()
         void ordersQuery.refetch()
         void historyQuery.refetch()
+        void settlementsQuery.refetch()
       }}
       onCancelOrder={(order) => {
         if (!confirmCancelOrder(t('order.cancelConfirm'))) return

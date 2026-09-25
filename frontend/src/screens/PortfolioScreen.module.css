@@ -334,3 +334,51 @@
 @media (max-width: 360px) {
   .detailMetric strong { font-size: 32px; }
 }
+
+
+.creatorDestination {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+}
+
+.creatorDestination > span {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.creatorDestination strong {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.creatorDestination small {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.creatorDestination b {
+  color: var(--color-text-muted);
+  font-size: 16px;
+  font-weight: var(--font-weight-regular);
+}
+
+.settlementWin {
+  margin: 0;
+  color: var(--color-accent-mint);
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+}

@@ -1,5 +1,5 @@
 import type { AccountFixture } from '../types/account'
-import type { HistoryFixture, OrderFixture, PositionFixture } from '../types/account'
+import type { HistoryFixture, OrderFixture, PositionFixture, SettlementFixture } from '../types/account'
 import type { CreatorFixture, MarketFixture, MarketStatus, OrderBookLevel, OutcomeFixture, ChartPoint, RecentTrade } from '../types/market'
 import { translate, type Locale } from '../i18n'
 import { moneyJsonValue, nanoToTon } from '../lib/money'
@@ -17,6 +17,7 @@ import type {
   OrderbookLevelDto,
   OrderbookOut,
   PositionOut,
+  SettlementOut,
   TransactionOut,
   UserOut,
 } from './types'
@@ -394,6 +395,24 @@ export function mapPositions(dto: PositionOut): PositionFixture[] {
     })
   }
   return rows
+}
+
+export function mapSettlement(dto: SettlementOut): SettlementFixture {
+  return {
+    id: String(dto.market_id) + ':' + (dto.resolved_at ?? dto.settlement_kind ?? 'settled'),
+    marketId: dto.market_id,
+    question: dto.question,
+    winningOutcome: dto.winning_outcome,
+    chosenOutcomes: Array.isArray(dto.chosen_outcomes) ? dto.chosen_outcomes : [],
+    stakesTotalTon: Number(dto.stakes_total || 0),
+    payoutTon: Number(dto.payout || 0),
+    tipTon: Number(dto.tip || 0),
+    creditedTon: Number(dto.credited || 0),
+    resultTon: Number(dto.result || 0),
+    settlementKind: dto.settlement_kind,
+    cancellationReason: dto.cancellation_reason,
+    resolvedAt: dto.resolved_at ?? undefined,
+  }
 }
 
 export function mapTransaction(dto: TransactionOut): HistoryFixture {

@@ -21,10 +21,11 @@ import type {
   OrderFixture,
   PortfolioTab,
   PositionFixture,
+  SettlementFixture,
 } from '../types/account'
 import styles from './PortfolioScreen.module.css'
 
-type PortfolioView = 'overview' | PortfolioTab
+type PortfolioView = 'overview' | PortfolioTab | 'settled' | 'creator'
 
 export type PortfolioScreenProps = {
   account?: AccountFixture
@@ -32,6 +33,7 @@ export type PortfolioScreenProps = {
   positions?: PositionFixture[]
   orders?: OrderFixture[]
   history?: HistoryFixture[]
+  settlements?: SettlementFixture[]
   onNavChange?: (id: NavId) => void
   onProfileClick?: () => void
   onCancelOrder?: (order: OrderFixture) => void
@@ -53,6 +55,7 @@ export function PortfolioScreen({
   positions = portfolioPositions,
   orders = portfolioOrders,
   history = portfolioHistory,
+  settlements = [],
   onNavChange,
   onCancelOrder,
   onSelectMarket,
@@ -282,6 +285,35 @@ export function PortfolioScreen({
                 <p className={styles.emptyLine}>{t('empty.ordersTitle')}</p>
               )}
             </section>
+
+            <section className={styles.previewSection}>
+              <div className={styles.sectionHeader}>
+                <h2>Рассчитанные позиции</h2>
+                <button type="button" onClick={() => setView('settled')}>Все →</button>
+              </div>
+              {settlements[0] ? (
+                <button type="button" className={styles.previewRow} onClick={() => setView('settled')}>
+                  <strong className={settlements[0].payoutTon > 0 ? styles.accent : undefined}>
+                    {settlements[0].chosenOutcomes.join(' / ') || 'Позиция'} · {settlements[0].question}
+                  </strong>
+                  <span>
+                    Расчёт: {settlements[0].winningOutcome} · выплата {formatTonFull(settlements[0].payoutTon)}
+                  </span>
+                </button>
+              ) : (
+                <p className={styles.emptyLine}>Рассчитанных позиций пока нет</p>
+              )}
+            </section>
+
+            {account.creatorIncomeTon > 0 ? (
+              <button type="button" className={styles.creatorDestination} onClick={() => setView('creator')}>
+                <span>
+                  <strong>Доход автора</strong>
+                  <small>{formatTonFull(account.creatorIncomeTon)} начислено всего</small>
+                </span>
+                <b>›</b>
+              </button>
+            ) : null}
           </>
         ) : (
           <>
@@ -372,6 +404,46 @@ export function PortfolioScreen({
                 </ul>
               )
             ) : null}
+
+            {listState === 'ready' && view === 'settled' ? (
+              settlements.length === 0 ? (
+                <StatusMessage title="Рассчитанных позиций пока нет">
+                  После расчёта рынков позиции появятся здесь.
+                </StatusMessage>
+              ) : (
+                <ul className={styles.list}>
+                  {settlements.map((item) => (
+                    <li key={item.id} className={styles.row}>
+                      <p className={item.payoutTon > 0 ? styles.settlementWin : styles.question}>
+                        {(item.chosenOutcomes.join(' / ') || 'Позиция') + ' · ' + item.question}
+                      </p>
+                      <p className={styles.detail}>
+                        Расчёт: {item.winningOutcome} · выплата {formatTonFull(item.payoutTon)}
+                      </p>
+                      {item.cancellationReason ? (
+                        <p className={styles.detail}>Причина: {item.cancellationReason}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : null}
+
+            {view === 'creator' ? (
+              <>
+                <section className={styles.detailMetric}>
+                  <strong>{formatTonFull(account.creatorIncomeTon)}</strong>
+                  <span>начислено всего</span>
+                </section>
+                <section className={styles.detailCard}>
+                  <DetailRow label="Источник данных" value="Account API · creator earnings" />
+                  <DetailRow
+                    label="Разбивка выплат"
+                    value="Backend пока не отдаёт отдельные значения «выплачено / ожидает»"
+                  />
+                </section>
+              </>
+            ) : null}
           </>
         )}
       </main>
@@ -394,6 +466,8 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 function viewLabel(view: Exclude<PortfolioView, 'overview'>, t: ReturnType<typeof useT>): string {
   if (view === 'positions') return t('portfolio.positions')
   if (view === 'orders') return t('portfolio.orders')
+  if (view === 'settled') return 'Рассчитанные позиции'
+  if (view === 'creator') return 'Доход автора'
   return t('portfolio.history')
 }
 
