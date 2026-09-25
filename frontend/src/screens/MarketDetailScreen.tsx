@@ -206,23 +206,6 @@ export function MarketDetailScreen({
             <>
               <section className={styles.section}>
                 <h2 className={styles.historyTitle}>Коэффициент по сделкам · {selected.label}</h2>
-                <div className={styles.sideSwitch}>
-                  <button
-                    type="button"
-                    className={activeSide === 'a' ? styles.sideActiveA : undefined}
-                    onClick={() => chooseSide('a')}
-                  >
-                    {market.outcomeA.label}
-                  </button>
-                  <button
-                    type="button"
-                    className={activeSide === 'b' ? styles.sideActiveB : undefined}
-                    onClick={() => chooseSide('b')}
-                  >
-                    {market.outcomeB.label}
-                  </button>
-                </div>
-
                 {tradeHistoryState === 'loading' ? (
                   <StatusMessage tone="loading" title={t('loading')}>{t('loading.body')}</StatusMessage>
                 ) : tradeHistoryState === 'error' ? (
