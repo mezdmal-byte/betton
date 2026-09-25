@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { getCreatorProfile } from '../api/account'
 import { mapCreatorStats } from '../api/adapters'
 import { queryKeys } from '../api/query'
-import { ProfileScreen } from '../screens/ProfileScreen'
+import { ProfileScreen, type ProfileView } from '../screens/ProfileScreen'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import type { AccountFixture } from '../types/account'
 
 export function ConnectedProfileScreen({
@@ -11,12 +12,16 @@ export function ConnectedProfileScreen({
   userId,
   onBack,
   onMenu,
+  onNavChange,
+  view = 'main',
 }: {
   account: AccountFixture
   accountState: 'ready' | 'unauthenticated'
   userId?: number
   onBack: () => void
   onMenu: (id: string) => void
+  onNavChange?: (id: NavId) => void
+  view?: ProfileView
 }) {
   const creator = useQuery({
     queryKey: userId ? queryKeys.creator(userId) : ['creators', 'idle'],
@@ -27,10 +32,11 @@ export function ConnectedProfileScreen({
   const merged: AccountFixture = {
     ...account,
     eventsCreated: stats.eventsCreated,
+    activeMarkets: stats.activeMarkets,
     createdVolumeTon: stats.createdVolumeTon,
   }
 
   return (
-    <ProfileScreen account={merged} accountState={accountState} onBack={onBack} onMenu={onMenu} />
+    <ProfileScreen account={merged} accountState={accountState} onBack={onBack} onMenu={onMenu} onNavChange={onNavChange} view={view} />
   )
 }

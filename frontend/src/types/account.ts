@@ -44,6 +44,7 @@ export type AccountFixture = {
   inOrdersTon: number
   creatorIncomeTon: number
   eventsCreated: number | null
+  activeMarkets?: number | null
   createdVolumeTon: number | null
   isAdmin: boolean
   photoUrl?: string

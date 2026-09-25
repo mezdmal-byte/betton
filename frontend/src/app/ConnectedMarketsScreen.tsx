@@ -193,8 +193,9 @@ export function ConnectedMarketsScreen({
       <FilterSheet
         open={filtersOpen}
         status={feedView.status}
+        category={feedView.category}
         onClose={() => setFiltersOpen(false)}
-        onApply={(status) => onFeedViewChange({ ...feedView, status })}
+        onApply={(status, category) => onFeedViewChange({ ...feedView, status, category })}
       />
       {trade && sheetMarket ? (
         <div className={overlayStyles.overlay}>

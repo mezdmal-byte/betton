@@ -1,21 +1,20 @@
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
-import { Avatar } from '../components/Avatar/Avatar'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
 import { Button } from '../components/Button/Button'
 import { IconButton } from '../components/IconButton/IconButton'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
-import { Tabs } from '../components/Tabs/Tabs'
+import { ThemeToggle } from '../components/ThemeToggle/ThemeToggle'
 import {
   accountUser,
   portfolioHistory,
   portfolioOrders,
   portfolioPositions,
 } from '../fixtures/account'
-import { formatOdds, formatTon, formatTonFull } from '../lib/format'
-import { formatHistoryTime } from '../lib/time'
 import { isMessageKey, useI18n, useT } from '../i18n'
-import type { NavId } from '../components/BottomNavigation/BottomNavigation'
+import { formatOdds, formatTonFull } from '../lib/format'
+import { formatHistoryTime } from '../lib/time'
 import type {
   AccountFixture,
   HistoryFixture,
@@ -24,6 +23,8 @@ import type {
   PositionFixture,
 } from '../types/account'
 import styles from './PortfolioScreen.module.css'
+
+type PortfolioView = 'overview' | PortfolioTab
 
 export type PortfolioScreenProps = {
   account?: AccountFixture
@@ -48,16 +49,13 @@ export type PortfolioScreenProps = {
 
 export function PortfolioScreen({
   account = accountUser,
-  tab = 'positions',
+  tab,
   positions = portfolioPositions,
   orders = portfolioOrders,
   history = portfolioHistory,
   onNavChange,
-  onProfileClick,
   onCancelOrder,
   onSelectMarket,
-  onDeposit,
-  onWithdraw,
   onBack,
   variant = 'tab',
   accountState = 'ready',
@@ -68,181 +66,252 @@ export function PortfolioScreen({
 }: PortfolioScreenProps) {
   const t = useT()
   const { locale } = useI18n()
-  const [currentTab, setCurrentTab] = useState<PortfolioTab>(variant === 'history' ? 'history' : tab)
+  const [view, setView] = useState<PortfolioView>(
+    variant === 'history' ? 'history' : tab ?? 'overview',
+  )
   const hideNav = variant === 'history'
-  const items = currentTab === 'positions' ? positions : currentTab === 'orders' ? orders : history
-  const emptyCopy = {
-    positions: { title: t('empty.positionsTitle'), body: t('empty.positionsBody') },
-    orders: { title: t('empty.ordersTitle'), body: t('empty.ordersBody') },
-    history: { title: t('empty.historyTitle'), body: t('empty.historyBody') },
+  const totalExposure = account.inPositionsTon + account.inOrdersTon
+
+  const renderStatus = () => {
+    if (listState === 'loading') {
+      return (
+        <StatusMessage tone="loading" title={t('loading')}>
+          {t('loading.body')}
+        </StatusMessage>
+      )
+    }
+    if (listState === 'error') {
+      return (
+        <>
+          <StatusMessage tone="error" title={t('err.request')}>
+            {t('err.requestBody')}
+          </StatusMessage>
+          {onRetry ? (
+            <Button variant="secondary" onClick={onRetry}>
+              {t('retry')}
+            </Button>
+          ) : null}
+        </>
+      )
+    }
+    return null
   }
 
   return (
     <div className={styles.screen}>
-      <header className={hideNav ? `${styles.header} ${styles.headerSecondary}` : styles.header}>
+      <header className={hideNav ? styles.headerSecondary : styles.header}>
         {hideNav ? (
-          <IconButton label={t('back')} size="md" onClick={onBack}>
-            <ChevronLeft size={22} />
-          </IconButton>
+          <>
+            <IconButton label={t('back')} size="md" onClick={onBack}>
+              <ChevronLeft size={22} />
+            </IconButton>
+            <h1>{t('profile.history')}</h1>
+          </>
         ) : (
-          <strong>{t('portfolio.title')}</strong>
-        )}
-        {hideNav ? (
-          <strong>{t('profile.history')}</strong>
-        ) : (
-          <Avatar
-            initials={account.initials}
-            name={account.displayName}
-            src={account.photoUrl}
-            size="md"
-            onClick={onProfileClick}
-          />
+          <>
+            <div className={styles.heading}>
+              <span>ОБЗОР</span>
+              <h1>{view === 'overview' ? 'Портфель' : viewLabel(view, t)}</h1>
+            </div>
+            {view === 'overview' ? <ThemeToggle /> : null}
+          </>
         )}
       </header>
 
-      <div className={styles.body}>
-        <section className={styles.hero}>
-          <span>{t('account.available')}</span>
-          <strong>
-            {accountState === 'unauthenticated' || accountState === 'loading'
-              ? '—'
-              : formatTonFull(account.availableTon)}
-          </strong>
-          <p className={styles.balanceMeta}>
-            {t('account.inPositions')}: {accountState === 'ready' ? formatTon(account.inPositionsTon) : '—'}
-            <span>·</span>
-            {t('account.reserved')}: {accountState === 'ready' ? formatTon(account.inOrdersTon) : '—'}
-          </p>
-          <div className={styles.actions}>
-            <Button disabled={accountState !== 'ready'} onClick={onDeposit}>{t('account.deposit')}</Button>
-            <Button variant="secondary" disabled={accountState !== 'ready'} onClick={onWithdraw}>
-              {t('account.withdraw')}
-            </Button>
-          </div>
-        </section>
-
+      <main className={styles.body}>
         {accountState === 'unauthenticated' ? (
-          <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage>
+          <StatusMessage tone="warning" title={t('err.openInTg')}>
+            {t('err.openInTgBody')}
+          </StatusMessage>
+        ) : view === 'overview' ? (
+          <>
+            <section className={styles.primaryMetric}>
+              <strong>
+                {accountState === 'loading' ? '—' : formatTonFull(account.availableTon)}
+              </strong>
+              <span>{t('account.available').toLowerCase()}</span>
+            </section>
+
+            <section className={styles.details}>
+              <div>
+                <span>В позициях</span>
+                <strong>{accountState === 'ready' ? formatTonFull(account.inPositionsTon) : '—'}</strong>
+              </div>
+              <div>
+                <span>В ордерах</span>
+                <strong>{accountState === 'ready' ? formatTonFull(account.inOrdersTon) : '—'}</strong>
+              </div>
+              <div>
+                <span>Текущая экспозиция</span>
+                <strong>{accountState === 'ready' ? formatTonFull(totalExposure) : '—'}</strong>
+              </div>
+            </section>
+
+            {renderStatus()}
+
+            <section className={styles.previewSection}>
+              <div className={styles.sectionHeader}>
+                <h2>{t('portfolio.positions')}</h2>
+                <button type="button" onClick={() => setView('positions')}>Все →</button>
+              </div>
+              {positions[0] ? (
+                <button
+                  type="button"
+                  className={styles.previewRow}
+                  onClick={() => onSelectMarket?.(positions[0]!.marketId)}
+                >
+                  <strong className={styles.accent}>
+                    {positions[0].outcomeLabel} · {positions[0].question}
+                  </strong>
+                  <span>
+                    {formatTonFull(positions[0].amountTon)} · средний коэф. {formatOdds(positions[0].avgOdds)}×
+                  </span>
+                </button>
+              ) : (
+                <p className={styles.emptyLine}>{t('empty.positionsTitle')}</p>
+              )}
+            </section>
+
+            <section className={styles.previewSection}>
+              <div className={styles.sectionHeader}>
+                <h2>{t('portfolio.orders')}</h2>
+                <button type="button" onClick={() => setView('orders')}>Все →</button>
+              </div>
+              {orders[0] ? (
+                <button type="button" className={styles.previewRow} onClick={() => setView('orders')}>
+                  <strong>{orders[0].outcomeLabel} · {orders[0].question}</strong>
+                  <span>
+                    {formatOdds(orders[0].odds)}× · исполнено {formatTonFull(orders[0].filledTon)} · остаток {formatTonFull(orders[0].remainingTon)}
+                  </span>
+                </button>
+              ) : (
+                <p className={styles.emptyLine}>{t('empty.ordersTitle')}</p>
+              )}
+            </section>
+          </>
         ) : (
           <>
-            <Tabs
-              items={[
-                { id: 'positions', label: t('portfolio.positions') },
-                { id: 'orders', label: t('portfolio.orders') },
-                { id: 'history', label: t('portfolio.history') },
-              ]}
-              value={currentTab}
-              onChange={(id) => setCurrentTab(id as PortfolioTab)}
-              ariaLabel={t('portfolio.title')}
-            />
+            {!hideNav ? (
+              <button type="button" className={styles.backToOverview} onClick={() => setView('overview')}>
+                ← Обзор
+              </button>
+            ) : null}
 
             {actionError ? (
-          <StatusMessage tone="error" title={t('err.request')}>
-            {actionError}
-          </StatusMessage>
-        ) : null}
+              <StatusMessage tone="error" title={t('err.request')}>
+                {actionError}
+              </StatusMessage>
+            ) : null}
 
-        {currentTab === 'history' && accountState === 'ready' && account.creatorIncomeTon > 0 ? (
-          <section className={styles.creatorIncome}>
-            <span>{t('account.creatorIncome')}</span>
-            <strong>+{formatTonFull(account.creatorIncomeTon)}</strong>
-          </section>
-        ) : null}
+            {view === 'history' && accountState === 'ready' && account.creatorIncomeTon > 0 ? (
+              <section className={styles.creatorIncome}>
+                <span>{t('account.creatorIncome')}</span>
+                <strong>+{formatTonFull(account.creatorIncomeTon)}</strong>
+              </section>
+            ) : null}
 
-        {listState === 'loading' ? (
-          <StatusMessage tone="loading" title={t('loading')}>
-            {t('loading.body')}
-          </StatusMessage>
-        ) : listState === 'error' ? (
-          <>
-            <StatusMessage tone="error" title={t('err.request')}>
-              {t('err.requestBody')}
-            </StatusMessage>
-            {onRetry ? (
-              <Button variant="secondary" onClick={onRetry}>
-                {t('retry')}
-              </Button>
+            {renderStatus()}
+
+            {listState === 'ready' && view === 'positions' ? (
+              positions.length === 0 ? (
+                <StatusMessage title={t('empty.positionsTitle')}>{t('empty.positionsBody')}</StatusMessage>
+              ) : (
+                <ul className={styles.list}>
+                  {positions.map((item) => (
+                    <li key={item.id} className={styles.row}>
+                      <button type="button" className={styles.rowButton} onClick={() => onSelectMarket?.(item.marketId)}>
+                        <p className={styles.question}>{item.question}</p>
+                        <p className={styles.meta}>
+                          <span className={styles.accent}>{item.outcomeLabel}</span>
+                          <strong>{formatTonFull(item.amountTon)}</strong>
+                        </p>
+                        <p className={styles.detail}>
+                          {t('pos.avgOdds')} {formatOdds(item.avgOdds)}× · {t('pos.payout')} {formatTonFull(item.potentialPayoutTon)}
+                        </p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : null}
+
+            {listState === 'ready' && view === 'orders' ? (
+              orders.length === 0 ? (
+                <StatusMessage title={t('empty.ordersTitle')}>{t('empty.ordersBody')}</StatusMessage>
+              ) : (
+                <ul className={styles.list}>
+                  {orders.map((item) => (
+                    <li key={item.id} className={styles.row}>
+                      <p className={styles.question}>{item.question}</p>
+                      <p className={styles.meta}>
+                        <span>{item.outcomeLabel} · {formatOdds(item.odds)}×</span>
+                        <strong>{formatTonFull(item.remainingTon)}</strong>
+                      </p>
+                      <div className={styles.orderFoot}>
+                        <span className={styles.detail}>
+                          {item.filledTon > 0 && item.remainingTon > 0 ? t('order.partial') : t('order.wait')}
+                        </span>
+                        {item.canCancel ? (
+                          <Button
+                            variant="ghost"
+                            size="md"
+                            disabled={cancellingOrderId === item.id}
+                            onClick={() => onCancelOrder?.(item)}
+                          >
+                            {cancellingOrderId === item.id ? t('order.cancelling') : t('order.cancel')}
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : null}
+
+            {listState === 'ready' && view === 'history' ? (
+              history.length === 0 ? (
+                <StatusMessage title={t('empty.historyTitle')}>{t('empty.historyBody')}</StatusMessage>
+              ) : (
+                <ul className={styles.list}>
+                  {history.map((item) => (
+                    <li key={item.id} className={styles.row}>
+                      <div className={styles.historyHead}>
+                        <p className={styles.question}>{item.question}</p>
+                        <p className={styles.time}>{formatHistoryTime(item.createdAt ?? item.time, locale)}</p>
+                      </div>
+                      <p className={styles.meta}>
+                        <span>{historyAction(item, t)}</span>
+                        <strong>{formatSigned(item.amountTon)}</strong>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )
             ) : null}
           </>
-        ) : items.length === 0 ? (
-          <StatusMessage title={emptyCopy[currentTab].title}>{emptyCopy[currentTab].body}</StatusMessage>
-        ) : currentTab === 'positions' ? (
-          <ul className={styles.list}>
-            {positions.map((item) => (
-              <li key={item.id} className={styles.row}>
-                <button type="button" className={styles.rowButton} onClick={() => onSelectMarket?.(item.marketId)}>
-                  <p className={styles.question}>{item.question}</p>
-                  <p className={styles.meta}>
-                    <span className={styles.side}>{item.outcomeLabel}</span>
-                    <strong>{formatTonFull(item.amountTon)}</strong>
-                  </p>
-                  <p className={styles.detail}>
-                    {t('pos.avgOdds')} {formatOdds(item.avgOdds)} · {t('pos.payout')} {formatTonFull(item.potentialPayoutTon)}
-                  </p>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : currentTab === 'orders' ? (
-          <ul className={styles.list}>
-            {orders.map((item) => (
-              <li key={item.id} className={styles.row}>
-                <p className={styles.question}>{item.question}</p>
-                <p className={styles.meta}>
-                  <span>{item.outcomeLabel} · {formatOdds(item.odds)}</span>
-                  <strong>{formatTonFull(item.remainingTon)}</strong>
-                </p>
-                <div className={styles.orderFoot}>
-                  <span className={styles.status}>
-                    {item.filledTon > 0 && item.remainingTon > 0 ? t('order.partial') : t('order.wait')}
-                  </span>
-                  {item.canCancel ? (
-                    <Button
-                      variant="ghost"
-                      size="md"
-                      disabled={cancellingOrderId === item.id}
-                      onClick={() => onCancelOrder?.(item)}
-                    >
-                      {cancellingOrderId === item.id ? t('order.cancelling') : t('order.cancel')}
-                    </Button>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <ul className={styles.list}>
-            {history.map((item) => (
-              <li key={item.id} className={styles.row}>
-                <div className={styles.historyHead}>
-                  <p className={styles.question}>{item.question}</p>
-                  <p className={styles.time}>{formatHistoryTime(item.createdAt ?? item.time, locale)}</p>
-                </div>
-                <p className={styles.meta}>
-                  <span>{historyAction(item, t)}</span>
-                  <strong className={styles.amount}>{formatSigned(item.amountTon)}</strong>
-                </p>
-              </li>
-            ))}
-          </ul>
         )}
-          </>
-        )}
-      </div>
+      </main>
+
       {hideNav ? null : <BottomNavigation active="portfolio" onChange={onNavChange} />}
     </div>
   )
 }
 
+function viewLabel(view: Exclude<PortfolioView, 'overview'>, t: ReturnType<typeof useT>): string {
+  if (view === 'positions') return t('portfolio.positions')
+  if (view === 'orders') return t('portfolio.orders')
+  return t('portfolio.history')
+}
+
 function historyAction(item: HistoryFixture, t: ReturnType<typeof useT>): string {
-  const key = item.actionKey ? `tx.${item.actionKey}` : ''
+  const key = item.actionKey ? 'tx.' + item.actionKey : ''
   if (key && isMessageKey(key)) return t(key)
   return item.action
 }
 
 function formatSigned(amount: number): string {
   const value = formatTonFull(Math.abs(amount))
-  if (amount > 0) return `+${value}`
-  if (amount < 0) return `−${value}`
+  if (amount > 0) return '+' + value
+  if (amount < 0) return '−' + value
   return value
 }

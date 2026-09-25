@@ -14,6 +14,7 @@ const markets: Route = { name: 'markets' }
 const create: Route = { name: 'create' }
 const portfolio: Route = { name: 'portfolio' }
 const profile: Route = { name: 'profile' }
+const profileSettings: Route = { name: 'profile-settings' }
 const notifications: Route = { name: 'notifications' }
 const walletDeposit: Route = { name: 'wallet', tab: 'deposit' }
 const walletWithdraw: Route = { name: 'wallet', tab: 'withdraw' }
@@ -40,6 +41,9 @@ describe('navigation stack', () => {
     const helpFlow = pushRoute(pushRoute(pushRoute([portfolio], profile), help), help)
     expect(currentRoute(goBack(pushRoute(pushRoute([portfolio], profile), help)))).toEqual(profile)
     expect(helpFlow.length).toBeGreaterThan(0)
+
+    const settingsFlow = pushRoute(pushRoute([markets], profile), profileSettings)
+    expect(currentRoute(goBack(settingsFlow))).toEqual(profile)
 
     const historyFlow = pushRoute(pushRoute([markets], profile), history)
     expect(currentRoute(goBack(historyFlow))).toEqual(profile)

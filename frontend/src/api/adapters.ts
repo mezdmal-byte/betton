@@ -277,10 +277,11 @@ export function mapTopCreator(dto: CreatorStatsOut): {
 
 export function mapCreatorStats(
   dto: CreatorStatsOut | null | undefined,
-): Pick<AccountFixture, 'eventsCreated' | 'createdVolumeTon'> {
-  if (!dto) return { eventsCreated: null, createdVolumeTon: null }
+): Pick<AccountFixture, 'eventsCreated' | 'activeMarkets' | 'createdVolumeTon'> {
+  if (!dto) return { eventsCreated: null, activeMarkets: null, createdVolumeTon: null }
   return {
     eventsCreated: dto.markets_created,
+    activeMarkets: dto.active_markets,
     createdVolumeTon: dto.volume_nano != null ? nanoToTon(dto.volume_nano) : dto.volume,
   }
 }

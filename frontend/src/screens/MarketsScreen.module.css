@@ -1,74 +1,54 @@
 .screen {
   display: flex;
-  flex-direction: column;
   height: 100%;
-  background: var(--color-canvas);
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
 }
 
 .header {
   display: flex;
+  min-height: 68px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pad-header-top) var(--page-padding) 12px;
+}
+
+.titleRow {
+  display: flex;
+  height: 28px;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-12);
-  min-height: var(--header-height);
-  padding: var(--pad-header-top) var(--page-padding) 6px;
+  gap: 8px;
 }
 
-.brand {
+.titleRow h1 {
+  min-width: 0;
   margin: 0;
-  font-size: 22px;
-  font-weight: var(--font-weight-bold);
+  font-size: 21px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 27px;
   letter-spacing: var(--tracking-tight);
-  color: var(--color-brand-plum);
 }
 
-.brand span {
-  color: var(--color-brand-teal);
-}
-
-.headerRight {
+.headerActions {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
-  min-width: 0;
+  gap: 4px;
 }
 
-.balancePill {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  min-height: 32px;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--color-balance-pill);
-  color: var(--color-text-inverse);
-  line-height: 1.1;
+.headerActions > button {
+  min-width: 28px;
+  min-height: 28px;
 }
 
-.balancePill span {
-  font-size: 9px;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.02em;
-  opacity: 0.82;
-}
-
-.balancePill strong {
-  font-size: 12px;
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-.avatarButton {
-  display: flex;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.filterActive {
-  color: var(--color-action-primary);
+.header > p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: normal;
 }
 
 .body {
@@ -76,76 +56,55 @@
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 var(--page-padding) var(--space-12);
-  overflow: auto;
+  gap: 12px;
+  padding: 0 var(--page-padding) 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.summary {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.metric {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric strong {
+  overflow-wrap: anywhere;
+  font-size: 29px;
+  font-weight: var(--font-weight-regular);
+  line-height: 34px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric span {
+  color: var(--color-text-secondary);
+  font-size: 9px;
+  line-height: normal;
+}
+
+.filter,
+.filterActive {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+}
+
+.filterActive {
+  color: var(--color-accent-mint);
 }
 
 .feed {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-bottom: var(--space-8);
-}
-
-.creators {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.creatorsTitle {
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.creatorRow {
-  display: flex;
-  gap: 8px;
-  margin-right: calc(-1 * var(--page-padding));
-  padding-right: calc(var(--page-padding) + 12px);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.creatorRow::-webkit-scrollbar {
-  display: none;
-}
-
-.creatorChip {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 10px 0 6px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-size: 12px;
-  font-weight: var(--font-weight-medium);
-}
-
-.creatorMeta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
   gap: 0;
-  min-width: 0;
-}
-
-.creatorHandle {
-  max-width: 88px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.creatorVolume {
-  font-size: 10px;
-  font-weight: var(--font-weight-regular);
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-secondary);
+  padding-bottom: 8px;
 }
