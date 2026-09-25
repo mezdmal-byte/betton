@@ -15,11 +15,12 @@ function scopeBase(scope: ChatScope): string {
 export async function getChatMessages(
   scope: ChatScope,
   input: { limit?: number; beforeId?: number | null } = {},
+  shareToken?: string | null,
 ): Promise<ChatMessagesPage> {
   const params = new URLSearchParams()
   params.set('limit', String(input.limit ?? (scope.kind === 'lobby' ? 100 : 50)))
   if (input.beforeId != null) params.set('before_id', String(input.beforeId))
-  const { data } = await apiRequest<ChatMessagesPage>(`${scopeBase(scope)}?${params.toString()}`)
+  const { data } = await apiRequest<ChatMessagesPage>(`${scopeBase(scope)}?${params.toString()}`, { shareToken })
   return {
     items: Array.isArray(data?.items) ? data.items : [],
     has_more: Boolean(data?.has_more),
@@ -30,10 +31,12 @@ export async function getChatMessages(
 export async function sendChatMessage(
   scope: ChatScope,
   body: ChatMessageCreate,
+  shareToken?: string | null,
 ): Promise<ChatMessageOut> {
   const { data } = await apiRequest<ChatMessageOut>(scopeBase(scope), {
     method: 'POST',
     jsonBody: body,
+    shareToken,
   })
   return data
 }
@@ -45,9 +48,9 @@ export async function deleteChatMessage(messageId: number): Promise<ChatMessageO
   return data
 }
 
-export async function markChatRead(scope: ChatScope): Promise<{ last_read_message_id: number }> {
+export async function markChatRead(scope: ChatScope, shareToken?: string | null): Promise<{ last_read_message_id: number }> {
   const path = scope.kind === 'lobby' ? '/chat/lobby/read' : `/markets/${scope.marketId}/chat/read`
-  const { data } = await apiRequest<{ last_read_message_id: number }>(path, { method: 'POST' })
+  const { data } = await apiRequest<{ last_read_message_id: number }>(path, { method: 'POST', shareToken })
   return data
 }
 
