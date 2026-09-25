@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import func, text, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import ADMIN_BANKROLL, TIP_CREATOR_SHARE, TIP_PLATFORM_SHARE, settings
@@ -425,7 +426,15 @@ def get_or_create_telegram_user(
         # Never attach Telegram to an existing account by username match alone.
         while db.query(User).filter(User.username == uname).one_or_none() is not None:
             uname = f"tg{telegram_id}_{uuid.uuid4().hex[:8]}"
-        user = create_user(db, username=uname, telegram_id=telegram_id)
+        try:
+            user = create_user(db, username=uname, telegram_id=telegram_id)
+        except IntegrityError:
+            # Multiple frontend requests can authenticate the same Telegram user
+            # concurrently on a fresh preview DB. The first insert wins; reuse it.
+            db.rollback()
+            user = db.query(User).filter(User.telegram_id == telegram_id).one_or_none()
+            if user is None:
+                raise
     if apply_telegram_profile(
         user,
         username=username,
