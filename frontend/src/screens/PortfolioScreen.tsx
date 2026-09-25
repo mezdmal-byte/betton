@@ -69,6 +69,9 @@ export function PortfolioScreen({
   const [view, setView] = useState<PortfolioView>(
     variant === 'history' ? 'history' : tab ?? 'overview',
   )
+  const [selectedPosition, setSelectedPosition] = useState<PositionFixture | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<OrderFixture | null>(null)
+  const [cancelOrder, setCancelOrder] = useState<OrderFixture | null>(null)
   const hideNav = variant === 'history'
   const totalExposure = account.inPositionsTon + account.inOrdersTon
 
@@ -110,10 +113,28 @@ export function PortfolioScreen({
         ) : (
           <>
             <div className={styles.heading}>
-              <span>ОБЗОР</span>
-              <h1>{view === 'overview' ? 'Портфель' : viewLabel(view, t)}</h1>
+              <span>
+                {cancelOrder
+                  ? 'ТОЛЬКО НЕИСПОЛНЕННЫЙ ОСТАТОК'
+                  : selectedPosition
+                    ? 'ПОЗИЦИЯ · ' + selectedPosition.outcomeLabel
+                    : selectedOrder
+                      ? 'ОРДЕР · ' + selectedOrder.outcomeLabel
+                      : 'ОБЗОР'}
+              </span>
+              <h1>
+                {cancelOrder
+                  ? 'Отменить ордер?'
+                  : selectedPosition
+                    ? selectedPosition.question
+                    : selectedOrder
+                      ? selectedOrder.question
+                      : view === 'overview'
+                        ? 'Портфель'
+                        : viewLabel(view, t)}
+              </h1>
             </div>
-            {view === 'overview' ? <ThemeToggle /> : null}
+            {view === 'overview' && !selectedPosition && !selectedOrder && !cancelOrder ? <ThemeToggle /> : null}
           </>
         )}
       </header>
@@ -123,6 +144,79 @@ export function PortfolioScreen({
           <StatusMessage tone="warning" title={t('err.openInTg')}>
             {t('err.openInTgBody')}
           </StatusMessage>
+        ) : cancelOrder ? (
+          <>
+            <section className={styles.detailCard}>
+              <DetailRow label="Исполнено" value={formatTonFull(cancelOrder.filledTon)} />
+              <DetailRow label="Будет отменено" value={formatTonFull(cancelOrder.remainingTon)} />
+              <DetailRow label="Резерв вернётся" value={formatTonFull(cancelOrder.remainingTon)} />
+            </section>
+            {actionError ? (
+              <StatusMessage tone="error" title={t('err.request')}>{actionError}</StatusMessage>
+            ) : null}
+            <Button
+              fullWidth
+              loading={cancellingOrderId === cancelOrder.id}
+              disabled={cancellingOrderId === cancelOrder.id}
+              onClick={() => {
+                onCancelOrder?.(cancelOrder)
+                setCancelOrder(null)
+                setSelectedOrder(null)
+              }}
+            >
+              Отменить {formatTonFull(cancelOrder.remainingTon)}
+            </Button>
+            <Button variant="secondary" fullWidth onClick={() => setCancelOrder(null)}>
+              Назад к ордеру
+            </Button>
+          </>
+        ) : selectedPosition ? (
+          <>
+            <section className={styles.detailMetric}>
+              <strong>{formatTonFull(selectedPosition.amountTon)}</strong>
+              <span>объём позиции</span>
+            </section>
+            <section className={styles.detailCard}>
+              <DetailRow label="Объём позиции" value={formatTonFull(selectedPosition.amountTon)} />
+              <DetailRow label="Средний коэффициент" value={formatOdds(selectedPosition.avgOdds) + '×'} />
+              <DetailRow label="Исход" value={selectedPosition.outcomeLabel} />
+              <DetailRow label="Потенциальная выплата" value={formatTonFull(selectedPosition.potentialPayoutTon)} />
+            </section>
+            <Button fullWidth onClick={() => onSelectMarket?.(selectedPosition.marketId)}>
+              Открыть рынок
+            </Button>
+            <Button variant="secondary" fullWidth onClick={() => setSelectedPosition(null)}>
+              Назад к позициям
+            </Button>
+          </>
+        ) : selectedOrder ? (
+          <>
+            <section className={styles.detailMetric}>
+              <strong>{formatTonFull(selectedOrder.remainingTon)}</strong>
+              <span>неисполненный остаток</span>
+            </section>
+            <section className={styles.detailCard}>
+              <DetailRow label="Лимит" value={formatOdds(selectedOrder.odds) + '×'} />
+              <DetailRow label="Объём ордера" value={formatTonFull(selectedOrder.amountTon)} />
+              <DetailRow label="Исполнено" value={formatTonFull(selectedOrder.filledTon)} />
+              <DetailRow label="Остаток" value={formatTonFull(selectedOrder.remainingTon)} />
+            </section>
+            {selectedOrder.canCancel && selectedOrder.remainingTon > 0 ? (
+              <Button
+                fullWidth
+                disabled={cancellingOrderId === selectedOrder.id}
+                onClick={() => setCancelOrder(selectedOrder)}
+              >
+                Отменить остаток
+              </Button>
+            ) : null}
+            <Button variant="secondary" fullWidth onClick={() => onSelectMarket?.(selectedOrder.marketId)}>
+              Открыть рынок
+            </Button>
+            <Button variant="secondary" fullWidth onClick={() => setSelectedOrder(null)}>
+              Назад к ордерам
+            </Button>
+          </>
         ) : view === 'overview' ? (
           <>
             <section className={styles.primaryMetric}>
@@ -158,7 +252,7 @@ export function PortfolioScreen({
                 <button
                   type="button"
                   className={styles.previewRow}
-                  onClick={() => onSelectMarket?.(positions[0]!.marketId)}
+                  onClick={() => setSelectedPosition(positions[0]!)}
                 >
                   <strong className={styles.accent}>
                     {positions[0].outcomeLabel} · {positions[0].question}
@@ -178,7 +272,7 @@ export function PortfolioScreen({
                 <button type="button" onClick={() => setView('orders')}>Все →</button>
               </div>
               {orders[0] ? (
-                <button type="button" className={styles.previewRow} onClick={() => setView('orders')}>
+                <button type="button" className={styles.previewRow} onClick={() => setSelectedOrder(orders[0]!)}>
                   <strong>{orders[0].outcomeLabel} · {orders[0].question}</strong>
                   <span>
                     {formatOdds(orders[0].odds)}× · исполнено {formatTonFull(orders[0].filledTon)} · остаток {formatTonFull(orders[0].remainingTon)}
@@ -219,7 +313,7 @@ export function PortfolioScreen({
                 <ul className={styles.list}>
                   {positions.map((item) => (
                     <li key={item.id} className={styles.row}>
-                      <button type="button" className={styles.rowButton} onClick={() => onSelectMarket?.(item.marketId)}>
+                      <button type="button" className={styles.rowButton} onClick={() => setSelectedPosition(item)}>
                         <p className={styles.question}>{item.question}</p>
                         <p className={styles.meta}>
                           <span className={styles.accent}>{item.outcomeLabel}</span>
@@ -242,26 +336,16 @@ export function PortfolioScreen({
                 <ul className={styles.list}>
                   {orders.map((item) => (
                     <li key={item.id} className={styles.row}>
-                      <p className={styles.question}>{item.question}</p>
-                      <p className={styles.meta}>
-                        <span>{item.outcomeLabel} · {formatOdds(item.odds)}×</span>
-                        <strong>{formatTonFull(item.remainingTon)}</strong>
-                      </p>
-                      <div className={styles.orderFoot}>
+                      <button type="button" className={styles.rowButton} onClick={() => setSelectedOrder(item)}>
+                        <p className={styles.question}>{item.question}</p>
+                        <p className={styles.meta}>
+                          <span>{item.outcomeLabel} · {formatOdds(item.odds)}×</span>
+                          <strong>{formatTonFull(item.remainingTon)}</strong>
+                        </p>
                         <span className={styles.detail}>
                           {item.filledTon > 0 && item.remainingTon > 0 ? t('order.partial') : t('order.wait')}
                         </span>
-                        {item.canCancel ? (
-                          <Button
-                            variant="ghost"
-                            size="md"
-                            disabled={cancellingOrderId === item.id}
-                            onClick={() => onCancelOrder?.(item)}
-                          >
-                            {cancellingOrderId === item.id ? t('order.cancelling') : t('order.cancel')}
-                          </Button>
-                        ) : null}
-                      </div>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -293,6 +377,16 @@ export function PortfolioScreen({
       </main>
 
       {hideNav ? null : <BottomNavigation active="portfolio" onChange={onNavChange} />}
+    </div>
+  )
+}
+
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={styles.detailRow}>
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   )
 }
