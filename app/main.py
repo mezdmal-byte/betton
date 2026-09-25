@@ -80,11 +80,8 @@ async def async_lifespan(app: FastAPI):
     await asyncio.gather(expiry, return_exceptions=True)
     bot, _dp = _maybe_bot()
     if bot is not None:
-        try:
-            if settings.is_public_https():
-                await bot.delete_webhook()
-        except Exception:
-            pass
+        # Do not delete the Telegram webhook during Render rolling shutdown:
+        # the replacement instance may already have installed the same webhook.
         await bot.session.close()
 
 
