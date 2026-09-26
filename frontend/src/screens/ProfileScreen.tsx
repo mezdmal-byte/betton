@@ -52,15 +52,15 @@ export function ProfileScreen({
       <div className={styles.screen}>
         <header className={styles.header}>
           <div className={styles.titleRow}>
-            <h1>Настройки</h1>
+            <h1>{t('settings.title')}</h1>
           </div>
-          <p>Аккаунт и приложение</p>
+          <p>{t('settings.subtitle')}</p>
         </header>
 
         <main className={styles.body}>
           <section className={styles.themeSetting}>
-            <strong>Тема</strong>
-            <div className={styles.themeOptions} role="radiogroup" aria-label="Тема">
+            <strong>{t('theme.label')}</strong>
+            <div className={styles.themeOptions} role="radiogroup" aria-label={t('theme.label')}>
               {(['system', 'dark', 'light'] as const).map((id) => (
                 <button
                   key={id}
@@ -69,11 +69,11 @@ export function ProfileScreen({
                   aria-pressed={theme.preference === id}
                   onClick={() => theme.setPreference(id)}
                 >
-                  {id === 'system' ? 'System' : id === 'dark' ? 'Dark' : 'Light'}
+                  {id === 'system' ? t('theme.system') : id === 'dark' ? t('theme.dark') : t('theme.light')}
                 </button>
               ))}
             </div>
-            <small>Dark A · Light C — Porcelain &amp; Cobalt</small>
+            <small>{t('theme.hint')}</small>
           </section>
 
           <section className={styles.settingBlock}>
@@ -96,22 +96,22 @@ export function ProfileScreen({
 
           <button type="button" className={styles.destination} onClick={() => onNavChange?.('notifications')}>
             <span>
-              <strong>Уведомления</strong>
-              <small>События внутри приложения</small>
+              <strong>{t('settings.notifications')}</strong>
+              <small>{t('settings.notificationsMeta')}</small>
             </span>
             <ChevronRight size={18} strokeWidth={1.7} aria-hidden="true" />
           </button>
           <div className={styles.destinationStatic}>
             <span>
-              <strong>Безопасность</strong>
-              <small>Сессии Telegram</small>
+              <strong>{t('settings.security')}</strong>
+              <small>{t('settings.securityMeta')}</small>
             </span>
             <ChevronRight size={18} strokeWidth={1.7} aria-hidden="true" />
           </div>
           <div className={styles.destinationStatic}>
             <span>
-              <strong>О приложении</strong>
-              <small>Версия 1.0 staging</small>
+              <strong>{t('settings.about')}</strong>
+              <small>{t('settings.aboutMeta')}</small>
             </span>
             <ChevronRight size={18} strokeWidth={1.7} aria-hidden="true" />
           </div>
@@ -123,20 +123,22 @@ export function ProfileScreen({
   }
 
   const eventsMeta =
-    account.eventsCreated == null ? '—' : formatInteger(account.eventsCreated) + ' рынков'
+    account.eventsCreated == null
+      ? '—'
+      : t('profile.eventsMeta', { n: formatInteger(account.eventsCreated) })
 
   const menu = [
     ...(accountState === 'ready'
       ? [
           { id: 'events', label: t('profile.events'), meta: eventsMeta },
-          { id: 'wallet', label: t('profile.wallet'), meta: 'Скоро · FUTURE', disabled: true },
-          { id: 'history', label: t('profile.history'), meta: 'Сделки и расчёты' },
+          { id: 'wallet', label: t('profile.wallet'), meta: t('profile.walletMeta'), disabled: true },
+          { id: 'history', label: t('profile.history'), meta: t('profile.historyMeta') },
         ]
       : []),
-    { id: 'help', label: t('profile.help'), meta: 'Механика, комиссия, правила' },
-    { id: 'settings', label: 'Настройки', meta: 'Параметры профиля' },
+    { id: 'help', label: t('profile.help'), meta: t('profile.helpMeta') },
+    { id: 'settings', label: t('profile.settings'), meta: t('profile.settingsMeta') },
     ...(account.isAdmin
-      ? [{ id: 'moderation', label: t('profile.moderation'), meta: 'Доступ администратора' }]
+      ? [{ id: 'moderation', label: t('profile.moderation'), meta: t('profile.moderationMeta') }]
       : []),
   ]
 
@@ -153,10 +155,10 @@ export function ProfileScreen({
         {accountState === 'unauthenticated' ? (
           <section className={styles.guest}>
             <UserRound size={52} strokeWidth={1.5} aria-hidden="true" />
-            <h2>Войдите через Telegram</h2>
-            <p>Сохраняйте позиции, создавайте рынки и управляйте настройками.</p>
+            <h2>{t('profile.loginTitle')}</h2>
+            <p>{t('profile.loginBody')}</p>
             <Button fullWidth onClick={onLogin} disabled={!onLogin}>
-              Войти через Telegram
+              {t('profile.loginAction')}
             </Button>
           </section>
         ) : (
@@ -170,18 +172,18 @@ export function ProfileScreen({
               />
               <div className={styles.identityText}>
                 <strong>@{account.handle}</strong>
-                <span>{account.isAdmin ? 'Создатель · модератор' : 'Создатель'}</span>
+                <span>{account.isAdmin ? t('profile.creatorModerator') : t('profile.creator')}</span>
               </div>
             </section>
 
             <dl className={styles.metrics}>
               <div>
                 <dd>{account.eventsCreated == null ? '—' : formatInteger(account.eventsCreated)}</dd>
-                <dt>Рынков создано</dt>
+                <dt>{t('profile.createdMarkets')}</dt>
               </div>
               <div>
                 <dd>{account.activeMarkets == null ? '—' : formatInteger(account.activeMarkets)}</dd>
-                <dt>Активных</dt>
+                <dt>{t('profile.activeMarkets')}</dt>
               </div>
               <div>
                 <dd>
@@ -189,7 +191,7 @@ export function ProfileScreen({
                     ? '—'
                     : formatTonFull(account.createdVolumeTon).replace(' TON', '')}
                 </dd>
-                <dt>Объём сделок · TON</dt>
+                <dt>{t('profile.tradingVolumeTon')}</dt>
               </div>
             </dl>
 
