@@ -1,9 +1,9 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { buildCreateMarketPayload } from '../api/adapters'
 import { errorDetail } from '../api/errors'
 import { createMarket } from '../api/markets'
-import { getUpcomingCs2Matches } from '../api/sports'
+import { getUpcomingCs2Matches, importUpcomingCs2Matches } from '../api/sports'
 import { queryKeys } from '../api/query'
 import { rememberShareToken } from '../api/share'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
@@ -23,14 +23,31 @@ export type ConnectedCreateMarketScreenProps = {
 
 export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavChange }: ConnectedCreateMarketScreenProps) {
   const t = useT()
+  const queryClient = useQueryClient()
   const [closeAt, setCloseAt] = useState(() => defaultCloseAt())
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [cs2ImportMessage, setCs2ImportMessage] = useState<string | null>(null)
 
   const cs2Query = useQuery({
     queryKey: queryKeys.cs2Upcoming,
     queryFn: () => getUpcomingCs2Matches(40),
     enabled,
     staleTime: 60_000,
+  })
+
+  const cs2ImportMutation = useMutation({
+    mutationFn: () => importUpcomingCs2Matches(40),
+    onSuccess: (result) => {
+      setCs2ImportMessage(
+        result.created > 0
+          ? `Загружено рынков: ${result.created}. Уже были загружены: ${result.skipped}.`
+          : `Новых рынков нет. Уже были загружены: ${result.skipped}.`,
+      )
+      void queryClient.invalidateQueries({ queryKey: ['markets'] })
+    },
+    onError: (error) => {
+      setCs2ImportMessage(errorDetail(error))
+    },
   })
 
   const mutation = useMutation({
@@ -84,6 +101,12 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
       cs2Loading={cs2Query.isPending}
       cs2Error={cs2Query.isError}
       onRetryCs2={() => { void cs2Query.refetch() }}
+      cs2Importing={cs2ImportMutation.isPending}
+      cs2ImportMessage={cs2ImportMessage}
+      onImportAllCs2={() => {
+        setCs2ImportMessage(null)
+        void cs2ImportMutation.mutateAsync()
+      }}
       onSubmit={(draft) => {
         setErrorMessage(null)
         void mutation.mutateAsync(draft)
