@@ -1,4 +1,5 @@
 import asyncio
+from datetime import timedelta
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -22,6 +23,7 @@ from app.schemas import (
     ChatMessagesPage,
     ChatUnreadOut,
     Cs2MatchesOut,
+    Cs2ImportOut,
     BuySharesRequest,
     ClaimWinningsRequest,
     CloseMarketRequest,
@@ -385,6 +387,87 @@ async def cs2_upcoming_matches_endpoint(
         return await sports_provider.upcoming_cs2_matches(limit=limit)
     except sports_provider.SportsProviderError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/sports/cs2/import-upcoming", response_model=Cs2ImportOut)
+async def cs2_import_upcoming_endpoint(
+    limit: int = 40,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market_service.require_admin(current_user, "Только админ может массово загружать матчи CS2")
+    try:
+        payload = await sports_provider.upcoming_cs2_matches(limit=limit)
+    except sports_provider.SportsProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    items = payload.get("items", [])
+    created_ids: list[int] = []
+    skipped = 0
+    now = market_service.utcnow()
+
+    for match in items:
+        match_id = int(match["id"])
+        marker = f"PandaScore API · CS2 match #{match_id}"
+        duplicate = (
+            db.query(Market)
+            .filter(Market.category == "esports", Market.description.contains(marker))
+            .one_or_none()
+        )
+        if duplicate is not None:
+            skipped += 1
+            continue
+
+        scheduled_at = match["scheduled_at"]
+        close_at = scheduled_at - timedelta(minutes=1)
+        if close_at <= now:
+            skipped += 1
+            continue
+
+        team_a = match["team_a"]["name"]
+        team_b = match["team_b"]["name"]
+        context = " · ".join(
+            value
+            for value in (
+                match.get("league_name") or "",
+                match.get("serie_name") or "",
+                match.get("tournament_name") or "",
+            )
+            if value
+        )
+        description_parts = ["Матч Counter-Strike 2."]
+        if context:
+            description_parts.append(f"Турнир: {context}.")
+        description_parts.extend(
+            [
+                (
+                    "Критерии результата: победившим считается исход, соответствующий "
+                    "команде-победителю матча по итоговому результату PandaScore. "
+                    "При отмене матча рынок отменяется модератором."
+                ),
+                f"Основной источник: {marker}",
+            ]
+        )
+
+        req = MarketCreate(
+            mechanism="p2p",
+            question=f"{team_a} — {team_b}: кто победит?",
+            description="\n\n".join(description_parts),
+            category="esports",
+            outcomes=[team_a, team_b],
+            close_at=close_at,
+            visibility="public",
+        )
+        created = p2p_service.create_market(db, current_user.id, req)
+        created = market_service.moderate_market(db, created.id, current_user.id)
+        created_ids.append(created.id)
+
+    return {
+        "available": len(items),
+        "created": len(created_ids),
+        "skipped": skipped,
+        "created_market_ids": created_ids,
+    }
 
 
 @app.post("/markets", response_model=MarketOut)
