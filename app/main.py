@@ -21,6 +21,7 @@ from app.schemas import (
     ChatMessageOut,
     ChatMessagesPage,
     ChatUnreadOut,
+    Cs2MatchesOut,
     BuySharesRequest,
     ClaimWinningsRequest,
     CloseMarketRequest,
@@ -42,7 +43,7 @@ from app.schemas import (
     TransactionOut,
     UserOut,
 )
-from app.services import chat_service, discovery, history, market_access, market_service, p2p_service
+from app.services import chat_service, discovery, history, market_access, market_service, p2p_service, sports_provider
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -372,6 +373,18 @@ def approve_market_endpoint(market_id: int, current_user: User = Depends(get_cur
 @app.post("/markets/{market_id}/reject", response_model=MarketOut)
 def reject_market_endpoint(market_id: int, req: RejectMarketRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return market_service.market_to_out(market_service.moderate_market(db, market_id, current_user.id, reason=req.reason))
+
+
+@app.get("/sports/cs2/matches/upcoming", response_model=Cs2MatchesOut)
+async def cs2_upcoming_matches_endpoint(
+    limit: int = 40,
+    current_user: User = Depends(get_current_user),
+):
+    _ = current_user
+    try:
+        return await sports_provider.upcoming_cs2_matches(limit=limit)
+    except sports_provider.SportsProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @app.post("/markets", response_model=MarketOut)
