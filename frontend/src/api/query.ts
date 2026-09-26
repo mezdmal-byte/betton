@@ -33,6 +33,7 @@ export const queryKeys = {
   lobbyChat: ['chat', 'lobby'] as const,
   marketChat: (marketId: number | string) => ['chat', 'market', String(marketId)] as const,
   chatUnread: ['chat', 'unread-replies'] as const,
+  cs2Upcoming: ['sports', 'cs2', 'upcoming'] as const,
   orderPreview: (input: {
     marketId: number | string
     outcome: number
