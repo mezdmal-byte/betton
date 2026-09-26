@@ -537,14 +537,16 @@ describe('trade history adapter', () => {
     expect(seriesA[0]?.volume).toBe(41.6667)
   })
 
-  it('does not turn sub-minimum dust fills into chart points', () => {
-    const dust = {
+  it('keeps a genuinely executed small fill visible in chart history', () => {
+    const small = {
       ...fill,
       id: 10,
       maker_stake: 0.00001,
       maker_stake_nano: 10_000,
     }
-    expect(mapTradesToChartPoints([dust], 0)).toEqual([])
+    const points = mapTradesToChartPoints([small], 0)
+    expect(points).toHaveLength(1)
+    expect(points[0]?.volume).toBe(0.00001)
   })
 
   it('localizes recent trade relative time', () => {
