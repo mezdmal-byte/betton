@@ -31,6 +31,7 @@ export const UI_SORT_TO_API = {
 export const UI_CATEGORY_TO_API: Record<string, string | undefined> = {
   all: undefined,
   sport: 'sport',
+  esports: 'esports',
   politics: 'politics',
   crypto: 'crypto',
   other: 'unique',
@@ -46,6 +47,7 @@ export const UI_STATUS_TO_API: Record<string, MarketOut['status'] | null> = {
 
 export const API_CATEGORY_TO_LABEL: Record<string, string> = {
   sport: 'Спорт',
+  esports: 'Киберспорт',
   politics: 'Политика',
   crypto: 'Крипто',
   unique: 'Другое',
@@ -73,6 +75,7 @@ export function mapApiCategoryToLabel(
   locale: Locale = 'ru',
 ): string {
   if (category === 'sport') return translate(locale, 'cat.sport')
+  if (category === 'esports') return translate(locale, 'cat.esports')
   if (category === 'politics') return translate(locale, 'cat.politics')
   if (category === 'crypto') return translate(locale, 'cat.crypto')
   if (!category || category === 'unique') return translate(locale, 'cat.other')
