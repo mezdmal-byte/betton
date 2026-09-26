@@ -15,6 +15,7 @@ export const STATUS_FILTERS = [
 export const CATEGORY_FILTERS = [
   { id: 'all', labelKey: 'cat.all' },
   { id: 'sport', labelKey: 'cat.sport' },
+  { id: 'esports', labelKey: 'cat.esports' },
   { id: 'politics', labelKey: 'cat.politics' },
   { id: 'crypto', labelKey: 'cat.crypto' },
   { id: 'other', labelKey: 'cat.other' },
