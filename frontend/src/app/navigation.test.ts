@@ -14,11 +14,14 @@ const markets: Route = { name: 'markets' }
 const create: Route = { name: 'create' }
 const portfolio: Route = { name: 'portfolio' }
 const profile: Route = { name: 'profile' }
+const profileSettings: Route = { name: 'profile-settings' }
+const notifications: Route = { name: 'notifications' }
 const walletDeposit: Route = { name: 'wallet', tab: 'deposit' }
 const walletWithdraw: Route = { name: 'wallet', tab: 'withdraw' }
 const publicProfile: Route = { name: 'public-profile', userId: 7 }
 const myMarkets: Route = { name: 'my-markets' }
 const detail: Route = { name: 'detail', marketId: 42 }
+const quickTrade: Route = { name: 'quick-trade', marketId: 42, side: 'a' }
 const ownPrice: Route = { name: 'own-price', marketId: 42, side: 'a' }
 const help: Route = { name: 'help' }
 const history: Route = { name: 'history' }
@@ -33,12 +36,18 @@ describe('navigation stack', () => {
     expect(currentRoute(goBack(mine))).toEqual(myMarkets)
     expect(currentRoute(goBack(goBack(mine)))).toEqual(profile)
 
+    const quickFromDetail = pushRoute(pushRoute([markets], detail), quickTrade)
+    expect(currentRoute(goBack(quickFromDetail))).toEqual(detail)
+
     const fromDetail = pushRoute(pushRoute([markets], detail), ownPrice)
     expect(currentRoute(goBack(fromDetail))).toEqual(detail)
 
     const helpFlow = pushRoute(pushRoute(pushRoute([portfolio], profile), help), help)
     expect(currentRoute(goBack(pushRoute(pushRoute([portfolio], profile), help)))).toEqual(profile)
     expect(helpFlow.length).toBeGreaterThan(0)
+
+    const settingsFlow = pushRoute(pushRoute([markets], profile), profileSettings)
+    expect(currentRoute(goBack(settingsFlow))).toEqual(profile)
 
     const historyFlow = pushRoute(pushRoute([markets], profile), history)
     expect(currentRoute(goBack(historyFlow))).toEqual(profile)
@@ -51,6 +60,9 @@ describe('navigation stack', () => {
     expect(resetToTab('portfolio')).toEqual([portfolio])
     expect(isTopLevel(currentRoute(nested))).toBe(false)
     expect(isTopLevel(create)).toBe(true)
+    expect(isTopLevel(profile)).toBe(true)
+    expect(isTopLevel(notifications)).toBe(true)
+    expect(resetToTab('notifications')).toEqual([notifications])
   })
 
   it('replaces wallet tab in place and hides Telegram Back on roots', () => {
@@ -66,6 +78,9 @@ describe('navigation stack', () => {
 
     expect(showTelegramBackButton(detail)).toBe(true)
     expect(showTelegramBackButton(markets)).toBe(false)
+    expect(showTelegramBackButton(profile)).toBe(false)
+    expect(showTelegramBackButton(notifications)).toBe(false)
     expect(sameRoute(detail, { name: 'detail', marketId: 41 })).toBe(false)
+    expect(sameRoute(quickTrade, { name: 'quick-trade', marketId: 42, side: 'b' })).toBe(false)
   })
 })

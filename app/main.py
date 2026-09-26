@@ -1,4 +1,5 @@
 import asyncio
+from datetime import timedelta
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -17,6 +18,12 @@ from app.models import Market, MarketStatus, User
 from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
     AccountOut,
+    ChatMessageCreate,
+    ChatMessageOut,
+    ChatMessagesPage,
+    ChatUnreadOut,
+    Cs2MatchesOut,
+    Cs2ImportOut,
     BuySharesRequest,
     ClaimWinningsRequest,
     CloseMarketRequest,
@@ -38,7 +45,7 @@ from app.schemas import (
     TransactionOut,
     UserOut,
 )
-from app.services import discovery, history, market_access, market_service, p2p_service
+from app.services import chat_service, discovery, history, market_access, market_service, p2p_service, sports_provider
 from app.services import p2p_ledger
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -57,12 +64,24 @@ def public_bot_username() -> str:
 class ReactPreviewStatic(StaticFiles):
     """Serve the Vite production build under /v2/ without replacing legacy /."""
 
+    @staticmethod
+    def _apply_cache_headers(response):
+        # Never cache HTML across deploys: Vite asset filenames are content-hashed,
+        # so a stale index.html would point at assets that no longer exist.
+        if getattr(response, "media_type", None) == "text/html":
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
     async def get_response(self, path: str, scope):
         try:
-            return await super().get_response(path, scope)
+            response = await super().get_response(path, scope)
+            return self._apply_cache_headers(response)
         except StarletteHTTPException as exc:
             if exc.status_code == 404 and not Path(path).suffix:
-                return await super().get_response("index.html", scope)
+                response = await super().get_response("index.html", scope)
+                return self._apply_cache_headers(response)
             raise
 
 
@@ -358,6 +377,99 @@ def reject_market_endpoint(market_id: int, req: RejectMarketRequest, current_use
     return market_service.market_to_out(market_service.moderate_market(db, market_id, current_user.id, reason=req.reason))
 
 
+@app.get("/sports/cs2/matches/upcoming", response_model=Cs2MatchesOut)
+async def cs2_upcoming_matches_endpoint(
+    limit: int = 40,
+    current_user: User = Depends(get_current_user),
+):
+    _ = current_user
+    try:
+        return await sports_provider.upcoming_cs2_matches(limit=limit)
+    except sports_provider.SportsProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/sports/cs2/import-upcoming", response_model=Cs2ImportOut)
+async def cs2_import_upcoming_endpoint(
+    limit: int = 40,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market_service.require_admin(current_user, "Только админ может массово загружать матчи CS2")
+    try:
+        payload = await sports_provider.upcoming_cs2_matches(limit=limit)
+    except sports_provider.SportsProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    items = payload.get("items", [])
+    created_ids: list[int] = []
+    skipped = 0
+    now = market_service.utcnow()
+
+    for match in items:
+        match_id = int(match["id"])
+        marker = f"PandaScore API · CS2 match #{match_id}"
+        duplicate = (
+            db.query(Market)
+            .filter(Market.category == "esports", Market.description.contains(marker))
+            .first()
+        )
+        if duplicate is not None:
+            skipped += 1
+            continue
+
+        scheduled_at = match["scheduled_at"]
+        close_at = scheduled_at - timedelta(minutes=1)
+        if close_at <= now:
+            skipped += 1
+            continue
+
+        team_a = match["team_a"]["name"]
+        team_b = match["team_b"]["name"]
+        context = " · ".join(
+            value
+            for value in (
+                match.get("league_name") or "",
+                match.get("serie_name") or "",
+                match.get("tournament_name") or "",
+            )
+            if value
+        )
+        description_parts = ["Матч Counter-Strike 2."]
+        if context:
+            description_parts.append(f"Турнир: {context}.")
+        description_parts.extend(
+            [
+                (
+                    "Критерии результата: победившим считается исход, соответствующий "
+                    "команде-победителю матча по итоговому результату PandaScore. "
+                    "При отмене матча рынок отменяется модератором."
+                ),
+                f"Основной источник: {marker}",
+            ]
+        )
+
+        req = MarketCreate(
+            mechanism="p2p",
+            question=f"{team_a} — {team_b}: кто победит?",
+            description="\n\n".join(description_parts),
+            category="esports",
+            outcomes=[team_a, team_b],
+            close_at=close_at,
+            visibility="public",
+        )
+        created = p2p_service.create_market(db, current_user.id, req)
+        created = market_service.moderate_market(db, created.id, current_user.id)
+        created_ids.append(created.id)
+
+    return {
+        "available": len(items),
+        "created": len(created_ids),
+        "skipped": skipped,
+        "created_market_ids": created_ids,
+    }
+
+
 @app.post("/markets", response_model=MarketOut)
 def create_market_endpoint(
     market_in: MarketCreate,
@@ -438,8 +550,130 @@ def get_market_endpoint(
     market_access.require_unlisted_access(
         market, viewer=current_user, share_token=market_access.share_token_from_request(request)
     )
-    unlisted = (getattr(market, "visibility", None) or "public") == "unlisted"
-    return discovery.attach_market_views(db, [market], include_share_token=unlisted)[0]
+    return discovery.attach_market_views(db, [market], include_share_token=True)[0]
+
+
+@app.get("/chat/lobby", response_model=ChatMessagesPage)
+def lobby_chat_messages(
+    limit: int = 100,
+    before_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = current_user
+    return chat_service.list_messages(db, market_id=None, limit=limit, before_id=before_id)
+
+
+@app.post("/chat/lobby", response_model=ChatMessageOut)
+def create_lobby_chat_message(
+    payload: ChatMessageCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        return chat_service.create_message(
+            db,
+            user=current_user,
+            market_id=None,
+            text=payload.text,
+            reply_to_id=payload.reply_to_id,
+            attached_market_id=payload.attached_market_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/markets/{market_id}/chat", response_model=ChatMessagesPage)
+def market_chat_messages(
+    market_id: int,
+    request: Request,
+    limit: int = 50,
+    before_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    return chat_service.list_messages(db, market_id=market_id, limit=limit, before_id=before_id)
+
+
+@app.post("/markets/{market_id}/chat", response_model=ChatMessageOut)
+def create_market_chat_message(
+    market_id: int,
+    payload: ChatMessageCreate,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    try:
+        return chat_service.create_message(
+            db,
+            user=current_user,
+            market_id=market_id,
+            text=payload.text,
+            reply_to_id=payload.reply_to_id,
+            attached_market_id=payload.attached_market_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/chat/messages/{message_id}", response_model=ChatMessageOut)
+def delete_chat_message(
+    message_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        return chat_service.delete_message(db, user=current_user, message_id=message_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@app.get("/chat/unread-replies", response_model=ChatUnreadOut)
+def unread_chat_replies(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return chat_service.unread_replies(db, user_id=current_user.id)
+
+
+@app.post("/chat/lobby/read")
+def mark_lobby_chat_read(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return {"last_read_message_id": chat_service.mark_read(db, user_id=current_user.id, market_id=None)}
+
+
+@app.post("/markets/{market_id}/chat/read")
+def mark_market_chat_read(
+    market_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    return {
+        "last_read_message_id": chat_service.mark_read(
+            db, user_id=current_user.id, market_id=market_id
+        )
+    }
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)

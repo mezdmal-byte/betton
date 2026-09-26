@@ -27,3 +27,11 @@ export const Create: Story = {
 export const Portfolio: Story = {
   args: { active: 'portfolio' },
 }
+
+export const Notifications: Story = {
+  args: { active: 'notifications' },
+}
+
+export const Profile: Story = {
+  args: { active: 'profile' },
+}

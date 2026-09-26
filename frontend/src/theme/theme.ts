@@ -1,8 +1,14 @@
 import { getTelegramWebApp, type TelegramThemeParams } from '../telegram/webapp'
 
 export type ColorScheme = 'light' | 'dark'
+export type ThemePreference = ColorScheme | 'system'
 
 export const THEME_ATTR = 'data-theme'
+export const THEME_STORAGE_KEY = 'betton.theme'
+
+export function isColorScheme(value: string | null | undefined): value is ColorScheme {
+  return value === 'light' || value === 'dark'
+}
 
 export function prefersColorScheme(): ColorScheme {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'light'
@@ -18,12 +24,48 @@ export function resolveColorScheme(input?: {
   return 'light'
 }
 
-export function resolveBootColorScheme(): ColorScheme {
+export function readStoredTheme(storage?: Pick<Storage, 'getItem'> | null): ColorScheme | null {
+  try {
+    const value = (storage ?? (typeof localStorage === 'undefined' ? null : localStorage))?.getItem(
+      THEME_STORAGE_KEY,
+    )
+    return isColorScheme(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+export function persistTheme(scheme: ColorScheme, storage?: Pick<Storage, 'setItem'> | null): void {
+  try {
+    ;(storage ?? (typeof localStorage === 'undefined' ? null : localStorage))?.setItem(
+      THEME_STORAGE_KEY,
+      scheme,
+    )
+  } catch {
+    // Private mode / missing storage.
+  }
+}
+
+export function clearStoredTheme(storage?: Pick<Storage, 'removeItem'> | null): void {
+  try {
+    ;(storage ?? (typeof localStorage === 'undefined' ? null : localStorage))?.removeItem(
+      THEME_STORAGE_KEY,
+    )
+  } catch {
+    // Private mode / missing storage.
+  }
+}
+
+export function resolveSystemColorScheme(): ColorScheme {
   const telegram = getTelegramWebApp()
   return resolveColorScheme({
     telegramScheme: telegram?.colorScheme,
     prefersDark: prefersColorScheme() === 'dark',
   })
+}
+
+export function resolveBootColorScheme(): ColorScheme {
+  return readStoredTheme() ?? resolveSystemColorScheme()
 }
 
 function isHexColor(value: string | undefined): value is string {
@@ -49,6 +91,7 @@ export function applyDocumentTheme(
   if (!root) return
   root.setAttribute(THEME_ATTR, scheme)
   root.style.colorScheme = scheme
+
   const allowed = new Set([
     '--color-canvas',
     '--color-surface',
@@ -56,10 +99,10 @@ export function applyDocumentTheme(
     '--color-text-secondary',
   ])
   for (const name of allowed) root.style.removeProperty(name)
+
   const vars = telegramSurfaceVars(params)
-  for (const [name, value] of Object.entries(vars)) {
-    root.style.setProperty(name, value)
-  }
+  for (const [name, value] of Object.entries(vars)) root.style.setProperty(name, value)
+
   try {
     const webApp = getTelegramWebApp()
     const canvas = vars['--color-canvas']
@@ -72,6 +115,17 @@ export function applyDocumentTheme(
   }
 }
 
+export function syncTelegramChrome(scheme: ColorScheme): void {
+  const background = scheme === 'dark' ? '#060b0e' : '#f6f5f1'
+  try {
+    const webApp = getTelegramWebApp()
+    webApp?.setBackgroundColor?.(background)
+    webApp?.setHeaderColor?.(background)
+  } catch {
+    // Telegram host is optional in browser preview.
+  }
+}
+
 export function subscribeThemeChanges(onChange: () => void): () => void {
   const webApp = getTelegramWebApp()
   const media =
@@ -79,12 +133,14 @@ export function subscribeThemeChanges(onChange: () => void): () => void {
       ? window.matchMedia('(prefers-color-scheme: dark)')
       : null
   const onMedia = () => onChange()
+
   try {
     webApp?.onEvent?.('themeChanged', onChange)
   } catch {
     // No Telegram host.
   }
   media?.addEventListener?.('change', onMedia)
+
   return () => {
     try {
       webApp?.offEvent?.('themeChanged', onChange)

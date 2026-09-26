@@ -1,11 +1,76 @@
 .root {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heading strong {
+  color: var(--color-text-primary);
+  font-size: 21px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 27px;
+}
+
+.heading span {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.stateCard,
+.warningCard,
+.dangerCard {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--color-border-faint);
-  border-radius: var(--radius-14);
-  background: var(--color-surface);
+  padding: 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: var(--color-surface-raised);
+}
+
+.warningCard {
+  border-color: var(--color-status-warning);
+}
+
+.dangerCard {
+  border-color: var(--color-status-danger);
+  background: var(--color-status-danger-surface);
+}
+
+.stateCard strong,
+.warningCard strong,
+.dangerCard strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+}
+
+.warningCard strong { color: var(--color-status-warning); }
+.dangerCard strong { color: var(--color-status-danger); }
+
+.stateCard p,
+.warningCard p,
+.dangerCard p,
+.metric p,
+.successMetric p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .actions {
@@ -20,8 +85,57 @@
   gap: 8px;
 }
 
-@media (max-width: 340px) {
-  .resolveGrid {
-    grid-template-columns: 1fr;
-  }
+.metric,
+.successMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+}
+
+.metric strong,
+.successMetric strong {
+  color: var(--color-accent-mint);
+  font-size: 38px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+  overflow-wrap: anywhere;
+}
+
+.successMetric strong {
+  color: var(--color-status-success);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.rows > div {
+  display: grid;
+  min-height: 42px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.rows span {
+  color: var(--color-accent-mint);
+  font-size: 9px;
+}
+
+.rows p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 360px) {
+  .resolveGrid { grid-template-columns: 1fr; }
+  .metric strong,
+  .successMetric strong { font-size: 34px; }
 }

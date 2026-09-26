@@ -1,34 +1,165 @@
-import { ChevronLeft } from 'lucide-react'
+import { useState } from 'react'
 import { useT } from '../i18n'
-import { IconButton } from '../components/IconButton/IconButton'
 import styles from './HelpScreen.module.css'
+
+type HelpTopic = {
+  id: string
+  title: string
+  kicker?: string
+  notice?: string
+  blocks: Array<{ title?: string; body: string }>
+}
 
 export type HelpScreenProps = { onBack?: () => void }
 
 export function HelpScreen({ onBack }: HelpScreenProps) {
   const t = useT()
-  const sections = [
-    { title: 'BetTON', body: [t('help.lead'), t('help.p2p')] },
-    { title: t('event.book'), body: [t('help.book')] },
-    { title: t('market.quickTrade'), body: [t('help.quick')] },
-    { title: t('market.ownOdds'), body: [t('help.ownPrice')] },
-    { title: t('create.feesSummary'), body: [t('help.fee'), t('help.creatorShare')] },
-    { title: t('status.cancelledOne'), body: [t('help.cancel')] },
+  const [topicId, setTopicId] = useState<string | null>(null)
+
+  const topics: HelpTopic[] = [
+    {
+      id: 'p2p',
+      title: 'Как работает P2P',
+      blocks: [
+        { body: t('help.p2p') },
+        { body: 'Цена появляется из встречных заявок участников. Платформа не рисует вероятность сама.' },
+      ],
+    },
+    {
+      id: 'book',
+      title: 'Книга заявок и типы ордеров',
+      blocks: [
+        { title: 'ORDER BOOK', body: t('help.book') },
+        { title: 'LIMIT', body: t('help.ownPrice') },
+      ],
+    },
+    {
+      id: 'trade',
+      title: 'Quick Trade или своя цена',
+      notice: 'Проверяйте итоговую цену до подтверждения.',
+      blocks: [
+        { title: 'QUICK TRADE · IOC', body: 'Исполняется сразу по доступным ценам. Неисполненный остаток автоматически отменяется.' },
+        { title: 'СВОЯ ЦЕНА · LIMIT', body: 'Ждёт встречную заявку по вашей цене. Может исполниться частично или не исполниться.' },
+      ],
+    },
+    {
+      id: 'fees',
+      title: 'Комиссия и расчёт результата',
+      blocks: [
+        { body: t('help.fee') },
+        { body: t('help.creatorShare') },
+      ],
+    },
+    {
+      id: 'partial-fills',
+      title: 'Частичное исполнение',
+      kicker: '40 / 100',
+      notice: 'Исполнена только доступная часть объёма.',
+      blocks: [
+        { title: 'IOC', body: 'Неисполненный остаток отменяется и возвращается на доступный баланс.' },
+        { title: 'LIMIT', body: 'Неисполненный остаток остаётся в книге заявок до исполнения или отмены.' },
+        { body: 'Баланс обновляется после подтверждённого исполнения.' },
+      ],
+    },
+    {
+      id: 'resolution',
+      title: 'Как определяется результат',
+      blocks: [
+        { body: 'Критерии и источник результата задаются до открытия рынка и не должны меняться после начала торговли.' },
+      ],
+    },
+    {
+      id: 'unlisted',
+      title: 'Unlisted рынки',
+      blocks: [
+        { body: 'Unlisted рынок не показывается в публичном discovery и доступен участникам по точной ссылке.' },
+      ],
+    },
+    {
+      id: 'cancel',
+      title: 'Отмена или void',
+      blocks: [
+        { body: t('help.cancel') },
+      ],
+    },
+    {
+      id: 'faq',
+      title: 'Частые вопросы',
+      blocks: [
+        { title: 'Почему коэффициент изменился?', body: 'Изменились встречные заявки.' },
+        { title: 'Почему ордер не исполнен?', body: 'Нет встречной цены.' },
+        { title: 'Можно отменить LIMIT?', body: 'Да, до исполнения неисполненного остатка.' },
+        { title: 'Где итог?', body: 'В resolution рынка.' },
+      ],
+    },
+    {
+      id: 'rules',
+      title: 'Правила BetTON',
+      notice: 'Манипуляции и обход ограничений запрещены.',
+      blocks: [
+        { body: 'Торгуйте только с понятным риском.' },
+        { body: 'Коэффициент не гарантирует исход события.' },
+        { body: 'Один пользователь не равен контрагенту.' },
+        { body: 'Решение опирается на указанный источник.' },
+      ],
+    },
+    {
+      id: 'about',
+      title: 'О BetTON',
+      kicker: 'BetTON',
+      blocks: [
+        { body: t('help.lead') },
+        { body: 'BetTON — P2P prediction market на TON. Торговые условия задают участники рынка.' },
+      ],
+    },
   ]
+
+  const topic = topics.find((item) => item.id === topicId) ?? null
+
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <IconButton label={t('back')} size="md" onClick={onBack}><ChevronLeft size={22} /></IconButton>
-        <strong>{t('help.title')}</strong>
+        <div className={styles.titleRow}>
+          {topic ? (
+            <button type="button" className={styles.back} onClick={() => setTopicId(null)}>←</button>
+          ) : (
+            <button type="button" className={styles.backText} onClick={onBack}>← Назад</button>
+          )}
+          <h1>{topic?.title ?? 'Помощь'}</h1>
+        </div>
       </header>
-      <div className={styles.body}>
-        {sections.map((section, index) => (
-          <details key={section.title} className={styles.details} open={index === 0 || section.title === t('create.feesSummary')}>
-            <summary>{section.title}</summary>
-            <div className={styles.detailBody}>{section.body.map((text) => <p key={text}>{text}</p>)}</div>
-          </details>
-        ))}
-      </div>
+
+      <main className={styles.body}>
+        {topic ? (
+          <>
+            {topic.notice ? (
+              <section className={styles.notice}>
+                <strong>!</strong>
+                <p>{topic.notice}</p>
+              </section>
+            ) : null}
+            {topic.kicker ? <strong className={styles.kicker}>{topic.kicker}</strong> : null}
+            {topic.blocks.map((block, index) => (
+              <section key={block.title ?? String(index)} className={styles.card}>
+                {block.title ? <strong>{block.title}</strong> : null}
+                <p>{block.body}</p>
+              </section>
+            ))}
+          </>
+        ) : (
+          <>
+            <p className={styles.lead}>Короткие ответы о P2P-торговле, ордерах, комиссиях и resolution.</p>
+            <nav className={styles.topicList} aria-label="Разделы помощи">
+              {topics.map((item) => (
+                <button key={item.id} type="button" onClick={() => setTopicId(item.id)}>
+                  <span>{item.title}</span>
+                  <span aria-hidden="true">›</span>
+                </button>
+              ))}
+            </nav>
+          </>
+        )}
+      </main>
     </div>
   )
 }

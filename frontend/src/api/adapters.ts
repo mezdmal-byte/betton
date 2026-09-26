@@ -1,5 +1,5 @@
 import type { AccountFixture } from '../types/account'
-import type { HistoryFixture, OrderFixture, PositionFixture } from '../types/account'
+import type { HistoryFixture, OrderFixture, PositionFixture, SettlementFixture } from '../types/account'
 import type { CreatorFixture, MarketFixture, MarketStatus, OrderBookLevel, OutcomeFixture, ChartPoint, RecentTrade } from '../types/market'
 import { translate, type Locale } from '../i18n'
 import { moneyJsonValue, nanoToTon } from '../lib/money'
@@ -17,6 +17,7 @@ import type {
   OrderbookLevelDto,
   OrderbookOut,
   PositionOut,
+  SettlementOut,
   TransactionOut,
   UserOut,
 } from './types'
@@ -30,6 +31,7 @@ export const UI_SORT_TO_API = {
 export const UI_CATEGORY_TO_API: Record<string, string | undefined> = {
   all: undefined,
   sport: 'sport',
+  esports: 'esports',
   politics: 'politics',
   crypto: 'crypto',
   other: 'unique',
@@ -45,6 +47,7 @@ export const UI_STATUS_TO_API: Record<string, MarketOut['status'] | null> = {
 
 export const API_CATEGORY_TO_LABEL: Record<string, string> = {
   sport: 'Спорт',
+  esports: 'Киберспорт',
   politics: 'Политика',
   crypto: 'Крипто',
   unique: 'Другое',
@@ -72,6 +75,7 @@ export function mapApiCategoryToLabel(
   locale: Locale = 'ru',
 ): string {
   if (category === 'sport') return translate(locale, 'cat.sport')
+  if (category === 'esports') return translate(locale, 'cat.esports')
   if (category === 'politics') return translate(locale, 'cat.politics')
   if (category === 'crypto') return translate(locale, 'cat.crypto')
   if (!category || category === 'unique') return translate(locale, 'cat.other')
@@ -133,6 +137,22 @@ function mapResolvedSide(dto: MarketOut): MarketFixture['resolvedSide'] {
   return undefined
 }
 
+function formatCloseAtLabel(value: string | null | undefined, locale: Locale): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US'
+  const datePart = new Intl.DateTimeFormat(localeTag, {
+    day: 'numeric',
+    month: 'short',
+  }).format(date).replace(/\./g, '')
+  const timePart = new Intl.DateTimeFormat(localeTag, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+  return `${datePart} · ${timePart}`
+}
+
 export function mapMarketOut(dto: MarketOut, now: Date = new Date(), locale: Locale = 'ru'): MarketFixture {
   const timeLeft = formatTimeLeft(dto.close_at, now, dto.status, locale)
   const status = mapStatus(dto, now)
@@ -176,6 +196,7 @@ export function mapMarketOut(dto: MarketOut, now: Date = new Date(), locale: Loc
           ? `${translate(locale, 'status.resolvedOne')}: ${dto.winning_outcome}`
           : '',
     closeLabel,
+    closeAtLabel: formatCloseAtLabel(dto.close_at, locale),
     mechanism: dto.mechanism ?? 'p2p',
     visibility: dto.visibility,
     shareToken: dto.share_token ?? null,
@@ -277,10 +298,11 @@ export function mapTopCreator(dto: CreatorStatsOut): {
 
 export function mapCreatorStats(
   dto: CreatorStatsOut | null | undefined,
-): Pick<AccountFixture, 'eventsCreated' | 'createdVolumeTon'> {
-  if (!dto) return { eventsCreated: null, createdVolumeTon: null }
+): Pick<AccountFixture, 'eventsCreated' | 'activeMarkets' | 'createdVolumeTon'> {
+  if (!dto) return { eventsCreated: null, activeMarkets: null, createdVolumeTon: null }
   return {
     eventsCreated: dto.markets_created,
+    activeMarkets: dto.active_markets,
     createdVolumeTon: dto.volume_nano != null ? nanoToTon(dto.volume_nano) : dto.volume,
   }
 }
@@ -395,6 +417,24 @@ export function mapPositions(dto: PositionOut): PositionFixture[] {
   return rows
 }
 
+export function mapSettlement(dto: SettlementOut): SettlementFixture {
+  return {
+    id: String(dto.market_id) + ':' + (dto.resolved_at ?? dto.settlement_kind ?? 'settled'),
+    marketId: dto.market_id,
+    question: dto.question,
+    winningOutcome: dto.winning_outcome,
+    chosenOutcomes: Array.isArray(dto.chosen_outcomes) ? dto.chosen_outcomes : [],
+    stakesTotalTon: Number(dto.stakes_total || 0),
+    payoutTon: Number(dto.payout || 0),
+    tipTon: Number(dto.tip || 0),
+    creditedTon: Number(dto.credited || 0),
+    resultTon: Number(dto.result || 0),
+    settlementKind: dto.settlement_kind,
+    cancellationReason: dto.cancellation_reason,
+    resolvedAt: dto.resolved_at ?? undefined,
+  }
+}
+
 export function mapTransaction(dto: TransactionOut): HistoryFixture {
   return {
     id: dto.id,
@@ -407,8 +447,8 @@ export function mapTransaction(dto: TransactionOut): HistoryFixture {
   }
 }
 
-export function mapUiCategoryToCreateApi(category: string): 'sport' | 'politics' | 'crypto' | 'unique' {
-  if (category === 'sport' || category === 'politics' || category === 'crypto') return category
+export function mapUiCategoryToCreateApi(category: string): 'sport' | 'esports' | 'politics' | 'crypto' | 'unique' {
+  if (category === 'sport' || category === 'esports' || category === 'politics' || category === 'crypto') return category
   return 'unique'
 }
 

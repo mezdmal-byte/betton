@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import { cx } from '../../lib/cx'
 import styles from './SearchField.module.css'
@@ -30,6 +30,24 @@ export function SearchField({
         autoComplete="off"
         {...rest}
       />
+      {value ? (
+        <button
+          type="button"
+          className={styles.clear}
+          aria-label="Очистить поиск"
+          onPointerDown={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onChange?.('')
+          }}
+        >
+          <X size={16} strokeWidth={2} />
+        </button>
+      ) : null}
       {trailing ? <span className={styles.trailing}>{trailing}</span> : null}
     </div>
   )

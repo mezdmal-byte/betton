@@ -47,3 +47,12 @@ export const Wide430: Story = {
     </PhoneShell>
   ),
 }
+
+
+export const Guest: Story = {
+  render: () => (
+    <PhoneShell>
+      <ProfileScreen accountState="unauthenticated" onLogin={() => undefined} />
+    </PhoneShell>
+  ),
+}

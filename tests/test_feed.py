@@ -61,6 +61,22 @@ def test_feed_sort_search_pagination_and_excludes_nothing_public(client: TestCli
     sport_only = client.get("/markets", params={"category": "sport", "q": "football"})
     assert [m["id"] for m in sport_only.json()] == [sport["id"]]
 
+    by_category_name = client.get("/markets", params={"q": "спорт"})
+    assert by_category_name.status_code == 200
+    assert sport["id"] in [m["id"] for m in by_category_name.json()]
+    assert politics["id"] not in [m["id"] for m in by_category_name.json()]
+
+    by_author = client.get("/markets", params={"q": "@feedmaker"})
+    assert by_author.status_code == 200
+    author_ids = {m["id"] for m in by_author.json()}
+    assert {rain["id"], sport["id"], politics["id"]}.issubset(author_ids)
+
+    by_display_name = client.get("/markets", params={"q": "Feed"})
+    assert by_display_name.status_code == 200
+    assert {rain["id"], sport["id"], politics["id"]}.issubset(
+        {m["id"] for m in by_display_name.json()}
+    )
+
     closing = client.get("/markets", params={"sort": "closing"})
     assert closing.status_code == 200
     closing_ids = [m["id"] for m in closing.json() if m["id"] in {rain["id"], sport["id"], politics["id"]}]

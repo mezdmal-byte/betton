@@ -5,8 +5,43 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import MarketStatus
 
-MarketCategory = Literal["sport", "politics", "crypto", "unique"]
+MarketCategory = Literal["sport", "esports", "politics", "crypto", "unique"]
 OutcomeRef = Union[str, int]
+
+
+
+
+class EsportsTeamOut(BaseModel):
+    id: int
+    name: str
+    acronym: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class Cs2MatchOut(BaseModel):
+    id: int
+    scheduled_at: datetime
+    status: str
+    team_a: EsportsTeamOut
+    team_b: EsportsTeamOut
+    league_name: str = ""
+    serie_name: str = ""
+    tournament_name: str = ""
+    best_of: Optional[int] = None
+    provider: str = "pandascore"
+
+
+class Cs2MatchesOut(BaseModel):
+    configured: bool
+    provider: str = "pandascore"
+    items: list[Cs2MatchOut] = Field(default_factory=list)
+
+
+class Cs2ImportOut(BaseModel):
+    available: int = 0
+    created: int = 0
+    skipped: int = 0
+    created_market_ids: list[int] = Field(default_factory=list)
 
 
 class UserCreate(BaseModel):
@@ -295,3 +330,54 @@ class P2PReconciliationOut(BaseModel):
     coverage_gaps: list[dict]
     discrepancies: list[dict]
     entries: list[P2PMoneyEntryOut]
+
+
+class ChatMessageCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    text: str = Field(min_length=1, max_length=1000)
+    reply_to_id: Optional[int] = None
+    attached_market_id: Optional[int] = None
+
+
+class ChatAuthorOut(BaseModel):
+    id: int
+    display_name: str
+    telegram_username: Optional[str] = None
+    photo_url: Optional[str] = None
+    is_admin: bool = False
+
+
+class ChatReplyPreviewOut(BaseModel):
+    id: int
+    author_name: str
+    text: str
+    deleted: bool = False
+
+
+class ChatMarketBriefOut(BaseModel):
+    id: int
+    question: str
+    status: str
+
+
+class ChatMessageOut(BaseModel):
+    id: int
+    author: ChatAuthorOut
+    market_id: Optional[int] = None
+    text: str
+    reply_to: Optional[ChatReplyPreviewOut] = None
+    attached_market: Optional[ChatMarketBriefOut] = None
+    deleted: bool = False
+    created_at: Optional[datetime] = None
+
+
+class ChatMessagesPage(BaseModel):
+    items: list[ChatMessageOut]
+    has_more: bool = False
+    next_before_id: Optional[int] = None
+
+
+class ChatUnreadOut(BaseModel):
+    lobby: int = 0
+    markets: dict[str, int] = Field(default_factory=dict)
+    total: int = 0

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/react-full-preview
+      - feature/figma-full-implementation
     paths:
       - 'frontend/**'
       - '.github/workflows/ui-screenshots.yml'

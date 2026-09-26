@@ -5,15 +5,18 @@ import { queryKeys } from '../api/query'
 import { useI18n } from '../i18n'
 import { nanoToTon } from '../lib/money'
 import { PublicProfileScreen } from '../screens/PublicProfileScreen'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 
 export function ConnectedPublicProfileScreen({
   userId,
   onBack,
   onOpenMarket,
+  onNavChange,
 }: {
   userId: number
   onBack: () => void
   onOpenMarket: (marketId: number) => void
+  onNavChange?: (id: NavId) => void
 }) {
   const { locale } = useI18n()
   const query = useQuery({
@@ -51,6 +54,7 @@ export function ConnectedPublicProfileScreen({
       }
       markets={(query.data?.markets ?? []).map((item) => mapMarketOut(item, new Date(), locale))}
       onBack={onBack}
+      onNavChange={onNavChange}
       onOpenMarket={(market) => onOpenMarket(Number(market.id))}
       onRetry={() => { void query.refetch() }}
     />

@@ -1,15 +1,15 @@
 .root {
   position: relative;
   height: 100%;
+  overflow: hidden;
 }
 
 .overlay {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  background: var(--color-overlay);
+  z-index: 30;
+  display: block;
+  background: var(--color-background-primary);
 }
 
 .adminWrap {
@@ -17,4 +17,15 @@
   flex-direction: column;
   gap: var(--space-8);
   padding-top: var(--space-8);
+}
+
+
+.routeState {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px var(--page-padding);
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
 }
