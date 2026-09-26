@@ -447,8 +447,8 @@ export function mapTransaction(dto: TransactionOut): HistoryFixture {
   }
 }
 
-export function mapUiCategoryToCreateApi(category: string): 'sport' | 'politics' | 'crypto' | 'unique' {
-  if (category === 'sport' || category === 'politics' || category === 'crypto') return category
+export function mapUiCategoryToCreateApi(category: string): 'sport' | 'esports' | 'politics' | 'crypto' | 'unique' {
+  if (category === 'sport' || category === 'esports' || category === 'politics' || category === 'crypto') return category
   return 'unique'
 }
 
