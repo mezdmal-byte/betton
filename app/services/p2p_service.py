@@ -17,7 +17,6 @@ from app.services import p2p_ledger as ledger
 
 ATOM = 1_000_000_000
 PRICE = 1_000_000
-MIN_ORDER_ATOMS = 10_000_000  # 0.01 TON, same minimum accepted by parse_terms()
 
 
 def parse_terms(amount, odds):
@@ -90,16 +89,18 @@ def plan_matches(orders, amount, limit_price):
             break
         divisor = math.gcd(maker.price, PRICE)
         maker_lot, taker_lot = maker.price//divisor, (PRICE-maker.price)//divisor
-        lots = min(maker.remaining//maker_lot, remaining//taker_lot)
-        if not lots:
+        maker_lots = maker.remaining // maker_lot
+        taker_lots = remaining // taker_lot
+        if not maker_lots:
+            # An unmatchable maker dust remainder must not block the book.
             continue
+        if not taker_lots:
+            # Price priority: if the taker's remainder cannot form one atomic
+            # lot at the current best executable price, do not skip that price
+            # and execute the dust at a worse level. Leave/refund the remainder.
+            break
+        lots = min(maker_lots, taker_lots)
         maker_stake, taker_stake = lots*maker_lot, lots*taker_lot
-        # Do not create economically meaningless dust executions after a larger
-        # partial fill. The product minimum is 0.01 TON, so a leg smaller than
-        # that on either side stays unfilled and is refunded/left for a later
-        # valid match instead of becoming a chart point such as 0.00001 TON.
-        if maker_stake < MIN_ORDER_ATOMS or taker_stake < MIN_ORDER_ATOMS:
-            continue
         plan.append((maker, maker_stake, taker_stake))
         remaining -= taker_stake
     return plan, remaining
