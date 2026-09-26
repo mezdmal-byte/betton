@@ -23,7 +23,7 @@
   background: var(--color-input-background);
 }
 
-.inputCard span {
+.inputCard > label {
   color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 16px;
