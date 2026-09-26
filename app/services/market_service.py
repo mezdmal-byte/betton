@@ -569,6 +569,11 @@ def list_markets_page(
         "sport": "sport",
         "спорт": "sport",
         "sports": "sport",
+        "esports": "esports",
+        "esport": "esports",
+        "киберспорт": "esports",
+        "кс2": "esports",
+        "cs2": "esports",
         "politics": "politics",
         "политика": "politics",
         "полит": "politics",
@@ -582,6 +587,7 @@ def list_markets_page(
     }
     category_labels = {
         "sport": ("sport", "sports", "спорт"),
+        "esports": ("esports", "esport", "киберспорт", "кс2", "cs2", "counter-strike"),
         "politics": ("politics", "политика"),
         "crypto": ("crypto", "крипто", "криптовалюта"),
         "unique": ("unique", "другое", "другие", "уникальное"),
