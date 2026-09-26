@@ -17,6 +17,7 @@ from app.services import p2p_ledger as ledger
 
 ATOM = 1_000_000_000
 PRICE = 1_000_000
+MIN_ORDER_ATOMS = 10_000_000  # 0.01 TON, same minimum accepted by parse_terms()
 
 
 def parse_terms(amount, odds):
@@ -93,6 +94,12 @@ def plan_matches(orders, amount, limit_price):
         if not lots:
             continue
         maker_stake, taker_stake = lots*maker_lot, lots*taker_lot
+        # Do not create economically meaningless dust executions after a larger
+        # partial fill. The product minimum is 0.01 TON, so a leg smaller than
+        # that on either side stays unfilled and is refunded/left for a later
+        # valid match instead of becoming a chart point such as 0.00001 TON.
+        if maker_stake < MIN_ORDER_ATOMS or taker_stake < MIN_ORDER_ATOMS:
+            continue
         plan.append((maker, maker_stake, taker_stake))
         remaining -= taker_stake
     return plan, remaining
@@ -177,7 +184,8 @@ def _refund(db, order, status='cancelled', reason='cancel'):
 
 
 def _finish_order(db, order):
-    minimum = order.price // math.gcd(order.price, PRICE)
+    minimum_lot = order.price // math.gcd(order.price, PRICE)
+    minimum = max(MIN_ORDER_ATOMS, minimum_lot)
     if order.remaining < minimum:
         _refund(db, order, 'filled' if order.filled else 'cancelled', reason='remainder')
 
