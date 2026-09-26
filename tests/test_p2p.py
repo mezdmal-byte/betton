@@ -338,18 +338,25 @@ def test_existing_database_migration_preserves_lmsr(tmp_path,monkeypatch):
 
 
 
-def test_plan_matches_skips_sub_minimum_dust_leg():
-    minimum = p2p.MIN_ORDER_ATOMS
-    first = SimpleNamespace(price=500_000, remaining=minimum + minimum // 2)
-    second = SimpleNamespace(price=500_000, remaining=minimum * 10)
+def test_plan_matches_does_not_skip_better_price_for_nanoton_remainder():
+    # Reproduce the preview case: 109 TON for outcome A consumes exactly
+    # 108 TON at the best level (maker price 0.46), then almost 1 TON at
+    # the next level (maker price 0.45). Ten nanoTON remain. They cannot
+    # form one lot at the still-better 0.44 level, but *could* form lots at
+    # a worse 0.40 level. Price priority means we stop instead of jumping
+    # down the book and creating a microscopic worse-price fill.
+    best = SimpleNamespace(price=460_000, remaining=92_000_000_000)
+    second = SimpleNamespace(price=450_000, remaining=118_000_000_000)
+    third = SimpleNamespace(price=440_000, remaining=76_000_000_000)
+    worse_but_finer = SimpleNamespace(price=400_000, remaining=64_000_000_000)
 
     plan, remaining = p2p.plan_matches(
-        [first, second],
-        minimum * 2,
-        500_000,
+        [best, second, third, worse_but_finer],
+        109_000_000_000,
+        p2p.PRICE - 1,
     )
 
-    assert len(plan) == 1
-    assert plan[0][0] is first
-    assert plan[0][2] == minimum + minimum // 2
-    assert remaining == minimum // 2
+    assert [row[0].price for row in plan] == [460_000, 450_000]
+    assert plan[0][2] == 108_000_000_000
+    assert plan[1][2] == 999_999_990
+    assert remaining == 10
