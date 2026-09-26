@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AmountInput } from '../AmountInput/AmountInput'
 import { Button } from '../Button/Button'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
@@ -71,6 +71,16 @@ export function OwnPricePanel({
   const matched = matchedTon ?? (previewMode === 'local' ? localSplit.matched : null)
   const rest = restTon ?? (previewMode === 'local' ? localSplit.rest : null)
   const payout = useMemo(() => Math.max(0, amount) * Math.max(1, odds), [amount, odds])
+  const [oddsDraft, setOddsDraft] = useState(() =>
+    Number.isFinite(odds) && odds > 0 ? odds.toFixed(2) : '',
+  )
+  const [oddsEditing, setOddsEditing] = useState(false)
+  const oddsInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (oddsEditing) return
+    setOddsDraft(Number.isFinite(odds) && odds > 0 ? odds.toFixed(2) : '')
+  }, [odds, oddsEditing])
 
   const resetPreview = () => {
     if (stage !== 'entry') onStageChange?.('entry')
@@ -173,15 +183,60 @@ export function OwnPricePanel({
       <label className={styles.inputCard}>
         <span>Желаемый коэффициент</span>
         <input
+          ref={oddsInputRef}
+          type="text"
           inputMode="decimal"
-          value={Number.isFinite(odds) ? odds.toFixed(2) : ''}
+          enterKeyHint="done"
+          autoComplete="off"
+          spellCheck={false}
+          value={oddsDraft}
+          onFocus={() => setOddsEditing(true)}
+          onBlur={() => {
+            setOddsEditing(false)
+            const parsed = Number(oddsDraft.replace(',', '.'))
+            if (Number.isFinite(parsed) && parsed > 0) {
+              setOddsDraft(parsed.toFixed(2))
+            } else {
+              setOddsDraft('')
+            }
+          }}
           onChange={(event) => {
             resetPreview()
-            const value = Number(event.target.value.replace(',', '.'))
-            if (Number.isFinite(value)) onOddsChange?.(value)
+            const raw = event.target.value
+              .replace(/[^0-9.,]/g, '')
+              .replace(/^([.,])/, '0$1')
+            const separatorIndex = raw.search(/[.,]/)
+            const normalizedDraft =
+              separatorIndex < 0
+                ? raw
+                : raw.slice(0, separatorIndex + 1) +
+                  raw.slice(separatorIndex + 1).replace(/[.,]/g, '').slice(0, 2)
+            setOddsDraft(normalizedDraft)
+            if (!normalizedDraft) {
+              onOddsChange?.(0)
+              return
+            }
+            const parsed = Number(normalizedDraft.replace(',', '.'))
+            if (Number.isFinite(parsed)) onOddsChange?.(parsed)
           }}
         />
-        <b>×</b>
+        {oddsDraft ? (
+          <button
+            type="button"
+            className={styles.clearOdds}
+            aria-label="Очистить коэффициент"
+            onPointerDown={(event) => event.preventDefault()}
+            onClick={(event) => {
+              event.preventDefault()
+              resetPreview()
+              setOddsDraft('')
+              onOddsChange?.(0)
+              oddsInputRef.current?.focus()
+            }}
+          >
+            ×
+          </button>
+        ) : null}
       </label>
 
       <AmountInput
