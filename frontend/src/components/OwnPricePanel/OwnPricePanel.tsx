@@ -180,24 +180,32 @@ export function OwnPricePanel({
         />
       </div>
 
-      <label className={styles.inputCard}>
-        <span>Желаемый коэффициент</span>
+      <div className={styles.inputCard}>
+        <label htmlFor="own-price-odds">Желаемый коэффициент</label>
         <input
+          id="own-price-odds"
           ref={oddsInputRef}
           type="text"
           inputMode="decimal"
           enterKeyHint="done"
           autoComplete="off"
+          autoCorrect="off"
           spellCheck={false}
           value={oddsDraft}
-          onFocus={() => setOddsEditing(true)}
+          onFocus={(event) => {
+            setOddsEditing(true)
+            window.setTimeout(() => event.currentTarget.select(), 0)
+          }}
           onBlur={() => {
             setOddsEditing(false)
             const parsed = Number(oddsDraft.replace(',', '.'))
-            if (Number.isFinite(parsed) && parsed > 0) {
-              setOddsDraft(parsed.toFixed(2))
+            if (Number.isFinite(parsed) && parsed >= 1.01 && parsed <= 10000) {
+              const normalized = Math.round(parsed * 100) / 100
+              setOddsDraft(normalized.toFixed(2))
+              onOddsChange?.(normalized)
             } else {
               setOddsDraft('')
+              onOddsChange?.(0)
             }
           }}
           onChange={(event) => {
@@ -225,9 +233,13 @@ export function OwnPricePanel({
             type="button"
             className={styles.clearOdds}
             aria-label="Очистить коэффициент"
-            onPointerDown={(event) => event.preventDefault()}
+            onPointerDown={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+            }}
             onClick={(event) => {
               event.preventDefault()
+              event.stopPropagation()
               resetPreview()
               setOddsDraft('')
               onOddsChange?.(0)
@@ -237,7 +249,7 @@ export function OwnPricePanel({
             ×
           </button>
         ) : null}
-      </label>
+      </div>
 
       <AmountInput
         value={String(amount)}
