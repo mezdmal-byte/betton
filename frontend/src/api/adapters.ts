@@ -500,17 +500,21 @@ export function stakeForOutcome(trade: MarketTradeOut, outcomeIndex: number): nu
   return 0
 }
 
+const MIN_CHART_TRADE_TON = 0.01
+
 export function mapTradesToChartPoints(trades: MarketTradeOut[] | null | undefined, outcomeIndex: number): ChartPoint[] {
   if (!Array.isArray(trades) || trades.length === 0) return []
   return trades
     .map((trade) => {
       const odds = oddsForOutcome(trade, outcomeIndex)
       if (odds == null || !(odds > 0)) return null
+      const volume = stakeForOutcome(trade, outcomeIndex)
+      if (!(volume >= MIN_CHART_TRADE_TON)) return null
       const created = trade.created_at ? Date.parse(trade.created_at) : Number.NaN
       return {
         t: Number.isFinite(created) ? created : trade.id,
         odds,
-        volume: stakeForOutcome(trade, outcomeIndex),
+        volume,
       } satisfies ChartPoint
     })
     .filter((point): point is ChartPoint => point != null)
