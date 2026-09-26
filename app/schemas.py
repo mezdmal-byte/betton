@@ -37,6 +37,13 @@ class Cs2MatchesOut(BaseModel):
     items: list[Cs2MatchOut] = Field(default_factory=list)
 
 
+class Cs2ImportOut(BaseModel):
+    available: int = 0
+    created: int = 0
+    skipped: int = 0
+    created_market_ids: list[int] = Field(default_factory=list)
+
+
 class UserCreate(BaseModel):
     model_config = ConfigDict(extra="ignore")
     username: Optional[str] = None
