@@ -57,6 +57,9 @@ export type CreateMarketScreenProps = {
   cs2Loading?: boolean
   cs2Error?: boolean
   onRetryCs2?: () => void
+  cs2Importing?: boolean
+  cs2ImportMessage?: string | null
+  onImportAllCs2?: () => void
 }
 
 export function CreateMarketScreen({
@@ -77,6 +80,9 @@ export function CreateMarketScreen({
   cs2Loading = false,
   cs2Error = false,
   onRetryCs2,
+  cs2Importing = false,
+  cs2ImportMessage = null,
+  onImportAllCs2,
 }: CreateMarketScreenProps) {
   const t = useT()
   const [step, setStep] = useState<WizardStep>('start')
@@ -270,6 +276,23 @@ export function CreateMarketScreen({
             PandaScore не вернул матчей с двумя известными командами.
           </StatusMessage>
         ) : null}
+        {onImportAllCs2 && cs2Matches.length > 0 ? (
+          <section className={styles.bulkImport}>
+            <Button
+              fullWidth
+              loading={cs2Importing}
+              disabled={cs2Importing}
+              onClick={onImportAllCs2}
+            >
+              Загрузить все · {cs2Matches.length}
+            </Button>
+            <small>
+              Создаст все ближайшие матчи как публичные рынки. Повторы по PandaScore ID будут пропущены.
+            </small>
+          </section>
+        ) : null}
+        {cs2ImportMessage ? <Notice>{cs2ImportMessage}</Notice> : null}
+
         <div className={styles.matchList}>
           {cs2Matches.map((match) => (
             <button
@@ -296,7 +319,7 @@ export function CreateMarketScreen({
                 setCategory('esports')
                 setOutcomeA(teamA)
                 setOutcomeB(teamB)
-                const local = isoToDatetimeLocal(match.scheduled_at)
+                const local = matchCloseToDatetimeLocal(match.scheduled_at)
                 if (local) onCloseAtChange?.(local)
                 setStep('question')
               }}
@@ -677,6 +700,13 @@ function isoToDatetimeLocal(value: string): string {
     ':',
     pad(date.getMinutes()),
   ].join('')
+}
+
+function matchCloseToDatetimeLocal(value: string): string {
+  const scheduled = new Date(value)
+  if (Number.isNaN(scheduled.getTime())) return ''
+  const close = new Date(scheduled.getTime() - 60_000)
+  return isoToDatetimeLocal(close.toISOString())
 }
 
 function formatCs2Date(value: string): string {
