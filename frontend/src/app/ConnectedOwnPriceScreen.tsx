@@ -174,7 +174,11 @@ export function ConnectedOwnPriceScreen({
 
   const changeOdds = (next: number) => {
     setErrorMessage(null)
-    setOdds(Math.max(1.01, Math.round(next * 100) / 100))
+    if (!Number.isFinite(next) || next <= 0) {
+      setOdds(0)
+      return
+    }
+    setOdds(Math.round(next * 100) / 100)
   }
 
   const changeAmount = (next: number) => {
