@@ -1,3 +1,4 @@
+import { useT } from '../../i18n'
 import { cx } from '../../lib/cx'
 import { useTheme } from '../../theme/ThemeProvider'
 import styles from './ThemeToggle.module.css'
@@ -7,17 +8,18 @@ export type ThemeToggleProps = {
 }
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
+  const t = useT()
   const { scheme, setScheme } = useTheme()
 
   return (
-    <div className={cx(styles.root, className)} role="group" aria-label="Theme">
+    <div className={cx(styles.root, className)} role="group" aria-label={t('theme.label')}>
       <button
         type="button"
         className={cx(styles.dark, scheme === 'dark' && styles.active)}
         aria-pressed={scheme === 'dark'}
         onClick={() => setScheme('dark')}
       >
-        Dark
+        {t('theme.dark')}
       </button>
       <button
         type="button"
@@ -25,7 +27,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         aria-pressed={scheme === 'light'}
         onClick={() => setScheme('light')}
       >
-        Light
+        {t('theme.light')}
       </button>
     </div>
   )
