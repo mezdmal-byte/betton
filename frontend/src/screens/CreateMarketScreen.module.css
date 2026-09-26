@@ -320,3 +320,86 @@
     font-size: 32px;
   }
 }
+
+
+.sourceCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-surface-raised);
+}
+
+.sourceCard > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sourceCard strong {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.sourceCard span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.matchList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.matchCard {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 13px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.matchCard:active {
+  border-color: var(--color-accent-mint);
+  background: var(--color-selected-background);
+}
+
+.matchTeams {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.matchTeams strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matchTeams strong:last-child {
+  text-align: right;
+}
+
+.matchTeams span,
+.matchCard > span,
+.matchCard small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.matchCard small {
+  color: var(--color-text-muted);
+}
