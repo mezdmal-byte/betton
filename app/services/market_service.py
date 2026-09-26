@@ -14,7 +14,7 @@ from app.lmsr import apply_buy, cost, max_tip, prices
 from app.models import Market, MarketStatus, Position, SettlementRecord, Trade, User
 from app.schemas import MarketActivityOut, MarketOut, PositionOut, QuoteOut, SettlementOut
 
-ALLOWED_CATEGORIES = ("sport", "politics", "crypto", "unique")
+ALLOWED_CATEGORIES = ("sport", "esports", "politics", "crypto", "unique")
 MIN_LOCK_TON = 10.0
 MIN_OUTCOMES = 2
 MAX_OUTCOMES = 8
@@ -452,7 +452,7 @@ def _normalize_category(category: str | None) -> str:
     if cat not in ALLOWED_CATEGORIES:
         raise HTTPException(
             status_code=400,
-            detail="Категория должна быть sport, politics, crypto или unique",
+            detail="Категория должна быть sport, esports, politics, crypto или unique",
         )
     return cat
 
