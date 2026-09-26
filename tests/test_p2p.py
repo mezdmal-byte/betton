@@ -1,4 +1,5 @@
 import uuid
+from types import SimpleNamespace
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
@@ -334,3 +335,21 @@ def test_existing_database_migration_preserves_lmsr(tmp_path,monkeypatch):
         assert conn.execute(text('SELECT balance FROM users')).scalar_one()==950
         assert conn.execute(text('SELECT count(*) FROM p2p_orders')).scalar_one()==0
     old.dispose()
+
+
+
+def test_plan_matches_skips_sub_minimum_dust_leg():
+    minimum = p2p.MIN_ORDER_ATOMS
+    first = SimpleNamespace(price=500_000, remaining=minimum + minimum // 2)
+    second = SimpleNamespace(price=500_000, remaining=minimum * 10)
+
+    plan, remaining = p2p.plan_matches(
+        [first, second],
+        minimum * 2,
+        500_000,
+    )
+
+    assert len(plan) == 1
+    assert plan[0][0] is first
+    assert plan[0][2] == minimum + minimum // 2
+    assert remaining == minimum // 2
