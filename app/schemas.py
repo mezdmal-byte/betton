@@ -5,8 +5,36 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import MarketStatus
 
-MarketCategory = Literal["sport", "politics", "crypto", "unique"]
+MarketCategory = Literal["sport", "esports", "politics", "crypto", "unique"]
 OutcomeRef = Union[str, int]
+
+
+
+
+class EsportsTeamOut(BaseModel):
+    id: int
+    name: str
+    acronym: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class Cs2MatchOut(BaseModel):
+    id: int
+    scheduled_at: datetime
+    status: str
+    team_a: EsportsTeamOut
+    team_b: EsportsTeamOut
+    league_name: str = ""
+    serie_name: str = ""
+    tournament_name: str = ""
+    best_of: Optional[int] = None
+    provider: str = "pandascore"
+
+
+class Cs2MatchesOut(BaseModel):
+    configured: bool
+    provider: str = "pandascore"
+    items: list[Cs2MatchOut] = Field(default_factory=list)
 
 
 class UserCreate(BaseModel):
