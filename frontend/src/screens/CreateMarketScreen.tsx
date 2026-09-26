@@ -124,80 +124,7 @@ export function CreateMarketScreen({
       onBack?.()
       return
     }
-    if (step === 'cs2') {
-    return (
-      <WizardShell
-        title="Матчи CS2"
-        step={1}
-        progress={0}
-        onBack={goBack}
-        onNavChange={onNavChange}
-      >
-        <p className={styles.intro}>
-          Ближайшие матчи берём из PandaScore. Пока создаём один простой рынок — победитель матча.
-        </p>
-        {cs2Loading ? (
-          <StatusMessage tone="loading" title={t('loading')}>Загружаем матчи CS2…</StatusMessage>
-        ) : null}
-        {cs2Error ? (
-          <>
-            <StatusMessage tone="error" title={t('err.request')}>
-              Не удалось получить расписание PandaScore.
-            </StatusMessage>
-            {onRetryCs2 ? <Button variant="secondary" onClick={onRetryCs2}>{t('retry')}</Button> : null}
-          </>
-        ) : null}
-        {!cs2Loading && !cs2Error && cs2Matches.length === 0 ? (
-          <StatusMessage tone="empty" title="Нет ближайших матчей">
-            PandaScore не вернул матчей с двумя известными командами.
-          </StatusMessage>
-        ) : null}
-        <div className={styles.matchList}>
-          {cs2Matches.map((match) => (
-            <button
-              type="button"
-              key={match.id}
-              className={styles.matchCard}
-              onClick={() => {
-                const teamA = match.team_a.name
-                const teamB = match.team_b.name
-                const context = [match.league_name, match.serie_name, match.tournament_name]
-                  .filter(Boolean)
-                  .join(' · ')
-                setQuestion(`${teamA} — ${teamB}: кто победит?`)
-                setDescription(
-                  ['Матч Counter-Strike 2.', context ? `Турнир: ${context}.` : '']
-                    .filter(Boolean)
-                    .join(' '),
-                )
-                setResolutionCriteria(
-                  'Победившим считается исход, соответствующий команде-победителю матча по итоговому результату PandaScore. При отмене матча рынок отменяется вручную модератором.',
-                )
-                setPrimarySource(`PandaScore API · CS2 match #${match.id}`)
-                setAdditionalSource('')
-                setCategory('esports')
-                setOutcomeA(teamA)
-                setOutcomeB(teamB)
-                const local = isoToDatetimeLocal(match.scheduled_at)
-                if (local) onCloseAtChange?.(local)
-                setStep('question')
-              }}
-            >
-              <div className={styles.matchTeams}>
-                <strong>{match.team_a.name}</strong>
-                <span>vs</span>
-                <strong>{match.team_b.name}</strong>
-              </div>
-              <span>{[match.league_name, match.tournament_name].filter(Boolean).join(' · ') || 'CS2'}</span>
-              <small>{formatCs2Date(match.scheduled_at)}{match.best_of ? ` · BO${match.best_of}` : ''}</small>
-            </button>
-          ))}
-        </div>
-      </WizardShell>
-    )
-  }
-
-  if (step === 'validation') {
+    if (step === 'validation') {
       setStep('review')
       return
     }
@@ -209,7 +136,7 @@ export function CreateMarketScreen({
       setStep('start')
       return
     }
-    const index = FLOW_STEPS.indexOf(step as Exclude<WizardStep, 'start' | 'validation'>)
+    const index = FLOW_STEPS.indexOf(step as Exclude<WizardStep, 'start' | 'validation' | 'cs2'>)
     if (index > 0) setStep(FLOW_STEPS[index - 1]!)
   }
 
@@ -312,6 +239,79 @@ export function CreateMarketScreen({
 
         <BottomNavigation active="create" onChange={onNavChange} />
       </div>
+    )
+  }
+
+  if (step === 'cs2') {
+    return (
+      <WizardShell
+        title="Матчи CS2"
+        step={1}
+        progress={0}
+        onBack={goBack}
+        onNavChange={onNavChange}
+      >
+        <p className={styles.intro}>
+          Ближайшие матчи берём из PandaScore. Пока создаём один простой рынок — победитель матча.
+        </p>
+        {cs2Loading ? (
+          <StatusMessage tone="loading" title={t('loading')}>Загружаем матчи CS2…</StatusMessage>
+        ) : null}
+        {cs2Error ? (
+          <>
+            <StatusMessage tone="error" title={t('err.request')}>
+              Не удалось получить расписание PandaScore.
+            </StatusMessage>
+            {onRetryCs2 ? <Button variant="secondary" onClick={onRetryCs2}>{t('retry')}</Button> : null}
+          </>
+        ) : null}
+        {!cs2Loading && !cs2Error && cs2Matches.length === 0 ? (
+          <StatusMessage tone="empty" title="Нет ближайших матчей">
+            PandaScore не вернул матчей с двумя известными командами.
+          </StatusMessage>
+        ) : null}
+        <div className={styles.matchList}>
+          {cs2Matches.map((match) => (
+            <button
+              type="button"
+              key={match.id}
+              className={styles.matchCard}
+              onClick={() => {
+                const teamA = match.team_a.name
+                const teamB = match.team_b.name
+                const context = [match.league_name, match.serie_name, match.tournament_name]
+                  .filter(Boolean)
+                  .join(' · ')
+                setQuestion(`${teamA} — ${teamB}: кто победит?`)
+                setDescription(
+                  ['Матч Counter-Strike 2.', context ? `Турнир: ${context}.` : '']
+                    .filter(Boolean)
+                    .join(' '),
+                )
+                setResolutionCriteria(
+                  'Победившим считается исход, соответствующий команде-победителю матча по итоговому результату PandaScore. При отмене матча рынок отменяется вручную модератором.',
+                )
+                setPrimarySource(`PandaScore API · CS2 match #${match.id}`)
+                setAdditionalSource('')
+                setCategory('esports')
+                setOutcomeA(teamA)
+                setOutcomeB(teamB)
+                const local = isoToDatetimeLocal(match.scheduled_at)
+                if (local) onCloseAtChange?.(local)
+                setStep('question')
+              }}
+            >
+              <div className={styles.matchTeams}>
+                <strong>{match.team_a.name}</strong>
+                <span>vs</span>
+                <strong>{match.team_b.name}</strong>
+              </div>
+              <span>{[match.league_name, match.tournament_name].filter(Boolean).join(' · ') || 'CS2'}</span>
+              <small>{formatCs2Date(match.scheduled_at)}{match.best_of ? ` · BO${match.best_of}` : ''}</small>
+            </button>
+          ))}
+        </div>
+      </WizardShell>
     )
   }
 
