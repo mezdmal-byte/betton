@@ -412,7 +412,7 @@ async def cs2_import_upcoming_endpoint(
         duplicate = (
             db.query(Market)
             .filter(Market.category == "esports", Market.description.contains(marker))
-            .one_or_none()
+            .first()
         )
         if duplicate is not None:
             skipped += 1
