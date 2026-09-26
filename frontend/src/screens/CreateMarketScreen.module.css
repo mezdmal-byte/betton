@@ -403,3 +403,16 @@
 .matchCard small {
   color: var(--color-text-muted);
 }
+
+
+.bulkImport {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bulkImport small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+}
