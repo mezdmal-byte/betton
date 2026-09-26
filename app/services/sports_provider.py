@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -117,7 +117,16 @@ async def upcoming_cs2_matches(*, limit: int = 40) -> dict:
     if not isinstance(payload, list):
         raise SportsProviderError("PandaScore вернул неожиданный формат данных")
 
-    items = [parsed for row in payload if isinstance(row, dict) if (parsed := _parse_match(row))]
+    now_utc = datetime.now(timezone.utc)
+    cutoff = now_utc + timedelta(minutes=2)
+    items = [
+        parsed
+        for row in payload
+        if isinstance(row, dict)
+        if (parsed := _parse_match(row))
+        if parsed["status"] in ("not_started", "pre_match")
+        if parsed["scheduled_at"].astimezone(timezone.utc) > cutoff
+    ]
     items.sort(key=lambda item: item["scheduled_at"])
     _cache_items = items
     _cache_at = now
