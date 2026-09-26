@@ -1,4 +1,4 @@
-export type MarketCategoryDto = 'sport' | 'politics' | 'unique' | string
+export type MarketCategoryDto = 'sport' | 'esports' | 'politics' | 'crypto' | 'unique' | string
 
 export type MarketStatusDto =
   | 'pending'
@@ -299,4 +299,31 @@ export type ChatUnreadOut = {
   lobby: number
   markets: Record<string, number>
   total: number
+}
+
+
+export type EsportsTeamOut = {
+  id: number
+  name: string
+  acronym?: string | null
+  image_url?: string | null
+}
+
+export type Cs2MatchOut = {
+  id: number
+  scheduled_at: string
+  status: string
+  team_a: EsportsTeamOut
+  team_b: EsportsTeamOut
+  league_name: string
+  serie_name: string
+  tournament_name: string
+  best_of?: number | null
+  provider: 'pandascore' | string
+}
+
+export type Cs2MatchesOut = {
+  configured: boolean
+  provider: 'pandascore' | string
+  items: Cs2MatchOut[]
 }
