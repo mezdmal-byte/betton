@@ -327,3 +327,10 @@ export type Cs2MatchesOut = {
   provider: 'pandascore' | string
   items: Cs2MatchOut[]
 }
+
+export type Cs2ImportOut = {
+  available: number
+  created: number
+  skipped: number
+  created_market_ids: number[]
+}
