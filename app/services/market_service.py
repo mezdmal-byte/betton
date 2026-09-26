@@ -563,35 +563,72 @@ def list_markets_page(
     if category:
         query = query.filter(Market.category == _normalize_category(category))
     needle = (q or "").strip()
+    sqlite_python_search = False
+    lowered_needle = ""
+    category_aliases = {
+        "sport": "sport",
+        "спорт": "sport",
+        "sports": "sport",
+        "politics": "politics",
+        "политика": "politics",
+        "полит": "politics",
+        "crypto": "crypto",
+        "крипто": "crypto",
+        "криптовалюта": "crypto",
+        "unique": "unique",
+        "другое": "unique",
+        "другие": "unique",
+        "уник": "unique",
+    }
+    category_labels = {
+        "sport": ("sport", "sports", "спорт"),
+        "politics": ("politics", "политика"),
+        "crypto": ("crypto", "крипто", "криптовалюта"),
+        "unique": ("unique", "другое", "другие", "уникальное"),
+    }
     if needle:
-        lowered_needle = needle.lower().lstrip("@")
-        lowered = f"%{lowered_needle}%"
-        category_aliases = {
-            "sport": "sport",
-            "спорт": "sport",
-            "sports": "sport",
-            "politics": "politics",
-            "политика": "politics",
-            "полит": "politics",
-            "unique": "unique",
-            "другое": "unique",
-            "другие": "unique",
-            "уник": "unique",
-        }
+        lowered_needle = needle.casefold().lstrip("@")
         category_match = category_aliases.get(lowered_needle)
-        query = query.join(User, Market.creator_id == User.id)
-        filters = [
-            func.lower(Market.question).like(lowered),
-            func.lower(func.coalesce(Market.description, "")).like(lowered),
-            func.lower(func.coalesce(Market.category, "")).like(lowered),
-            func.lower(func.coalesce(User.telegram_username, "")).like(lowered),
-            func.lower(func.coalesce(User.display_name, "")).like(lowered),
-            func.lower(func.coalesce(User.username, "")).like(lowered),
-        ]
-        if category_match:
-            filters.append(Market.category == category_match)
-        query = query.filter(or_(*filters))
+        if db.get_bind().dialect.name == "sqlite":
+            # SQLite lower()/NOCASE only handles ASCII reliably. The preview runs
+            # on SQLite, so do the final user-facing Unicode match in Python.
+            sqlite_python_search = True
+        else:
+            lowered = f"%{lowered_needle}%"
+            query = query.join(User, Market.creator_id == User.id)
+            filters = [
+                func.lower(Market.question).like(lowered),
+                func.lower(func.coalesce(Market.description, "")).like(lowered),
+                func.lower(func.coalesce(Market.category, "")).like(lowered),
+                func.lower(func.coalesce(User.telegram_username, "")).like(lowered),
+                func.lower(func.coalesce(User.display_name, "")).like(lowered),
+                func.lower(func.coalesce(User.username, "")).like(lowered),
+            ]
+            if category_match:
+                filters.append(Market.category == category_match)
+            query = query.filter(or_(*filters))
     rows = query.order_by(Market.id.desc()).all()
+    if sqlite_python_search:
+        creators = {
+            user.id: user
+            for user in db.query(User).filter(User.id.in_({m.creator_id for m in rows})).all()
+        }
+        def matches_market_search(market: Market) -> bool:
+            creator = creators.get(market.creator_id)
+            values = [
+                market.question or "",
+                market.description or "",
+                market.category or "",
+            ]
+            values.extend(category_labels.get((market.category or "").casefold(), ()))
+            if creator is not None:
+                values.extend([
+                    creator.telegram_username or "",
+                    creator.display_name or "",
+                    creator.username or "",
+                ])
+            return any(lowered_needle in str(value).casefold().lstrip("@") for value in values)
+        rows = [market for market in rows if matches_market_search(market)]
     for market in rows:
         if _maybe_auto_close(db, market):
             db.commit()
