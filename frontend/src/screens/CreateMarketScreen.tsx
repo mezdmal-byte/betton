@@ -9,11 +9,13 @@ import { TextField } from '../components/TextField/TextField'
 import { ThemeToggle } from '../components/ThemeToggle/ThemeToggle'
 import { defaultCreateDraft } from '../fixtures/account'
 import { useT } from '../i18n'
+import type { Cs2MatchOut } from '../api/types'
 import type { CreateMarketDraft, VisibilityId } from '../types/account'
 import styles from './CreateMarketScreen.module.css'
 
 type WizardStep =
   | 'start'
+  | 'cs2'
   | 'question'
   | 'description'
   | 'criteria'
@@ -50,6 +52,11 @@ export type CreateMarketScreenProps = {
   onSubmit?: (draft: CreateMarketDraft) => void
   visibilityNote?: string | null
   unauthenticated?: boolean
+  cs2Matches?: Cs2MatchOut[]
+  cs2Configured?: boolean
+  cs2Loading?: boolean
+  cs2Error?: boolean
+  onRetryCs2?: () => void
 }
 
 export function CreateMarketScreen({
@@ -65,6 +72,11 @@ export function CreateMarketScreen({
   onSubmit,
   visibilityNote,
   unauthenticated = false,
+  cs2Matches = [],
+  cs2Configured = false,
+  cs2Loading = false,
+  cs2Error = false,
+  onRetryCs2,
 }: CreateMarketScreenProps) {
   const t = useT()
   const [step, setStep] = useState<WizardStep>('start')
@@ -84,6 +96,7 @@ export function CreateMarketScreen({
 
   const categories = [
     { id: 'sport', label: t('cat.sport') },
+    { id: 'esports', label: t('cat.esports') },
     { id: 'politics', label: t('cat.politics') },
     { id: 'crypto', label: t('cat.crypto') },
     { id: 'other', label: t('cat.other') },
@@ -111,8 +124,85 @@ export function CreateMarketScreen({
       onBack?.()
       return
     }
-    if (step === 'validation') {
+    if (step === 'cs2') {
+    return (
+      <WizardShell
+        title="Матчи CS2"
+        step={1}
+        progress={0}
+        onBack={goBack}
+        onNavChange={onNavChange}
+      >
+        <p className={styles.intro}>
+          Ближайшие матчи берём из PandaScore. Пока создаём один простой рынок — победитель матча.
+        </p>
+        {cs2Loading ? (
+          <StatusMessage tone="loading" title={t('loading')}>Загружаем матчи CS2…</StatusMessage>
+        ) : null}
+        {cs2Error ? (
+          <>
+            <StatusMessage tone="error" title={t('err.request')}>
+              Не удалось получить расписание PandaScore.
+            </StatusMessage>
+            {onRetryCs2 ? <Button variant="secondary" onClick={onRetryCs2}>{t('retry')}</Button> : null}
+          </>
+        ) : null}
+        {!cs2Loading && !cs2Error && cs2Matches.length === 0 ? (
+          <StatusMessage tone="empty" title="Нет ближайших матчей">
+            PandaScore не вернул матчей с двумя известными командами.
+          </StatusMessage>
+        ) : null}
+        <div className={styles.matchList}>
+          {cs2Matches.map((match) => (
+            <button
+              type="button"
+              key={match.id}
+              className={styles.matchCard}
+              onClick={() => {
+                const teamA = match.team_a.name
+                const teamB = match.team_b.name
+                const context = [match.league_name, match.serie_name, match.tournament_name]
+                  .filter(Boolean)
+                  .join(' · ')
+                setQuestion(`${teamA} — ${teamB}: кто победит?`)
+                setDescription(
+                  ['Матч Counter-Strike 2.', context ? `Турнир: ${context}.` : '']
+                    .filter(Boolean)
+                    .join(' '),
+                )
+                setResolutionCriteria(
+                  'Победившим считается исход, соответствующий команде-победителю матча по итоговому результату PandaScore. При отмене матча рынок отменяется вручную модератором.',
+                )
+                setPrimarySource(`PandaScore API · CS2 match #${match.id}`)
+                setAdditionalSource('')
+                setCategory('esports')
+                setOutcomeA(teamA)
+                setOutcomeB(teamB)
+                const local = isoToDatetimeLocal(match.scheduled_at)
+                if (local) onCloseAtChange?.(local)
+                setStep('question')
+              }}
+            >
+              <div className={styles.matchTeams}>
+                <strong>{match.team_a.name}</strong>
+                <span>vs</span>
+                <strong>{match.team_b.name}</strong>
+              </div>
+              <span>{[match.league_name, match.tournament_name].filter(Boolean).join(' · ') || 'CS2'}</span>
+              <small>{formatCs2Date(match.scheduled_at)}{match.best_of ? ` · BO${match.best_of}` : ''}</small>
+            </button>
+          ))}
+        </div>
+      </WizardShell>
+    )
+  }
+
+  if (step === 'validation') {
       setStep('review')
+      return
+    }
+    if (step === 'cs2') {
+      setStep('start')
       return
     }
     if (step === 'question') {
@@ -195,8 +285,28 @@ export function CreateMarketScreen({
               {t('err.openInTgBody')}
             </StatusMessage>
           ) : null}
-          <Button fullWidth disabled={unauthenticated} onClick={() => setStep('question')}>
-            Начать
+          <section className={styles.sourceCard}>
+            <div>
+              <strong>CS2 · матчи из PandaScore</strong>
+              <span>Выберите реальный матч — команды, турнир, дедлайн и источник заполнятся автоматически.</span>
+            </div>
+            {cs2Configured ? (
+              <Button
+                fullWidth
+                disabled={unauthenticated || cs2Loading}
+                loading={cs2Loading}
+                onClick={() => setStep('cs2')}
+              >
+                Выбрать матч CS2
+              </Button>
+            ) : (
+              <Notice>
+                PandaScore ещё не подключён. Добавьте PANDASCORE_TOKEN в Render — после этого здесь появятся реальные матчи.
+              </Notice>
+            )}
+          </section>
+          <Button variant="secondary" fullWidth disabled={unauthenticated} onClick={() => setStep('question')}>
+            Создать вручную
           </Button>
         </main>
 
@@ -545,7 +655,37 @@ function stepTitle(step: WizardStep): string {
 
 function categoryLabel(category: string, t: ReturnType<typeof useT>): string {
   if (category === 'sport') return t('cat.sport')
+  if (category === 'esports') return t('cat.esports')
   if (category === 'politics') return t('cat.politics')
   if (category === 'crypto') return t('cat.crypto')
   return t('cat.other')
+}
+
+
+function isoToDatetimeLocal(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const pad = (part: number) => String(part).padStart(2, '0')
+  return [
+    date.getFullYear(),
+    '-',
+    pad(date.getMonth() + 1),
+    '-',
+    pad(date.getDate()),
+    'T',
+    pad(date.getHours()),
+    ':',
+    pad(date.getMinutes()),
+  ].join('')
+}
+
+function formatCs2Date(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Время уточняется'
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
 }
