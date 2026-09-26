@@ -41,3 +41,7 @@ def test_market_search_matches_title_category_and_author(client, monkeypatch):
         response = client.get("/markets", params={"q": query, "status": "open"})
         assert response.status_code == 200, response.text
         assert market_id in [row["id"] for row in response.json()], query
+
+    filtered = client.get("/markets", params={"category": "crypto", "status": "open"})
+    assert filtered.status_code == 200, filtered.text
+    assert market_id in [row["id"] for row in filtered.json()]
