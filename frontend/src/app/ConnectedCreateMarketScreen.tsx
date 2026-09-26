@@ -1,8 +1,10 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { buildCreateMarketPayload } from '../api/adapters'
 import { errorDetail } from '../api/errors'
 import { createMarket } from '../api/markets'
+import { getUpcomingCs2Matches } from '../api/sports'
+import { queryKeys } from '../api/query'
 import { rememberShareToken } from '../api/share'
 import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 import { useT } from '../i18n'
@@ -23,6 +25,13 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
   const t = useT()
   const [closeAt, setCloseAt] = useState(() => defaultCloseAt())
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const cs2Query = useQuery({
+    queryKey: queryKeys.cs2Upcoming,
+    queryFn: () => getUpcomingCs2Matches(40),
+    enabled,
+    staleTime: 60_000,
+  })
 
   const mutation = useMutation({
     mutationFn: async (draft: CreateMarketDraft) => {
@@ -70,6 +79,11 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
         const next = fromDatetimeLocalValue(value)
         if (next) setCloseAt(next)
       }}
+      cs2Matches={cs2Query.data?.items ?? []}
+      cs2Configured={Boolean(cs2Query.data?.configured)}
+      cs2Loading={cs2Query.isPending}
+      cs2Error={cs2Query.isError}
+      onRetryCs2={() => { void cs2Query.refetch() }}
       onSubmit={(draft) => {
         setErrorMessage(null)
         void mutation.mutateAsync(draft)
