@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import func, text, update
+from sqlalchemy import func, or_, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -564,14 +564,33 @@ def list_markets_page(
         query = query.filter(Market.category == _normalize_category(category))
     needle = (q or "").strip()
     if needle:
-        raw = f"%{needle}%"
-        lowered = f"%{needle.lower()}%"
-        query = query.filter(
-            Market.question.like(raw)
-            | func.lower(Market.question).like(lowered)
-            | func.coalesce(Market.description, "").like(raw)
-            | func.lower(func.coalesce(Market.description, "")).like(lowered)
-        )
+        lowered_needle = needle.lower().lstrip("@")
+        lowered = f"%{lowered_needle}%"
+        category_aliases = {
+            "sport": "sport",
+            "спорт": "sport",
+            "sports": "sport",
+            "politics": "politics",
+            "политика": "politics",
+            "полит": "politics",
+            "unique": "unique",
+            "другое": "unique",
+            "другие": "unique",
+            "уник": "unique",
+        }
+        category_match = category_aliases.get(lowered_needle)
+        query = query.join(User, Market.creator_id == User.id)
+        filters = [
+            func.lower(Market.question).like(lowered),
+            func.lower(func.coalesce(Market.description, "")).like(lowered),
+            func.lower(func.coalesce(Market.category, "")).like(lowered),
+            func.lower(func.coalesce(User.telegram_username, "")).like(lowered),
+            func.lower(func.coalesce(User.display_name, "")).like(lowered),
+            func.lower(func.coalesce(User.username, "")).like(lowered),
+        ]
+        if category_match:
+            filters.append(Market.category == category_match)
+        query = query.filter(or_(*filters))
     rows = query.order_by(Market.id.desc()).all()
     for market in rows:
         if _maybe_auto_close(db, market):
