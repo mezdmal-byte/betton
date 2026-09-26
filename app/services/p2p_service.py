@@ -184,8 +184,7 @@ def _refund(db, order, status='cancelled', reason='cancel'):
 
 
 def _finish_order(db, order):
-    minimum_lot = order.price // math.gcd(order.price, PRICE)
-    minimum = max(MIN_ORDER_ATOMS, minimum_lot)
+    minimum = order.price // math.gcd(order.price, PRICE)
     if order.remaining < minimum:
         _refund(db, order, 'filled' if order.filled else 'cancelled', reason='remainder')
 
