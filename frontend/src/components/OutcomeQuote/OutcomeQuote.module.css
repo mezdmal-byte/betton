@@ -1,21 +1,21 @@
 .root {
   display: flex;
+  width: 100%;
+  min-height: 68px;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
   gap: 2px;
-  width: 100%;
-  min-height: 68px;
   padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: var(--radius-12);
-  background: var(--color-surface);
+  background: var(--color-surface-base);
   text-align: left;
 }
 
 .label {
   font-size: 12px;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
@@ -29,91 +29,69 @@
 }
 
 .liquidity {
+  color: var(--color-text-secondary);
   font-size: 11px;
   font-weight: var(--font-weight-regular);
   font-variant-numeric: tabular-nums;
-  color: var(--color-text-secondary);
 }
 
 .a {
-  background: var(--color-outcome-a-tint);
+  border-color: var(--color-outcome-1);
+  background: var(--color-outcome-1-surface);
 }
 
 .b {
-  background: var(--color-outcome-b-tint);
+  border-color: var(--color-outcome-2);
+  background: var(--color-outcome-2-surface);
 }
 
 .a .label,
-.a .odds {
-  color: var(--color-outcome-a-text);
-}
+.a .odds { color: var(--color-outcome-1); }
 
 .b .label,
-.b .odds {
-  color: var(--color-outcome-b-text);
-}
+.b .odds { color: var(--color-outcome-2); }
 
 .selected.a,
-.pressed.a {
-  background: var(--color-outcome-a-surface);
-  border-color: var(--color-outcome-a-accent);
-}
+.pressed.a { border-color: var(--color-outcome-1); }
 
 .selected.b,
-.pressed.b {
-  background: var(--color-outcome-b-surface);
-  border-color: var(--color-outcome-b-accent);
-}
+.pressed.b { border-color: var(--color-outcome-2); }
 
-.pressed.a {
-  background: var(--color-outcome-a-pressed);
-}
+.pressed.a { background: var(--color-outcome-1-surface); }
+.pressed.b { background: var(--color-outcome-2-surface); }
 
-.pressed.b {
-  background: var(--color-outcome-b-pressed);
-}
-
-.noLiquidity.a {
-  background: var(--color-outcome-a-tint);
-  border-color: transparent;
-}
-
+.noLiquidity.a,
 .noLiquidity.b {
-  background: var(--color-outcome-b-tint);
-  border-color: transparent;
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-raised);
 }
 
 .noLiquidity .odds,
 .noLiquidity .label,
-.noLiquidity .liquidity {
-  opacity: 0.72;
-}
+.noLiquidity .liquidity { opacity: 0.72; }
 
 .winner {
-  background: var(--color-surface);
   border-color: var(--color-text-primary);
+  background: var(--color-surface-base);
 }
 
 .winnerMark {
+  color: var(--color-text-primary);
   font-size: 11px;
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
 }
 
 .resolvedLoser {
   opacity: 0.42;
-  background: var(--color-surface);
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-base);
 }
 
 .resolvedLoser .label,
-.resolvedLoser .odds {
-  color: var(--color-text-secondary);
-}
+.resolvedLoser .odds { color: var(--color-text-secondary); }
 
 .disabled,
-.loading {
-  opacity: 0.55;
-}
+.loading { opacity: 0.55; }
 
 .compact {
   min-height: 40px;
@@ -127,27 +105,21 @@
   padding: 8px 10px;
 }
 
-.dense .odds {
-  font-size: 18px;
+.feed {
+  min-height: 56px;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 10px;
 }
+
+.dense .odds { font-size: 18px; }
 
 .skeleton {
   display: block;
   border-radius: var(--radius-8);
-  background: var(--color-surface-muted);
+  background: var(--color-surface-raised);
 }
 
-.skeletonLabel {
-  width: 42%;
-  height: 12px;
-}
-
-.skeletonOdds {
-  width: 36%;
-  height: 20px;
-}
-
-.skeletonLiq {
-  width: 54%;
-  height: 10px;
-}
+.skeletonLabel { width: 42%; height: 12px; }
+.skeletonOdds { width: 36%; height: 20px; }
+.skeletonLiq { width: 54%; height: 10px; }

@@ -1,4 +1,5 @@
 import uuid
+from types import SimpleNamespace
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
@@ -334,3 +335,28 @@ def test_existing_database_migration_preserves_lmsr(tmp_path,monkeypatch):
         assert conn.execute(text('SELECT balance FROM users')).scalar_one()==950
         assert conn.execute(text('SELECT count(*) FROM p2p_orders')).scalar_one()==0
     old.dispose()
+
+
+
+def test_plan_matches_does_not_skip_better_price_for_nanoton_remainder():
+    # Reproduce the preview case: 109 TON for outcome A consumes exactly
+    # 108 TON at the best level (maker price 0.46), then almost 1 TON at
+    # the next level (maker price 0.45). Ten nanoTON remain. They cannot
+    # form one lot at the still-better 0.44 level, but *could* form lots at
+    # a worse 0.40 level. Price priority means we stop instead of jumping
+    # down the book and creating a microscopic worse-price fill.
+    best = SimpleNamespace(price=460_000, remaining=92_000_000_000)
+    second = SimpleNamespace(price=450_000, remaining=118_000_000_000)
+    third = SimpleNamespace(price=440_000, remaining=76_000_000_000)
+    worse_but_finer = SimpleNamespace(price=400_000, remaining=64_000_000_000)
+
+    plan, remaining = p2p.plan_matches(
+        [best, second, third, worse_but_finer],
+        109_000_000_000,
+        p2p.PRICE - 1,
+    )
+
+    assert [row[0].price for row in plan] == [460_000, 450_000]
+    assert plan[0][2] == 108_000_000_000
+    assert plan[1][2] == 999_999_990
+    assert remaining == 10

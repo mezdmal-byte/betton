@@ -13,7 +13,8 @@ export type OutcomeQuoteProps = {
   side: OutcomeSide
   state?: OutcomeQuoteState
   showMetrics?: boolean
-  density?: 'default' | 'compact'
+  showLiquidity?: boolean
+  density?: 'default' | 'compact' | 'feed'
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
 
 export function OutcomeQuote({
@@ -23,6 +24,7 @@ export function OutcomeQuote({
   side,
   state = 'default',
   showMetrics = true,
+  showLiquidity = true,
   density = 'default',
   className,
   type = 'button',
@@ -53,6 +55,7 @@ export function OutcomeQuote({
         resolvedState === 'resolved-loser' && styles.resolvedLoser,
         !showMetrics && styles.compact,
         density === 'compact' && styles.dense,
+        density === 'feed' && styles.feed,
         className,
       )}
       data-side={side}
@@ -65,7 +68,7 @@ export function OutcomeQuote({
         <>
           <span className={cx(styles.skeleton, styles.skeletonLabel)} />
           <span className={cx(styles.skeleton, styles.skeletonOdds)} />
-          <span className={cx(styles.skeleton, styles.skeletonLiq)} />
+          {showLiquidity ? <span className={cx(styles.skeleton, styles.skeletonLiq)} /> : null}
         </>
       ) : (
         <>
@@ -73,12 +76,12 @@ export function OutcomeQuote({
           {resolvedState === 'winner' ? <span className={styles.winnerMark}>{t('market.winner')}</span> : null}
           {showMetrics ? (
             <>
-              <span className={styles.odds}>
-                {formatOdds(resolvedState === 'no-liquidity' ? null : odds)}
-              </span>
-              <span className={styles.liquidity}>
-                {resolvedState === 'no-liquidity' ? t('market.noLiq') : formatTon(liquidity)}
-              </span>
+              <span className={styles.odds}>{formatOdds(resolvedState === 'no-liquidity' ? null : odds)}×</span>
+              {showLiquidity ? (
+                <span className={styles.liquidity}>
+                  {resolvedState === 'no-liquidity' ? t('market.noLiq') : formatTon(liquidity)}
+                </span>
+              ) : null}
             </>
           ) : null}
         </>

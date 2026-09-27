@@ -1,178 +1,178 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.question {
-  font-size: 17px;
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.28;
-  letter-spacing: var(--tracking-tight);
-  overflow-wrap: anywhere;
+  gap: 12px;
 }
 
 .outcomes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
-.oddsBlock {
+.inputCard {
+  position: relative;
+  display: flex;
+  min-height: 88px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: var(--color-input-background);
+}
+
+.inputCard > label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.inputCard input {
+  width: 100%;
+  padding: 0 42px 0 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 30px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 38px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clearOdds {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.clearOdds:active {
+  background: var(--color-surface-muted);
+}
+
+.quoteRows,
+.details {
+  display: flex;
+  flex-direction: column;
+}
+
+.quoteRow {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.quoteRow span {
+  min-width: 0;
+  flex: 1;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.quoteRow strong {
+  flex: 0 0 auto;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  text-align: right;
+}
+
+.accent {
+  color: var(--color-outcome-1) !important;
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.primaryMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 0;
+}
+
+.primaryMetric strong {
+  color: var(--color-accent-mint);
+  font-size: 38px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.primaryMetric span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.dataRow,
+.dataRowAccent {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.dataRowAccent {
+  color: var(--color-accent-mint);
+}
+
+.information {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.label {
-  font-size: 12px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.stepper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 44px;
-  padding: 0 4px;
-  background: var(--color-surface);
+  padding: 12px;
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-14);
+  border-radius: 14px;
+  background: var(--color-surface-raised);
 }
 
-.oddsValue {
-  font-size: 26px;
-  font-weight: var(--font-weight-bold);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
+.information strong {
+  color: var(--color-accent-mint);
+  font-size: 10px;
+  line-height: normal;
 }
 
-.presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.summary {
-  display: flex;
-  flex-direction: column;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-12);
-  overflow: hidden;
-}
-
-.summaryRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
-}
-
-.summaryRow span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.summaryRow + .summaryRow {
-  border-top: 1px solid var(--color-border-faint);
-}
-
-.summaryRow b {
-  color: var(--color-text-primary);
-  font-size: 13px;
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-}
-
-.now {
-  background: var(--color-outcome-a-tint);
-}
-
-.now span {
-  color: var(--color-outcome-a-text);
-}
-
-.rest span {
-  color: var(--color-text-secondary);
-}
-
-.book,
-.trades {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 4px 0;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-12);
-}
-
-.bookHead {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 4px 12px 6px;
-  color: var(--color-text-disabled);
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.02em;
-}
-
-.bookHead span:last-child {
-  text-align: right;
-}
-
-.trades h3 {
-  padding: 6px 12px 2px;
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-disabled);
-}
-
-.trade {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
-}
-
-.tradeOdds {
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-}
-
-.tradeAmount {
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.tradeTime {
-  color: var(--color-text-disabled);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.empty {
+.information p {
   margin: 0;
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--color-text-disabled);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
-.success {
+.error {
   margin: 0;
-  font-size: 13px;
+  color: var(--color-status-danger);
+  font-size: 12px;
   line-height: 1.4;
-  color: var(--color-outcome-a-text);
 }

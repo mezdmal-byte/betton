@@ -1,7 +1,7 @@
 import type { MarketOut } from '../api/types'
 import type { OutcomeSide } from '../types/market'
 
-export type TabName = 'markets' | 'create' | 'portfolio'
+export type TabName = 'markets' | 'portfolio' | 'create' | 'notifications' | 'profile'
 
 export type WalletTab = 'deposit' | 'withdraw'
 
@@ -10,8 +10,11 @@ export type Route =
   | { name: 'create' }
   | { name: 'create-result'; market: MarketOut }
   | { name: 'portfolio' }
+  | { name: 'notifications' }
   | { name: 'profile' }
+  | { name: 'profile-settings' }
   | { name: 'detail'; marketId: number }
+  | { name: 'quick-trade'; marketId: number; side: OutcomeSide }
   | { name: 'own-price'; marketId: number; side: OutcomeSide }
   | { name: 'moderation' }
   | { name: 'my-markets' }
@@ -19,8 +22,10 @@ export type Route =
   | { name: 'help' }
   | { name: 'wallet'; tab: WalletTab }
   | { name: 'history' }
+  | { name: 'chat-lobby' }
+  | { name: 'chat-market'; marketId: number }
 
-export const TOP_LEVEL_ROUTES: ReadonlySet<Route['name']> = new Set(['markets', 'create', 'portfolio'])
+export const TOP_LEVEL_ROUTES: ReadonlySet<Route['name']> = new Set(['markets', 'portfolio', 'create', 'notifications', 'profile'])
 
 export function isTopLevel(route: Route): boolean {
   return TOP_LEVEL_ROUTES.has(route.name)
@@ -29,6 +34,10 @@ export function isTopLevel(route: Route): boolean {
 export function sameRoute(a: Route, b: Route): boolean {
   if (a.name !== b.name) return false
   if (a.name === 'detail' && b.name === 'detail') return a.marketId === b.marketId
+  if (a.name === 'chat-market' && b.name === 'chat-market') return a.marketId === b.marketId
+  if (a.name === 'quick-trade' && b.name === 'quick-trade') {
+    return a.marketId === b.marketId && a.side === b.side
+  }
   if (a.name === 'own-price' && b.name === 'own-price') {
     return a.marketId === b.marketId && a.side === b.side
   }

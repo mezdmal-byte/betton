@@ -1,8 +1,51 @@
-.screen { box-sizing: border-box; min-height: 100%; display: grid; place-items: center; padding: var(--space-24) var(--page-padding); background: var(--color-canvas); color: var(--color-text-primary); }
-.main { width: min(100%, 320px); display: grid; justify-items: center; gap: var(--space-16); text-align: center; }
-.mark { display: grid; min-width: 88px; height: 48px; padding: 0 16px; place-items: center; border-radius: var(--radius-16); background: var(--color-brand-plum); color: white; font-size: 20px; font-weight: var(--font-weight-bold); }
-.icon { display: grid; width: 56px; height: 56px; place-items: center; border-radius: 50%; background: var(--color-surface-muted); color: var(--color-action-primary); }
-.copy { display: grid; gap: var(--space-8); }
-.copy h1 { margin: 0; font-size: var(--text-title); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
-.copy p { margin: 0; color: var(--color-text-secondary); font-size: var(--text-callout); line-height: var(--leading-body); }
-.main button { width: 100%; margin-top: var(--space-8); }
+.screen {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pad-header-top) var(--page-padding) 12px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 27px;
+  letter-spacing: var(--tracking-tight);
+}
+
+.header span {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 var(--page-padding) 16px;
+}
+
+.stateCard {
+  padding: 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-surface-raised);
+}
+
+.stateCard p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  line-height: 1.35;
+}

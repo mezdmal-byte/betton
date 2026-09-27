@@ -5,7 +5,8 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import func, text, update
+from sqlalchemy import func, or_, text, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import ADMIN_BANKROLL, TIP_CREATOR_SHARE, TIP_PLATFORM_SHARE, settings
@@ -13,7 +14,7 @@ from app.lmsr import apply_buy, cost, max_tip, prices
 from app.models import Market, MarketStatus, Position, SettlementRecord, Trade, User
 from app.schemas import MarketActivityOut, MarketOut, PositionOut, QuoteOut, SettlementOut
 
-ALLOWED_CATEGORIES = ("sport", "politics", "unique")
+ALLOWED_CATEGORIES = ("sport", "esports", "politics", "crypto", "unique")
 MIN_LOCK_TON = 10.0
 MIN_OUTCOMES = 2
 MAX_OUTCOMES = 8
@@ -425,7 +426,15 @@ def get_or_create_telegram_user(
         # Never attach Telegram to an existing account by username match alone.
         while db.query(User).filter(User.username == uname).one_or_none() is not None:
             uname = f"tg{telegram_id}_{uuid.uuid4().hex[:8]}"
-        user = create_user(db, username=uname, telegram_id=telegram_id)
+        try:
+            user = create_user(db, username=uname, telegram_id=telegram_id)
+        except IntegrityError:
+            # Multiple frontend requests can authenticate the same Telegram user
+            # concurrently on a fresh preview DB. The first insert wins; reuse it.
+            db.rollback()
+            user = db.query(User).filter(User.telegram_id == telegram_id).one_or_none()
+            if user is None:
+                raise
     if apply_telegram_profile(
         user,
         username=username,
@@ -443,7 +452,7 @@ def _normalize_category(category: str | None) -> str:
     if cat not in ALLOWED_CATEGORIES:
         raise HTTPException(
             status_code=400,
-            detail="Категория должна быть sport, politics или unique",
+            detail="Категория должна быть sport, esports, politics, crypto или unique",
         )
     return cat
 
@@ -554,16 +563,78 @@ def list_markets_page(
     if category:
         query = query.filter(Market.category == _normalize_category(category))
     needle = (q or "").strip()
+    sqlite_python_search = False
+    lowered_needle = ""
+    category_aliases = {
+        "sport": "sport",
+        "спорт": "sport",
+        "sports": "sport",
+        "esports": "esports",
+        "esport": "esports",
+        "киберспорт": "esports",
+        "кс2": "esports",
+        "cs2": "esports",
+        "politics": "politics",
+        "политика": "politics",
+        "полит": "politics",
+        "crypto": "crypto",
+        "крипто": "crypto",
+        "криптовалюта": "crypto",
+        "unique": "unique",
+        "другое": "unique",
+        "другие": "unique",
+        "уник": "unique",
+    }
+    category_labels = {
+        "sport": ("sport", "sports", "спорт"),
+        "esports": ("esports", "esport", "киберспорт", "кс2", "cs2", "counter-strike"),
+        "politics": ("politics", "политика"),
+        "crypto": ("crypto", "крипто", "криптовалюта"),
+        "unique": ("unique", "другое", "другие", "уникальное"),
+    }
     if needle:
-        raw = f"%{needle}%"
-        lowered = f"%{needle.lower()}%"
-        query = query.filter(
-            Market.question.like(raw)
-            | func.lower(Market.question).like(lowered)
-            | func.coalesce(Market.description, "").like(raw)
-            | func.lower(func.coalesce(Market.description, "")).like(lowered)
-        )
+        lowered_needle = needle.casefold().lstrip("@")
+        category_match = category_aliases.get(lowered_needle)
+        if db.get_bind().dialect.name == "sqlite":
+            # SQLite lower()/NOCASE only handles ASCII reliably. The preview runs
+            # on SQLite, so do the final user-facing Unicode match in Python.
+            sqlite_python_search = True
+        else:
+            lowered = f"%{lowered_needle}%"
+            query = query.join(User, Market.creator_id == User.id)
+            filters = [
+                func.lower(Market.question).like(lowered),
+                func.lower(func.coalesce(Market.description, "")).like(lowered),
+                func.lower(func.coalesce(Market.category, "")).like(lowered),
+                func.lower(func.coalesce(User.telegram_username, "")).like(lowered),
+                func.lower(func.coalesce(User.display_name, "")).like(lowered),
+                func.lower(func.coalesce(User.username, "")).like(lowered),
+            ]
+            if category_match:
+                filters.append(Market.category == category_match)
+            query = query.filter(or_(*filters))
     rows = query.order_by(Market.id.desc()).all()
+    if sqlite_python_search:
+        creators = {
+            user.id: user
+            for user in db.query(User).filter(User.id.in_({m.creator_id for m in rows})).all()
+        }
+        def matches_market_search(market: Market) -> bool:
+            creator = creators.get(market.creator_id)
+            values = [
+                market.question or "",
+                market.description or "",
+                market.category or "",
+            ]
+            values.extend(category_labels.get((market.category or "").casefold(), ()))
+            if creator is not None:
+                values.extend([
+                    creator.telegram_username or "",
+                    creator.display_name or "",
+                    creator.username or "",
+                ])
+            return any(lowered_needle in str(value).casefold().lstrip("@") for value in values)
+        rows = [market for market in rows if matches_market_search(market)]
     for market in rows:
         if _maybe_auto_close(db, market):
             db.commit()

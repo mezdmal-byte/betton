@@ -1,38 +1,72 @@
 :root {
-  --color-canvas: #f7f8fa;
-  --color-surface: #ffffff;
-  --color-surface-muted: #fafbfc;
-  --color-control-fill: #ffffff;
-  --color-text-primary: #15171a;
-  --color-text-secondary: #667085;
-  --color-text-inverse: #ffffff;
-  --color-text-disabled: #98a2b3;
-  --color-border-subtle: #e5e7eb;
-  --color-border-faint: #eef0f3;
-  --color-brand-plum: #23001e;
-  --color-brand-teal: #20a39e;
-  --color-action-primary: #11756f;
-  --color-action-primary-hover: #0f6d68;
-  --color-action-primary-pressed: #0c5c58;
-  --color-outcome-a-accent: #20a39e;
-  --color-outcome-a-tint: #eef9f8;
-  --color-outcome-a-surface: #e1f4f2;
-  --color-outcome-a-text: #0f716b;
-  --color-outcome-a-pressed: #d2eeeb;
-  --color-outcome-b-accent: #ef5b5b;
-  --color-outcome-b-tint: #fff3f3;
-  --color-outcome-b-surface: #fde8e8;
-  --color-outcome-b-text: #b42318;
-  --color-outcome-b-pressed: #fbdada;
-  --color-warning: #b54708;
-  --color-warning-surface: #fef6ee;
-  --color-danger: #b42318;
-  --color-danger-surface: #fff1f1;
-  --color-overlay: rgba(21, 23, 26, 0.4);
-  --color-focus: #20a39e;
-  --color-chart-line: #20a39e;
-  --color-chart-fill: rgba(32, 163, 158, 0.05);
-  --color-chart-grid: #eef0f3;
+  color-scheme: light;
+
+  /* BetTON / Color — C · Light / Porcelain & Cobalt */
+  --color-background-primary: #f6f5f1;
+  --color-surface-base: #ffffff;
+  --color-surface-raised: #eef1f5;
+  --color-text-primary: #192027;
+  --color-text-secondary: #596772;
+  --color-text-muted: #63717c;
+  --color-text-on-accent: #ffffff;
+  --color-accent-mint: #245cde;
+  --color-outcome-1: #087c61;
+  --color-outcome-2: #bc3d4c;
+  --color-outcome-1-surface: #ddf3e9;
+  --color-outcome-2-surface: #fbe8eb;
+  --color-border-subtle: #d4dbe2;
+  --color-status-warning: #996800;
+  --color-status-info: #245cde;
+  --color-status-success: #087c61;
+  --color-status-danger: #bc3d4c;
+  --color-status-success-surface: #ddf3e9;
+  --color-status-danger-surface: #fbe8eb;
+  --color-selected-background: #e7eeff;
+  --color-input-background: #ffffff;
+  --color-disabled-background: #e5e8eb;
+  --color-disabled-text: #6a7580;
+  --color-overlay-scrim: #192027;
+  --color-status-warning-surface: #fff3d6;
+  --color-data-odds: #192027;
+
+  --color-preview-theme-dark-background: #ffffff;
+  --color-preview-theme-dark-text: #596772;
+  --color-preview-theme-light-background: #e7eeff;
+  --color-preview-theme-light-text: #245cde;
+
+  /* Compatibility aliases for existing functional components. */
+  --color-canvas: var(--color-background-primary);
+  --color-surface: var(--color-surface-base);
+  --color-surface-muted: var(--color-surface-raised);
+  --color-control-fill: var(--color-input-background);
+  --color-text-inverse: var(--color-text-on-accent);
+  --color-text-disabled: var(--color-disabled-text);
+  --color-border-faint: var(--color-border-subtle);
+  --color-brand-plum: var(--color-text-primary);
+  --color-brand-teal: var(--color-accent-mint);
+  --color-action-primary: var(--color-accent-mint);
+  --color-action-primary-hover: var(--color-accent-mint);
+  --color-action-primary-pressed: var(--color-accent-mint);
+  --color-outcome-a-accent: var(--color-outcome-1);
+  --color-outcome-a-tint: var(--color-outcome-1-surface);
+  --color-outcome-a-surface: var(--color-outcome-1-surface);
+  --color-outcome-a-text: var(--color-outcome-1);
+  --color-outcome-a-pressed: var(--color-outcome-1-surface);
+  --color-outcome-b-accent: var(--color-outcome-2);
+  --color-outcome-b-tint: var(--color-outcome-2-surface);
+  --color-outcome-b-surface: var(--color-outcome-2-surface);
+  --color-outcome-b-text: var(--color-outcome-2);
+  --color-outcome-b-pressed: var(--color-outcome-2-surface);
+  --color-warning: var(--color-status-warning);
+  --color-warning-surface: var(--color-status-warning-surface);
+  --color-danger: var(--color-status-danger);
+  --color-danger-surface: var(--color-status-danger-surface);
+  --color-overlay: rgba(25, 32, 39, 0.42);
+  --color-focus: var(--color-accent-mint);
+  --color-chart-line: var(--color-data-odds);
+  --color-chart-fill: rgba(36, 92, 222, 0.08);
+  --color-chart-grid: var(--color-border-subtle);
+  --color-balance-pill: var(--color-accent-mint);
 
   --space-4: 4px;
   --space-8: 8px;
@@ -50,71 +84,82 @@
   --radius-16: 16px;
   --radius-20: 20px;
   --radius-24: 24px;
+  --radius-28: 28px;
   --radius-pill: 999px;
 
   --page-padding: 16px;
   --touch-min: 44px;
   --touch-preferred: 48px;
-  --nav-height: 64px;
-  --header-height: 48px;
-  --color-balance-pill: #20a39e;
+  --nav-height: 76px;
+  --header-height: 68px;
 
   --text-brand: 24px;
-  --text-title: 22px;
+  --text-title: 21px;
   --text-question: 17px;
-  --text-body: 16px;
-  --text-callout: 15px;
-  --text-caption: 13px;
-  --text-micro: 12px;
+  --text-body: 14px;
+  --text-callout: 13px;
+  --text-caption: 11px;
+  --text-micro: 10px;
   --leading-tight: 1.25;
   --leading-body: 1.4;
   --tracking-tight: -0.02em;
+
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --pad-header-top: max(var(--space-8), var(--safe-top));
   --pad-bar-bottom: max(var(--space-12), var(--safe-bottom));
-  --pad-nav-bottom: max(8px, var(--safe-bottom));
+  --pad-nav-bottom: max(12px, var(--safe-bottom));
   --tg-bottom: var(--tg-safe-area-inset-bottom, var(--safe-bottom));
   --action-bar-space: calc(var(--touch-min) + var(--space-8) + var(--pad-bar-bottom));
 
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  --font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
 
   --shadow-none: none;
-  --shadow-sheet: 0 -8px 28px rgba(21, 23, 26, 0.08);
+  --shadow-sheet: 0 -8px 28px rgba(25, 32, 39, 0.08);
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --color-canvas: #121417;
-  --color-surface: #1b1d21;
-  --color-surface-muted: #22252b;
-  --color-control-fill: #22252b;
-  --color-balance-pill: #20a39e;
-  --color-text-primary: #f2f4f7;
-  --color-text-secondary: #98a2b3;
-  --color-text-inverse: #15171a;
-  --color-text-disabled: #667085;
-  --color-border-subtle: #2e3238;
-  --color-border-faint: #26292e;
-  --color-brand-plum: #e8dce6;
-  --color-outcome-a-tint: #152422;
-  --color-outcome-a-surface: #1a2e2c;
-  --color-outcome-a-text: #7ad4cf;
-  --color-outcome-a-pressed: #1f3a37;
-  --color-outcome-b-tint: #2a1c1c;
-  --color-outcome-b-surface: #332020;
-  --color-outcome-b-text: #f2a3a3;
-  --color-outcome-b-pressed: #3a2525;
-  --color-warning: #f79009;
-  --color-warning-surface: #2a2118;
-  --color-danger: #f97066;
-  --color-danger-surface: #2a1c1c;
-  --color-overlay: rgba(8, 9, 10, 0.62);
-  --color-chart-fill: rgba(32, 163, 158, 0.12);
-  --color-chart-grid: #2e3238;
+
+  /* BetTON / Color — A · Current Dark */
+  --color-background-primary: #060b0e;
+  --color-surface-base: #0b1115;
+  --color-surface-raised: #111a20;
+  --color-text-primary: #f3f7f5;
+  --color-text-secondary: #94a3ad;
+  --color-text-muted: #75848d;
+  --color-text-on-accent: #061510;
+  --color-accent-mint: #4ae7bb;
+  --color-outcome-1: #4ae7bb;
+  --color-outcome-2: #ff5e6c;
+  --color-outcome-1-surface: #12392d;
+  --color-outcome-2-surface: #3d1c25;
+  --color-border-subtle: #20303a;
+  --color-status-warning: #f0b856;
+  --color-status-info: #67afff;
+  --color-status-success: #4ae7bb;
+  --color-status-danger: #ff5e6c;
+  --color-status-success-surface: #12392d;
+  --color-status-danger-surface: #3d1c25;
+  --color-selected-background: #142a25;
+  --color-input-background: #0b1115;
+  --color-disabled-background: #172127;
+  --color-disabled-text: #75848d;
+  --color-overlay-scrim: #000000;
+  --color-status-warning-surface: #372e18;
+  --color-data-odds: #4ae7bb;
+
+  --color-preview-theme-dark-background: #142a25;
+  --color-preview-theme-dark-text: #4ae7bb;
+  --color-preview-theme-light-background: #0b1115;
+  --color-preview-theme-light-text: #94a3ad;
+
+  --color-overlay: rgba(0, 0, 0, 0.62);
+  --color-chart-fill: rgba(74, 231, 187, 0.10);
   --shadow-sheet: 0 -8px 28px rgba(0, 0, 0, 0.35);
 }

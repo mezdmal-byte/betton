@@ -67,3 +67,18 @@
   font-size: 13px;
   color: var(--color-text-disabled);
 }
+
+
+.expandButton {
+  min-height: 38px;
+  padding: 8px 0 2px;
+  border: 0;
+  border-top: 1px solid var(--color-border-subtle);
+  background: transparent;
+  color: var(--color-accent-mint);
+  font: inherit;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  cursor: pointer;
+}
