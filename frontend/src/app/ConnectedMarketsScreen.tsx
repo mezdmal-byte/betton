@@ -167,7 +167,11 @@ export function ConnectedMarketsScreen({
         onSortChange={(sort) => onFeedViewChange({ ...feedView, sort })}
         onCategoryChange={(category) => onFeedViewChange({ ...feedView, category })}
         filtersOpen={filtersOpen}
-        filtersActive={feedView.status !== 'open'}
+        filtersActive={
+          feedView.status !== 'open' ||
+          feedView.category !== 'all' ||
+          feedView.sort !== 'new'
+        }
         onFiltersClick={() => setFiltersOpen(true)}
         onSelectMarket={onSelectMarket}
         onCreatorClick={onCreatorClick}
@@ -200,8 +204,11 @@ export function ConnectedMarketsScreen({
         open={filtersOpen}
         status={feedView.status}
         category={feedView.category}
+        sort={feedView.sort}
         onClose={() => setFiltersOpen(false)}
-        onApply={(status, category) => onFeedViewChange({ ...feedView, status, category })}
+        onApply={(status, category, sort) =>
+          onFeedViewChange({ ...feedView, status, category, sort })
+        }
       />
       {trade && sheetMarket ? (
         <div className={overlayStyles.overlay}>
