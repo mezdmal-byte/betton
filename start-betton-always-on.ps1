@@ -25,6 +25,16 @@ namespace BetTon {
     [void][BetTon.NativePower]::SetThreadExecutionState(0x80000001)
 }
 
+function Read-SecretValue([string]$Prompt) {
+    $secure = Read-Host $Prompt -AsSecureString
+    $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
+    } finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr)
+    }
+}
+
 function Ensure-AdminUsername([string]$EnvFile, [string]$Username) {
     $raw = Read-EnvValue $EnvFile "ADMIN_TELEGRAM_USERNAMES"
     $names = @()
@@ -329,12 +339,24 @@ try {
 
     $botToken = Read-EnvValue $EnvFile "BOT_TOKEN"
     if ([string]::IsNullOrWhiteSpace($botToken)) {
-        throw "BOT_TOKEN is empty. Keep the local sobakapes bot token in .env."
+        Write-Host "BOT_TOKEN is missing from .env." -ForegroundColor Yellow
+        $botToken = Read-SecretValue "Paste the local sobakapes BOT_TOKEN"
+        if ([string]::IsNullOrWhiteSpace($botToken)) {
+            throw "BOT_TOKEN is required for the local Telegram bot."
+        }
+        Write-EnvValue $EnvFile "BOT_TOKEN" $botToken
     }
 
     $pandaToken = Read-EnvValue $EnvFile "PANDASCORE_TOKEN"
     if ([string]::IsNullOrWhiteSpace($pandaToken)) {
-        Write-Host "WARNING: PANDASCORE_TOKEN is empty. CS2 fixtures/import will not work locally." -ForegroundColor Yellow
+        Write-Host "PANDASCORE_TOKEN is missing from .env." -ForegroundColor Yellow
+        $pandaToken = Read-SecretValue "Paste the PandaScore token (input is hidden)"
+        if (-not [string]::IsNullOrWhiteSpace($pandaToken)) {
+            Write-EnvValue $EnvFile "PANDASCORE_TOKEN" $pandaToken
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($pandaToken)) {
+        Write-Host "WARNING: PandaScore remains disabled for this local run." -ForegroundColor Yellow
     } else {
         Write-Host "PandaScore: configured"
     }
