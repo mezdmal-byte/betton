@@ -343,7 +343,7 @@
   font-size: 14px;
 }
 
-.sourceCard span {
+.sourceCard > div > span {
   color: var(--color-text-secondary);
   font-size: 11px;
   line-height: 1.4;
