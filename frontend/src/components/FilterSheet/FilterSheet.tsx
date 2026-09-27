@@ -25,14 +25,16 @@ export type FilterSheetProps = {
   open: boolean
   status: string
   category?: string
+  sort?: string
   onClose: () => void
-  onApply: (status: string, category: string) => void
+  onApply: (status: string, category: string, sort: string) => void
 }
 
 export function FilterSheet({
   open,
   status,
   category = 'all',
+  sort = 'new',
   onClose,
   onApply,
 }: FilterSheetProps) {
@@ -40,12 +42,14 @@ export function FilterSheet({
   const titleId = useId()
   const [draftStatus, setDraftStatus] = useState(status)
   const [draftCategory, setDraftCategory] = useState(category)
+  const [draftSort, setDraftSort] = useState(sort)
 
   useEffect(() => {
     if (!open) return
     setDraftStatus(status)
     setDraftCategory(category)
-  }, [open, status, category])
+    setDraftSort(sort)
+  }, [open, status, category, sort])
 
   useEffect(() => {
     if (!open) return
@@ -61,6 +65,7 @@ export function FilterSheet({
   const reset = () => {
     setDraftStatus('all')
     setDraftCategory('all')
+    setDraftSort('new')
   }
 
   return (
@@ -76,6 +81,27 @@ export function FilterSheet({
         <div className={styles.head}>
           <h2 id={titleId} className={styles.title}>{t('feed.filters')}</h2>
           <button type="button" className={styles.reset} onClick={reset}>{t('feed.reset')}</button>
+        </div>
+
+        <div className={styles.group}>
+          <strong className={styles.groupTitle}>{t('feed.sort')}</strong>
+          <div className={styles.pills} role="radiogroup" aria-label={t('feed.sort')}>
+            {[
+              { id: 'new', label: t('feed.new') },
+              { id: 'popular', label: t('feed.popular') },
+              { id: 'closing', label: t('feed.closing') },
+            ].map((item) => (
+              <Chip
+                key={item.id}
+                className={styles.chip}
+                surface="raised"
+                selected={draftSort === item.id}
+                onClick={() => setDraftSort(item.id)}
+              >
+                {item.label}
+              </Chip>
+            ))}
+          </div>
         </div>
 
         <div className={styles.group}>
@@ -116,7 +142,7 @@ export function FilterSheet({
           <Button variant="secondary" onClick={reset}>{t('feed.reset')}</Button>
           <Button
             onClick={() => {
-              onApply(draftStatus, draftCategory)
+              onApply(draftStatus, draftCategory, draftSort)
               onClose()
             }}
           >
