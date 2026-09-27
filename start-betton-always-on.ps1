@@ -7,6 +7,41 @@ function Write-Section([string]$Text) {
     Write-Host "============================================================"
 }
 
+function Enable-KeepAwake {
+    if (-not ("BetTon.NativePower" -as [type])) {
+        Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+namespace BetTon {
+    public static class NativePower {
+        [DllImport("kernel32.dll")]
+        public static extern uint SetThreadExecutionState(uint esFlags);
+    }
+}
+"@
+    }
+    # ES_CONTINUOUS | ES_SYSTEM_REQUIRED. The display may turn off, but Windows
+    # should not enter automatic sleep while this launcher is running.
+    [void][BetTon.NativePower]::SetThreadExecutionState(0x80000001)
+}
+
+function Ensure-AdminUsername([string]$EnvFile, [string]$Username) {
+    $raw = Read-EnvValue $EnvFile "ADMIN_TELEGRAM_USERNAMES"
+    $names = @()
+    if (-not [string]::IsNullOrWhiteSpace($raw)) {
+        $names = @(
+            $raw.Replace(";", ",").Split(",") |
+                ForEach-Object { $_.Trim().TrimStart("@").ToLowerInvariant() } |
+                Where-Object { $_ }
+        )
+    }
+    $normalized = $Username.Trim().TrimStart("@").ToLowerInvariant()
+    if ($names -notcontains $normalized) {
+        $names += $normalized
+        Write-EnvValue $EnvFile "ADMIN_TELEGRAM_USERNAMES" (($names | Select-Object -Unique) -join ",")
+    }
+}
+
 function Test-Http([string]$Url, [int]$TimeoutSec = 5) {
     try {
         $r = Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec $TimeoutSec
@@ -271,7 +306,7 @@ try {
     $script:ProjectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     Set-Location -LiteralPath $script:ProjectDir
 
-    $TargetBranch = "feature/react-full-preview"
+    $TargetBranch = "feature/figma-full-implementation"
     $Port = 8000
     $EnvFile = Join-Path $script:ProjectDir ".env"
     $Python = Join-Path $script:ProjectDir ".venv\Scripts\python.exe"
@@ -288,6 +323,23 @@ try {
 
     if (-not (Test-Path $EnvFile)) { throw ".env not found: $EnvFile" }
     if (-not (Test-Path $Python)) { throw ".venv Python not found: $Python" }
+
+    Enable-KeepAwake
+    Ensure-AdminUsername $EnvFile "vasiliy395"
+
+    $botToken = Read-EnvValue $EnvFile "BOT_TOKEN"
+    if ([string]::IsNullOrWhiteSpace($botToken)) {
+        throw "BOT_TOKEN is empty. Keep the local sobakapes bot token in .env."
+    }
+
+    $pandaToken = Read-EnvValue $EnvFile "PANDASCORE_TOKEN"
+    if ([string]::IsNullOrWhiteSpace($pandaToken)) {
+        Write-Host "WARNING: PANDASCORE_TOKEN is empty. CS2 fixtures/import will not work locally." -ForegroundColor Yellow
+    } else {
+        Write-Host "PandaScore: configured"
+    }
+    Write-Host "Admin username ensured: @vasiliy395"
+    Write-Host "Keep-awake: enabled while this window is open"
 
     Update-GitSafely $TargetBranch
     Ensure-ReactPreview $script:ProjectDir
@@ -341,6 +393,8 @@ try {
     Write-Host "Mini App (legacy /): $currentUrl/"
     Write-Host "React preview /v2/:  $currentUrl/v2/"
     Write-Host "Health:              $currentUrl/health"
+    Write-Host "Admin:               @vasiliy395"
+    Write-Host "PandaScore:           $(-not [string]::IsNullOrWhiteSpace((Read-EnvValue $EnvFile "PANDASCORE_TOKEN")))"
     $botName = Read-EnvValue $EnvFile "TELEGRAM_BOT_USERNAME"
     if ([string]::IsNullOrWhiteSpace($botName)) {
         Write-Host "TELEGRAM_BOT_USERNAME: (empty; React share uses /v2/?share= fallback)"
