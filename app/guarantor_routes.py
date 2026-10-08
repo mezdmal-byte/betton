@@ -92,7 +92,7 @@ def profile_out(db, profile):
     # Earned badge, not a claim of identity verification or guaranteed honesty.
     high_reputation = bool(
         completed >= 10
-        and len(reviews) >= 5
+        and len({review.user_id for review in reviews}) >= 5
         and rating is not None
         and rating >= 4.5
         and dispute_count <= 1
