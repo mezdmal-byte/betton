@@ -79,6 +79,7 @@ export function ConnectedGuarantors({
     mutation.mutate({ path, body, method });
 
   const selected = list.data?.find((g) => g.user_id === selectedId)
+    ?? applications.data?.find((g) => g.user_id === selectedId)
     ?? (mine.data?.user_id === selectedId ? mine.data : null);
 
   if (selected) {
@@ -169,7 +170,7 @@ export function ConnectedGuarantors({
                   }>Стать гарантом</Button>
                 </div>
               )}
-              {(editing || (!mine.data && false)) ? (
+              {editing ? (
                 <>
                   <label className={s.field}>
                     О себе (необязательно)
@@ -187,16 +188,6 @@ export function ConnectedGuarantors({
                     submit("/guarantors/me", { bio, topics }, "PUT")
                   }>Сохранить описание</Button>
                 </>
-              ) : null}
-              {mine.data?.status === "pending" ? (
-                <Button disabled={mutation.isPending || !acceptedRules}
-                  onClick={() => submit("/guarantors/me", {
-                    bio: mine.data?.bio ?? "",
-                    topics: mine.data?.topics ?? "",
-                    accept_rules: true,
-                  }, "PUT")}>
-                  Активировать ранее созданную анкету
-                </Button>
               ) : null}
             </section>
 
