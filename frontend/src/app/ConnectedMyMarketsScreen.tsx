@@ -7,8 +7,9 @@ import { queryKeys } from '../api/query'
 import { rememberShareToken } from '../api/share'
 import { useI18n } from '../i18n'
 import { MyEventsScreen } from '../screens/MyEventsScreen'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 
-export function ConnectedMyMarketsScreen({ userId, onBack, onOpenMarket }: { userId?: number; onBack: () => void; onOpenMarket: (marketId: number) => void }) {
+export function ConnectedMyMarketsScreen({ userId, onBack, onOpenMarket, onNavChange }: { userId?: number; onBack: () => void; onOpenMarket: (marketId: number) => void; onNavChange?: (id: NavId) => void }) {
   const { locale } = useI18n()
   const query = useQuery({ queryKey: userId ? queryKeys.createdMarkets(userId) : ['users', 'markets', 'idle'], queryFn: () => listCreatedMarkets(userId as number), enabled: Boolean(userId) })
 
@@ -19,5 +20,5 @@ export function ConnectedMyMarketsScreen({ userId, onBack, onOpenMarket }: { use
   const markets = useMemo(() => (query.data ?? []).map((market) => mapMarketOut(market, new Date(), locale)), [query.data, locale])
   const viewState = !userId ? 'unauthenticated' : query.isPending ? 'loading' : query.isError ? 'error' : 'ready'
 
-  return <MyEventsScreen markets={markets} viewState={viewState} errorMessage={query.isError ? errorDetail(query.error) : null} onBack={onBack} onOpenMarket={(market) => onOpenMarket(Number(market.id))} onRetry={() => { void query.refetch() }} />
+  return <MyEventsScreen markets={markets} viewState={viewState} errorMessage={query.isError ? errorDetail(query.error) : null} onBack={onBack} onNavChange={onNavChange} onOpenMarket={(market) => onOpenMarket(Number(market.id))} onRetry={() => { void query.refetch() }} />
 }

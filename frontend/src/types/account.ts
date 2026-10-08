@@ -35,6 +35,22 @@ export type HistoryFixture = {
   createdAt?: string
 }
 
+export type SettlementFixture = {
+  id: string
+  marketId: number
+  question: string
+  winningOutcome: string
+  chosenOutcomes: string[]
+  stakesTotalTon: number
+  payoutTon: number
+  tipTon: number
+  creditedTon: number
+  resultTon: number
+  settlementKind?: string | null
+  cancellationReason?: string | null
+  resolvedAt?: string
+}
+
 export type AccountFixture = {
   displayName: string
   handle: string
@@ -44,12 +60,17 @@ export type AccountFixture = {
   inOrdersTon: number
   creatorIncomeTon: number
   eventsCreated: number | null
+  activeMarkets?: number | null
   createdVolumeTon: number | null
   isAdmin: boolean
   photoUrl?: string
 }
 
 export type CreateMarketDraft = {
+  guarantorId?: number
+  resolutionCriteria?: string
+  resolutionSource?: string
+  resultDueAt?: string
   question: string
   category: string
   outcomeA: string

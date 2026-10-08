@@ -36,6 +36,16 @@ def require_unlisted_access(market: Market, *, viewer: User | None = None, share
     if viewer is not None:
         if int(viewer.id) == int(market.creator_id):
             return
+        from sqlalchemy.orm import object_session
+        from app.models import GuarantorCase, PrivateTermsConsent
+        session = object_session(market)
+        case = session.get(GuarantorCase, market.id) if session else None
+        if case and case.guarantor_id == viewer.id:
+            return
+        # A player who explicitly joined this version can reopen notifications
+        # on another device without copying the original invitation token again.
+        if case and session.get(PrivateTermsConsent, (market.id, viewer.id)):
+            return
         if viewer.is_admin:
             return
     if _tokens_match(share_token, getattr(market, "share_token", None)):

@@ -51,11 +51,15 @@ def create_market(db, user_id, req):
                     mechanism='p2p', b=1, q=[0, 0], q_yes=0, q_no=0,
                     lock_ton=0, pot=0, lock_returned=True,
                     close_at=legacy._naive_utc(req.close_at),
-                    status=MarketStatus.open if unlisted else MarketStatus.pending,
+                    status=MarketStatus.closed if unlisted else MarketStatus.pending,
                     visibility=visibility,
                     share_token=secrets.token_urlsafe(24) if unlisted else None,
                     p2p_journal_coverage=ledger.COVERAGE_FULL)
     db.add(market)
+    if unlisted:
+        from app.services.guarantors import create_case
+        db.flush()
+        create_case(db, market, req)
     db.commit()
     db.refresh(market)
     return market
@@ -89,9 +93,17 @@ def plan_matches(orders, amount, limit_price):
             break
         divisor = math.gcd(maker.price, PRICE)
         maker_lot, taker_lot = maker.price//divisor, (PRICE-maker.price)//divisor
-        lots = min(maker.remaining//maker_lot, remaining//taker_lot)
-        if not lots:
+        maker_lots = maker.remaining // maker_lot
+        taker_lots = remaining // taker_lot
+        if not maker_lots:
+            # An unmatchable maker dust remainder must not block the book.
             continue
+        if not taker_lots:
+            # Price priority: if the taker's remainder cannot form one atomic
+            # lot at the current best executable price, do not skip that price
+            # and execute the dust at a worse level. Leave/refund the remainder.
+            break
+        lots = min(maker_lots, taker_lots)
         maker_stake, taker_stake = lots*maker_lot, lots*taker_lot
         plan.append((maker, maker_stake, taker_stake))
         remaining -= taker_stake
@@ -150,6 +162,8 @@ def preview(db, market_id, user_id, outcome, amount, odds, share_token=None, kin
     require_p2p(market)
     _guard_unlisted(db, market, user_id, share_token)
     legacy.require_accepting(market)
+    from app.services.guarantors import trading_guard
+    trading_guard(db, market, user_id)
     idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
     atomic, tick = parse_terms(amount, odds)
     orders = candidates(db, market, idx, user_id)
@@ -199,6 +213,8 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id, share
                 raise HTTPException(409, 'Идентификатор уже использован для другой заявки')
             return order_out(existing)
         legacy.require_accepting(market)
+        from app.services.guarantors import trading_guard
+        trading_guard(db, market, user_id, consent=True)
         orders = candidates(db, market, idx, user_id)
         plan, _ = plan_matches(orders, atomic, tick)
         legacy._lock_users(db, [user_id] + [m.user_id for m, _, _ in plan])
@@ -289,6 +305,13 @@ def void_market(db, market_id, user_id, reason):
         if market.status not in (MarketStatus.open, MarketStatus.closed):
             raise HTTPException(400, 'Отменить можно только открытое или закрытое событие')
 
+        from app.models import GuarantorCase
+        case = db.get(GuarantorCase, market.id)
+        if case:
+            from app.services.guarantors import participant
+            if actor.id in (market.creator_id, case.guarantor_id) or participant(db, market.id, actor.id):
+                raise HTTPException(403, 'Нужен администратор, который не участвует в этом пари')
+
         orders = db.query(P2POrder).filter_by(market_id=market.id).all()
         fills = db.query(P2PFill).filter_by(market_id=market.id).all()
         filled_from_fills = defaultdict(int)
@@ -353,6 +376,11 @@ def void_market(db, market_id, user_id, reason):
         for pos in db.query(Position).filter_by(market_id=market.id):
             pos.claimed = True
             pos.tip_paid = 0
+        if case:
+            from app.services.guarantors import log, broadcast
+            case.state = "cancelled"
+            log(db, case, actor.id, "cancel", reason)
+            broadcast(db, market, case, "Пари отменено. Средства возвращены")
         market.status = MarketStatus.cancelled
         market.settlement_kind = legacy.SETTLEMENT_VOID
         market.cancellation_reason = reason

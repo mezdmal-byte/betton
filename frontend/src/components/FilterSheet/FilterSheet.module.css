@@ -11,18 +11,19 @@
 .sheet {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
-  padding: var(--space-4) var(--page-padding) var(--pad-bar-bottom);
-  background: var(--color-surface);
+  gap: 16px;
+  padding: 4px var(--page-padding) var(--pad-bar-bottom);
+  border: 1px solid var(--color-border-subtle);
   border-bottom: 0;
   border-radius: var(--radius-24) var(--radius-24) 0 0;
+  background: var(--color-surface-base);
   box-shadow: var(--shadow-sheet);
 }
 
 .handle {
   width: 36px;
   height: 4px;
-  margin: var(--space-8) auto var(--space-4);
+  margin: 8px auto 4px;
   border-radius: var(--radius-pill);
   background: var(--color-border-subtle);
 }
@@ -31,30 +32,44 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-12);
+  gap: 12px;
 }
 
 .title {
   margin: 0;
+  color: var(--color-text-primary);
   font-size: 20px;
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--tracking-tight);
 }
 
 .reset {
-  min-height: var(--touch-min);
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--color-action-primary);
+  color: var(--color-accent-mint);
+  font: inherit;
   font-size: 14px;
   font-weight: var(--font-weight-semibold);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupTitle {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
 }
 
 .pills {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-8);
+  gap: 8px;
 }
 
 .chip {
@@ -71,5 +86,5 @@
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
+  gap: 8px;
 }

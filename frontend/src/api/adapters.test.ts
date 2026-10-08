@@ -59,6 +59,7 @@ describe('category mapping', () => {
   it('maps UI pills to backend category query', () => {
     expect(mapUiCategoryToApi('all')).toBeUndefined()
     expect(mapUiCategoryToApi('sport')).toBe('sport')
+    expect(mapUiCategoryToApi('esports')).toBe('esports')
     expect(mapUiCategoryToApi('politics')).toBe('politics')
     expect(mapUiCategoryToApi('crypto')).toBe('crypto')
     expect(mapUiCategoryToApi('other')).toBe('unique')
@@ -66,11 +67,14 @@ describe('category mapping', () => {
 
   it('maps backend categories onto frozen UI labels', () => {
     expect(mapApiCategoryToLabel('sport')).toBe('Спорт')
+    expect(mapApiCategoryToLabel('esports')).toBe('Киберспорт')
     expect(mapApiCategoryToLabel('politics')).toBe('Политика')
     expect(mapApiCategoryToLabel('crypto')).toBe('Крипто')
     expect(mapApiCategoryToLabel('unique')).toBe('Другое')
     expect(mapApiCategoryToLabel('crypto', 'en')).toBe('Crypto')
     expect(mapApiCategoryToLabel('sport', 'zh')).toBe('体育')
+    expect(mapApiCategoryToLabel('esports', 'en')).toBe('Esports')
+    expect(mapApiCategoryToLabel('esports', 'zh')).toBe('电竞')
   })
 })
 
@@ -469,6 +473,20 @@ describe('create market payload', () => {
     expect(payload.category).toBe('crypto')
   })
 
+  it('keeps esports as a real backend category for imported CS2 markets', () => {
+    const payload = buildCreateMarketPayload({
+      question: 'NAVI — Vitality: кто победит?',
+      category: 'esports',
+      outcomeA: 'NAVI',
+      outcomeB: 'Vitality',
+      closeAt: new Date('2026-09-27T15:30:00.000Z'),
+      visibility: 'public',
+      description: 'PandaScore API · CS2 match #12345',
+    })
+    expect(payload.category).toBe('esports')
+    expect(payload.outcomes).toEqual(['NAVI', 'Vitality'])
+  })
+
   it('does not send UI-only private visibility', () => {
     expect(backendVisibilityOrUnavailable('private')).toEqual({ value: 'public', unsupported: true })
     expect(backendVisibilityOrUnavailable('unlisted')).toEqual({ value: 'unlisted', unsupported: false })
@@ -535,6 +553,18 @@ describe('trade history adapter', () => {
     expect(seriesA[0]?.odds).toBe(2.2)
     expect(seriesB[0]?.odds).toBe(1.83333)
     expect(seriesA[0]?.volume).toBe(41.6667)
+  })
+
+  it('keeps a genuinely executed small fill visible in chart history', () => {
+    const small = {
+      ...fill,
+      id: 10,
+      maker_stake: 0.00001,
+      maker_stake_nano: 10_000,
+    }
+    const points = mapTradesToChartPoints([small], 0)
+    expect(points).toHaveLength(1)
+    expect(points[0]?.volume).toBe(0.00001)
   })
 
   it('localizes recent trade relative time', () => {

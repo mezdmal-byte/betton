@@ -69,7 +69,7 @@ class User(Base):
 
     @property
     def is_admin(self) -> bool:
-        return settings.is_admin_telegram(self.telegram_id)
+        return settings.is_admin_telegram_identity(self.telegram_id, self.telegram_username)
 
 
 class Market(Base):
@@ -260,4 +260,111 @@ class P2PMoneyEntry(Base):
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     origin_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
     reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class ChatMessage(Base):
+    """Lobby or market discussion message. market_id=None means the global lobby."""
+
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    market_id: Mapped[int | None] = mapped_column(
+        ForeignKey("markets.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    text: Mapped[str] = mapped_column(Text, default="")
+    reply_to_id: Mapped[int | None] = mapped_column(
+        ForeignKey("chat_messages.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    attached_market_id: Mapped[int | None] = mapped_column(
+        ForeignKey("markets.id", ondelete="SET NULL"), nullable=True
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+    author: Mapped[User] = relationship(foreign_keys=[user_id])
+    reply_to: Mapped["ChatMessage | None"] = relationship(
+        remote_side="ChatMessage.id", foreign_keys=[reply_to_id]
+    )
+    attached_market: Mapped[Market | None] = relationship(foreign_keys=[attached_market_id])
+
+
+class ChatReadState(Base):
+    """Last seen message id per user and chat scope; only replies use this for badges."""
+
+    __tablename__ = "chat_read_states"
+    __table_args__ = (UniqueConstraint("user_id", "scope_key", name="uq_chat_read_scope"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    scope_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_read_message_id: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class GuarantorProfile(Base):
+    __tablename__ = 'guarantor_profiles'
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), default='pending')
+    bio: Mapped[str] = mapped_column(String(1000), default='')
+    topics: Mapped[str] = mapped_column(String(300), default='')
+    available_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class GuarantorCase(Base):
+    __tablename__ = 'guarantor_cases'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    guarantor_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    state: Mapped[str] = mapped_column(String(24), default='invited')
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    creator_confirmed: Mapped[int] = mapped_column(Integer, default=1)
+    criteria: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(Text)
+    result_due_at: Mapped[datetime] = mapped_column(DateTime)
+    deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    extension_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    proposed_outcome: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class GuarantorMessage(Base):
+    __tablename__ = 'guarantor_messages'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    kind: Mapped[str] = mapped_column(String(24))
+    text: Mapped[str] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class GuarantorReview(Base):
+    __tablename__ = 'guarantor_reviews'
+    __table_args__ = (UniqueConstraint('market_id', 'user_id'), CheckConstraint('rating BETWEEN 1 AND 5'))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'))
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    guarantor_id: Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(String(1000))
+
+
+class PrivateTermsConsent(Base):
+    __tablename__ = 'private_terms_consents'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer)
+
+
+class AppNotification(Base):
+    __tablename__ = 'app_notifications'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
+    market_id: Mapped[int | None] = mapped_column(ForeignKey('markets.id'), nullable=True)
+    text: Mapped[str] = mapped_column(String(1000))
+    read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

@@ -37,6 +37,8 @@ export type ConnectedMarketsScreenProps = {
   onCreatorClick?: (market: MarketFixture) => void
   onTopCreatorClick?: (userId: number) => void
   onOwnPrice: (marketId: number, side: OutcomeSide) => void
+  chatUnreadReplies?: number
+  onChatClick?: () => void
 }
 
 export function ConnectedMarketsScreen({
@@ -53,6 +55,8 @@ export function ConnectedMarketsScreen({
   onCreatorClick,
   onTopCreatorClick,
   onOwnPrice,
+  chatUnreadReplies = 0,
+  onChatClick,
 }: ConnectedMarketsScreenProps) {
   const { locale } = useI18n()
   const [trade, setTrade] = useState<{ market: MarketFixture; side: OutcomeSide; amount: number } | null>(
@@ -163,7 +167,11 @@ export function ConnectedMarketsScreen({
         onSortChange={(sort) => onFeedViewChange({ ...feedView, sort })}
         onCategoryChange={(category) => onFeedViewChange({ ...feedView, category })}
         filtersOpen={filtersOpen}
-        filtersActive={feedView.status !== 'open'}
+        filtersActive={
+          feedView.status !== 'open' ||
+          feedView.category !== 'all' ||
+          feedView.sort !== 'new'
+        }
         onFiltersClick={() => setFiltersOpen(true)}
         onSelectMarket={onSelectMarket}
         onCreatorClick={onCreatorClick}
@@ -189,12 +197,18 @@ export function ConnectedMarketsScreen({
         }}
         topCreators={topCreators}
         onTopCreatorClick={onTopCreatorClick}
+        chatUnreadReplies={chatUnreadReplies}
+        onChatClick={onChatClick}
       />
       <FilterSheet
         open={filtersOpen}
         status={feedView.status}
+        category={feedView.category}
+        sort={feedView.sort}
         onClose={() => setFiltersOpen(false)}
-        onApply={(status) => onFeedViewChange({ ...feedView, status })}
+        onApply={(status, category, sort) =>
+          onFeedViewChange({ ...feedView, status, category, sort })
+        }
       />
       {trade && sheetMarket ? (
         <div className={overlayStyles.overlay}>
