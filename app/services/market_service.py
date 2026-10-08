@@ -877,6 +877,9 @@ def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -
     require_admin(actor)
     try:
         market = _lock_market(db, market_id)
+        from app.models import GuarantorCase
+        if db.get(GuarantorCase, market_id):
+            raise HTTPException(409, "Используйте решение гаранта или рассмотрение спора")
         if market.mechanism == "p2p" and market.status == MarketStatus.open and not is_accepting_bets(market):
             # Already locked. Settlement locks all recipients before refunding orders.
             market.status = MarketStatus.closed

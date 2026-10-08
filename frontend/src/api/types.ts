@@ -222,6 +222,10 @@ export type CreatorProfileOut = {
 }
 
 export type CreateMarketBody = {
+  guarantor_id?: number
+  resolution_criteria?: string
+  resolution_source?: string
+  result_due_at?: string
   mechanism: 'p2p'
   question: string
   description: string

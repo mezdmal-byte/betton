@@ -12,6 +12,7 @@ export type Route =
   | { name: 'portfolio' }
   | { name: 'notifications' }
   | { name: 'profile' }
+  | { name: 'guarantors' }
   | { name: 'profile-settings' }
   | { name: 'detail'; marketId: number }
   | { name: 'quick-trade'; marketId: number; side: OutcomeSide }

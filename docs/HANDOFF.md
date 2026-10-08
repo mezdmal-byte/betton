@@ -1,3 +1,5 @@
+> **Актуальное обновление 2026-10-08:** ветка `feature/guarantor-mvp` основана на `feature/figma-full-implementation`. Начните с [GUARANTOR_MVP.md](GUARANTOR_MVP.md). Указания на прежнюю рабочую ветку ниже сохранены как исторический контекст.
+
 > **READ FIRST:** `docs/BETTON_BIBLE.md` is the living product source of truth for product direction, UX, design quality gates, open questions and roadmap. Read it before this technical handoff and update it when product decisions change.
 
 # BetTON handoff

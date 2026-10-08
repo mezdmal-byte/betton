@@ -135,6 +135,7 @@ export function ProfileScreen({
           { id: 'history', label: t('profile.history'), meta: t('profile.historyMeta') },
         ]
       : []),
+    { id: 'guarantors', label: 'Гаранты', meta: 'Профиль, приглашения и проверка частных пари' },
     { id: 'help', label: t('profile.help'), meta: t('profile.helpMeta') },
     { id: 'settings', label: t('profile.settings'), meta: t('profile.settingsMeta') },
     ...(account.isAdmin

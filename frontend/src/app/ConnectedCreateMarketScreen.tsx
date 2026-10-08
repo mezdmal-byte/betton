@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { buildCreateMarketPayload } from '../api/adapters'
 import { errorDetail } from '../api/errors'
+import { guarantors } from '../api/guarantors'
 import { createMarket } from '../api/markets'
 import { getUpcomingCs2Matches, importUpcomingCs2Matches } from '../api/sports'
 import { queryKeys } from '../api/query'
@@ -17,17 +18,20 @@ import type { MarketOut } from '../api/types'
 export type ConnectedCreateMarketScreenProps = {
   onBack: () => void
   onCreated: (market: MarketOut) => void
+  userId?: number
+  isAdmin?: boolean
   enabled: boolean
   onNavChange?: (id: NavId) => void
 }
 
-export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavChange }: ConnectedCreateMarketScreenProps) {
+export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavChange, userId, isAdmin }: ConnectedCreateMarketScreenProps) {
   const t = useT()
   const queryClient = useQueryClient()
   const [closeAt, setCloseAt] = useState(() => defaultCloseAt())
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [cs2ImportMessage, setCs2ImportMessage] = useState<string | null>(null)
 
+  const guarantorQuery = useQuery({ queryKey: ['guarantors'], queryFn: guarantors, enabled, refetchInterval: 15_000 })
   const cs2Query = useQuery({
     queryKey: queryKeys.cs2Upcoming,
     queryFn: () => getUpcomingCs2Matches(40),
@@ -58,7 +62,7 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
       if (closeAt.getTime() <= Date.now()) throw new Error(t('create.closePast'))
       if (draft.outcomeA.trim() === draft.outcomeB.trim()) throw new Error(t('create.uniqOutcomes'))
       return createMarket(
-        buildCreateMarketPayload({
+        { ...buildCreateMarketPayload({
           question: draft.question,
           category: draft.category,
           outcomeA: draft.outcomeA,
@@ -66,7 +70,7 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
           closeAt,
           visibility,
           description: draft.description,
-        }),
+        }), guarantor_id: draft.guarantorId, resolution_criteria: draft.resolutionCriteria, resolution_source: draft.resolutionSource, result_due_at: draft.resultDueAt },
       )
     },
     onSuccess: (market) => {
@@ -84,6 +88,7 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
 
   return (
     <CreateMarketScreen
+      guarantors={guarantorQuery.data?.filter(g => g.user_id !== userId) ?? []}
       onBack={onBack}
       unauthenticated={!enabled}
       onNavChange={onNavChange}
@@ -103,13 +108,13 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
       onRetryCs2={() => { void cs2Query.refetch() }}
       cs2Importing={cs2ImportMutation.isPending}
       cs2ImportMessage={cs2ImportMessage}
-      onImportAllCs2={() => {
+      onImportAllCs2={isAdmin ? () => {
         setCs2ImportMessage(null)
-        void cs2ImportMutation.mutateAsync()
-      }}
+        cs2ImportMutation.mutate()
+      } : undefined}
       onSubmit={(draft) => {
         setErrorMessage(null)
-        void mutation.mutateAsync(draft)
+        mutation.mutate(draft)
       }}
     />
   )

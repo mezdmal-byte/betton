@@ -150,6 +150,8 @@ async def expire_orders_task():
     while True:
         try:
             await asyncio.to_thread(p2p_service.expire_due_orders)
+            from app.services.guarantors import process_due
+            await asyncio.to_thread(process_due)
         except Exception:
             logging.getLogger(__name__).exception("P2P expiration failed")
         await asyncio.sleep(15)
@@ -885,3 +887,7 @@ def list_orders_endpoint(user_id: int, current_user: User = Depends(get_current_
 
 
 mount_react_preview(app)
+
+
+from app.guarantor_routes import router as guarantor_router
+app.include_router(guarantor_router)
