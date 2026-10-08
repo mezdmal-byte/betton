@@ -1,5 +1,6 @@
 import type { Guarantor } from '../api/guarantors'
 import gs from '../app/Guarantors.module.css'
+import { GuarantorDetails } from '../app/GuarantorReputation'
 import { CircleHelp } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
@@ -41,6 +42,9 @@ const FLOW_STEPS: Exclude<WizardStep, 'start' | 'validation'>[] = [
 
 export type CreateMarketScreenProps = {
   guarantors?: Guarantor[]
+  guarantorsLoading?: boolean
+  guarantorsError?: boolean
+  onRetryGuarantors?: () => void
   draft?: CreateMarketDraft
   feeOpen?: boolean
   pickerOpen?: boolean
@@ -67,6 +71,9 @@ export type CreateMarketScreenProps = {
 
 export function CreateMarketScreen({
   guarantors = [],
+  guarantorsLoading = false,
+  guarantorsError = false,
+  onRetryGuarantors,
   draft = defaultCreateDraft,
   onBack,
   onNavChange,
@@ -102,10 +109,12 @@ export function CreateMarketScreen({
     draft.visibility === 'private' ? 'unlisted' : draft.visibility,
   )
   const [guarantorId, setGuarantorId] = useState('')
+  const [inspectedGuarantorId, setInspectedGuarantorId] = useState<number | null>(null)
   const [resultDueAt, setResultDueAt] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
+  const inspectedGuarantor = guarantors.find(g => g.user_id === inspectedGuarantorId)
   const categories = [
     { id: 'sport', label: t('cat.sport') },
     { id: 'esports', label: t('cat.esports') },
@@ -523,7 +532,53 @@ export function CreateMarketScreen({
               <span>Доступен только по точной ссылке.</span>
             </button>
           </div>
-          {visibility === 'unlisted' ? <section className={gs.panel}><label className={gs.field}>Кто проверит результат<select value={guarantorId} onChange={e => setGuarantorId(e.target.value)}><option value="">Выберите гаранта</option>{guarantors.filter(g => g.available).map(g => <option key={g.user_id} value={g.user_id}>{g.name} · {g.topics} · {g.review_count ? `${g.rating}/5` : 'нет отзывов'}</option>)}</select></label>{!guarantors.some(g => g.available) ? <p>Сейчас никто не принимает новые пари. Попробуйте позже или откройте публичное пари.</p> : null}<label className={gs.field}>До какого времени проверить результат<input type="datetime-local" value={resultDueAt} onChange={e => setResultDueAt(e.target.value)} /></label><p>Гаранту даётся минута на отклик и пять минут на согласование. Ставки откроются после принятия условий.</p></section> : null}
+          {visibility === 'unlisted' ? (
+            inspectedGuarantor ? (
+              <GuarantorDetails guarantor={inspectedGuarantor}
+                onBack={() => setInspectedGuarantorId(null)}
+                onChoose={() => {
+                  setGuarantorId(String(inspectedGuarantor.user_id))
+                  setInspectedGuarantorId(null)
+                }} />
+            ) : (
+              <section className={gs.panel}>
+                <label className={gs.field}>
+                  Кто проверит результат
+                  <select value={guarantorId} onChange={e => setGuarantorId(e.target.value)}>
+                    <option value="">Выберите гаранта</option>
+                    {guarantors.filter(g => g.available).map(g => (
+                      <option key={g.user_id} value={g.user_id}>
+                        {g.name} · {g.rating != null ? g.rating + '/5 (' + g.review_count + ')' : 'без оценок'}
+                        {g.is_moderator ? ' · модератор' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {guarantorsLoading ? <p>Загружаем доступных гарантов…</p> : null}
+                {guarantorsError ? (
+                  <>
+                    <p className={gs.error}>Не удалось загрузить список гарантов.</p>
+                    <Button variant="secondary" onClick={onRetryGuarantors}>Повторить</Button>
+                  </>
+                ) : null}
+                {!guarantorsLoading && !guarantorsError && !guarantors.some(g => g.available)
+                  ? <p>Сейчас никто не принимает новые пари. Попробуйте позже или откройте публичное пари.</p>
+                  : null}
+                {guarantorId && guarantors.some(g => g.user_id === Number(guarantorId)) ? (
+                  <Button variant="secondary" onClick={() => setInspectedGuarantorId(Number(guarantorId))}>
+                    Рейтинг, статистика и отзывы гаранта
+                  </Button>
+                ) : null}
+                <label className={gs.field}>
+                  До какого времени проверить результат
+                  <input type="datetime-local" value={resultDueAt}
+                    onChange={e => setResultDueAt(e.target.value)} />
+                </label>
+                <p>Гаранту даётся минута на отклик и пять минут на согласование.
+                  Ставки откроются после принятия условий.</p>
+              </section>
+            )
+          ) : null}
           <Notice>
             {visibilityNote ??
               (visibility === 'unlisted'

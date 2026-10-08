@@ -89,6 +89,9 @@ export function ConnectedCreateMarketScreen({ onBack, onCreated, enabled, onNavC
   return (
     <CreateMarketScreen
       guarantors={guarantorQuery.data?.filter(g => g.user_id !== userId) ?? []}
+      guarantorsLoading={guarantorQuery.isPending}
+      guarantorsError={guarantorQuery.isError}
+      onRetryGuarantors={() => { void guarantorQuery.refetch() }}
       onBack={onBack}
       unauthenticated={!enabled}
       onNavChange={onNavChange}

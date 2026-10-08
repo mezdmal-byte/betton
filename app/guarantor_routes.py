@@ -11,6 +11,7 @@ from app.models import (
     GuarantorProfile,
     GuarantorCase,
     GuarantorReview,
+    GuarantorMessage,
     AppNotification,
 )
 from app.services import guarantors as gs, market_service as ms, market_access
@@ -19,8 +20,9 @@ router = APIRouter()
 
 
 class ProfileInput(BaseModel):
-    bio: str = Field(min_length=10, max_length=1000)
-    topics: str = Field(min_length=2, max_length=300)
+    bio: str = Field(default="", max_length=1000)
+    topics: str = Field(default="", max_length=300)
+    accept_rules: bool = False
 
 
 class AvailabilityInput(BaseModel):
@@ -63,14 +65,46 @@ class CaseAction(BaseModel):
 
 
 def profile_out(db, profile):
+    """Public reputation is earned from completed markets, not self-description."""
     user = db.get(User, profile.user_id)
-    reviews = db.query(GuarantorReview).filter_by(guarantor_id=user.id).all()
+    reviews = (
+        db.query(GuarantorReview)
+        .filter_by(guarantor_id=user.id)
+        .order_by(GuarantorReview.id.desc())
+        .all()
+    )
+    completed = (
+        db.query(GuarantorCase)
+        .filter_by(guarantor_id=user.id, state="settled")
+        .count()
+    )
+    dispute_count = (
+        db.query(GuarantorMessage.market_id)
+        .join(GuarantorCase, GuarantorCase.market_id == GuarantorMessage.market_id)
+        .filter(
+            GuarantorCase.guarantor_id == user.id,
+            GuarantorMessage.kind.in_(("escalate", "dispute")),
+        )
+        .distinct()
+        .count()
+    )
+    rating = round(sum(r.rating for r in reviews) / len(reviews), 2) if reviews else None
+    # Earned badge, not a claim of identity verification or guaranteed honesty.
+    high_reputation = bool(
+        completed >= 10
+        and len({review.user_id for review in reviews}) >= 5
+        and rating is not None
+        and rating >= 4.5
+        and dispute_count <= 1
+    )
     return dict(
         user_id=user.id,
         name=user.display_name or user.telegram_username or "Гарант",
         bio=profile.bio,
         topics=profile.topics,
         status=profile.status,
+        is_moderator=user.is_admin,
+        high_reputation=high_reputation,
         available_until=profile.available_until,
         available=bool(
             profile.status == "approved"
@@ -79,14 +113,15 @@ def profile_out(db, profile):
             and profile.last_seen_at
             and profile.last_seen_at > gs.now() - timedelta(seconds=90)
         ),
-        completed=db.query(GuarantorCase)
-        .filter_by(guarantor_id=user.id, state="settled")
-        .count(),
-        rating=(
-            round(sum(r.rating for r in reviews) / len(reviews), 2) if reviews else None
-        ),
+        completed=completed,
+        disputes=dispute_count,
+        rating=rating,
         review_count=len(reviews),
-        reviews=[dict(rating=r.rating, text=r.text) for r in reviews[-20:]],
+        rating_distribution={
+            str(stars): sum(r.rating == stars for r in reviews)
+            for stars in range(5, 0, -1)
+        },
+        reviews=[dict(rating=r.rating, text=r.text) for r in reviews[:20]],
     )
 
 
@@ -113,8 +148,6 @@ def apply(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    if not req.bio.strip() or not req.topics.strip():
-        gs.fail("Заполните профиль", 422)
     row = (
         db.query(GuarantorProfile)
         .filter_by(user_id=user.id)
@@ -125,12 +158,15 @@ def apply(
     if not row:
         ms._lock_users(db, [user.id])
         row = db.get(GuarantorProfile, user.id)
+    if row and row.status == "rejected":
+        gs.fail("Аккаунт гаранта приостановлен администратором", 403)
+    if (not row or row.status == "pending") and not req.accept_rules:
+        gs.fail("Для регистрации подтвердите правила работы гаранта", 422)
     if not row:
-        row = GuarantorProfile(user_id=user.id, status="pending")
+        row = GuarantorProfile(user_id=user.id, status="approved")
         db.add(row)
     row.bio, row.topics = req.bio.strip(), req.topics.strip()
-    if row.status == "rejected":
-        row.status = "pending"
+    row.status = "approved"
     db.commit()
     return profile_out(db, row)
 

@@ -127,12 +127,10 @@ try {
     {
       bio: "Проверяю результаты по записям и официальным источникам.",
       topics: "Игры и дружеские пари",
+      accept_rules: true,
     },
     "PUT",
   );
-  await api(990001, `/guarantors/${users[990003].id}/approval`, {
-    approved: true,
-  });
   await api(990003, "/guarantors/me/availability", { available: true });
   const market = await api(990002, "/markets", {
     question: "Кто победит в дружеском матче?",

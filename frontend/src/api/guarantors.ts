@@ -9,8 +9,12 @@ export type Guarantor = {
   available: boolean;
   available_until: string | null;
   completed: number;
+  disputes: number;
+  is_moderator: boolean;
+  high_reputation: boolean;
   rating: number | null;
   review_count: number;
+  rating_distribution: Record<string, number>;
   reviews: { rating: number; text: string }[];
 };
 export type GuarantorCase = {
