@@ -14,7 +14,8 @@ import { copyShareLink, marketShareUrl, rememberShareToken, shareExternally, sha
 import { Button } from '../components/Button/Button'
 import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { useT, useI18n } from '../i18n'
-import { buildDemoMarketActivity } from '../lib/demoMarketActivity'
+import { caseLabels, getCase } from '../api/guarantors'
+import { GuarantorPanel } from './GuarantorPanel'
 import { openLegacyMiniApp } from '../lib/legacy'
 import { marketIsP2P, marketIsTradable } from '../lib/quote'
 import { MarketDetailScreen } from '../screens/MarketDetailScreen'
@@ -83,6 +84,8 @@ export function ConnectedMarketDetailScreen({
     },
   })
 
+  const privateWithUser = !!userId && marketQuery.data?.visibility === 'unlisted'
+  const privateCase = useQuery({ queryKey: ['guarantor-case', marketId], queryFn: () => getCase(marketId), enabled: privateWithUser })
   const p2p = marketQuery.data?.mechanism === 'p2p'
   const bookQuery = useQuery({
     queryKey: [...queryKeys.orderbook(marketId), shareToken],
@@ -98,30 +101,23 @@ export function ConnectedMarketDetailScreen({
   const market = useMemo(() => {
     if (!marketQuery.data) return undefined
     const mapped = mapMarketOut(marketQuery.data, new Date(), locale)
+    if (privateCase.data && ['invited', 'review', 'needs_guarantor'].includes(privateCase.data.state)) {
+      mapped.closeLabel = caseLabels[privateCase.data.state]
+    }
     if (mapped.mechanism !== 'p2p') return mapped
     if (!bookQuery.isSuccess) return mapped
     return applyPersonalizedExecutableQuotes(mapped, bookQuery.data)
-  }, [bookQuery.data, bookQuery.isSuccess, locale, marketQuery.data])
+  }, [bookQuery.data, bookQuery.isSuccess, locale, marketQuery.data, privateCase.data])
 
   const chartA = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 0), [tradesQuery.data])
   const chartB = useMemo(() => mapTradesToChartPoints(tradesQuery.data, 1), [tradesQuery.data])
   const recentA = useMemo(() => mapTradesToRecent(tradesQuery.data, 0, locale), [locale, tradesQuery.data])
   const recentB = useMemo(() => mapTradesToRecent(tradesQuery.data, 1, locale), [locale, tradesQuery.data])
-  const demoActivity = useMemo(
-    () => (market && p2p ? buildDemoMarketActivity(marketId, market) : null),
-    [market, marketId, p2p],
-  )
-  const demoHistory =
-    Boolean(demoActivity) &&
-    p2p &&
-    !tradesQuery.isPending &&
-    !tradesQuery.isError &&
-    chartA.length === 0 &&
-    chartB.length === 0
-  const displayChartA = demoHistory ? demoActivity?.seriesA ?? [] : chartA
-  const displayChartB = demoHistory ? demoActivity?.seriesB ?? [] : chartB
-  const displayRecentA = demoHistory ? demoActivity?.recentA ?? [] : recentA
-  const displayRecentB = demoHistory ? demoActivity?.recentB ?? [] : recentB
+  const demoHistory = false
+  const displayChartA = chartA
+  const displayChartB = chartB
+  const displayRecentA = recentA
+  const displayRecentB = recentB
   const tradeHistoryState: TradeHistoryState = !p2p
     ? 'hidden'
     : tradesQuery.isPending
@@ -143,7 +139,7 @@ export function ConnectedMarketDetailScreen({
           : 'ready'
 
   const lmsr = Boolean(market && !marketIsP2P(market))
-  const actionsOff = !market || lmsr || !marketIsTradable(market) || !userId
+  const actionsOff = !market || lmsr || !marketIsTradable(market) || !userId || (privateWithUser && (privateCase.isPending || privateCase.isError || (!!privateCase.data && (!privateCase.data.consent || privateCase.data.state !== 'active' || privateCase.data.guarantor_id === userId))))
   const creatorId = marketQuery.data?.creator?.id ?? marketQuery.data?.creator_id
   const shareLink = marketShareUrl({
     shareToken: marketQuery.data?.share_token ?? shareToken,
@@ -163,7 +159,7 @@ export function ConnectedMarketDetailScreen({
         recentTradesB={displayRecentB}
         tradeHistoryState={tradeHistoryState}
         demoHistory={demoHistory}
-        chartVolumeTon={demoHistory ? demoActivity?.volumeTon : market?.volumeTon}
+        chartVolumeTon={market?.volumeTon}
         orderbookA={mapOrderBookLevels(bookQuery.data?.sides?.[0])}
         orderbookB={mapOrderBookLevels(bookQuery.data?.sides?.[1])}
         orderbookState={bookQuery.isPending ? 'loading' : bookQuery.isError ? 'error' : 'ready'}
@@ -207,6 +203,7 @@ export function ConnectedMarketDetailScreen({
         }}
         banner={
           <>
+            {userId && marketQuery.data?.visibility === 'unlisted' ? <GuarantorPanel marketId={marketId} userId={userId} isAdmin={isAdmin} /> : null}
             {!userId && !lmsr ? <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage> : null}
             {shareMessage ? <StatusMessage title={shareMessage} /> : null}
             {lmsr ? (

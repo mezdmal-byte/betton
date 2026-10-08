@@ -23,7 +23,8 @@ def _create(client: TestClient, headers, question="Will the private match finish
         "visibility": visibility,
     }
     body.update(extra)
-    res = client.post("/markets", headers=headers, json=body)
+    from tests.private_legacy_helpers import legacy_private
+    res = legacy_private(client, headers, body) if visibility == "unlisted" else client.post("/markets", headers=headers, json=body)
     assert res.status_code == 200, res.text
     return res.json()
 
@@ -55,7 +56,7 @@ def test_public_market_still_pending_until_moderation(client: TestClient, monkey
     assert any(m["id"] == created["id"] for m in listed)
 
 
-def test_unlisted_opens_immediately_and_stays_out_of_public_surfaces(client: TestClient, monkeypatch):
+def test_legacy_unlisted_stays_out_of_public_surfaces(client: TestClient, monkeypatch):
     admin, ah = _admin(client, monkeypatch)
     maker, hm = _login(client, username="hidemaker", first_name="Hide")
     trader, ht = _login(client)

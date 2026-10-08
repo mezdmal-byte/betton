@@ -52,16 +52,10 @@ def test_trades_empty_and_lmsr_rejected(client, monkeypatch):
 
 def test_trades_obey_unlisted_share_access(client, monkeypatch):
     _admin, _ah, a, ha, _b, _hb, _mid = ready(client, monkeypatch)
-    created = client.post(
-        "/markets",
-        headers=ha,
-        json={
-            "question": "Unlisted trade history?",
-            "close_at": _close_at(),
-            "outcomes": ["A", "B"],
-            "visibility": "unlisted",
-        },
-    )
+    from tests.private_legacy_helpers import legacy_private
+    created = legacy_private(client, ha, {
+        "question": "Unlisted trade history?", "close_at": _close_at(), "outcomes": ["A", "B"],
+    })
     assert created.status_code == 200, created.text
     market = created.json()
     token = market["share_token"]

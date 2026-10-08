@@ -1,3 +1,5 @@
+import type { Guarantor } from '../api/guarantors'
+import gs from '../app/Guarantors.module.css'
 import { CircleHelp } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { BottomNavigation } from '../components/BottomNavigation/BottomNavigation'
@@ -38,6 +40,7 @@ const FLOW_STEPS: Exclude<WizardStep, 'start' | 'validation'>[] = [
 ]
 
 export type CreateMarketScreenProps = {
+  guarantors?: Guarantor[]
   draft?: CreateMarketDraft
   feeOpen?: boolean
   pickerOpen?: boolean
@@ -63,6 +66,7 @@ export type CreateMarketScreenProps = {
 }
 
 export function CreateMarketScreen({
+  guarantors = [],
   draft = defaultCreateDraft,
   onBack,
   onNavChange,
@@ -97,6 +101,8 @@ export function CreateMarketScreen({
   const [visibility, setVisibility] = useState<VisibilityId>(
     draft.visibility === 'private' ? 'unlisted' : draft.visibility,
   )
+  const [guarantorId, setGuarantorId] = useState('')
+  const [resultDueAt, setResultDueAt] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
@@ -162,7 +168,12 @@ export function CreateMarketScreen({
     if (q.length < 8 || q.length > 512) errors.push('Вопрос должен содержать 8–512 символов')
     if (!a || !b || a.toLowerCase() === b.toLowerCase()) errors.push('Должно быть ровно два разных исхода')
     if (closeAtLocal && new Date(closeAtLocal).getTime() <= Date.now()) errors.push('Дедлайн должен быть в будущем')
-    if (!primarySource.trim()) errors.push('Основной источник обязателен')
+    if (!primarySource.trim()) errors.push('Укажите, чем подтверждается результат')
+    if (visibility === 'unlisted') {
+      if (!guarantorId) errors.push('Выберите гаранта')
+      if (!resolutionCriteria.trim()) errors.push('Опишите условия определения результата')
+      if (!resultDueAt || new Date(resultDueAt).getTime() <= new Date(closeAtLocal).getTime()) errors.push('Срок проверки должен быть позже конца приёма ставок')
+    }
     setValidationErrors(errors)
     if (errors.length > 0) {
       setConfirming(false)
@@ -182,6 +193,9 @@ export function CreateMarketScreen({
       closeAt: closeAtLabel ?? draft.closeAt,
       visibility,
       description: composedDescription,
+      guarantorId: visibility === 'unlisted' ? Number(guarantorId) : undefined,
+      resolutionCriteria, resolutionSource: primarySource,
+      resultDueAt: visibility === 'unlisted' && resultDueAt ? new Date(resultDueAt).toISOString() : undefined,
     })
   }
 
@@ -198,7 +212,6 @@ export function CreateMarketScreen({
         </header>
 
         <main className={styles.body}>
-          <strong className={styles.eyebrow}>P2P PREDICTION MARKET</strong>
           <p className={styles.intro}>
             Сформулируйте проверяемый вопрос, задайте ровно два исхода и источник результата.
           </p>
@@ -211,7 +224,7 @@ export function CreateMarketScreen({
             accentFirst
           />
           <Notice>
-            Публичные рынки проходят модерацию. Unlisted доступны только по точной ссылке.
+            Публичные пари проходят модерацию. Частные доступны по ссылке и проверяются гарантом.
           </Notice>
           {unauthenticated ? (
             <StatusMessage tone="warning" title={t('err.openInTg')}>
@@ -234,7 +247,7 @@ export function CreateMarketScreen({
               </Button>
             ) : (
               <Notice>
-                PandaScore ещё не подключён. Добавьте PANDASCORE_TOKEN в Render — после этого здесь появятся реальные матчи.
+                Список матчей пока недоступен. Вы можете описать событие самостоятельно.
               </Notice>
             )}
           </section>
@@ -498,7 +511,7 @@ export function CreateMarketScreen({
               className={visibility === 'public' ? styles.selectedCard : styles.choiceCard}
               onClick={() => setVisibility('public')}
             >
-              <strong>Public</strong>
+              <strong>Публичное пари</strong>
               <span>Показывается в поиске, категориях и публичной ленте.</span>
             </button>
             <button
@@ -506,14 +519,15 @@ export function CreateMarketScreen({
               className={visibility === 'unlisted' ? styles.selectedCard : styles.choiceCard}
               onClick={() => setVisibility('unlisted')}
             >
-              <strong>Unlisted</strong>
+              <strong>Частное пари</strong>
               <span>Доступен только по точной ссылке.</span>
             </button>
           </div>
+          {visibility === 'unlisted' ? <section className={gs.panel}><label className={gs.field}>Кто проверит результат<select value={guarantorId} onChange={e => setGuarantorId(e.target.value)}><option value="">Выберите гаранта</option>{guarantors.filter(g => g.available).map(g => <option key={g.user_id} value={g.user_id}>{g.name} · {g.topics} · {g.review_count ? `${g.rating}/5` : 'нет отзывов'}</option>)}</select></label>{!guarantors.some(g => g.available) ? <p>Сейчас никто не принимает новые пари. Попробуйте позже или откройте публичное пари.</p> : null}<label className={gs.field}>До какого времени проверить результат<input type="datetime-local" value={resultDueAt} onChange={e => setResultDueAt(e.target.value)} /></label><p>Гаранту даётся минута на отклик и пять минут на согласование. Ставки откроются после принятия условий.</p></section> : null}
           <Notice>
             {visibilityNote ??
               (visibility === 'unlisted'
-                ? t('create.visibilityHintUnlisted')
+                ? 'Частное пари доступно по ссылке. Результат проверяет выбранный гарант.'
                 : t('create.visibilityHintPublic'))}
           </Notice>
           <Button fullWidth onClick={goNext}>Далее</Button>
@@ -529,7 +543,7 @@ export function CreateMarketScreen({
               outcomeA + ' / ' + outcomeB,
               categoryLabel(category, t),
               closeAtLabel ? 'Закрытие · ' + closeAtLabel : 'Дедлайн не указан',
-              visibility === 'unlisted' ? 'Unlisted' : 'Public',
+              visibility === 'unlisted' ? 'Частное пари' : 'Публичное пари',
               primarySource ? 'Источник · ' + primarySource : 'Источник не указан',
             ]}
             accentFirst
@@ -550,7 +564,7 @@ export function CreateMarketScreen({
       {step === 'review' && confirming ? (
         <>
           <section className={styles.primaryMetric}>
-            <strong>{visibility === 'unlisted' ? 'Unlisted' : 'Public'}</strong>
+            <strong>{visibility === 'unlisted' ? 'Частное пари' : 'Публичное пари'}</strong>
             <span>рынок будет создан с этими параметрами</span>
           </section>
           <Details rows={[question, outcomeA + ' / ' + outcomeB, closeAtLabel ?? 'Дедлайн']} />
@@ -672,7 +686,7 @@ function stepTitle(step: WizardStep): string {
   if (step === 'sources') return 'Источник результата'
   if (step === 'category') return 'Категория'
   if (step === 'close') return 'Закрытие торговли'
-  if (step === 'visibility') return 'Public или Unlisted'
+  if (step === 'visibility') return 'Кому доступно пари'
   return 'Проверка рынка'
 }
 

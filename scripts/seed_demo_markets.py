@@ -423,9 +423,15 @@ def seed_markets(db, *, count: int = 100, rng_seed: int = 42, demo_tag: str = "v
             category=spec["category"],
             outcomes=spec["outcomes"],
             close_at=close_at,
-            visibility="unlisted" if unlisted else "public",
+            visibility="public",
         )
         market = p2p_service.create_market(db, maker.id, req)
+        if unlisted:
+            # Explicit legacy fixture for the presentation seed, not an API bypass.
+            import secrets
+            market.visibility = "unlisted"
+            market.share_token = secrets.token_urlsafe(24)
+            market.status = MarketStatus.open
         market.created_at = (now - timedelta(days=(count - index), hours=index % 11)).replace(tzinfo=None)
         db.commit()
         if not unlisted and scenario != "pending":

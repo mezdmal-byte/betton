@@ -31,10 +31,10 @@ export function CreateMarketResult({
   if (view === 'share-token') {
     const token = (market.share_token || '').trim()
     return (
-      <ResultShell title="Share token" onBack={() => setView('status')} onNavChange={onNavChange}>
+      <ResultShell title="Код доступа" onBack={() => setView('status')} onNavChange={onNavChange}>
         <Rows
           rows={[
-            token ? 'TOKEN · ' + token : 'Share token недоступен',
+            token ? 'TOKEN · ' + token : 'Код доступа недоступен',
             'Точный регистр обязателен',
             'Токен открывает только рынок M-' + market.id,
             'Передавайте токен только тем, кому нужен доступ',
@@ -59,8 +59,8 @@ export function CreateMarketResult({
         <Rows
           rows={[
             shareLink || 'Ссылка недоступна',
-            unlisted ? 'Unlisted · не индексируется' : 'Public · доступен из discovery',
-            market.share_token ? 'Ссылка содержит точный share token' : 'Share token недоступен',
+            unlisted ? 'Частное пари · доступно по ссылке' : 'Публичное пари · видно в ленте',
+            market.share_token ? 'Ссылка содержит точный код доступа' : 'Код доступа недоступен',
             'Доступна любому получателю точной ссылки',
           ]}
         />
@@ -87,7 +87,7 @@ export function CreateMarketResult({
           disabled={!market.share_token}
           onClick={() => setView('share-token')}
         >
-          Показать share token
+          Показать код доступа
         </Button>
         <Button
           variant="secondary"
@@ -124,7 +124,7 @@ export function CreateMarketResult({
         <Rows
           rows={[
             'Системное меню или буфер обмена недоступны',
-            market.share_token ? 'Share token не изменился' : 'Share token недоступен',
+            market.share_token ? 'Код доступа не изменился' : 'Код доступа недоступен',
             'Можно повторить или скопировать ссылку вручную',
           ]}
           dangerLast
@@ -173,7 +173,7 @@ export function CreateMarketResult({
             disabled={!market.share_token}
             onClick={() => setView('share-token')}
           >
-            Share token
+            Код доступа
           </Button>
           <Button variant="secondary" fullWidth onClick={onOpen}>
             Открыть рынок
@@ -267,7 +267,11 @@ function buildStatusView(
   metricCaption?: string
 } {
   const id = 'M-' + market.id
-  const visibility = market.visibility === 'unlisted' ? 'Unlisted' : 'Public'
+  const visibility = market.visibility === 'unlisted' ? 'Частное пари' : 'Публичное пари'
+
+  if (market.visibility === 'unlisted' && market.status === 'closed') {
+    return { title: 'Пари создано', tone: 'warning', rows: ['Ставки пока закрыты', 'Откройте пари, чтобы согласовать условия с гарантом'], primaryLabel: 'К согласованию' }
+  }
 
   if (market.status === 'pending') {
     return {
@@ -275,11 +279,11 @@ function buildStatusView(
       tone: 'warning',
       rows: [
         'Рынок #' + id + ' принят',
-        'Статус · Pending moderation',
+        'Статус · На модерации',
         'Не виден в публичной ленте',
         'Статус можно отслеживать в «Мои рынки»',
       ],
-      notice: 'До решения модерации рынок не участвует в публичном discovery.',
+      notice: 'После одобрения пари появится в ленте.',
       primaryLabel: 'Мои рынки',
     }
   }
@@ -291,7 +295,7 @@ function buildStatusView(
         tone: 'danger',
         rows: [
           'Причина · ' + market.rejection_reason,
-          'Статус · Rejected',
+          'Пари отклонено',
           'Видимость · ' + visibility,
           'Исправьте отмеченные поля и отправьте повторно',
         ],
@@ -304,7 +308,7 @@ function buildStatusView(
       tone: 'danger',
       rows: [
         'Market ID · ' + id,
-        'Статус · Rejected',
+        'Пари отклонено',
         'Не опубликован',
         'Причина отклонения не указана',
       ],
@@ -317,7 +321,7 @@ function buildStatusView(
       title: 'Торги закрыты',
       tone: 'warning',
       rows: [
-        'Статус · Closed',
+        'Приём ставок закрыт',
         'Новые ордера не принимаются',
         'Ожидаем результат рынка',
         'Позиции ждут расчёта',
@@ -335,7 +339,7 @@ function buildStatusView(
       rows: [
         market.winning_outcome ? 'Результат · ' + market.winning_outcome : 'Результат зафиксирован',
         source ? 'Источник · ' + source : '',
-        'Статус · Resolved',
+        'Выплаты начислены',
         'P2P расчёт завершён',
       ],
       primaryLabel: 'Посмотреть расчёт',
@@ -347,7 +351,7 @@ function buildStatusView(
       title: 'Рынок аннулирован',
       tone: 'danger',
       rows: [
-        'Статус · Voided / Cancelled',
+        'Пари отменено',
         market.cancellation_reason ? 'Причина · ' + market.cancellation_reason : 'Причина не указана',
         'Неисполненные обязательства закрыты',
         'Рынок больше не принимает ордера',
@@ -364,7 +368,7 @@ function buildStatusView(
         'Market ID · ' + id,
         'Discovery · скрыт',
         'Поиск · скрыт',
-        market.share_token ? 'Доступ · точный share token / link' : 'Share token недоступен',
+        market.share_token ? 'Доступ · точный код доступа / link' : 'Код доступа недоступен',
       ],
       notice: 'Это не allowlist. Любой с точной ссылкой сможет открыть рынок.',
       primaryLabel: 'Поделиться',

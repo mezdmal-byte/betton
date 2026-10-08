@@ -67,6 +67,10 @@ export type AccountFixture = {
 }
 
 export type CreateMarketDraft = {
+  guarantorId?: number
+  resolutionCriteria?: string
+  resolutionSource?: string
+  resultDueAt?: string
   question: string
   category: string
   outcomeA: string

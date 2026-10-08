@@ -303,3 +303,68 @@ class ChatReadState(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+
+class GuarantorProfile(Base):
+    __tablename__ = 'guarantor_profiles'
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), default='pending')
+    bio: Mapped[str] = mapped_column(String(1000), default='')
+    topics: Mapped[str] = mapped_column(String(300), default='')
+    available_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class GuarantorCase(Base):
+    __tablename__ = 'guarantor_cases'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    guarantor_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    state: Mapped[str] = mapped_column(String(24), default='invited')
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    creator_confirmed: Mapped[int] = mapped_column(Integer, default=1)
+    criteria: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(Text)
+    result_due_at: Mapped[datetime] = mapped_column(DateTime)
+    deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    extension_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    proposed_outcome: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class GuarantorMessage(Base):
+    __tablename__ = 'guarantor_messages'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    kind: Mapped[str] = mapped_column(String(24))
+    text: Mapped[str] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class GuarantorReview(Base):
+    __tablename__ = 'guarantor_reviews'
+    __table_args__ = (UniqueConstraint('market_id', 'user_id'), CheckConstraint('rating BETWEEN 1 AND 5'))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'))
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    guarantor_id: Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(String(1000))
+
+
+class PrivateTermsConsent(Base):
+    __tablename__ = 'private_terms_consents'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer)
+
+
+class AppNotification(Base):
+    __tablename__ = 'app_notifications'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
+    market_id: Mapped[int | None] = mapped_column(ForeignKey('markets.id'), nullable=True)
+    text: Mapped[str] = mapped_column(String(1000))
+    read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

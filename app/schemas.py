@@ -128,6 +128,10 @@ class MarketCreate(BaseModel):
     target_odds: Optional[list[float]] = None
     target_probs: Optional[list[float]] = None
     visibility: Literal["public", "unlisted"] = "public"
+    guarantor_id: int | None = Field(default=None, gt=0)
+    resolution_criteria: str | None = Field(default=None, max_length=4000)
+    resolution_source: str | None = Field(default=None, max_length=2000)
+    result_due_at: datetime | None = None
 
 
 class QuoteRequest(BaseModel):
