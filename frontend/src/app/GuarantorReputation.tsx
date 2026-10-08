@@ -55,10 +55,11 @@ export function GuarantorCard({ guarantor: g, onOpen }: {
   );
 }
 
-export function GuarantorDetails({ guarantor: g, onBack, onCreate }: {
+export function GuarantorDetails({ guarantor: g, onBack, onCreate, onChoose }: {
   guarantor: Guarantor;
   onBack: () => void;
-  onCreate: () => void;
+  onCreate?: () => void;
+  onChoose?: () => void;
 }) {
   const categories = specializations(g.topics);
   return (
@@ -165,8 +166,8 @@ export function GuarantorDetails({ guarantor: g, onBack, onCreate }: {
       </section>
 
       <div className={s.profileAction}>
-        <Button fullWidth onClick={onCreate} disabled={!g.available}>Создать пари</Button>
-        <small>{g.available ? "Выбрать этого гаранта можно при создании частного пари." : "Гарант пока не принимает новые запросы."}</small>
+        <Button fullWidth onClick={onChoose ?? onCreate} disabled={!g.available}>{onChoose ? "Выбрать этого гаранта" : "Создать пари"}</Button>
+        <small>{g.available ? (onChoose ? "Гарант будет приглашён после создания частного пари." : "Выбрать этого гаранта можно при создании частного пари.") : "Гарант пока не принимает новые запросы."}</small>
       </div>
     </div>
   );
