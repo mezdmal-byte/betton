@@ -8,7 +8,7 @@ function formatRating(value: number | null): string {
 }
 
 function specializations(topics: string): string[] {
-  return topics.split(/[,;\\n]+/).map((v) => v.trim()).filter(Boolean).slice(0, 8);
+  return topics.split(/[,;\n]+/).map((v) => v.trim()).filter(Boolean).slice(0, 8);
 }
 
 function Role({ guarantor: g }: { guarantor: Guarantor }) {
