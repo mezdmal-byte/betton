@@ -25,6 +25,7 @@ def setup_case(client, monkeypatch):
             json={
                 "bio": "Проверяю результаты по официальным записям",
                 "topics": "Любые проверяемые события",
+                "accept_rules": True,
             },
         ).status_code
         == 200
@@ -404,3 +405,69 @@ def test_stale_presence_not_available_and_heartbeat_does_not_enable(
     )
     assert client.post("/guarantors/me/heartbeat", headers=gh).status_code == 200
     assert not client.get("/guarantors/me", headers=gh).json()["available"]
+
+
+def test_any_user_can_enroll_with_rules_and_suspension_is_enforced(client, monkeypatch):
+    _, ah = _admin(client, monkeypatch)
+    user, headers = _login(client)
+    # No self-registration without informed acceptance.
+    missing = client.put(
+        "/guarantors/me", headers=headers,
+        json={"bio": "", "topics": "", "accept_rules": False},
+    )
+    assert missing.status_code == 422
+    assert client.get("/guarantors/me", headers=headers).json() is None
+
+    created = client.put(
+        "/guarantors/me", headers=headers,
+        json={"bio": "", "topics": "", "accept_rules": True},
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["status"] == "approved"
+    assert created.json()["completed"] == 0
+    assert created.json()["rating"] is None
+    assert created.json()["rating_distribution"] == {
+        "5": 0, "4": 0, "3": 0, "2": 0, "1": 0,
+    }
+    assert created.json()["high_reputation"] is False
+    assert created.json()["is_moderator"] is False
+    assert client.post(
+        "/guarantors/me/availability", headers=headers, json={"available": True}
+    ).status_code == 200
+    assert any(
+        g["user_id"] == user["id"]
+        for g in client.get("/guarantors", headers=headers).json()
+    )
+
+    # An administrator can revoke access; editing cannot lift that ban.
+    assert client.post(
+        f"/guarantors/{user['id']}/approval",
+        headers=ah, json={"approved": False},
+    ).status_code == 200
+    assert client.put(
+        "/guarantors/me", headers=headers,
+        json={"bio": "Trying to bypass suspension", "accept_rules": True},
+    ).status_code == 403
+    assert client.post(
+        "/guarantors/me/availability", headers=headers,
+        json={"available": True},
+    ).status_code == 403
+
+
+def test_reputation_metrics_after_authentic_rating(client, monkeypatch):
+    _, _, _, ch, guarantor, gh, _, bh, market = setup_case(client, monkeypatch)
+    mid = market["id"]
+    make_filled(client, ch, gh, bh, mid)
+    with SessionLocal() as db:
+        db.get(GuarantorCase, mid).deadline = gs.now() - timedelta(seconds=1)
+        db.commit()
+    gs.process_due()
+    assert call(client, mid, bh, "review", rating=5, text="Точно по записи").status_code == 200
+
+    row = client.get("/guarantors/me", headers=gh).json()
+    assert row["completed"] == 1
+    assert row["review_count"] == 1
+    assert row["rating_distribution"]["5"] == 1
+    assert row["rating_distribution"]["1"] == 0
+    assert row["disputes"] == 0
+    assert not row["high_reputation"]
