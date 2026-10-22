@@ -62,7 +62,7 @@ async def setup_webhook_task():
                 logger.error("Telegram webhook disabled: public HTTPS URL is required")
                 return
             url = settings.webapp_base() + "/webhook"
-            await asyncio.wait_for(bot.set_webhook(url=url), timeout=20)
+            await asyncio.wait_for(bot.set_webhook(url=url, max_connections=1), timeout=20)
             info = await asyncio.wait_for(bot.get_webhook_info(), timeout=20)
             logger.info(
                 "Telegram webhook configured: requested=%s current=%s pending=%s last_error=%s",
