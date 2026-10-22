@@ -49,15 +49,31 @@ def _maybe_bot():
 
 
 async def setup_webhook_task():
+    """Register Telegram webhook, report failures, and retry network errors."""
+    logger = logging.getLogger("betton.webhook")
     await asyncio.sleep(1)
-    bot, _dp = _maybe_bot()
-    if bot is None or not settings.is_public_https():
-        print("Webhook пропущен: нужен BOT_TOKEN и публичный HTTPS (MINI_APP_URL / RENDER_EXTERNAL_URL).")
-        return
-    url = settings.webapp_base() + "/webhook"
-    await bot.set_webhook(url=url)
-    print(f"Вебхук Telegram: {url}")
-    print(f"Mini App: {settings.webapp_base()}/")
+    while True:
+        try:
+            bot, _dp = _maybe_bot()
+            if bot is None:
+                logger.error("Telegram webhook disabled: BOT_TOKEN is missing")
+                return
+            if not settings.is_public_https():
+                logger.error("Telegram webhook disabled: public HTTPS URL is required")
+                return
+            url = settings.webapp_base() + "/webhook"
+            await asyncio.wait_for(bot.set_webhook(url=url), timeout=20)
+            info = await asyncio.wait_for(bot.get_webhook_info(), timeout=20)
+            logger.info(
+                "Telegram webhook configured: requested=%s current=%s pending=%s last_error=%s",
+                url, info.url, info.pending_update_count, info.last_error_message,
+            )
+            return
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Telegram webhook setup failed; retrying in 30 seconds")
+            await asyncio.sleep(30)
 
 
 async def expire_orders_task():
@@ -77,7 +93,7 @@ async def async_lifespan(app: FastAPI):
     yield
     task.cancel()
     expiry.cancel()
-    await asyncio.gather(expiry, return_exceptions=True)
+    await asyncio.gather(task, expiry, return_exceptions=True)
     bot, _dp = _maybe_bot()
     if bot is not None:
         # Do not delete the Telegram webhook during Render rolling shutdown:
