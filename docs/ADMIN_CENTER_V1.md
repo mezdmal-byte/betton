@@ -1,8 +1,8 @@
 # BetTON Admin Center — v1 design & implementation contract
 
-Status: **DESIGN / ARCHITECTURE ONLY.** This branch does not enable an admin endpoint, change money, migrate the DB, or deploy anything.
+Status: **LOCAL READ-ONLY IMPLEMENTATION.** A separate localhost/test-data viewer now exists; see [implementation status](ADMIN_CENTER_IMPLEMENTATION_STATUS.md) and [Windows runbook](../ADMIN_CENTER_README_RU.md). It does not mount endpoints in the main app, change money, migrate a DB, or deploy anything. The user's existing test DB connection remains unverified until an approved local test file is supplied.
 Figma desktop wireframes: https://www.figma.com/design/GRbVHwppYxx5c7N5WG1BVA/Untitled?node-id=421-3
-Source baseline: `feature/guarantor-mvp` (verify merge target before implementation).
+Source baseline: requested branch `feature/admin-center-readonly-v1` at `0d0255080a7cbaa1adbd54e2c923ee70e9a9baec`, descended from `feature/guarantor-mvp`. No merge target is authorized.
 
 ## Goal
 
@@ -57,6 +57,8 @@ Record meaningful state changes, auth/authorization failures, moderation edits a
 
 ## Security gates before actual backend connection
 
+The local test-only milestone uses one separate read-only administrator, loopback HTTP Basic and an explicit local test DB selection. The MFA, remote RBAC, immutable access-audit and operational controls below remain gates for future remote/production use; they are not claimed complete by this milestone.
+
 1. Separate admin identity/login, MFA for privileged roles, server-side RBAC with default deny.
 2. TLS when accessed outside localhost, no public UI backed by simple client-side password.
 3. Read-only service account for viewing production data; write/admin actions are separate capabilities with explicit approval, not included in v1.
@@ -72,9 +74,9 @@ Relevant guidance:
 
 ## Implementation order
 
-**Phase 1 (this branch):** document and approve data/source mapping, review Figma, confirm active DB and deployment configuration. No production changes.
+**Phase 1:** data/source mapping and Figma reference reviewed. No production changes.
 
-**Phase 2:** separate, protected read-only API and desktop frontend, tested on a copy of the current **test** database. Cover users, events, open P2P orders, fills, settlements, money entries, reconciliation status. Do not merge until auth/access tests pass.
+**Phase 2 (current branch):** separate protected read-only API and desktop frontend implemented and tested on isolated SQLite and actual-schema P2P-generated test rows. Users, events, P2P orders, fills, settlements and money entries are connected. Only stored coverage is shown; full reconciliation remains disconnected. Connection to the user's existing **test** database is pending availability of that database. No merge or deployment performed.
 
 **Phase 3:** persist missing meaningful audit events and correlate exceptions. Reconcile with financial journal, build incident filters. No retroactive synthetic history.
 

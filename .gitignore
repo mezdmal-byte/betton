@@ -1,6 +1,9 @@
 __pycache__/
 *.py[cod]
 .venv/
+.venv-admin/
+.admin-center.json
+.admin-center-qa/
 venv/
 .env
 *.egg-info/
