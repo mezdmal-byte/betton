@@ -78,7 +78,7 @@ def test_public_fields_and_author_preserved_during_moderator_edit(client, monkey
         headers=ah,
         json={"expected_revision": 1, "event": body},
     )
-    assert edit.status_code == 200 and edit.json()["publication_blocked"]
+    assert edit.status_code == 200 and edit.json()["publication_blocked"] is False
     assert (
         client.put(
             f"/ux-v3/events/{mid}/moderation",
@@ -87,17 +87,23 @@ def test_public_fields_and_author_preserved_during_moderator_edit(client, monkey
         ).status_code
         == 409
     )
-    assert (
-        client.post(f"/markets/{mid}/approve", headers=ah, json={}).status_code == 409
-    )
+    assert client.post(f'/ux-v3/events/{mid}/moderation/publish', headers=h, json={'expected_revision':2}).status_code == 403
+    assert client.post(f'/ux-v3/events/{mid}/moderation/publish', headers=ah, json={'expected_revision':1}).status_code == 409
     revisions = client.get(f"/ux-v3/events/{mid}/revisions", headers=h).json()
     assert revisions[0]["snapshot"]["question"] != revisions[-1]["snapshot"]["question"]
     assert all(r["snapshot"]["creator_id"] == author["id"] for r in revisions)
     approved = client.post(
-        f"/ux-v3/events/{mid}/moderation/approve-original", headers=ah, json={}
+        f"/ux-v3/events/{mid}/moderation/publish", headers=ah, json={'expected_revision':2}
     )
     assert approved.status_code == 200 and approved.json()["status"] == "open"
     assert approved.json()["creator_id"] == author["id"]
+    assert approved.json()['question'] == body['question']
+    assert client.post(f'/ux-v3/events/{mid}/moderation/publish', headers=ah, json={'expected_revision':2}).status_code == 409
+    revisions = client.get(f'/ux-v3/events/{mid}/revisions', headers=h).json()
+    assert revisions[-1]['kind'] == 'public_published'
+    assert revisions[-1]['actor_id'] == admin['id']
+    notices = client.get('/notifications',headers=h).json()
+    assert any(n['market_id']==mid and 'опубликовано с правками' in n['text'] for n in notices)
     assert (
         client.put(
             f"/ux-v3/events/{mid}/moderation",
@@ -263,6 +269,8 @@ def test_revoked_guarantor_cannot_finalize_and_admin_cannot_close(client, monkey
 
     _, ah, a, ha, g, gh, b, hb, event = v3_case(client, monkeypatch)
     mid = event["id"]
+    assert submit(client, mid, ha, 0, 100, 2).status_code == 200
+    assert submit(client, mid, hb, 1, 100, 2).status_code == 200
     assert client.post(f"/markets/{mid}/close", headers=ah, json={}).status_code == 403
     private = create(client, ha, payload("private"))
     assert (
@@ -356,7 +364,7 @@ def test_paid_reward_is_not_falsely_activated(client, monkeypatch):
         headers=ha,
         json={"expected_revision": 1, "mode": "percent", "percent": "5"},
     )
-    assert r.status_code == 200 and r.json()["payments_supported"] is False
+    assert r.status_code == 200 and r.json()["payments_supported"] is True
     assert call(client, mid, gh, "accept", revision=2).status_code == 409
     assert (
         client.get(f"/markets/{mid}/guarantor", headers=ha).json()["state"] == "review"

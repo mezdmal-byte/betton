@@ -20,6 +20,11 @@ def transition_v3(db, market, case, config, user, req):
         raise HTTPException(
             409, "Редактируйте структурированные условия через форму UX v3"
         )
+    if action == 'cancel':
+        if req.revision != case.revision:
+            raise HTTPException(409, 'Редакция изменилась. Обновите условия')
+        p2p.cancel_guarantor_v3(db, market.id, user, req.text)
+        return True
     if action == "invite":
         if user.id != market.creator_id:
             raise HTTPException(403, "Другого гаранта приглашает создатель")
@@ -57,22 +62,23 @@ def transition_v3(db, market, case, config, user, req):
         )
     if action == "accept":
         reward = config.reward or {}
+        from app.services.guarantor_funding import enabled
         if (
             Decimal(reward.get("fixed_ton", "0")) > 0
             or Decimal(reward.get("percent", "0")) > 0
-        ):
+        ) and not enabled(config):
             raise HTTPException(
                 409,
                 "Выплаты гаранту ещё не подключены. Платное событие нельзя открыть с неподдерживаемым вознаграждением",
             )
-        if reward and set(reward.get("accepted_by", [])) != {
-            market.creator_id,
-            case.guarantor_id,
-        }:
+        # Accepting the final terms also signs the current tariff as guarantor.
+        if reward and market.creator_id not in reward.get('accepted_by', []):
             raise HTTPException(
                 409,
                 "Оба участника должны подтвердить последнюю редакцию вознаграждения",
             )
+    if action == 'confirm' and config.reward and user.id == market.creator_id and case.state == 'review' and req.revision == case.revision:
+        config.reward = {**config.reward, 'accepted_by':sorted(set(config.reward.get('accepted_by',[])) | {user.id})}
     if action != "propose":
         return False
     if user.id != case.guarantor_id:

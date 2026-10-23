@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 ADMIN_BANKROLL = 1_000_000.0
 TIP_CREATOR_SHARE = 0.75
@@ -22,6 +23,9 @@ class Settings(BaseSettings):
     telegram_auth_proxy_url: str = ""
     telegram_webhook_proxy_url: str = ""
     preview_root_to_v2: bool = False
+    guarantor_minimum_profit_bps: int = Field(default=2000, ge=0, le=9900)
+    betton_environment: str = "production"
+    betton_demo_automation: bool = False
     pandascore_token: str = ""
 
     def admin_tg_id(self) -> int | None:

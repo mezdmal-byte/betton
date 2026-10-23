@@ -24,6 +24,7 @@ OP_REFUND = "refund"
 OP_PAYOUT = "payout"
 OP_TIP = "tip"
 OP_VOID_RETURN = "void_return"
+OP_GUARANTOR_REWARD = 'guarantor_reward'
 
 KIND_BALANCE = "user_balance"
 KIND_RESERVE = "order_reserve"
@@ -69,6 +70,7 @@ ALLOWED_DIRECTIONS = {
     OP_PAYOUT: (KIND_POT, KIND_BALANCE),
     OP_TIP: (KIND_POT, KIND_BALANCE),
     OP_VOID_RETURN: (KIND_POT, KIND_BALANCE),
+    OP_GUARANTOR_REWARD: (KIND_POT, KIND_BALANCE),
 }
 
 
@@ -422,6 +424,7 @@ def _audit_movement_semantics(
     expected_payouts,
     expected_tips,
     expected_voids,
+    expected_rewards,
     win_idx,
     note,
     discrepancies,
@@ -540,6 +543,7 @@ def _audit_movement_semantics(
     journal_payouts = defaultdict(int)
     journal_tips = defaultdict(int)
     journal_voids = defaultdict(int)
+    journal_rewards = defaultdict(int)
     for row in entries:
         if row.op_type == OP_PAYOUT and row.to_user_id is not None:
             journal_payouts[int(row.to_user_id)] += int(row.amount)
@@ -548,8 +552,13 @@ def _audit_movement_semantics(
             journal_tips[(winner, int(row.to_user_id))] += int(row.amount)
         elif row.op_type == OP_VOID_RETURN and row.to_user_id is not None:
             journal_voids[int(row.to_user_id)] += int(row.amount)
+        elif row.op_type == OP_GUARANTOR_REWARD and row.to_user_id is not None:
+            journal_rewards[(row.from_user_id, row.to_user_id)] += int(row.amount)
 
     if market.status == MarketStatus.resolved:
+        _compare_named_amounts(note, discrepancies, missing_kind='missing_journal_reward',
+            mismatch_kind='reward_recipient', unexpected_kind='reward_recipient',
+            expected=dict(expected_rewards), actual=dict(journal_rewards), key_name='recipient_id')
         _compare_named_amounts(
             note, discrepancies,
             missing_kind="missing_journal_payout",
@@ -586,7 +595,7 @@ def _audit_movement_semantics(
             for rec in settlements:
                 row = _match_rows(fills, win_idx).get(rec.user_id, dict(payout=0, cost=0))
                 tip = max(0, row["payout"] - row["cost"]) // 100
-                net = row["payout"] - tip
+                net = expected_payouts.get(rec.user_id, 0)
                 if abs(float(rec.credited or 0) - net / NANO_PER_TON) > FLOAT_TOLERANCE_TON:
                     discrepancies.append(
                         dict(
@@ -743,6 +752,23 @@ def reconcile(db: Session, market_id: int) -> dict:
     admin = legacy.find_admin_user(db)
     admin_id = admin.id if admin else None
     expected_payouts, expected_tips = _expected_payouts_and_tips(market, fills, admin_id, win_idx)
+    expected_rewards = {}
+    from app.models import EventConfigV3, GuarantorCase
+    from app.services.guarantor_funding import enabled
+    config = db.get(EventConfigV3, market.id)
+    if enabled(config) and win_idx is not None:
+        from app.services.guarantor_rewards import RewardTariff, funded_outcomes
+        choices = funded_outcomes(fills, RewardTariff.from_terms(config.reward or {}), bank_from_fills,
+            (config.reward or {}).get('minimum_keep_bps', 2000))
+        plan = choices[win_idx]
+        case = db.get(GuarantorCase, market.id)
+        if not all(choices) or not case:
+            discrepancies.append(dict(kind='reward_funding', message='Фонд не обеспечивал согласованное вознаграждение при обоих исходах'))
+        else:
+            for winner in plan.winners:
+                expected_payouts[winner.user_id] -= winner.guarantor_reward_nano
+                if winner.guarantor_reward_nano:
+                    expected_rewards[(winner.user_id, case.guarantor_id)] = winner.guarantor_reward_nano
     expected_voids = _expected_voids(fills) if market.status == MarketStatus.cancelled else {}
     settlements = (
         db.query(SettlementRecord).filter_by(market_id=market.id).order_by(SettlementRecord.id).all()
@@ -756,6 +782,7 @@ def reconcile(db: Session, market_id: int) -> dict:
         expected_payouts,
         expected_tips,
         expected_voids,
+        expected_rewards,
         win_idx,
         note,
         discrepancies,
@@ -764,7 +791,8 @@ def reconcile(db: Session, market_id: int) -> dict:
     payouts = _sum(entries, OP_PAYOUT)
     tips = _sum(entries, OP_TIP)
     voids = _sum(entries, OP_VOID_RETURN)
-    expected_out = sum(expected_payouts.values()) + sum(expected_tips.values()) + sum(expected_voids.values())
+    rewards = _sum(entries, OP_GUARANTOR_REWARD)
+    expected_out = sum(expected_payouts.values()) + sum(expected_tips.values()) + sum(expected_voids.values()) + sum(expected_rewards.values())
     if market.status in (MarketStatus.resolved, MarketStatus.cancelled):
         expected_pot = bank_from_fills - expected_out
     else:
@@ -795,7 +823,7 @@ def reconcile(db: Session, market_id: int) -> dict:
                     float_tolerance_ton=0,
                 )
             )
-        if payouts or tips or voids:
+        if payouts or tips or voids or rewards:
             discrepancies.append(
                 dict(
                     kind="open_has_settlement",
@@ -817,7 +845,7 @@ def reconcile(db: Session, market_id: int) -> dict:
         )
 
     if market.status == MarketStatus.resolved:
-        if sum(expected_payouts.values()) + sum(expected_tips.values()) != bank_from_fills:
+        if sum(expected_payouts.values()) + sum(expected_tips.values()) + sum(expected_rewards.values()) != bank_from_fills:
             discrepancies.append(
                 dict(
                     kind="settlement_outflow",
@@ -845,7 +873,7 @@ def reconcile(db: Session, market_id: int) -> dict:
                     fills_nano=bank_from_fills,
                 )
             )
-        if payouts or tips:
+        if payouts or tips or rewards:
             discrepancies.append(
                 dict(
                     kind="cancelled_has_payout",
@@ -894,6 +922,7 @@ def reconcile(db: Session, market_id: int) -> dict:
             fills_nano=bank_from_fills,
             payouts_nano=payouts,
             tips_nano=tips,
+            guarantor_rewards_nano=rewards,
             void_returns_nano=voids,
             consistent=pot_exact_ok,
             float_tolerance_ton=0,

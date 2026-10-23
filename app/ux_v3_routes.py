@@ -186,6 +186,8 @@ def create_event(
             reward={},
         )
         db.add(config)
+        if req.event_type == 'guarantor':
+            config.terms = {**config.terms, '_reward_engine':1}
         record_revision(db, market, config, user.id, "created")
         if req.event_type == "guarantor":
             from types import SimpleNamespace
@@ -225,7 +227,7 @@ def terms(
         else None,
         "consent": bool(consent and consent.revision == config.revision),
         "moderator_edited": config.moderator_edited,
-        "reward_payments_supported": False,
+        "reward_payments_supported": bool(config.event_type == 'guarantor' and config.terms.get('_reward_engine') == 1),
     }
 
 
@@ -301,13 +303,12 @@ def edit_pending(
             db,
             market.creator_id,
             mid,
-            "Модератор предложил изменения события. Откройте сравнение редакций.",
+            "Модератор уточнил заявку события до публикации. Изменения сохранены в истории.",
         )
         db.commit()
         return {
             "revision": config.revision,
-            "publication_blocked": True,
-            "reason": "Порядок согласия автора на изменённые условия требует отдельного продуктового решения",
+            "publication_blocked": False,
         }
     except Exception:
         db.rollback()
@@ -356,6 +357,34 @@ def approve_original(
 class Decision(BaseModel):
     outcome: int = Field(ge=0, le=1)
     reason: str = Field(min_length=1, max_length=4000)
+
+
+class PublishRevision(BaseModel):
+    expected_revision: int = Field(ge=1)
+
+
+@router.post("/events/{mid}/moderation/publish")
+def publish_revision(
+    mid: int,
+    req: PublishRevision,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ms.require_admin(user)
+    try:
+        market = ms._lock_market(db, mid)
+        config = config_for(db, mid)
+        if config.event_type != "public" or market.status != MarketStatus.pending:
+            raise HTTPException(409, "Заявка уже рассмотрена")
+        if config.revision != req.expected_revision:
+            raise HTTPException(
+                409, "Редакция изменилась. Проверьте изменения перед публикацией"
+            )
+        result = ms.moderate_market(db, mid, user.id)
+        return discovery.attach_market_views(db, [result], include_share_token=True)[0]
+    except Exception:
+        db.rollback()
+        raise
 
 
 @router.post("/events/{mid}/creator-decision")
@@ -479,7 +508,7 @@ def edit_guarantor_terms(
         case.criteria, case.source = event.rules, event.resolution_method
         config.ends_at = ms._naive_utc(event.ends_at)
         case.result_due_at = config.ends_at + timedelta(hours=24)
-        config.terms = event.model_dump(mode="json")
+        config.terms = {**event.model_dump(mode="json"), **({'_reward_engine':1} if config.terms.get('_reward_engine') == 1 else {})}
         config.revision += 1
         case.revision = config.revision
         case.creator_confirmed = 0
@@ -502,7 +531,7 @@ def edit_guarantor_terms(
 class RewardInput(BaseModel):
     expected_revision: int = Field(ge=1)
     action: Literal["propose", "accept"] = "propose"
-    mode: Literal["fixed", "percent", "combined"] = "fixed"
+    mode: Literal["fixed", "percent", "combined", "percent_minimum"] = "fixed"
     fixed_ton: str = Field(default="0", max_length=30)
     percent: str = Field(default="0", max_length=10)
 
@@ -565,19 +594,25 @@ def negotiate_reward(
                 "accepted_by": [user.id],
             }
         config.reward = reward
+        labels = {
+            'fixed': f"{reward['fixed_ton']} TON за событие",
+            'percent': f"{reward['percent']}% от чистой прибыли победителей",
+            'combined': f"{reward['percent']}% от чистой прибыли победителей + {reward['fixed_ton']} TON",
+            'percent_minimum': f"{reward['percent']}% от чистой прибыли победителей, но не меньше {reward['fixed_ton']} TON",
+        }
         gs.log(
             db,
             case,
             user.id,
             "reward",
-            f"Условия вознаграждения: {reward['fixed_ton']} TON и {reward['percent']}% от чистой прибыли. Выплаты ещё не подключены.",
+            'Условия вознаграждения: ' + labels[reward['mode']] + '. Удерживается только из прибыли победителей.',
         )
         record_revision(db, market, config, user.id, "reward_" + req.action)
         db.commit()
         return {
             "reward": reward,
             "revision": case.revision,
-            "payments_supported": False,
+            "payments_supported": bool(config.terms.get('_reward_engine') == 1),
         }
     except Exception:
         db.rollback()

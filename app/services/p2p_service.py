@@ -174,10 +174,16 @@ def preview(db, market_id, user_id, outcome, amount, odds, share_token=None, kin
     def stats(plan, left):
         spent = atomic-left
         payout = sum(a+b for _, a, b in plan)
-        return dict(matched=spent/ATOM, remaining=left/ATOM,
+        result = dict(matched=spent/ATOM, remaining=left/ATOM,
                     payout=payout/ATOM, average_odds=payout/spent if spent else None,
                     worst_odds=min((taker_odds_for_maker(m.price) for m, _, _ in plan), default=None),
                     fills=_fill_legs(plan))
+        from app.models import EventConfigV3, GuarantorCase
+        from app.services.guarantor_funding import enabled, quote_costs
+        config = db.get(EventConfigV3,market.id)
+        if enabled(config):
+            result['guarantor_costs'] = quote_costs(db,market,config,db.get(GuarantorCase,market.id),user_id,idx,plan)
+        return result
     return dict(limit_odds=PRICE/tick, kind=kind, requested=stats(plan, remaining), available=stats(best, best_remaining))
 
 
@@ -226,6 +232,9 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id, share
         db.add(order)
         db.flush()
         ledger.record_reserve(db, order)
+        from app.models import EventConfigV3, GuarantorCase
+        from app.services.guarantor_funding import enabled, after_fills
+        config = db.get(EventConfigV3, market.id)
         for maker, maker_stake, taker_stake in plan:
             maker.remaining -= maker_stake
             maker.filled += maker_stake
@@ -248,6 +257,8 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id, share
                 legacy._set_pos_vectors(pos, shares, costs)
                 # Subsequent matches must see a newly created position with autoflush=False.
                 db.flush()
+            if enabled(config):
+                after_fills(db, market, config, db.get(GuarantorCase, market.id))
             _finish_order(db, maker)
         if kind == 'ioc':
             _refund(db, order, 'filled' if order.filled else 'cancelled', reason='ioc')
@@ -302,16 +313,33 @@ def cancel_creator_v3(db, market_id, actor, reason):
     return _void_transaction(db, market_id, actor, reason, creator_v3=True)
 
 
-def _void_transaction(db, market_id, actor, reason, *, creator_v3=False):
+def cancel_guarantor_v3(db, market_id, actor, reason):
+    return _void_transaction(db, market_id, actor, reason, guarantor_v3=True)
+
+
+def cancel_unfunded_v3(db, market_id):
+    return _void_transaction(db, market_id, None, 'Достаточный фонд не сформирован к окончанию приёма ставок', funding_timeout=True)
+
+
+def _void_transaction(db, market_id, actor, reason, *, creator_v3=False, guarantor_v3=False, funding_timeout=False):
     reason = (reason or '').strip()
     try:
         market = legacy._lock_market(db, market_id)
-        from app.models import EventConfigV3
+        from app.models import EventConfigV3, GuarantorCase, GuarantorProfile
         config = db.get(EventConfigV3, market.id)
+        case = db.get(GuarantorCase, market.id)
         if creator_v3 and (not config or config.event_type != 'private' or actor.id != market.creator_id or config.ends_at > legacy._naive_utc(legacy.utcnow())):
             raise HTTPException(403, 'Отмена доступна создателю после окончания частного события')
-        if actor is None and (not config or config.event_type != 'guarantor' or config.ends_at + timedelta(hours=24) > legacy._naive_utc(legacy.utcnow())):
+        if actor is None and (not config or config.event_type != 'guarantor' or
+                (market.close_at > legacy._naive_utc(legacy.utcnow()) if funding_timeout else config.ends_at + timedelta(hours=24) > legacy._naive_utc(legacy.utcnow()))):
             raise HTTPException(403, 'Автоматическая отмена для этого события недоступна')
+        if guarantor_v3:
+            from app.services import guarantors as gs
+            profile = db.query(GuarantorProfile).filter_by(user_id=actor.id).with_for_update().populate_existing().first()
+            if (not config or config.event_type != 'guarantor' or not case or actor.id != case.guarantor_id
+                    or not profile or profile.status != 'approved' or gs.now() < config.ends_at
+                    or gs.now() >= config.ends_at + timedelta(hours=24)):
+                raise HTTPException(403, 'Отмена доступна назначенному гаранту в срок принятия решения')
         if market.mechanism != 'p2p':
             raise HTTPException(409, 'Этот рынок использует LMSR')
         if market.status == MarketStatus.cancelled:
@@ -332,17 +360,25 @@ def _void_transaction(db, market_id, actor, reason, *, creator_v3=False):
         if creator_v3:
             if not config or config.event_type != 'private' or actor.id != market.creator_id or config.ends_at > legacy._naive_utc(legacy.utcnow()):
                 raise HTTPException(403, 'Отмена доступна создателю после окончания частного события')
-        elif actor is not None and config and config.event_type in ('private', 'guarantor'):
+        elif actor is not None and not guarantor_v3 and config and config.event_type in ('private', 'guarantor'):
             raise HTTPException(403, 'Результат частного события не пересматривается обычной модерацией')
         if actor is None:
             from app.models import EventConfigV3, EventRevisionV3
             config = db.get(EventConfigV3, market.id)
             when = legacy._naive_utc(legacy.utcnow())
-            if (not config or config.event_type != 'guarantor' or not case
-                    or case.state != 'active' or config.ends_at + timedelta(hours=24) > when):
+            from app.services.guarantor_funding import enabled
+            due = bool(case and ((funding_timeout and enabled(config) and case.state == 'collecting' and market.close_at <= when)
+                or (not funding_timeout and case.state == 'active' and config.ends_at + timedelta(hours=24) <= when)))
+            if not due:
                 raise HTTPException(403, 'Автоматическая отмена для этого события недоступна')
             db.add(EventRevisionV3(market_id=market.id, revision=config.revision, actor_id=None,
-                                  kind='system_timeout', snapshot={'reason':reason}))
+                                  kind='funding_timeout' if funding_timeout else 'system_timeout', snapshot={'reason':reason,'guarantor_id':case.guarantor_id}))
+        elif guarantor_v3:
+            if case.state not in ('active','collecting'):
+                raise HTTPException(409, 'Решение об отмене уже недоступно')
+            from app.models import EventRevisionV3
+            db.add(EventRevisionV3(market_id=market.id, revision=config.revision, actor_id=actor.id,
+                kind='guarantor_cancel', snapshot={'reason':reason,'reward_nano':'0'}))
         elif case:
             from app.services.guarantors import participant
             if actor.id in (market.creator_id, case.guarantor_id) or participant(db, market.id, actor.id):
@@ -568,6 +604,8 @@ def list_trades(db, market_id, viewer_id=None, share_token=None, limit=100):
 
 def settle(db, market, winning_outcome):
     """Called with the market locked, within legacy resolve's rollback boundary."""
+    if market.status in (MarketStatus.resolved, MarketStatus.cancelled):
+        raise HTTPException(409, 'Событие уже рассчитано или отменено')
     win = legacy.parse_outcome(legacy.market_outcomes(market), winning_outcome)
     fills = db.query(P2PFill).filter_by(market_id=market.id).all()
     rows = defaultdict(lambda: dict(cost=0, payout=0, chosen=set()))
@@ -583,14 +621,23 @@ def settle(db, market, winning_outcome):
                 rows[uid]['payout'] += total
     if market.pot_nano != bank:
         raise HTTPException(409, 'Банк не соответствует обеспечению сделок')
+    from app.models import EventConfigV3, EventRevisionV3, GuarantorCase
+    from app.services.guarantor_funding import enabled, deductions
+    config = db.get(EventConfigV3, market.id)
+    case = db.get(GuarantorCase, market.id)
+    reward_charges, reward_total = deductions(db, market, config, case, win) if enabled(config) else ({}, 0)
     admin = legacy.find_admin_user(db)
     users = list(rows) + [market.creator_id]
     if admin:
         users.append(admin.id)
+    if reward_total:
+        users.append(case.guarantor_id)
     users += [o.user_id for o in db.query(P2POrder).filter_by(market_id=market.id, status='open')]
     legacy._lock_users(db, users)
     cancel_all(db, market)
     credits = defaultdict(int)
+    if reward_total:
+        credits[case.guarantor_id] += reward_total
     names = legacy.market_outcomes(market)
     when = legacy._naive_utc(legacy.utcnow())
     for uid, row in rows.items():
@@ -605,15 +652,28 @@ def settle(db, market, winning_outcome):
                 uid, market.creator_id, admin.id, tip
             ).items():
                 ledger.record_tip(db, market.id, uid, recipient, share)
-        net = row['payout']-tip
+        charge = reward_charges.get(uid, 0)
+        net = row['payout']-tip-charge
+        if charge:
+            ledger.record(db, entry_key=f'guarantor_reward:{market.id}:{uid}:{case.guarantor_id}',
+                op_type=ledger.OP_GUARANTOR_REWARD, market_id=market.id, amount=charge,
+                from_kind=ledger.KIND_POT, to_kind=ledger.KIND_BALANCE,
+                from_user_id=uid, to_user_id=case.guarantor_id,
+                origin_key=f'settlement:{market.id}', reason='guarantor_reward')
         credits[uid] += net
         if net:
             ledger.record_payout(db, market.id, uid, net)
         db.add(SettlementRecord(market_id=market.id, user_id=uid, question=market.question,
             winning_outcome=names[win], chosen_outcomes=[names[i] for i in sorted(row['chosen'])],
             stakes_total=row['cost']/ATOM, payout=row['payout']/ATOM, tip=tip/ATOM,
-            credited=(row['payout']-tip)/ATOM, result=(row['payout']-tip-row['cost'])/ATOM,
+            credited=net/ATOM, result=(net-row['cost'])/ATOM,
             lock_ton=0, residual_returned=0, resolved_at=when))
+    if sum(credits.values()) != bank:
+        raise HTTPException(409, 'Сумма выплат и сборов не соответствует банку события')
+    if enabled(config):
+        db.add(EventRevisionV3(market_id=market.id, revision=config.revision, actor_id=case.guarantor_id,
+            kind='reward_settlement', snapshot={'reward_nano':str(reward_total), 'tariff':config.reward,
+                'charges':{str(uid):str(charge) for uid,charge in reward_charges.items()}}))
     for uid in sorted(credits):
         adjust_atoms(db, uid, credits[uid])
     for pos in db.query(Position).filter_by(market_id=market.id):

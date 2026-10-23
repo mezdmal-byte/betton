@@ -13,6 +13,7 @@ from app.models import (
     GuarantorReview,
     GuarantorMessage,
     AppNotification,
+    EventRevisionV3,
 )
 from app.services import guarantors as gs, market_service as ms, market_access
 
@@ -45,6 +46,7 @@ class CaseAction(BaseModel):
         "extend",
         "consent",
         "propose",
+        "cancel",
         "escalate",
         "dispute",
         "admin_resolve",
@@ -115,6 +117,8 @@ def profile_out(db, profile):
         ),
         completed=completed,
         disputes=dispute_count,
+        missed_deadlines=db.query(EventRevisionV3.market_id).join(GuarantorCase,GuarantorCase.market_id==EventRevisionV3.market_id).filter(
+            GuarantorCase.guarantor_id==user.id,EventRevisionV3.kind=='system_timeout').distinct().count(),
         rating=rating,
         review_count=len(reviews),
         rating_distribution={

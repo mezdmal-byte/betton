@@ -1187,11 +1187,13 @@ def moderate_market(db: Session, market_id: int, user_id: int, *, reason: str | 
         market = _lock_market(db, market_id)
         if market.status != MarketStatus.pending:
             raise HTTPException(status_code=409, detail="Событие уже прошло модерацию")
+        from app.models import EventConfigV3, EventRevisionV3, P2POrder, P2PFill
+        config = db.get(EventConfigV3, market_id)
+        if config and (config.event_type != 'public' or
+                db.query(P2POrder.id).filter_by(market_id=market_id).first() or
+                db.query(P2PFill.id).filter_by(market_id=market_id).first()):
+            raise HTTPException(409, 'Модерация доступна только до начала приёма ставок публичного события')
         if reason is None:
-            from app.models import EventConfigV3
-            config = db.get(EventConfigV3, market_id)
-            if config and config.moderator_edited:
-                raise HTTPException(409, 'Порядок согласия автора на изменённую редакцию ещё не согласован. Можно одобрить первоначальную версию')
             close_at = as_utc(market.close_at)
             if close_at is None or close_at <= utcnow():
                 raise HTTPException(status_code=409, detail="Время приёма ставок истекло. Отклоните событие для возврата залога")
@@ -1208,6 +1210,15 @@ def moderate_market(db: Session, market_id: int, user_id: int, *, reason: str | 
             market.status = MarketStatus.rejected
         market.moderated_by = actor.id
         market.moderated_at = _naive_utc(utcnow())
+        if config:
+            db.add(EventRevisionV3(market_id=market.id, revision=config.revision,
+                actor_id=actor.id, kind='public_rejected' if reason is not None else 'public_published',
+                snapshot={**config.terms, 'creator_id': market.creator_id, 'reason': reason}))
+            from app.services.guarantors import notice
+            notice(db, market.creator_id, market.id,
+                f'Событие отклонено: {reason}' if reason is not None else
+                'Событие опубликовано с правками модератора. Авторство и вознаграждение сохранены.' if config.moderator_edited else
+                'Событие одобрено и опубликовано.')
         db.commit()
         db.refresh(market)
         return market

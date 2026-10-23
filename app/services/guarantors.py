@@ -148,6 +148,10 @@ def create_case(db, market, req):
 
 def expire(db, market, case):
     config = db.get(EventConfigV3, market.id)
+    if config and case.state == 'collecting' and market.close_at <= now():
+        from app.services.p2p_service import cancel_unfunded_v3
+        cancel_unfunded_v3(db, market.id)
+        return
     if config and case.state == 'active' and config.ends_at + timedelta(hours=24) <= now():
         from app.services.p2p_service import cancel_expired_v3
         cancel_expired_v3(db, market.id)
@@ -183,7 +187,7 @@ def trading_guard(db, market, uid, *, consent=False):
         return  # Existing private markets keep their existing admin resolution.
     if case.guarantor_id == uid:
         fail("Гарант не может делать ставки в этом пари", 403)
-    if case.state != "active" or case.result_due_at <= now():
+    if case.state not in ('collecting', 'active') or case.result_due_at <= now():
         fail("Ставки в этом пари пока недоступны")
     accepted = db.get(PrivateTermsConsent, (market.id, uid))
     if consent and (not accepted or accepted.revision != case.revision):
@@ -192,6 +196,7 @@ def trading_guard(db, market, uid, *, consent=False):
 
 def case_view(db, market, case, user):
     config = db.get(EventConfigV3, market.id)
+    from app.services.guarantor_funding import enabled, view as funding_view
     messages = (
         db.query(GuarantorMessage)
         .filter_by(market_id=market.id)
@@ -225,8 +230,9 @@ def case_view(db, market, case, user):
         participant=participant(db, market.id, user.id),
         protocol_version=3 if config else 1,
         ends_at=config.ends_at if config else None,
-        reward=config.reward if config and user.id in (market.creator_id, case.guarantor_id) else None,
-        reward_payments_supported=False,
+        reward=(config.reward or {'mode':'fixed','fixed_ton':'0','percent':'0','accepted_by':[]}) if config else None,
+        reward_payments_supported=enabled(config),
+        funding=funding_view(db, market, config, user.id) if enabled(config) else None,
         messages=[
             dict(
                 id=m.id,
@@ -402,9 +408,12 @@ def transition(db, mid, user, req, token=None):
                 fail("Конец приёма ставок уже наступил")
             case.state, case.deadline = "active", None
             market.status = MarketStatus.open
+            from app.services.guarantor_funding import enabled, begin_collection
+            if enabled(config):
+                begin_collection(db, market, config, case)
             broadcast(db, market, case, "Условия согласованы. Пари открыто для ставок")
         elif action == "consent":
-            if case.state != "active" or req.revision != case.revision:
+            if case.state not in ('collecting','active') or req.revision != case.revision:
                 fail("Обновите условия перед подтверждением")
             if guarantor:
                 fail("Гарант не может участвовать в ставках", 403)
@@ -556,7 +565,7 @@ def process_due():
             for r in db.query(GuarantorCase.market_id)
             .filter(
                 or_(
-                    (GuarantorCase.state.in_(["invited", "review", "proposed"]))
+                    (GuarantorCase.state.in_(["invited", "review", "proposed", "collecting"]))
                     & (GuarantorCase.deadline <= now()),
                     (GuarantorCase.state == "active")
                     & (GuarantorCase.result_due_at <= now()),
