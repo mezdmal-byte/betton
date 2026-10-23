@@ -18,6 +18,7 @@ export function invalidateAfterTrade(
     void queryClient.invalidateQueries({ queryKey: queryKeys.trades(input.marketId) })
   }
   void queryClient.invalidateQueries({ queryKey: ['markets'] })
+  void queryClient.invalidateQueries({ queryKey: ['feed-stats'] })
 }
 
 export function confirmCancelOrder(message?: string): boolean {

@@ -1,45 +1,51 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { AmountInput } from '../AmountInput/AmountInput'
-import { Button } from '../Button/Button'
-import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
-import { availableAtOdds, splitFill } from '../../lib/fill'
-import { formatOdds, formatTonFull } from '../../lib/format'
-import { useT } from '../../i18n'
-import type { OrderBookLevel, OutcomeSide, RecentTrade } from '../../types/market'
-import styles from './OwnPricePanel.module.css'
+import { useEffect, useRef, useState } from "react";
+import { AmountInput } from "../AmountInput/AmountInput";
+import { Button } from "../Button/Button";
+import { OutcomeQuote } from "../OutcomeQuote/OutcomeQuote";
+import { availableAtOdds, splitFill } from "../../lib/fill";
+import { formatOdds, formatTonFull } from "../../lib/format";
+import { useT } from "../../i18n";
+import type {
+  OrderBookLevel,
+  OutcomeSide,
+  RecentTrade,
+} from "../../types/market";
+import styles from "./OwnPricePanel.module.css";
 
-export type OwnPriceStage = 'entry' | 'preview' | 'confirm'
+export type OwnPriceStage = "entry" | "preview" | "confirm";
 
 export type OwnPricePanelProps = {
-  question: string
-  outcomeALabel: string
-  outcomeBLabel: string
-  outcomeAOdds?: number | null
-  outcomeBOdds?: number | null
-  selectedSide: OutcomeSide
-  odds: number
-  amount: number
-  book: OrderBookLevel[]
-  trades: RecentTrade[]
-  onSelectSide?: (side: OutcomeSide) => void
-  onOddsChange?: (odds: number) => void
-  onAmountChange?: (amount: number) => void
-  onSubmit?: () => void
-  matchedTon?: number | null
-  restTon?: number | null
-  previewMode?: 'local' | 'backend'
-  submitting?: boolean
-  disabled?: boolean
-  errorMessage?: string | null
-  availableTon?: number | null
-  success?: boolean
-  bookState?: 'ready' | 'loading' | 'error'
-  tradesState?: 'ready' | 'loading' | 'error'
-  onRetryBook?: () => void
-  onRetryTrades?: () => void
-  stage?: OwnPriceStage
-  onStageChange?: (stage: OwnPriceStage) => void
-}
+  question: string;
+  outcomeALabel: string;
+  outcomeBLabel: string;
+  outcomeAOdds?: number | null;
+  outcomeBOdds?: number | null;
+  selectedSide: OutcomeSide;
+  odds: number;
+  amount: number;
+  book: OrderBookLevel[];
+  trades: RecentTrade[];
+  onSelectSide?: (side: OutcomeSide) => void;
+  onOddsChange?: (odds: number) => void;
+  onAmountChange?: (amount: number) => void;
+  onSubmit?: () => void;
+  matchedTon?: number | null;
+  restTon?: number | null;
+  previewPayoutTon?: number | null;
+  previewAverageOdds?: number | null;
+  previewMode?: "local" | "backend";
+  submitting?: boolean;
+  disabled?: boolean;
+  errorMessage?: string | null;
+  availableTon?: number | null;
+  success?: boolean;
+  bookState?: "ready" | "loading" | "error";
+  tradesState?: "ready" | "loading" | "error";
+  onRetryBook?: () => void;
+  onRetryTrades?: () => void;
+  stage?: OwnPriceStage;
+  onStageChange?: (stage: OwnPriceStage) => void;
+};
 
 export function OwnPricePanel({
   outcomeALabel,
@@ -56,87 +62,143 @@ export function OwnPricePanel({
   onSubmit,
   matchedTon = null,
   restTon = null,
-  previewMode = 'local',
+  previewPayoutTon = null,
+  previewAverageOdds = null,
+  previewMode = "local",
   submitting = false,
   disabled = false,
   errorMessage = null,
   availableTon = null,
   success = false,
-  stage = 'entry',
+  stage = "entry",
   onStageChange,
 }: OwnPricePanelProps) {
-  const t = useT()
-  const selectedLabel = selectedSide === 'a' ? outcomeALabel : outcomeBLabel
-  const localSplit = splitFill(amount, availableAtOdds(book, odds))
-  const matched = matchedTon ?? (previewMode === 'local' ? localSplit.matched : null)
-  const rest = restTon ?? (previewMode === 'local' ? localSplit.rest : null)
-  const payout = useMemo(() => Math.max(0, amount) * Math.max(1, odds), [amount, odds])
+  const t = useT();
+  const selectedLabel = selectedSide === "a" ? outcomeALabel : outcomeBLabel;
+  const localSplit = splitFill(amount, availableAtOdds(book, odds));
+  const matched =
+    matchedTon ?? (previewMode === "local" ? localSplit.matched : null);
+  const rest = restTon ?? (previewMode === "local" ? localSplit.rest : null);
+  const quoteReady =
+    previewMode !== "backend" || (matched != null && rest != null);
   const [oddsDraft, setOddsDraft] = useState(() =>
-    Number.isFinite(odds) && odds > 0 ? odds.toFixed(2) : '',
-  )
-  const [oddsEditing, setOddsEditing] = useState(false)
-  const oddsInputRef = useRef<HTMLInputElement | null>(null)
+    Number.isFinite(odds) && odds > 0 ? odds.toFixed(2) : "",
+  );
+  const [oddsEditing, setOddsEditing] = useState(false);
+  const oddsInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (oddsEditing) return
-    setOddsDraft(Number.isFinite(odds) && odds > 0 ? odds.toFixed(2) : '')
-  }, [odds, oddsEditing])
+    if (oddsEditing) return;
+    setOddsDraft(Number.isFinite(odds) && odds > 0 ? odds.toFixed(2) : "");
+  }, [odds, oddsEditing]);
 
   const resetPreview = () => {
-    if (stage !== 'entry') onStageChange?.('entry')
-  }
+    if (stage !== "entry") onStageChange?.("entry");
+  };
 
   if (success) {
     return (
       <div className={styles.root}>
         <section className={styles.information}>
-          <strong>ОРДЕР РАЗМЕЩЁН</strong>
-          <p>{t('advanced.success')}</p>
+          <strong>ПРЕДЛОЖЕНИЕ РАЗМЕЩЕНО</strong>
+          <p>{t("advanced.success")}</p>
         </section>
       </div>
-    )
+    );
   }
 
-  if (stage === 'preview') {
+  if (stage === "preview") {
     return (
       <div className={styles.root}>
         <section className={styles.primaryMetric}>
           <strong>{formatOdds(odds)}</strong>
-          <span>лимитная цена · {selectedLabel}</span>
+          <span>свой коэффициент · {selectedLabel}</span>
         </section>
 
         <div className={styles.details}>
-          <DataRow value={formatTonFull(amount) + ' @ ' + formatOdds(odds) + ' · ордер'} />
-          <DataRow value={formatTonFull(matched) + ' @ ' + formatOdds(odds) + ' · сейчас'} />
-          <DataRow value={formatTonFull(rest) + ' @ ' + formatOdds(odds) + ' · будет ждать'} />
-          <DataRow accent value={'Потенциальная выплата · ' + formatTonFull(payout)} />
+          <DataRow
+            value={
+              formatTonFull(amount) +
+              " @ " +
+              formatOdds(odds) +
+              " · предложение"
+            }
+          />
+          <DataRow value={"Исполнится сейчас · " + formatTonFull(matched)} />
+          <DataRow
+            value={
+              "Средний коэффициент исполнения · " +
+              (previewAverageOdds == null
+                ? "—"
+                : formatOdds(previewAverageOdds) + "×")
+            }
+          />
+          <DataRow
+            value={
+              formatTonFull(rest) + " @ " + formatOdds(odds) + " · будет ждать"
+            }
+          />
+          <DataRow
+            accent
+            value={
+              "Выплата исполняемой части до сбора · " +
+              formatTonFull(previewPayoutTon)
+            }
+          />
         </div>
 
         <section className={styles.information}>
           <strong>ВАЖНО</strong>
-          <p>Только неисполненный остаток станет активным ордером.</p>
+          <p>Только неисполненный остаток станет активным предложением.</p>
         </section>
 
-        <Button fullWidth disabled={disabled} onClick={() => onStageChange?.('confirm')}>
-          Разместить ордер
+        <Button
+          fullWidth
+          disabled={disabled || !quoteReady}
+          onClick={() => onStageChange?.("confirm")}
+        >
+          Разместить предложение
         </Button>
       </div>
-    )
+    );
   }
 
-  if (stage === 'confirm') {
+  if (stage === "confirm") {
     return (
       <div className={styles.root}>
         <section className={styles.primaryMetric}>
           <strong>{formatTonFull(amount)}</strong>
-          <span>максимальная сумма ордера</span>
+          <span>сумма предложения</span>
         </section>
 
         <div className={styles.details}>
-          <DataRow value={'Купить ' + selectedLabel + ' · лимит ' + formatOdds(odds)} />
-          <DataRow value={'Может исполниться сейчас · ' + formatTonFull(matched)} />
-          <DataRow value={'Может остаться · ' + formatTonFull(rest)} />
-          <DataRow accent value={'Резерв · ' + formatTonFull(amount)} />
+          <DataRow
+            value={
+              "Ставка на " +
+              selectedLabel +
+              " · свой коэффициент " +
+              formatOdds(odds)
+            }
+          />
+          <DataRow
+            value={"Может исполниться сейчас · " + formatTonFull(matched)}
+          />
+          <DataRow value={"Может остаться · " + formatTonFull(rest)} />
+          <DataRow
+            value={
+              "Средний коэффициент исполнения · " +
+              (previewAverageOdds == null
+                ? "—"
+                : formatOdds(previewAverageOdds) + "×")
+            }
+          />
+          <DataRow
+            value={
+              "Выплата исполняемой части до сбора · " +
+              formatTonFull(previewPayoutTon)
+            }
+          />
+          <DataRow accent value={"Резерв · " + formatTonFull(amount)} />
         </div>
 
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
@@ -144,13 +206,13 @@ export function OwnPricePanel({
         <Button
           fullWidth
           loading={submitting}
-          disabled={disabled || submitting}
+          disabled={disabled || submitting || !quoteReady || !onSubmit}
           onClick={onSubmit}
         >
           Подтвердить размещение
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -161,10 +223,10 @@ export function OwnPricePanel({
           odds={outcomeAOdds}
           side="a"
           showLiquidity={false}
-          state={selectedSide === 'a' ? 'selected' : 'default'}
+          state={selectedSide === "a" ? "selected" : "default"}
           onClick={() => {
-            resetPreview()
-            onSelectSide?.('a')
+            resetPreview();
+            onSelectSide?.("a");
           }}
         />
         <OutcomeQuote
@@ -172,10 +234,10 @@ export function OwnPricePanel({
           odds={outcomeBOdds}
           side="b"
           showLiquidity={false}
-          state={selectedSide === 'b' ? 'selected' : 'default'}
+          state={selectedSide === "b" ? "selected" : "default"}
           onClick={() => {
-            resetPreview()
-            onSelectSide?.('b')
+            resetPreview();
+            onSelectSide?.("b");
           }}
         />
       </div>
@@ -193,39 +255,43 @@ export function OwnPricePanel({
           spellCheck={false}
           value={oddsDraft}
           onFocus={(event) => {
-            setOddsEditing(true)
-            window.setTimeout(() => event.currentTarget.select(), 0)
+            setOddsEditing(true);
+            const input = event.currentTarget;
+            window.setTimeout(() => input.select(), 0);
           }}
           onBlur={() => {
-            setOddsEditing(false)
-            const parsed = Number(oddsDraft.replace(',', '.'))
+            setOddsEditing(false);
+            const parsed = Number(oddsDraft.replace(",", "."));
             if (Number.isFinite(parsed) && parsed >= 1.01 && parsed <= 10000) {
-              const normalized = Math.round(parsed * 100) / 100
-              setOddsDraft(normalized.toFixed(2))
-              onOddsChange?.(normalized)
+              const normalized = Math.round(parsed * 100) / 100;
+              setOddsDraft(normalized.toFixed(2));
+              onOddsChange?.(normalized);
             } else {
-              setOddsDraft('')
-              onOddsChange?.(0)
+              setOddsDraft("");
+              onOddsChange?.(0);
             }
           }}
           onChange={(event) => {
-            resetPreview()
+            resetPreview();
             const raw = event.target.value
-              .replace(/[^0-9.,]/g, '')
-              .replace(/^([.,])/, '0$1')
-            const separatorIndex = raw.search(/[.,]/)
+              .replace(/[^0-9.,]/g, "")
+              .replace(/^([.,])/, "0$1");
+            const separatorIndex = raw.search(/[.,]/);
             const normalizedDraft =
               separatorIndex < 0
                 ? raw
                 : raw.slice(0, separatorIndex + 1) +
-                  raw.slice(separatorIndex + 1).replace(/[.,]/g, '').slice(0, 2)
-            setOddsDraft(normalizedDraft)
+                  raw
+                    .slice(separatorIndex + 1)
+                    .replace(/[.,]/g, "")
+                    .slice(0, 2);
+            setOddsDraft(normalizedDraft);
             if (!normalizedDraft) {
-              onOddsChange?.(0)
-              return
+              onOddsChange?.(0);
+              return;
             }
-            const parsed = Number(normalizedDraft.replace(',', '.'))
-            if (Number.isFinite(parsed)) onOddsChange?.(parsed)
+            const parsed = Number(normalizedDraft.replace(",", "."));
+            if (Number.isFinite(parsed)) onOddsChange?.(parsed);
           }}
         />
         {oddsDraft ? (
@@ -234,16 +300,16 @@ export function OwnPricePanel({
             className={styles.clearOdds}
             aria-label="Очистить коэффициент"
             onPointerDown={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
+              event.preventDefault();
+              event.stopPropagation();
             }}
             onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              resetPreview()
-              setOddsDraft('')
-              onOddsChange?.(0)
-              oddsInputRef.current?.focus()
+              event.preventDefault();
+              event.stopPropagation();
+              resetPreview();
+              setOddsDraft("");
+              onOddsChange?.(0);
+              oddsInputRef.current?.focus();
             }}
           >
             ×
@@ -252,43 +318,46 @@ export function OwnPricePanel({
       </div>
 
       <AmountInput
+        className={styles.amountInput}
         value={String(amount)}
         label={
           availableTon == null
-            ? 'Сумма ордера'
-            : 'Сумма ордера · баланс ' + formatTonFull(availableTon)
+            ? "Сумма предложения"
+            : "Сумма предложения · баланс " + formatTonFull(availableTon)
         }
         onChange={(value) => {
-          resetPreview()
-          onAmountChange?.(Number(value.replace(',', '.')) || 0)
+          resetPreview();
+          onAmountChange?.(Number(value.replace(",", ".")) || 0);
         }}
         error={
           errorMessage
             ? errorMessage
             : availableTon != null && amount > availableTon
-              ? t('err.fundsAvail', { amt: formatTonFull(availableTon) })
+              ? t("err.fundsAvail", { amt: formatTonFull(availableTon) })
               : undefined
         }
       />
 
       <div className={styles.quoteRows}>
         <QuoteRow label="Исход" value={selectedLabel} accent />
-        <QuoteRow label="Резерв на ордер" value={formatTonFull(amount)} />
+        <QuoteRow label="Резерв предложения" value={formatTonFull(amount)} />
       </div>
 
       <p className={styles.note}>
-        Часть может исполниться сразу. Остаток ожидает встречные заявки по вашим условиям. Его можно отменить.
+        Часть может исполниться сразу. Остаток ожидает встречные предложения по
+        вашим условиям. Его можно отменить. Сервисный сбор — 1% только с чистой
+        прибыли победителя.
       </p>
 
       <Button
         fullWidth
-        disabled={disabled || amount <= 0 || odds <= 1}
-        onClick={() => onStageChange?.('preview')}
+        disabled={disabled || amount <= 0 || odds <= 1 || !quoteReady}
+        onClick={() => onStageChange?.("preview")}
       >
         Предпросмотр
       </Button>
     </div>
-  )
+  );
 }
 
 function QuoteRow({
@@ -296,18 +365,28 @@ function QuoteRow({
   value,
   accent = false,
 }: {
-  label: string
-  value: string
-  accent?: boolean
+  label: string;
+  value: string;
+  accent?: boolean;
 }) {
   return (
     <div className={styles.quoteRow}>
       <span>{label}</span>
       <strong className={accent ? styles.accent : undefined}>{value}</strong>
     </div>
-  )
+  );
 }
 
-function DataRow({ value, accent = false }: { value: string; accent?: boolean }) {
-  return <div className={accent ? styles.dataRowAccent : styles.dataRow}>{value}</div>
+function DataRow({
+  value,
+  accent = false,
+}: {
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className={accent ? styles.dataRowAccent : styles.dataRow}>
+      {value}
+    </div>
+  );
 }

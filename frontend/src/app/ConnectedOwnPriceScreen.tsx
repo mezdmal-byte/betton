@@ -200,6 +200,8 @@ export function ConnectedOwnPriceScreen({
       matchedTon={preview?.matchedTon ?? null}
       restTon={preview?.remainingTon ?? null}
       previewMode="backend"
+      previewPayoutTon={preview?.payoutTon ?? null}
+      previewAverageOdds={preview?.averageOdds ?? null}
       submitting={mutation.isPending}
       disabled={!tradable || insufficient || !userId || mutation.isPending || placedOrder != null}
       noticeMessage={!tradable ? t('demo.unavailable') : null}

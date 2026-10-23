@@ -3,9 +3,10 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
-  min-height: 28px;
-  padding: 0 var(--space-12);
+  min-height: 40px;
+  padding: 0;
   overflow: hidden;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .depth {
@@ -26,14 +27,14 @@
 }
 
 .odds {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent-mint);
 }
 
 .available {
   text-align: right;
   font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 .active .odds {

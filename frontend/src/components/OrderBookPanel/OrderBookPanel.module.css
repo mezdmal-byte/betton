@@ -2,10 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 8px 10px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-12);
+  padding: 0;
 }
 
 .errorBlock {
@@ -39,9 +36,11 @@
 }
 
 .sideTitle {
-  font-size: 13px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: 17px;
+  color: var(--color-accent-mint);
   overflow-wrap: anywhere;
 }
 
@@ -51,8 +50,26 @@
   align-items: baseline;
   gap: var(--space-8);
   margin-bottom: var(--space-4);
-  font-size: 12px;
+  font-size: 10px;
+  text-transform: uppercase;
   color: var(--color-text-secondary);
+}
+
+.total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+.total strong {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
 }
 
 .head span:last-child {
@@ -67,7 +84,6 @@
   font-size: 13px;
   color: var(--color-text-disabled);
 }
-
 
 .expandButton {
   min-height: 38px;
