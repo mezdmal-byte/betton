@@ -34,7 +34,7 @@ import { ConnectedGuarantors, GuarantorAlerts } from './ConnectedGuarantors'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { SystemStateScreen } from '../screens/SystemStateScreen'
 import { WalletScreen } from '../screens/WalletScreen'
-import { currentRoute, goBack, pushRoute, resetToTab, showTelegramBackButton, type Route, type WalletTab } from './navigation'
+import { currentRoute, goBack, pushRoute, resetToTab, routesForTabMemory, showTelegramBackButton, type Route, type WalletTab } from './navigation'
 import { useAccount, useAuthExpired, useSession } from './session'
 import styles from './ConnectedApp.module.css'
 
@@ -151,7 +151,7 @@ export function ConnectedApp() {
       scrollElements().forEach(el => { el.scrollTop = 0 })
       return next
     }
-    tabStacksRef.current[activeTabRef.current] = activeTabRef.current === 'create' && current.at(-1)?.name === 'create-result' ? [{ name: 'create' }] : current
+    tabStacksRef.current[activeTabRef.current] = routesForTabMemory(activeTabRef.current, current)
     activeTabRef.current = id
     return tabStacksRef.current[id] ?? resetToTab(id)
   }) }

@@ -5,6 +5,7 @@ import {
   isTopLevel,
   pushRoute,
   resetToTab,
+  routesForTabMemory,
   sameRoute,
   showTelegramBackButton,
   type Route,
@@ -27,6 +28,11 @@ const help: Route = { name: 'help' }
 const history: Route = { name: 'history' }
 
 describe('navigation stack', () => {
+  it('keeps unfinished creation but never restores a submitted event as a draft', () => {
+    expect(routesForTabMemory('create', [create])).toEqual([create])
+    expect(routesForTabMemory('create', [{ name: 'create-result', market: { id: 123 } as Extract<Route, { name: 'create-result' }>['market'] }])).toEqual([create])
+    expect(routesForTabMemory('markets', [markets, detail])).toEqual([markets, detail])
+  })
   it('returns to the actual previous screen, not always Markets', () => {
     const profileFlow = pushRoute(pushRoute([markets], profile), walletDeposit)
     expect(currentRoute(goBack(profileFlow))).toEqual(profile)

@@ -110,7 +110,7 @@ Frontend не придумывает успешную модерацию, вып
 | Команда | Результат |
 |---|---|
 | `.ux-preview/venv/bin/python -m pytest -q tests` | 289 passed, 12 skipped; SQLite; 12 PostgreSQL journal tests требуют отдельной BETTON_TEST_DATABASE_URL |
-| `cd frontend && npm test` | 135 passed в 25 файлах; включены `.test.tsx`, ранее общий шаблон их пропускал |
+| `cd frontend && npm test` | 136 passed в 25 файлах; включены `.test.tsx`, ранее общий шаблон их пропускал |
 | `cd frontend && npm run build` | TypeScript + Vite проходят; остаётся предупреждение о размере основного JS >500 kB |
 | `git diff --check` | Проходит |
 | Локальный сервер + HTTP | HTML, подписанная авторизация, реальный seed/feed, запрет чужого Host/Origin проверены |

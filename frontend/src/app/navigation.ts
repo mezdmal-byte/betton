@@ -61,6 +61,10 @@ export function resetToTab(tab: TabName): Route[] {
   return [{ name: tab }]
 }
 
+export function routesForTabMemory(tab: TabName, stack: Route[]): Route[] {
+  return tab === 'create' && currentRoute(stack).name === 'create-result' ? [{ name: 'create' }] : stack
+}
+
 export function goBack(stack: Route[]): Route[] {
   if (stack.length <= 1) return [{ name: 'markets' }]
   return stack.slice(0, -1)
