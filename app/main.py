@@ -159,6 +159,16 @@ async def expire_orders_task():
         await asyncio.sleep(15)
 
 
+async def demo_guarantors_task():
+    while True:
+        try:
+            from app.services.demo_guarantors import process_due
+            await asyncio.to_thread(process_due)
+        except Exception:
+            logging.getLogger(__name__).exception("Isolated demo guarantor worker failed")
+        await asyncio.sleep(2)
+
+
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
     ensure_schema()
@@ -168,10 +178,12 @@ async def async_lifespan(app: FastAPI):
         seed_preview_data()
     task = asyncio.create_task(setup_webhook_task())
     expiry = asyncio.create_task(expire_orders_task())
+    demo_task = asyncio.create_task(demo_guarantors_task())
     yield
     task.cancel()
     expiry.cancel()
-    await asyncio.gather(expiry, return_exceptions=True)
+    demo_task.cancel()
+    await asyncio.gather(expiry, demo_task, return_exceptions=True)
     bot, _dp = _maybe_bot()
     if bot is not None:
         try:
@@ -907,3 +919,5 @@ mount_react_preview(app)
 from app.guarantor_routes import router as guarantor_router
 app.include_router(guarantor_router)
 app.include_router(ux_v3_router)
+from app.demo_routes import router as demo_router
+app.include_router(demo_router)

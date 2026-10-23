@@ -391,3 +391,29 @@ class EventRevisionV3(Base):
     kind: Mapped[str] = mapped_column(String(32))
     snapshot: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class DemoEnvironment(Base):
+    """Created only by explicit bootstrap of an empty isolated database."""
+    __tablename__ = 'demo_environment'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    version: Mapped[int] = mapped_column(Integer)
+
+
+class DemoGuarantorActor(Base):
+    """Explicit internal actors, never Telegram accounts or an auth override."""
+    __tablename__ = 'demo_guarantor_actors'
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    strategy: Mapped[str] = mapped_column(String(24), unique=True)
+
+
+class DemoGuarantorRun(Base):
+    """Admin-opted-in event allowlist for isolated demo automation."""
+    __tablename__ = 'demo_guarantor_runs'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey('demo_guarantor_actors.user_id'))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    scenario: Mapped[str] = mapped_column(String(24), default='negotiate')
+    next_at: Mapped[datetime] = mapped_column(DateTime)
+    progress: Mapped[dict] = mapped_column(JSON, default=dict)
+    last_error: Mapped[str | None] = mapped_column(String(300), nullable=True)
