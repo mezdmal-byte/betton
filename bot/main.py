@@ -59,17 +59,30 @@ def mini_app_url() -> str:
     return (configured or settings.webapp_base()) + "/"
 
 
+def demo_url() -> str:
+    """Optional isolated preview; never changes the regular Mini App link."""
+    url = (os.getenv("BETTON_UX_V3_DEMO_URL") or "").strip()
+    prefix = "https://betton-ux-v3-demo.onrender.com/demo-enter?key="
+    return url if url.startswith(prefix) and len(url) > len(prefix) else ""
+
+
 def mini_app_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Открыть BetTON",
-                    web_app=WebAppInfo(url=mini_app_url()),
-                )
-            ]
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                text="Открыть BetTON",
+                web_app=WebAppInfo(url=mini_app_url()),
+            )
         ]
-    )
+    ]
+    if demo_url():
+        keyboard.append([
+            InlineKeyboardButton(
+                text="🧪 BetTON UX v3 · тестовая версия",
+                web_app=WebAppInfo(url=demo_url()),
+            )
+        ])
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 @dp.message(CommandStart())
@@ -80,6 +93,25 @@ async def cmd_start(message: Message) -> None:
 @dp.message(Command("help"))
 async def cmd_help(message: Message) -> None:
     await message.answer(HELP_TEXT, reply_markup=mini_app_keyboard())
+
+
+@dp.message(Command("demo"))
+async def cmd_demo(message: Message) -> None:
+    """Launch the separately hosted fake-money UI with the existing BetTON bot."""
+    if not demo_url():
+        await message.answer("Тестовая версия временно недоступна.")
+        return
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(
+            text="🧪 Открыть тестовый BetTON UX v3",
+            web_app=WebAppInfo(url=demo_url()),
+        )
+    ]])
+    await message.answer(
+        "Тестовая версия UX v3: только демонстрационные пользователи и TON. "
+        "Основное приложение не изменено.",
+        reply_markup=keyboard,
+    )
 
 
 def build_dispatcher() -> Dispatcher:
