@@ -4,6 +4,10 @@ import type { CreateMarketBody, MarketOut, MarketTradeOut, MarketsPage, MarketsQ
 
 export const FEED_PAGE_SIZE = 20
 
+export async function getFeedStats(): Promise<{active_offers_nano: string; scope: string}> {
+  return (await apiRequest<{active_offers_nano: string; scope: string}>('/feed/stats')).data
+}
+
 export type FeedQuery = {
   sort?: string
   category?: string

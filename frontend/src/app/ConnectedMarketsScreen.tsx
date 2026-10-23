@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { applyPersonalizedExecutableQuotes, mapAccountOut, mapMarketOut, mapTopCreator, mapUiStatusToApi } from '../api/adapters'
-import { getOrderbook, listMarkets } from '../api/markets'
+import { getOrderbook, listMarkets, getFeedStats } from '../api/markets'
 import { listTopCreators } from '../api/account'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
@@ -63,6 +63,7 @@ export function ConnectedMarketsScreen({
     null,
   )
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const stats = useQuery({ queryKey: ['feed-stats'], queryFn: getFeedStats, refetchInterval: 15_000 })
   const debouncedQuery = useDebouncedValue(feedView.query, 280)
   const headerUser = useMemo(() => {
     if (!account) return null
@@ -159,6 +160,9 @@ export function ConnectedMarketsScreen({
   return (
     <div className={overlayStyles.root}>
       <MarketsScreen
+        activeOffersNano={stats.data?.active_offers_nano}
+        statsError={stats.isError}
+        onRetryStats={() => { void stats.refetch() }}
         markets={markets}
         query={feedView.query}
         sort={feedView.sort}

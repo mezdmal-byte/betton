@@ -29,9 +29,9 @@ describe('wallet unavailable copy', () => {
 
 describe('help and public profile copy', () => {
   it('explains P2P, fees, and creator share only as detail', () => {
-    expect(translate('ru', 'help.lead')).toContain('P2P')
-    expect(translate('ru', 'help.book')).toContain('букмекера')
-    expect(translate('ru', 'help.quick')).toContain('Быстрая ставка')
+    expect(translate('ru', 'help.lead')).toContain('друг с другом')
+    expect(translate('ru', 'help.book')).toContain('указанную сумму')
+    expect(translate('ru', 'help.quick')).toContain('Свой коэффициент')
     expect(translate('ru', 'market.atOddsAvailable')).toContain('доступно')
     expect(translate('ru', 'market.maxPreset')).toBe('Макс. {amt}')
     expect(translate('ru', 'market.noLiquidityNow')).toContain('нет доступной ликвидности')

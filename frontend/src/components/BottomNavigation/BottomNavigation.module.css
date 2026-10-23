@@ -8,6 +8,7 @@
   overflow: hidden;
   border-top: 1px solid var(--color-border-subtle);
   background: var(--color-background-primary);
+  flex: 0 0 auto;
 }
 
 .item {
@@ -28,9 +29,29 @@
 }
 
 .icon {
+  display: block;
   width: 22px;
   height: 22px;
   flex: 0 0 22px;
+  background: currentColor;
+  mask: var(--nav-icon) center / 22px 22px no-repeat;
+  -webkit-mask: var(--nav-icon) center / 22px 22px no-repeat;
+}
+
+.iconSlot {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+.unread {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  top: -2px;
+  right: -1px;
+  border-radius: 50%;
+  background: var(--color-accent-mint);
 }
 
 .label {
@@ -44,9 +65,13 @@
   white-space: nowrap;
 }
 
-.active { color: var(--color-accent-mint); }
+.active {
+  color: var(--color-accent-mint);
+}
 
-.create { gap: 4px; }
+.create {
+  gap: 4px;
+}
 
 .createIcon {
   position: relative;

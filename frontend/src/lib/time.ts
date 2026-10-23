@@ -4,7 +4,9 @@ const CLOSING_SOON_MS = 60 * 60 * 1000
 
 export function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null
-  const date = new Date(value)
+  // SQLAlchemy's existing API emits naive datetimes in UTC, not local time.
+  const normalized = /^\d{4}-\d{2}-\d{2}T/.test(value) && !/Z$|[+-]\d\d:\d\d$/.test(value) ? `${value}Z` : value
+  const date = new Date(normalized)
   return Number.isNaN(date.getTime()) ? null : date
 }
 

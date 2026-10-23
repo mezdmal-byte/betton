@@ -3,14 +3,20 @@ export type Locale = 'ru' | 'en' | 'zh'
 export const LOCALES: Locale[] = ['ru', 'en', 'zh']
 
 export const ru = {
-  'nav.feed': 'Рынки',
+  'feed.chooseEvent': "Выберите событие и исход",
+  'feed.activeOffers': "В активных предложениях",
+  'feed.activeOffersHelp': "Средства участников в неисполненных частях активных предложений. Исполненные ставки и возможные выплаты не учитываются.",
+  'feed.statsError': "Не удалось загрузить сумму. Повторить",
+  'understood': "Понятно",
+
+  'nav.feed': 'События',
   'nav.create': 'Создать',
-  'nav.mine': 'Портфель',
+  'nav.mine': 'Мои ставки',
   'nav.profile': 'Профиль',
   'nav.notifications': 'Уведомления',
   'notifications.unread': 'Непрочитанные',
   'notifications.emptyTitle': 'Нет новых уведомлений',
-  'notifications.emptyBody': 'События по заявкам и рынкам появятся здесь.',
+  'notifications.emptyBody': 'События по заявкам и событиям появятся здесь.',
   'nav.main': 'Основное меню',
   'header.available': 'Доступно',
   'back': 'Назад',
@@ -21,7 +27,7 @@ export const ru = {
   'share.fail': 'Не удалось скопировать ссылку',
   'share.linkTitle': 'Ссылка на событие',
   'share.action': 'Поделиться',
-  'feed.searchPh': 'Поиск рынков, тем или авторов',
+  'feed.searchPh': 'Поиск событий, тем или авторов',
   'feed.filters': 'Фильтры',
   'feed.sort': 'Сортировка',
   'feed.new': 'Новые',
@@ -79,7 +85,7 @@ export const ru = {
   'create.feesFee':
     '0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя.',
   'create.feesP2p':
-    'Это P2P-рынок: коэффициенты задают сами пользователи, букмекера нет. Заявка резервирует сумму и ждёт встречную.',
+    'Это P2P-событие: коэффициенты задают сами пользователи, букмекера нет. Заявка резервирует сумму и ждёт встречную.',
   'create.feesExample':
     'Пример: ставка 100 TON, выплата 180 TON, чистая прибыль 80 TON, сервисный сбор 0.80 TON. Проигравшая ставка не платит дополнительный сбор.',
   'create.feesCancel':
@@ -94,7 +100,7 @@ export const ru = {
   'create.uniqOutcomes': 'Имена исходов должны быть уникальными',
   'create.resultPendingTitle': 'Отправлено на проверку',
   'create.resultPendingBody':
-    'Рынок появится в ленте после одобрения модератором. Залог для P2P не нужен.',
+    'Событие появится в ленте после одобрения модератором. Залог для P2P не нужен.',
   'create.resultUnlistedTitle': 'Событие открыто по ссылке',
   'create.resultUnlistedBody': 'Сохраните ссылку. Событие не появится в общей ленте.',
   'create.resultCreatedTitle': 'Событие создано',
@@ -127,13 +133,13 @@ export const ru = {
   'profile.menu': 'Профиль',
   'profile.settings': 'Настройки',
   'profile.settingsMeta': 'Параметры профиля',
-  'profile.eventsMeta': '{n} рынков',
+  'profile.eventsMeta': '{n} событий',
   'profile.walletMeta': 'Скоро · FUTURE',
   'profile.historyMeta': 'Сделки и расчёты',
   'profile.helpMeta': 'Механика, комиссия, правила',
   'profile.moderationMeta': 'Доступ администратора',
   'profile.loginTitle': 'Войдите через Telegram',
-  'profile.loginBody': 'Сохраняйте позиции, создавайте рынки и управляйте настройками.',
+  'profile.loginBody': 'Сохраняйте позиции, создавайте события и управляйте настройками.',
   'profile.loginAction': 'Войти через Telegram',
   'profile.creator': 'Создатель',
   'profile.creatorModerator': 'Создатель · модератор',
@@ -154,13 +160,13 @@ export const ru = {
   'theme.light': 'Светлая',
   'theme.hint': 'Темы Dark A и Light C · Porcelain & Cobalt',
   'help.title': 'Как это работает',
-  'help.lead': 'BetTON — P2P-рынок прогнозов. Платформа не букмекер и не гарантирует ликвидность.',
+  'help.lead': 'В BetTON участники прогнозируют события и заключают ставки друг с другом. Платформа не букмекер и не гарантирует наличие встречных предложений.',
   'help.p2p':
-    'Пользователи сами предлагают коэффициенты лимитными заявками. Букмекера нет: исполнение зависит от встречной заявки. Частичное исполнение — нормальная ситуация.',
+    'Участники сами предлагают коэффициенты. Ставка заключается, когда находится подходящее встречное предложение. Часть суммы может исполниться сразу, а остаток — ожидать.',
   'help.book':
-    'Лучшее предложение — это лучшая сейчас исполнимая заявка другого пользователя, а не котировка букмекера. Открытый стакан показывает доступные заявки. История сделок — уже исполненные сделки, отдельно от открытых заявок.',
+    'Лучший коэффициент доступен только на указанную сумму. Предложения участников показывают, какие встречные ставки доступны сейчас. Уже заключённые ставки отображаются отдельно от ожидающих предложений.',
   'help.quick':
-    '«Быстрая ставка» принимает сейчас доступную чужую ликвидность. «Своя цена» выставляет вашу заявку: часть может исполниться сразу, остаток будет ждать контрагента.',
+    '«Сделать ставку» принимает доступные встречные предложения. «Свой коэффициент» размещает ваше предложение: часть может исполниться сразу, остаток будет ждать другого участника.',
   'help.fee':
     '0% за создание события и размещение заявки. Сервисный сбор — 1% только с чистой прибыли победителя. Проигравшая ставка этот сбор не платит.',
   'help.creatorShare':
@@ -168,7 +174,7 @@ export const ru = {
   'help.cancel':
     'Неисполненный остаток можно отменить — деньги вернутся на доступный баланс. Если событие отменят, ставки возвращаются без сервисного сбора.',
   'help.ownPrice':
-    'Заявка по своей цене может ждать. Неисполненный остаток лимитной заявки остаётся в стакане, пока его не примут или вы не отмените.',
+    'Предложение со своим коэффициентом может ждать. Неисполненный остаток остаётся в предложениях участников, пока его не примут или вы не отмените.',
   'wallet.title': 'Кошелёк',
   'wallet.network': 'Сеть',
   'wallet.deposit': 'Пополнить',
@@ -198,10 +204,10 @@ export const ru = {
   'tx.credit': 'Зачисление',
   'tx.deposit': 'Пополнение',
   'tx.withdraw': 'Вывод',
-  'portfolio.title': 'Мой портфель',
-  'portfolio.positions': 'Позиции',
-  'portfolio.orders': 'Заявки',
-  'portfolio.history': 'История',
+  'portfolio.title': 'Мои ставки',
+  'portfolio.positions': 'Активные',
+  'portfolio.orders': 'Мои предложения',
+  'portfolio.history': 'Завершённые',
   'empty.ordersTitle': 'Нет активных заявок',
   'empty.ordersBody': 'Когда вы разместите свою цену, заявка появится здесь.',
   'empty.positionsTitle': 'Нет позиций',
@@ -215,7 +221,7 @@ export const ru = {
   'order.partial': 'Частично исполнена',
   'order.wait': 'Активна',
   'order.cancelConfirm': 'Отменить остаток заявки? Средства вернутся на доступный баланс.',
-  'event.title': 'Рынок',
+  'event.title': 'Событие',
   'event.loading': 'Загружаем событие…',
   'event.how': 'Как разрешится',
   'event.resolutionEmpty': 'Условия разрешения не указаны',
@@ -276,7 +282,7 @@ export const ru = {
   'advanced.more': 'Больше',
   'advanced.place': 'Разместить заявку',
   'advanced.placing': 'Размещаем…',
-  'advanced.success': 'Заявка размещена. Неисполненный остаток появится в Портфель → Заявки.',
+  'advanced.success': 'Заявка размещена. Неисполненный остаток появится в Мои ставки → Мои предложения.',
   'advanced.recent': 'Недавние сделки',
   'advanced.noBook': 'Нет заявок в стакане.',
   'moderation.title': 'Модерация',
@@ -325,7 +331,7 @@ export const ru = {
   'loading.events': 'Обновляем события.',
   'lmsr.title': 'LMSR — совместимость',
   'lmsr.body':
-    'Этот рынок использует прежний механизм LMSR. P2P-котировки здесь не показываются. Откройте его в исходном Mini App.',
+    'Этот событие использует прежний механизм LMSR. P2P-котировки здесь не показываются. Откройте его в исходном Mini App.',
   'lmsr.open': 'Открыть в Mini App',
   'demo.unavailable': 'Ставки пока недоступны',
   'type.unlisted': 'по ссылке',
@@ -341,9 +347,15 @@ export const ru = {
 } as const
 
 export const en: Record<keyof typeof ru, string> = {
-  'nav.feed': 'Markets',
+  'feed.chooseEvent': "Choose an event and outcome",
+  'feed.activeOffers': "In active offers",
+  'feed.activeOffersHelp': "Participants’ funds reserved in unfilled active offers. Matched stakes and possible payouts are excluded.",
+  'feed.statsError': "Could not load the amount. Retry",
+  'understood': "Got it",
+
+  'nav.feed': 'Events',
   'nav.create': 'Create',
-  'nav.mine': 'Portfolio',
+  'nav.mine': 'My bets',
   'nav.profile': 'Profile',
   'nav.notifications': 'Notifications',
   'notifications.unread': 'Unread',
@@ -535,10 +547,10 @@ export const en: Record<keyof typeof ru, string> = {
   'tx.credit': 'Credit',
   'tx.deposit': 'Deposit',
   'tx.withdraw': 'Withdrawal',
-  'portfolio.title': 'My portfolio',
-  'portfolio.positions': 'Positions',
-  'portfolio.orders': 'Orders',
-  'portfolio.history': 'History',
+  'portfolio.title': 'My bets',
+  'portfolio.positions': 'Active',
+  'portfolio.orders': 'My offers',
+  'portfolio.history': 'Completed',
   'empty.ordersTitle': 'No open orders',
   'empty.ordersBody': 'When you post your own price, the order will appear here.',
   'empty.positionsTitle': 'No positions',
@@ -678,6 +690,12 @@ export const en: Record<keyof typeof ru, string> = {
 }
 
 export const zh: Record<keyof typeof ru, string> = {
+  'feed.chooseEvent': "选择事件和结果",
+  'feed.activeOffers': "活跃报价中的资金",
+  'feed.activeOffersHelp': "参与者在未成交活跃报价中预留的资金，不包含已成交投注或潜在派彩。",
+  'feed.statsError': "金额加载失败，重试",
+  'understood': "明白了",
+
   'nav.feed': '市场',
   'nav.create': '创建',
   'nav.mine': '资产',

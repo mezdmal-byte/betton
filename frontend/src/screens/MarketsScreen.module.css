@@ -75,6 +75,12 @@
   min-width: 0;
   flex-direction: column;
   gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
 .metric strong {
@@ -88,9 +94,13 @@
 
 .metric span {
   color: var(--color-text-secondary);
-  font-size: 9px;
+  font-size: 12px;
   line-height: normal;
 }
+
+.metricInfo { padding:16px; border:1px solid var(--color-border-subtle); border-radius:14px; background:var(--color-surface-base); font-size:13px; }
+.metricInfo p { margin:0 0 12px; }
+.metricRetry { border:0; background:transparent; color:var(--color-status-danger); text-align:left; font-size:12px; }
 
 .filter,
 .filterActive {

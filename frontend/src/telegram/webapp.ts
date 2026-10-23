@@ -40,4 +40,23 @@ export function bootTelegramWebApp(): void { const webApp = getTelegramWebApp();
 export function closeTelegramWebApp(): void { try { getTelegramWebApp()?.close?.() } catch { /* Host gone. */ } }
 export function readShareTokenFromContext(): string | null { if (typeof window === 'undefined') return null; const params = new URLSearchParams(window.location.search); const fromQuery = (params.get('share') || '').trim(); if (fromQuery) return fromQuery; const start = getTelegramWebApp()?.initDataUnsafe?.start_param; if (!start) return null; const raw = String(start); const token = raw.startsWith('market_') ? raw.slice('market_'.length) : raw; const cleaned = token.trim(); return cleaned || null }
 export function hapticNotification(type: 'error' | 'success' | 'warning'): void { try { getTelegramWebApp()?.HapticFeedback?.notificationOccurred?.(type) } catch { /* Browser fallback: do nothing. */ } }
-export function syncTelegramBackButton(visible: boolean, onBack: () => void): () => void { const button = getTelegramWebApp()?.BackButton; if (!button) return () => undefined; const handler = () => onBack(); try { button.onClick?.(handler); if (visible) button.show?.(); else button.hide?.() } catch { return () => undefined } return () => { try { button.offClick?.(handler); button.hide?.() } catch { /* Host gone. */ } } }
+type BackOwner = { visible: boolean; onBack: () => void }
+const backOwners = new WeakMap<TelegramBackButton, BackOwner[]>()
+export function syncTelegramBackButton(visible: boolean, onBack: () => void): () => void {
+  const button = getTelegramWebApp()?.BackButton
+  if (!button) return () => undefined
+  const owners = backOwners.get(button) ?? []
+  backOwners.set(button, owners)
+  const owner = { visible, onBack }
+  owners.push(owner)
+  const active = () => [...owners].reverse().find(item => item.visible)
+  const refresh = () => { if (active()) button.show?.(); else button.hide?.() }
+  // The host may notify every registered listener. Only the top screen acts.
+  const handler = () => { if (active() === owner) owner.onBack() }
+  try { button.onClick?.(handler); refresh() } catch { /* Host gone. */ }
+  return () => {
+    const index = owners.indexOf(owner)
+    if (index >= 0) owners.splice(index, 1)
+    try { button.offClick?.(handler); refresh() } catch { /* Host gone. */ }
+  }
+}

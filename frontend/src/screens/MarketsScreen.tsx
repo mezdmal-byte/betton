@@ -11,7 +11,6 @@ import { StatusMessage } from '../components/StatusMessage/StatusMessage'
 import { ThemeToggle } from '../components/ThemeToggle/ThemeToggle'
 import { feedMarkets } from '../fixtures/markets'
 import { useT } from '../i18n'
-import { formatTonFull } from '../lib/format'
 import type { MarketFixture, OutcomeSide } from '../types/market'
 import styles from './MarketsScreen.module.css'
 
@@ -36,6 +35,9 @@ export type FeedCreator = {
 }
 
 export type MarketsScreenProps = {
+  activeOffersNano?: string
+  statsError?: boolean
+  onRetryStats?: () => void
   markets?: MarketFixture[]
   query?: string
   sort?: string
@@ -65,6 +67,9 @@ export type MarketsScreenProps = {
 }
 
 export function MarketsScreen({
+  activeOffersNano,
+  statsError = false,
+  onRetryStats,
   markets = feedMarkets,
   query = '',
   sort = 'new',
@@ -89,10 +94,11 @@ export function MarketsScreen({
   const [internalQuery, setInternalQuery] = useState(query)
   const [internalSort, setInternalSort] = useState(sort)
   const [searchOpen, setSearchOpen] = useState(() => Boolean(query.trim()))
+  const [metricInfo, setMetricInfo] = useState(false)
 
   const search = onQueryChange ? query : internalQuery
   const sortValue = onSortChange ? sort : internalSort
-  const totalVolume = markets.reduce((sum, market) => sum + (Number.isFinite(market.volumeTon) ? market.volumeTon : 0), 0)
+  const metric = formatActiveOffers(activeOffersNano)
 
   return (
     <div className={styles.screen}>
@@ -125,7 +131,7 @@ export function MarketsScreen({
             </IconButton>
           </div>
         </div>
-        <p>События, оценённые участниками</p>
+        <p>{t('feed.chooseEvent')}</p>
       </header>
 
       <main className={styles.body}>
@@ -138,10 +144,10 @@ export function MarketsScreen({
         ) : null}
 
         <div className={styles.summary}>
-          <div className={styles.metric}>
-            <strong>{formatTonFull(totalVolume)}</strong>
-            <span>объём сделок на открытых рынках</span>
-          </div>
+          <button type="button" className={styles.metric} aria-expanded={metricInfo} onClick={() => setMetricInfo(!metricInfo)}>
+            <strong>{statsError ? '—' : metric}</strong>
+            <span>{t('feed.activeOffers')}</span>
+          </button>
           <IconButton
             label={t('feed.filters')}
             variant="plain"
@@ -153,6 +159,8 @@ export function MarketsScreen({
             <SlidersHorizontal size={20} strokeWidth={1.8} />
           </IconButton>
         </div>
+        {metricInfo ? <div className={styles.metricInfo}><p>{t('feed.activeOffersHelp')}</p><Button variant="secondary" onClick={() => setMetricInfo(false)}>{t('understood')}</Button></div> : null}
+        {statsError ? <button className={styles.metricRetry} onClick={onRetryStats}>{t('feed.statsError')}</button> : null}
 
         <MarketFilters
           sort={sortValue}
@@ -211,4 +219,13 @@ export function MarketsScreen({
       <BottomNavigation active="markets" onChange={onNavChange} />
     </div>
   )
+}
+
+export function formatActiveOffers(value?: string): string {
+  if (value == null) return '—'
+  try {
+    const nano = BigInt(value), whole = nano / 1_000_000_000n
+    const fraction = (nano % 1_000_000_000n).toString().padStart(9, '0').replace(/0+$/, '')
+    return new Intl.NumberFormat('ru-RU').format(whole) + (fraction ? ',' + fraction : '') + ' TON'
+  } catch { return '—' }
 }
