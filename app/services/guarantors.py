@@ -18,6 +18,7 @@ from app.models import (
     GuarantorReview,
     PrivateTermsConsent,
     AppNotification,
+    EventConfigV3,
 )
 from app.services import market_service as ms
 
@@ -146,6 +147,11 @@ def create_case(db, market, req):
 
 
 def expire(db, market, case):
+    config = db.get(EventConfigV3, market.id)
+    if config and case.state == 'active' and config.ends_at + timedelta(hours=24) <= now():
+        from app.services.p2p_service import cancel_expired_v3
+        cancel_expired_v3(db, market.id)
+        return
     if case.deadline and case.deadline <= now() and case.state in ("invited", "review"):
         case.state = "needs_guarantor"
         case.extension_by = None
@@ -155,7 +161,7 @@ def expire(db, market, case):
             case,
             "Время согласования истекло. Создатель может выбрать гаранта заново",
         )
-    if case.state == "active" and case.result_due_at <= now():
+    if not config and case.state == "active" and case.result_due_at <= now():
         case.state = "disputed"
         market.status = MarketStatus.closed
         from app.services.p2p_service import cancel_all
@@ -169,6 +175,11 @@ def expire(db, market, case):
 def trading_guard(db, market, uid, *, consent=False):
     case = db.get(GuarantorCase, market.id)
     if not case:
+        config = db.get(EventConfigV3, market.id)
+        if config and config.event_type == 'private' and consent:
+            accepted = db.get(PrivateTermsConsent, (market.id, uid))
+            if not accepted or accepted.revision != config.revision:
+                fail('Сначала подтвердите условия и выбор создателя, который определяет результат', 403)
         return  # Existing private markets keep their existing admin resolution.
     if case.guarantor_id == uid:
         fail("Гарант не может делать ставки в этом пари", 403)
@@ -180,6 +191,7 @@ def trading_guard(db, market, uid, *, consent=False):
 
 
 def case_view(db, market, case, user):
+    config = db.get(EventConfigV3, market.id)
     messages = (
         db.query(GuarantorMessage)
         .filter_by(market_id=market.id)
@@ -211,6 +223,10 @@ def case_view(db, market, case, user):
         decision_reason=case.decision_reason,
         consent=bool(accepted and accepted.revision == case.revision),
         participant=participant(db, market.id, user.id),
+        protocol_version=3 if config else 1,
+        ends_at=config.ends_at if config else None,
+        reward=config.reward if config and user.id in (market.creator_id, case.guarantor_id) else None,
+        reward_payments_supported=False,
         messages=[
             dict(
                 id=m.id,
@@ -220,7 +236,7 @@ def case_view(db, market, case, user):
                 revision=m.revision,
                 created_at=m.created_at,
             )
-            for m in messages
+            for m in messages if not config or user.id in (market.creator_id, case.guarantor_id) or user.is_admin or m.kind not in ('message', 'reward')
         ],
     )
 
@@ -239,6 +255,12 @@ def transition(db, mid, user, req, token=None):
         require_unlisted_access(market, viewer=user, share_token=token)
         expire(db, market, case)
         action = req.action
+        config = db.get(EventConfigV3, market.id)
+        if config:
+            from app.services.ux_v3_governance import transition_v3
+            intercepted = transition_v3(db, market, case, config, user, req)
+            if intercepted:
+                return case_view(db, market, case, user)
         if (
             market.status in (MarketStatus.cancelled, MarketStatus.resolved)
             and action != "review"

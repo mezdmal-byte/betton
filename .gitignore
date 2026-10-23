@@ -1,4 +1,6 @@
 __pycache__/
+.ux-audit/
+.ux-preview/
 *.py[cod]
 .venv/
 venv/

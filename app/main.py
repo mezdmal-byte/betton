@@ -14,7 +14,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
-from app.models import Market, MarketStatus, User
+from app.models import Market, MarketStatus, User, P2POrder
+from sqlalchemy import func
 from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
     AccountOut,
@@ -47,6 +48,7 @@ from app.schemas import (
 )
 from app.services import chat_service, discovery, history, market_access, market_service, p2p_service, sports_provider
 from app.services import p2p_ledger
+from app.ux_v3_routes import router as ux_v3_router
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 REACT_DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
@@ -520,6 +522,19 @@ def list_markets_endpoint(
     return _markets_to_out(db, rows)
 
 
+@app.get("/feed/stats")
+def feed_stats(db: Session = Depends(get_db)):
+    """Funded, unfilled live offers. Never invoke expiration or reconstruct payouts."""
+    total = db.query(func.coalesce(func.sum(P2POrder.remaining), 0)).join(
+        Market, Market.id == P2POrder.market_id
+    ).filter(
+        Market.mechanism == "p2p", Market.status == MarketStatus.open,
+        Market.close_at > market_service._naive_utc(market_service.utcnow()),
+        P2POrder.status == "open", P2POrder.remaining > 0,
+    ).scalar()
+    return {"active_offers_nano": str(int(total)), "scope": "all_active_events"}
+
+
 @app.get("/markets/share/{share_token}", response_model=MarketOut)
 def resolve_share_market(
     share_token: str,
@@ -891,3 +906,4 @@ mount_react_preview(app)
 
 from app.guarantor_routes import router as guarantor_router
 app.include_router(guarantor_router)
+app.include_router(ux_v3_router)

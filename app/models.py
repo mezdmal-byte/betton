@@ -368,3 +368,26 @@ class AppNotification(Base):
     text: Mapped[str] = mapped_column(String(1000))
     read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class EventConfigV3(Base):
+    """Versioned UX metadata; legacy events keep their original protocol unchanged."""
+    __tablename__ = 'event_config_v3'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(16))
+    ends_at: Mapped[datetime] = mapped_column(DateTime)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    terms: Mapped[dict] = mapped_column(JSON)
+    moderator_edited: Mapped[bool] = mapped_column(Boolean, default=False)
+    reward: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class EventRevisionV3(Base):
+    __tablename__ = 'event_revisions_v3'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), index=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey('users.id'), nullable=True)
+    kind: Mapped[str] = mapped_column(String(32))
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

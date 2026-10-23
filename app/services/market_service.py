@@ -806,6 +806,11 @@ def close_market(db: Session, market_id: int, user_id: int) -> Market:
     actor = get_user(db, user_id)
     require_admin(actor, "Только админ может остановить приём ставок")
     market = _lock_market(db, market_id)
+    from app.models import EventConfigV3
+    config = db.get(EventConfigV3, market_id)
+    if config and config.event_type in ('private','guarantor'):
+        db.rollback()
+        raise HTTPException(403, 'Обычная модерация не управляет частным событием UX v3')
     _maybe_auto_close(db, market)
     if market.status == MarketStatus.resolved:
         raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
@@ -878,6 +883,10 @@ def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -
     try:
         market = _lock_market(db, market_id)
         from app.models import GuarantorCase
+        from app.models import EventConfigV3
+        config = db.get(EventConfigV3, market_id)
+        if config and config.event_type == 'private':
+            raise HTTPException(403, 'Результат этого события определяет создатель через протокол UX v3')
         if db.get(GuarantorCase, market_id):
             raise HTTPException(409, "Используйте решение гаранта или рассмотрение спора")
         if market.mechanism == "p2p" and market.status == MarketStatus.open and not is_accepting_bets(market):
@@ -1179,6 +1188,10 @@ def moderate_market(db: Session, market_id: int, user_id: int, *, reason: str | 
         if market.status != MarketStatus.pending:
             raise HTTPException(status_code=409, detail="Событие уже прошло модерацию")
         if reason is None:
+            from app.models import EventConfigV3
+            config = db.get(EventConfigV3, market_id)
+            if config and config.moderator_edited:
+                raise HTTPException(409, 'Порядок согласия автора на изменённую редакцию ещё не согласован. Можно одобрить первоначальную версию')
             close_at = as_utc(market.close_at)
             if close_at is None or close_at <= utcnow():
                 raise HTTPException(status_code=409, detail="Время приёма ставок истекло. Отклоните событие для возврата залога")

@@ -44,7 +44,9 @@ def require_unlisted_access(market: Market, *, viewer: User | None = None, share
             return
         # A player who explicitly joined this version can reopen notifications
         # on another device without copying the original invitation token again.
-        if case and session.get(PrivateTermsConsent, (market.id, viewer.id)):
+        from app.models import EventConfigV3
+        config = session.get(EventConfigV3, market.id) if session else None
+        if (case or config and config.event_type == 'private') and session.get(PrivateTermsConsent, (market.id, viewer.id)):
             return
         if viewer.is_admin:
             return

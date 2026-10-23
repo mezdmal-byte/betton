@@ -4,6 +4,7 @@ import math
 import json
 import secrets
 from collections import defaultdict
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation, ROUND_FLOOR
 
 from fastapi import HTTPException
@@ -289,9 +290,28 @@ def cancel_all(db, market):
 def void_market(db, market_id, user_id, reason):
     actor = legacy.get_user(db, user_id)
     legacy.require_admin(actor, 'Только админ может отменить событие')
+    return _void_transaction(db, market_id, actor, reason)
+
+
+def cancel_expired_v3(db, market_id):
+    # No public endpoint or fabricated administrator: authority is checked under the market lock.
+    return _void_transaction(db, market_id, None, 'Гарант не принял решение за 24 часа после окончания события')
+
+
+def cancel_creator_v3(db, market_id, actor, reason):
+    return _void_transaction(db, market_id, actor, reason, creator_v3=True)
+
+
+def _void_transaction(db, market_id, actor, reason, *, creator_v3=False):
     reason = (reason or '').strip()
     try:
         market = legacy._lock_market(db, market_id)
+        from app.models import EventConfigV3
+        config = db.get(EventConfigV3, market.id)
+        if creator_v3 and (not config or config.event_type != 'private' or actor.id != market.creator_id or config.ends_at > legacy._naive_utc(legacy.utcnow())):
+            raise HTTPException(403, 'Отмена доступна создателю после окончания частного события')
+        if actor is None and (not config or config.event_type != 'guarantor' or config.ends_at + timedelta(hours=24) > legacy._naive_utc(legacy.utcnow())):
+            raise HTTPException(403, 'Автоматическая отмена для этого события недоступна')
         if market.mechanism != 'p2p':
             raise HTTPException(409, 'Этот рынок использует LMSR')
         if market.status == MarketStatus.cancelled:
@@ -307,7 +327,23 @@ def void_market(db, market_id, user_id, reason):
 
         from app.models import GuarantorCase
         case = db.get(GuarantorCase, market.id)
-        if case:
+        from app.models import EventConfigV3
+        config = db.get(EventConfigV3, market.id)
+        if creator_v3:
+            if not config or config.event_type != 'private' or actor.id != market.creator_id or config.ends_at > legacy._naive_utc(legacy.utcnow()):
+                raise HTTPException(403, 'Отмена доступна создателю после окончания частного события')
+        elif actor is not None and config and config.event_type in ('private', 'guarantor'):
+            raise HTTPException(403, 'Результат частного события не пересматривается обычной модерацией')
+        if actor is None:
+            from app.models import EventConfigV3, EventRevisionV3
+            config = db.get(EventConfigV3, market.id)
+            when = legacy._naive_utc(legacy.utcnow())
+            if (not config or config.event_type != 'guarantor' or not case
+                    or case.state != 'active' or config.ends_at + timedelta(hours=24) > when):
+                raise HTTPException(403, 'Автоматическая отмена для этого события недоступна')
+            db.add(EventRevisionV3(market_id=market.id, revision=config.revision, actor_id=None,
+                                  kind='system_timeout', snapshot={'reason':reason}))
+        elif case:
             from app.services.guarantors import participant
             if actor.id in (market.creator_id, case.guarantor_id) or participant(db, market.id, actor.id):
                 raise HTTPException(403, 'Нужен администратор, который не участвует в этом пари')
@@ -379,13 +415,14 @@ def void_market(db, market_id, user_id, reason):
         if case:
             from app.services.guarantors import log, broadcast
             case.state = "cancelled"
-            log(db, case, actor.id, "cancel", reason)
+            if actor is not None:
+                log(db, case, actor.id, "cancel", reason)
             broadcast(db, market, case, "Пари отменено. Средства возвращены")
         market.status = MarketStatus.cancelled
         market.settlement_kind = legacy.SETTLEMENT_VOID
         market.cancellation_reason = reason
         market.cancelled_at = when
-        market.cancelled_by = actor.id
+        market.cancelled_by = actor.id if actor is not None else None
         market.pot_nano = 0
         market.lock_returned = True
         market.winning_outcome = None
