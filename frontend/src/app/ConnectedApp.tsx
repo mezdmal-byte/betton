@@ -151,7 +151,7 @@ export function ConnectedApp() {
       scrollElements().forEach(el => { el.scrollTop = 0 })
       return next
     }
-    tabStacksRef.current[activeTabRef.current] = current
+    tabStacksRef.current[activeTabRef.current] = activeTabRef.current === 'create' && current.at(-1)?.name === 'create-result' ? [{ name: 'create' }] : current
     activeTabRef.current = id
     return tabStacksRef.current[id] ?? resetToTab(id)
   }) }
