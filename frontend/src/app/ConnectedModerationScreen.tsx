@@ -11,7 +11,6 @@ import { TextField } from '../components/TextField/TextField';
 import { syncTelegramBackButton } from '../telegram/webapp';
 import { moderationDraft, moderationChanges, publicReviewRows } from './moderationV3';
 import styles from './ModerationWorkflow.module.css';
-import { IntegrationUnavailableScreen } from './IntegrationUnavailableScreen';
 export type ConnectedModerationScreenProps = {
     enabled: boolean;
     onBack: () => void;
@@ -44,7 +43,7 @@ function ModerationReview({ market, onBack, onDone }: {
     const [errors, setErrors] = useState<DraftErrors>({});
     const [reason, setReason] = useState('');
     const [saved, setSaved] = useState<string | null>(null);
-    const [unavailable, setUnavailable] = useState(false);
+    const [publishRevision, setPublishRevision] = useState<number | null>(null);
     const refresh = async () => {
         await Promise.all([
             client.invalidateQueries({ queryKey: queryKeys.moderation }), client.invalidateQueries({ queryKey: ['markets'] }), client.invalidateQueries({ queryKey: queryKeys.market(market.id) }), client.invalidateQueries({ queryKey: ['event-terms-v3', market.id] }), client.invalidateQueries({ queryKey: ['event-revisions-v3', market.id] }), client.invalidateQueries({ queryKey: ['notifications'] }),
@@ -58,10 +57,10 @@ function ModerationReview({ market, onBack, onDone }: {
                 await eventV3Action(market.id, 'moderation', { expected_revision: editBase.revision, event: buildEventBody(draft) }, 'PUT');
             }
             else if (kind === 'approve') {
-                if (terms.data?.moderator_edited)
-                    await eventV3Action(market.id, 'moderation/approve-original', {});
-                else
-                    await approveMarket(market.id);
+                if (terms.data) {
+                    if (publishRevision == null) throw new Error('Откройте подтверждение публикации заново');
+                    await eventV3Action(market.id, 'moderation/publish', { expected_revision: publishRevision });
+                } else await approveMarket(market.id);
             }
             else
                 await rejectMarket(market.id, reason.trim());
@@ -105,8 +104,7 @@ function ModerationReview({ market, onBack, onDone }: {
     const current = terms.data;
     const creatorLabel = market.creator?.telegram_username ? '@' + market.creator.telegram_username.replace(/^@/, '') : market.creator?.display_name || '#' + (current?.creator_id ?? market.creator_id);
     const title = { review: 'Проверка заявки', edit: 'Редактирование', compare: 'Изменения заявки', original: 'Первоначальная версия', reject: 'Отклонить заявку', approve: 'Одобрение и публикация' }[view];
-    const footer = !current && terms.isPending ? undefined : view === 'edit' ? <Button fullWidth onClick={compareDraft}>Сравнить изменения</Button> : view === 'compare' && draft && editBase ? <Button fullWidth loading={action.isPending} disabled={moderationChanges(editBase, buildEventBody(draft)).length === 0} onClick={() => action.mutate('save')}>Зафиксировать правки</Button> : view === 'review' ? <Button fullWidth disabled={action.isPending} onClick={() => setView('approve')}>{current?.moderator_edited ? 'Одобрить первоначальную версию' : 'Одобрить без изменений'}</Button> : view === 'approve' ? <Button fullWidth disabled={Boolean(current?.moderator_edited && !original)} loading={action.isPending} onClick={() => action.mutate('approve')}>Подтвердить публикацию</Button> : view === 'reject' ? <Button fullWidth disabled={!reason.trim()} loading={action.isPending} onClick={() => action.mutate('reject')}>Отклонить заявку</Button> : undefined;
-    if (unavailable) return <IntegrationUnavailableScreen kind="moderation" onBack={() => setUnavailable(false)} />;
+    const footer = !current && terms.isPending ? undefined : view === 'edit' ? <Button fullWidth onClick={compareDraft}>Сравнить изменения</Button> : view === 'compare' && draft && editBase ? <Button fullWidth loading={action.isPending} disabled={moderationChanges(editBase, buildEventBody(draft)).length === 0} onClick={() => action.mutate('save')}>Зафиксировать правки</Button> : view === 'review' ? <Button fullWidth disabled={action.isPending} onClick={() => { setPublishRevision(current?.revision ?? null); setView('approve'); }}>{current?.moderator_edited ? 'Одобрить и опубликовать' : 'Одобрить без изменений'}</Button> : view === 'approve' ? <Button fullWidth loading={action.isPending} onClick={() => action.mutate('approve')}>Подтвердить публикацию</Button> : view === 'reject' ? <Button fullWidth disabled={!reason.trim()} loading={action.isPending} onClick={() => action.mutate('reject')}>Отклонить заявку</Button> : undefined;
     return <Shell title={title} context={`Модератор · #${market.id} · До публикации`} onBack={back} footer={!terms.isError ? footer : undefined}>
     {terms.isPending ? <p role="status">Загружаем условия…</p> : terms.isError ? <><p role="alert">{errorDetail(terms.error)}</p><Button fullWidth onClick={() => { void terms.refetch(); }}>Повторить</Button></> : <>
       {saved ? <p role="status" className={styles.notice}>{saved}</p> : null}
@@ -114,7 +112,6 @@ function ModerationReview({ market, onBack, onDone }: {
       {view === 'review' ? <>
         <section className={styles.row}><span>Первоначальный создатель</span><p>{creatorLabel} · авторство и вознаграждение сохраняются.</p></section>
         {current ? <ReviewRows terms={current} onEdit={beginEdit}/> : <><section className={styles.row}><span>Название события</span><p>{market.question}</p></section><section className={styles.row}><span>Описание и исходы</span><p>{market.description}</p><p>{market.outcomes.join(' / ')}</p></section><p className={styles.notice}>Прежний формат заявки: структурированное редактирование недоступно. Можно одобрить исходную заявку или отклонить её.</p></>}
-        {current?.moderator_edited ? <PublicationNotice onOpen={() => setUnavailable(true)} /> : null}
         {current ? <><Button variant="secondary" fullWidth onClick={beginEdit}>Редактировать заявку</Button><Button variant="secondary" fullWidth onClick={() => { setDraft(null); setView('compare'); }}>Сравнить редакции</Button></> : null}
         <Button variant="secondary" fullWidth onClick={() => setView('reject')}>Отклонить</Button>
       </> : view === 'edit' && draft ? <><p className={styles.secondary}>Создатель: {creatorLabel}</p><ModerationFields draft={draft} errors={errors} onValidate={(key) => { const checked = { ...validateEventStep(draft, 'question'), ...validateEventStep(draft, 'conditions') }; setErrors((previous) => ({ ...previous, [key]: checked[key] })); }} onChange={(key, value) => { setDraft((previous) => previous ? { ...previous, [key]: value } : null); setErrors((previous) => ({ ...previous, [key]: undefined })); }}/></> : view === 'compare' ? <>
@@ -126,12 +123,13 @@ function ModerationReview({ market, onBack, onDone }: {
                 beginEdit();
             else
                 setView('edit'); }}>Продолжить редактирование</Button>
-        <PublicationNotice onOpen={() => setUnavailable(true)} />
-      </> : view === 'original' ? original ? <ReviewRows terms={original}/> : <p>Первоначальная версия недоступна.</p> : view === 'reject' ? <><p>Причина будет видна создателю события.</p><TextField label="Причина отклонения" value={reason} onChange={setReason} multiline maxLength={1000} disabled={action.isPending}/></> : view === 'approve' ? <><p>{current?.moderator_edited ? 'Будет восстановлена и опубликована первоначальная редакция создателя. Предложенные модератором изменения останутся в истории, но не будут опубликованы.' : 'Событие станет доступно всем после публикации.'}</p><section className={styles.row}><span>Событие #{market.id}</span><p>{current?.moderator_edited && original ? original.question : current?.question ?? market.question}</p></section><p>После начала приёма ставок изменить условия события нельзя.</p>{current?.moderator_edited ? <PublicationNotice onOpen={() => setUnavailable(true)} /> : null}</> : null}
+      </> : view === 'original' ? original ? <ReviewRows terms={original}/> : <p>Первоначальная версия недоступна.</p> : view === 'reject' ? <><p>Причина будет видна создателю события.</p><TextField label="Причина отклонения" value={reason} onChange={setReason} multiline maxLength={1000} disabled={action.isPending}/></> : view === 'approve' ? <ModerationPublishConfirmation marketId={market.id} question={current?.question ?? market.question} edited={Boolean(current?.moderator_edited)} /> : null}
     </>}
   </Shell>;
 }
-function PublicationNotice({ onOpen }: { onOpen?: () => void }) { return <><p className={styles.notice}>Публикация изменённой редакции пока недоступна: порядок согласия создателя на правки требует решения владельца продукта. Можно сохранить правки, отклонить заявку или опубликовать первоначальную версию.</p>{onOpen ? <Button variant="secondary" fullWidth onClick={onOpen}>Почему нельзя опубликовать правки</Button> : null}</>; }
+export function ModerationPublishConfirmation({ marketId, question, edited }: { marketId: number; question: string; edited: boolean }) {
+    return <><p>{edited ? 'Будет опубликована текущая редакция с сохранёнными правками модератора. Создатель получит уведомление.' : 'Событие станет доступно всем после публикации.'}</p><section className={styles.row}><span>Событие #{marketId}</span><p>{question}</p></section><p>После начала приёма ставок изменить условия события нельзя.</p></>;
+}
 function ReviewRows({ terms, onEdit }: {
     terms: Parameters<typeof publicReviewRows>[0];
     onEdit?: () => void;

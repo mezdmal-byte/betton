@@ -98,12 +98,17 @@ export function ConnectedOwnPriceScreen({
   })
 
   const preview = previewQuery.data ? mapOrderPreview(previewQuery.data) : null
+  const previewSettling = debouncedMoney !== money || debouncedOdds !== odds || previewQuery.isPending || previewQuery.isFetching
+  const guarantorCosts = previewSettling ? null : previewQuery.data?.requested.guarantor_costs
   const book = mapOrderBookLevels(bookQuery.data?.sides?.[outcome])
   const trades = mapTradesToRecent(tradesQuery.data, outcome, locale)
   const insufficient = amount > availableTon
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (previewSettling || guarantorCosts?.can_place === false) {
+        throw new Error(guarantorCosts?.reason || 'Котировка требует обновления')
+      }
       const fingerprint = orderFingerprint({
         marketId,
         outcome,
@@ -197,13 +202,14 @@ export function ConnectedOwnPriceScreen({
       amount={amount}
       book={book}
       trades={trades}
-      matchedTon={preview?.matchedTon ?? null}
-      restTon={preview?.remainingTon ?? null}
+      matchedTon={previewSettling ? null : preview?.matchedTon ?? null}
+      restTon={previewSettling ? null : preview?.remainingTon ?? null}
       previewMode="backend"
       previewPayoutTon={preview?.payoutTon ?? null}
+      guarantorCosts={guarantorCosts}
       previewAverageOdds={preview?.averageOdds ?? null}
       submitting={mutation.isPending}
-      disabled={!tradable || insufficient || !userId || mutation.isPending || placedOrder != null}
+      disabled={!tradable || insufficient || !userId || mutation.isPending || placedOrder != null || previewSettling || guarantorCosts?.can_place === false}
       noticeMessage={!tradable ? t('demo.unavailable') : null}
       bookState={bookQuery.isPending ? 'loading' : bookQuery.isError ? 'error' : 'ready'}
       tradesState={tradesQuery.isPending ? 'loading' : tradesQuery.isError ? 'error' : 'ready'}

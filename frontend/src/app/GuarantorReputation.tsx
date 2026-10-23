@@ -105,6 +105,7 @@ export function GuarantorDetails({ guarantor: g, onBack, onCreate, onChoose }: {
           <div><strong>{g.completed}</strong><span>Завершено пари</span></div>
           <div><strong>{g.review_count}</strong><span>Отзывов</span></div>
           <div><strong>{g.disputes}</strong><span>Спорных пари</span></div>
+          <div><strong>{g.missed_deadlines ?? '—'}</strong><span>Пропущено решений</span></div>
         </div>
         <p className={s.explain}>Споры учитываются по зафиксированным обращениям. Высокая оценка не гарантирует правильность будущих решений.</p>
       </section>

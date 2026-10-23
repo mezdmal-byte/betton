@@ -3,13 +3,27 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { buildEventBody, validateEventStep, type CreateEventBody } from '../api/eventsV3';
-import { ConnectedModerationScreen, ModerationFields } from './ConnectedModerationScreen';
+import { ConnectedModerationScreen, ModerationFields, ModerationPublishConfirmation } from './ConnectedModerationScreen';
 import { moderationChanges, moderationDraft, publicReviewRows } from './moderationV3';
 const terms: CreateEventBody = {
     event_type: 'public', question: 'BTC выше выбранного уровня?', outcomes: ['Выше', 'Не выше'], category: 'crypto', description: '', rules: 'Сравнить цену на дату завершения', criteria: ['Строго выше', 'Равна или ниже'], resolution_method: 'Основной источник в 23:59 UTC', unverifiable: 'Отмена и возврат ставок', primary_source: { name: 'Источник', url: 'https://example.com/price' }, backup_source: null,
     close_at: '2099-12-31T23:00:00Z', ends_at: '2099-12-31T23:59:00Z',
 };
 describe('public event moderation v3', () => {
+    it('publishes the corrected current title without an original-restore or author-consent gate', () => {
+        const html = renderToStaticMarkup(createElement(ModerationPublishConfirmation, { marketId: 42, question: 'Уточнённый вопрос модератора?', edited: true }));
+        expect(html).toContain('Уточнённый вопрос модератора?');
+        expect(html).toContain('текущая редакция с сохранёнными правками модератора');
+        expect(html).toContain('Создатель получит уведомление');
+        expect(html).not.toContain('восстановлена');
+        expect(html).not.toContain('недоступна');
+        expect(html).not.toContain('согласия');
+    });
+    it('keeps ordinary publication wording for an untouched application', () => {
+        const html = renderToStaticMarkup(createElement(ModerationPublishConfirmation, { marketId: 42, question: terms.question, edited: false }));
+        expect(html).toContain('Событие станет доступно всем');
+        expect(html).not.toContain('правками модератора');
+    });
     it('retains all structured fields through an untouched editor round trip', () => {
         const draft = moderationDraft(terms);
         const body = buildEventBody(draft);

@@ -11,6 +11,8 @@ import type {
   RecentTrade,
 } from "../../types/market";
 import styles from "./OwnPricePanel.module.css";
+import type { GuarantorTradeCosts as GuarantorCosts } from "../../api/types";
+import { GuarantorTradeCosts } from "../GuarantorTradeCosts/GuarantorTradeCosts";
 
 export type OwnPriceStage = "entry" | "preview" | "confirm";
 
@@ -32,6 +34,7 @@ export type OwnPricePanelProps = {
   matchedTon?: number | null;
   restTon?: number | null;
   previewPayoutTon?: number | null;
+  guarantorCosts?: GuarantorCosts | null;
   previewAverageOdds?: number | null;
   previewMode?: "local" | "backend";
   submitting?: boolean;
@@ -63,6 +66,7 @@ export function OwnPricePanel({
   matchedTon = null,
   restTon = null,
   previewPayoutTon = null,
+  guarantorCosts = null,
   previewAverageOdds = null,
   previewMode = "local",
   submitting = false,
@@ -138,14 +142,16 @@ export function OwnPricePanel({
               formatTonFull(rest) + " @ " + formatOdds(odds) + " · будет ждать"
             }
           />
-          <DataRow
+          {!guarantorCosts ? <DataRow
             accent
             value={
               "Выплата исполняемой части до сбора · " +
               formatTonFull(previewPayoutTon)
             }
-          />
+          /> : null}
         </div>
+
+        {guarantorCosts ? <GuarantorTradeCosts costs={guarantorCosts} /> : null}
 
         <section className={styles.information}>
           <strong>ВАЖНО</strong>
@@ -154,7 +160,7 @@ export function OwnPricePanel({
 
         <Button
           fullWidth
-          disabled={disabled || !quoteReady}
+          disabled={disabled || !quoteReady || guarantorCosts?.can_place === false}
           onClick={() => onStageChange?.("confirm")}
         >
           Разместить предложение
@@ -192,21 +198,23 @@ export function OwnPricePanel({
                 : formatOdds(previewAverageOdds) + "×")
             }
           />
-          <DataRow
+          {!guarantorCosts ? <DataRow
             value={
               "Выплата исполняемой части до сбора · " +
               formatTonFull(previewPayoutTon)
             }
-          />
+          /> : null}
           <DataRow accent value={"Резерв · " + formatTonFull(amount)} />
         </div>
+
+        {guarantorCosts ? <GuarantorTradeCosts costs={guarantorCosts} /> : null}
 
         {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
 
         <Button
           fullWidth
           loading={submitting}
-          disabled={disabled || submitting || !quoteReady || !onSubmit}
+          disabled={disabled || submitting || !quoteReady || !onSubmit || guarantorCosts?.can_place === false}
           onClick={onSubmit}
         >
           Подтвердить размещение
@@ -348,6 +356,8 @@ export function OwnPricePanel({
         вашим условиям. Его можно отменить. Сервисный сбор — 1% только с чистой
         прибыли победителя.
       </p>
+
+      {guarantorCosts ? <GuarantorTradeCosts costs={guarantorCosts} /> : null}
 
       <Button
         fullWidth

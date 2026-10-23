@@ -20,6 +20,8 @@ import type {
   OutcomeSide,
 } from "../../types/market";
 import styles from "./QuickTradeSheet.module.css";
+import type { GuarantorTradeCosts as GuarantorCosts } from "../../api/types";
+import { GuarantorTradeCosts } from "../GuarantorTradeCosts/GuarantorTradeCosts";
 
 export type QuickTradeState =
   | "normal"
@@ -55,6 +57,7 @@ export type QuickTradeSheetProps = {
   previewMatchedTon?: number | null;
   previewRestTon?: number | null;
   previewPayoutTon?: number | null;
+  guarantorCosts?: GuarantorCosts | null;
   previewAverageOdds?: number | null;
   previewWorstOdds?: number | null;
   previewFills?: QuickTradeFillLeg[] | null;
@@ -100,6 +103,7 @@ export function QuickTradeSheet({
   previewMatchedTon = null,
   previewRestTon = null,
   previewPayoutTon = null,
+  guarantorCosts = null,
   previewAverageOdds = null,
   previewWorstOdds = null,
   previewFills = null,
@@ -151,7 +155,7 @@ export function QuickTradeSheet({
     !stale &&
     hasBackendPreview &&
     (matched ?? 0) > 0;
-  const canPlace = !quickTradeCtaDisabled({
+  const canPlace = guarantorCosts?.can_place !== false && !quickTradeCtaDisabled({
     amount,
     executable,
     quotesLoading,
@@ -240,7 +244,7 @@ export function QuickTradeSheet({
       rows = [
         "Сумма · " + formatTonFull(amount),
         previewPayoutTon != null
-          ? "Новая выплата · " + formatTonFull(previewPayoutTon)
+          ? "Выплата по новой ставке до сборов · " + formatTonFull(previewPayoutTon)
           : "Котировка требует обновления",
         errorMessage || "Проверьте обновлённую котировку",
       ];
@@ -424,6 +428,8 @@ export function QuickTradeSheet({
             </p>
           </section>
 
+          {guarantorCosts ? <GuarantorTradeCosts costs={guarantorCosts} /> : null}
+
           <Button fullWidth disabled={!canPlace} onClick={onPlace}>
             Подтвердить ставку
           </Button>
@@ -531,14 +537,16 @@ export function QuickTradeSheet({
             label="Исполнится сейчас"
             value={showPreview ? formatTon(matched) : "—"}
           />
-          <QuoteRow
+          {!guarantorCosts ? <QuoteRow
             label="Выплата до сервисного сбора"
             value={showPreview ? formatTon(previewPayoutTon) : "—"}
-          />
+          /> : null}
           {showPreview && rest != null && rest > 0 ? (
             <QuoteRow label="Вернётся на баланс" value={formatTon(rest)} />
           ) : null}
         </div>
+
+        {guarantorCosts ? <GuarantorTradeCosts costs={guarantorCosts} /> : null}
 
         <button
           type="button"

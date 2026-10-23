@@ -112,6 +112,19 @@ export type OrderPreviewFill = {
   matched: number
 }
 
+export type GuarantorTradeCosts = {
+  preliminary: true
+  scope: 'event_positions'
+  matched_nano: string
+  gross_new_payout_nano: string
+  event_payout_after_fees_nano: string | null
+  service_fee_nano: string | null
+  guarantor_reward_nano: string | null
+  secured_for_both_outcomes: boolean
+  reason: string | null
+  can_place?: boolean
+}
+
 export type OrderPreviewStats = {
   matched: number
   remaining: number
@@ -119,6 +132,7 @@ export type OrderPreviewStats = {
   average_odds?: number | null
   worst_odds?: number | null
   fills?: OrderPreviewFill[]
+  guarantor_costs?: GuarantorTradeCosts | null
 }
 
 export type OrderPreviewOut = {

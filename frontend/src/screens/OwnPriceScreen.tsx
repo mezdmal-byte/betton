@@ -22,6 +22,7 @@ import type {
   RecentTrade,
 } from "../types/market";
 import styles from "./OwnPriceScreen.module.css";
+import type { GuarantorTradeCosts } from "../api/types";
 
 export type OwnPriceScreenProps = {
   market?: MarketFixture;
@@ -40,6 +41,7 @@ export type OwnPriceScreenProps = {
   matchedTon?: number | null;
   restTon?: number | null;
   previewPayoutTon?: number | null;
+  guarantorCosts?: GuarantorTradeCosts | null;
   previewAverageOdds?: number | null;
   previewMode?: "local" | "backend";
   submitting?: boolean;
@@ -83,6 +85,7 @@ export function OwnPriceScreen({
   matchedTon = null,
   restTon = null,
   previewPayoutTon = null,
+  guarantorCosts = null,
   previewAverageOdds = null,
   previewMode = "local",
   submitting = false,
@@ -305,6 +308,7 @@ export function OwnPriceScreen({
                   matchedTon={matchedTon}
                   restTon={restTon}
                   previewPayoutTon={previewPayoutTon}
+                  guarantorCosts={guarantorCosts}
                   previewAverageOdds={previewAverageOdds}
                   previewMode={previewMode}
                   submitting={submitting}

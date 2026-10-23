@@ -10,6 +10,7 @@ export type Guarantor = {
   available_until: string | null;
   completed: number;
   disputes: number;
+  missed_deadlines?: number;
   is_moderator: boolean;
   high_reputation: boolean;
   rating: number | null;
@@ -17,11 +18,34 @@ export type Guarantor = {
   rating_distribution: Record<string, number>;
   reviews: { rating: number; text: string }[];
 };
+export type GuarantorRewardMode = 'fixed' | 'percent' | 'combined' | 'percent_minimum';
+export type GuarantorReward = {
+  mode: GuarantorRewardMode;
+  fixed_ton: string;
+  percent: string;
+  accepted_by: number[];
+  proposed_by?: number;
+};
+export type GuarantorFunding = {
+  secured: boolean;
+  outcomes: {
+    outcome: number;
+    secured: boolean;
+    profit_nano: string | null;
+    reward_nano: string | null;
+    service_fee_nano: string | null;
+    viewer_net_profit_nano?: string | null;
+    reason?: string | null;
+  }[];
+  minimum_keep_bps: number;
+  preliminary: boolean;
+};
 export type GuarantorCase = {
   protocol_version?: number;
   ends_at?: string | null;
-  reward?: { mode:string; fixed_ton:string; percent:string; accepted_by:number[]; proposed_by:number } | null;
+  reward?: GuarantorReward | null;
   reward_payments_supported?: boolean;
+  funding?: GuarantorFunding | null;
   market_id: number;
   question: string;
   state: string;
@@ -69,10 +93,15 @@ export type Notice = {
 };
 export const guarantors = () =>
   apiRequest<Guarantor[]>("/guarantors").then((r) => r.data);
+export function normalizeGuarantorCase(event: GuarantorCase | null): GuarantorCase | null {
+  // Existing v3 records use {} for an unnegotiated reward, rather than null.
+  if (!event || !event.reward || Object.keys(event.reward).length) return event;
+  return { ...event, reward: null };
+}
 export const getCase = (id: number) =>
   apiRequest<GuarantorCase | null>(`/markets/${id}/guarantor`, {
     shareToken: shareTokenFor(id),
-  }).then((r) => r.data);
+  }).then((r) => normalizeGuarantorCase(r.data));
 export const caseAction = (id: number, body: Record<string, unknown>) =>
   apiRequest<GuarantorCase>(`/markets/${id}/guarantor`, {
     method: "POST",
@@ -82,6 +111,7 @@ export const caseAction = (id: number, body: Record<string, unknown>) =>
 export const caseLabels: Record<string, string> = {
   invited: "Ждём отклика гаранта",
   review: "Согласование условий",
+  collecting: "Ожидаем достаточного объёма заключённых ставок",
   needs_guarantor: "Выберите гаранта заново",
   active: "Гарант принял пари",
   proposed: "Результат на проверке",

@@ -191,6 +191,9 @@ export function ConnectedQuickTradeSheet({
         shareToken,
       )
       const mapped = mapOrderPreview(live)
+      if (live.requested.guarantor_costs?.can_place === false) {
+        throw new Error(live.requested.guarantor_costs.reason || 'Условия вознаграждения гаранта не обеспечены')
+      }
       if (mapped.matchedTon <= 0) throw new Error(t('err.stale'))
       const fingerprint = orderFingerprint({
         marketId,
@@ -258,6 +261,7 @@ export function ConnectedQuickTradeSheet({
       previewMatchedTon={previewSettling ? null : (preview?.matchedTon ?? null)}
       previewRestTon={previewSettling ? null : (preview?.remainingTon ?? null)}
       previewPayoutTon={previewSettling ? null : (preview?.payoutTon ?? null)}
+      guarantorCosts={previewSettling ? null : previewQuery.data?.requested.guarantor_costs}
       previewAverageOdds={previewSettling ? null : (preview?.averageOdds ?? null)}
       previewWorstOdds={previewSettling ? null : (preview?.worstOdds ?? null)}
       previewFills={previewSettling ? null : (preview?.fills ?? null)}
