@@ -24,8 +24,11 @@ import overlayStyles from '../screens/QuickTradeScreen.module.css'
 import type { OutcomeSide } from '../types/market'
 import { AdminMarketPanel } from './AdminMarketPanel'
 import { getHealth } from '../api/account'
+import { EventTermsV3Panel } from './EventTermsV3Panel'
+import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 
 export type ConnectedMarketDetailScreenProps = {
+  onNavChange?: (id: NavId) => void
   marketId: number
   onBack: () => void
   onOwnPrice: (side: OutcomeSide) => void
@@ -43,6 +46,7 @@ export type ConnectedMarketDetailScreenProps = {
 }
 
 export function ConnectedMarketDetailScreen({
+  onNavChange,
   marketId,
   onBack,
   onOwnPrice,
@@ -174,9 +178,10 @@ export function ConnectedMarketDetailScreen({
         onDiscussion={onDiscussion}
         onBack={onBack}
         onOwnPrice={() => onOwnPrice(side)}
-        onPlace={() => {
+        onNavChange={onNavChange}
+        onPlace={(selected) => {
           if (!market || actionsOff) return
-          onQuickTrade(side)
+          onQuickTrade(selected ?? side)
         }}
         onRetry={() => {
           void marketQuery.refetch()
@@ -203,6 +208,7 @@ export function ConnectedMarketDetailScreen({
         }}
         banner={
           <>
+            {marketQuery.data ? <EventTermsV3Panel marketId={marketId} userId={userId} status={marketQuery.data.status} /> : null}
             {userId && marketQuery.data?.visibility === 'unlisted' ? <GuarantorPanel marketId={marketId} userId={userId} isAdmin={isAdmin} /> : null}
             {!userId && !lmsr ? <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage> : null}
             {shareMessage ? <StatusMessage title={shareMessage} /> : null}

@@ -1,0 +1,21 @@
+.summary { display:flex; flex-direction:column; gap:12px; margin:12px 0; padding:16px; border:1px solid var(--color-border-subtle); border-radius:14px; background:var(--color-surface-base); font-size:13px; line-height:1.5; }
+.summary p { margin:4px 0; white-space:pre-wrap; overflow-wrap:anywhere; }
+.summary summary { cursor:pointer; font-weight:600; min-height:28px; }
+.summary h2 { margin:0; font-size:19px; }
+.note { color:var(--color-text-secondary); font-size:12px; }
+.overlay { position:fixed; z-index:60; inset:0; width:min(100%,560px); height:100dvh; max-height:100%; margin:auto; display:flex; flex-direction:column; background:var(--color-background-primary); color:var(--color-text-primary); text-align:left; }
+.overlay header { flex-shrink:0; padding: max(12px,var(--safe-top)) 20px 12px; border-bottom:1px solid var(--color-border-subtle); }
+.overlay header button { border:0; background:transparent; color:var(--color-text-secondary); padding:10px 0; cursor:pointer; }
+.overlay h2 { margin:10px 0 0; font-size:24px; line-height:30px; }
+.overlay main { flex:1; min-height:0; overflow-y:auto; padding:16px 20px calc(20px + var(--safe-bottom)); display:flex; flex-direction:column; gap:16px; }
+.field { display:flex;flex-direction:column;gap:7px;font-size:13px; }
+.field select { min-height:48px; padding:12px; background:var(--color-input-background); color:inherit; border:1px solid var(--color-border-subtle); border-radius:12px; width:100%; }
+.messages { display:flex;flex-direction:column;gap:12px; }
+.bubble { align-self:flex-start;max-width:90%;padding:12px 14px;border-radius:14px;background:var(--color-surface-raised);white-space:pre-wrap;overflow-wrap:anywhere; }
+.mine { align-self:flex-end;background:var(--color-selected-background); }
+.bubble small { display:block;color:var(--color-text-secondary);font-size:10px;margin-bottom:4px; }
+.actions { display:flex;gap:8px;flex-wrap:wrap; }
+.split { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+.warning { color:var(--color-status-warning); }
+.error { color:var(--color-status-danger); }
+@media(min-width:600px){.overlay{height:min(100dvh,1000px);border-inline:1px solid var(--color-border-subtle)}}

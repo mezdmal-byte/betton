@@ -1,7 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { isApiError } from '../api/client'
 import { errorDetail } from '../api/errors'
+import { getEventTerms } from '../api/eventGovernanceV3'
 import {
   approveMarket,
   closeMarket,
@@ -39,6 +40,7 @@ export function AdminMarketPanel({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [conflict, setConflict] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const terms = useQuery({ queryKey: ['event-terms-v3', market.id, userId], queryFn: () => getEventTerms(market.id) })
 
   const invalidate = () => {
     invalidateAfterTrade(queryClient, { userId, marketId: market.id })
@@ -83,6 +85,11 @@ export function AdminMarketPanel({
       run.mutate(() => resolveMarket(market.id, flow.outcomeIndex))
     }
   }
+
+  if (terms.isPending) return <p role="status">Проверяем доступные действия…</p>
+  if (terms.isError) return <section role="alert"><p>{errorDetail(terms.error)}</p><Button onClick={() => void terms.refetch()}>Повторить</Button></section>
+  if (terms.data && terms.data.event_type !== 'public') return <p>Результат этого события определяет {terms.data.event_type === 'guarantor' ? 'выбранный гарант' : 'создатель'}. Действия обычной модерации недоступны.</p>
+  if (terms.data?.moderator_edited && market.status === 'pending') return <p>В заявке есть правки. Откройте «Модерация событий» в профиле, чтобы сравнить редакции и выбрать действие.</p>
 
   if (run.isPending) {
     return (

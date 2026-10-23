@@ -18,6 +18,10 @@ export type Guarantor = {
   reviews: { rating: number; text: string }[];
 };
 export type GuarantorCase = {
+  protocol_version?: number;
+  ends_at?: string | null;
+  reward?: { mode:string; fixed_ton:string; percent:string; accepted_by:number[]; proposed_by:number } | null;
+  reward_payments_supported?: boolean;
   market_id: number;
   question: string;
   state: string;

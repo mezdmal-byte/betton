@@ -166,7 +166,7 @@ export function GuarantorDetails({ guarantor: g, onBack, onCreate, onChoose }: {
       </section>
 
       <div className={s.profileAction}>
-        <Button fullWidth onClick={onChoose ?? onCreate} disabled={!g.available}>{onChoose ? "Выбрать этого гаранта" : "Создать пари"}</Button>
+        <Button fullWidth onClick={onChoose ?? onCreate} disabled={!g.available || (!onChoose && !onCreate)}>{onChoose ? "Выбрать этого гаранта" : "Создать событие"}</Button>
         <small>{g.available ? (onChoose ? "Гарант будет приглашён после создания частного пари." : "Выбрать этого гаранта можно при создании частного пари.") : "Гарант пока не принимает новые запросы."}</small>
       </div>
     </div>

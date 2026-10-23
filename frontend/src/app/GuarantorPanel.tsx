@@ -14,6 +14,7 @@ import { errorDetail } from "../api/errors";
 import { Button } from "../components/Button/Button";
 import s from "./Guarantors.module.css";
 import { useClock } from './useClock';
+import { GuarantorV3Panel } from './GuarantorV3Panel';
 
 export function GuarantorPanel({
   marketId,
@@ -75,6 +76,7 @@ export function GuarantorPanel({
       </section>
     );
   if (!c) return null;
+  if (c.protocol_version === 3) return <GuarantorV3Panel event={c} userId={userId} />;
   const creator = c.creator_id === userId;
   const guarantor = c.guarantor_id === userId;
   const discussing = ["invited", "review"].includes(c.state);
