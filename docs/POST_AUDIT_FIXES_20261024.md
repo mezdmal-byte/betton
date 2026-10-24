@@ -102,3 +102,11 @@ python -m pytest -q tests
 ```
 
 Разрешены только localhost/изолированный CI hostname из `tests/conftest.py`. Не подставлять production URL. Для сценариев миграции тестов требуется право создавать временные базы. После запуска проверить отсутствие failed/timeout и результаты ledger.reconcile, не засчитывать skipped как passed.
+
+### Первый фактический PostgreSQL запуск
+
+На коммите `c1449b31c9da70d6b5181d5b37c18ea9e875fe6a`, PR #20, [run 40115181068](https://github.com/mezdmal-byte/betton/actions/runs/40115181068), PostgreSQL 16.15: **363 passed, 29 failed, без skipped**. SQLite CI: **369 passed, 11 skipped** (12 штатных PG-тестов исключены командой job), frontend CI success.
+
+Разбор: 23 падения связаны с именем CI-базы `betton_test`, которое корректно отвергает защита demo-режима (нужен префикс `betton_test_`). Два теста гонки расчёта ожидали только 200/409, хотя API использует 400 для уже рассчитанного/отменённого события. Два теста таймаута подменяли только часы guarantors, оставляя market_service на ends+1h из fixture. Исправлены только тестовые условия: `betton_test_ci`, проверка точного terminal-error текста, синхронные часы. Производственные ограничения demo не ослаблены.
+
+Оставшиеся два падения `test_repeat_and_parallel_resolve` и `test_parallel_buys_do_not_lose_balance` выявили настоящий A1: параллельные lifespan вызывают DDL и получают PostgreSQL DeadlockDetected на `CREATE UNIQUE INDEX IF NOT EXISTS ux_markets_share_token`. Эти тесты не исключены/не помечены xfail. Устранение требует управляемых миграций; A1 не исправлен. Нельзя на основании этого запуска объявлять все финансовые тесты зелёными.

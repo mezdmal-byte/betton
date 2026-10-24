@@ -143,10 +143,18 @@ def test_pg_settle_against_settle_or_cancel(client,monkeypatch,other):
     assert submit(client,mid,hb,1,100,2).status_code==200
     assert client.post(f'/markets/{mid}/close',headers=ah).status_code==200
     conserved=totals()
-    def resolve(): return client.post(f'/markets/{mid}/resolve',headers=ah,json={'winning_outcome':0}).status_code
-    def cancel(): return client.post(f'/markets/{mid}/cancel',headers=ah,json={'reason':'Audit cancellation'}).status_code
-    statuses=race(resolve,resolve if other=='resolve' else cancel)
-    assert all(s in (200,409) for s in statuses) and 200 in statuses
+    def resolve(): return client.post(f'/markets/{mid}/resolve',headers=ah,json={'winning_outcome':0})
+    def cancel(): return client.post(f'/markets/{mid}/cancel',headers=ah,json={'reason':'Audit cancellation'})
+    responses=race(resolve,resolve if other=='resolve' else cancel)
+    assert any(r.status_code == 200 for r in responses)
+    for response in responses:
+        assert response.status_code in (200, 400, 409), response.text
+        if response.status_code != 200:
+            assert response.json()['detail'] in {
+                'Рынок уже рассчитан', 'Событие отменено',
+                'Отменить можно только открытое или закрытое событие',
+                'Событие уже рассчитано или отменено',
+            }, response.text
     verify(mid,conserved)
     with SessionLocal() as db:
         rows=db.query(SettlementRecord).filter_by(market_id=mid).all()
@@ -179,6 +187,7 @@ def test_pg_decision_and_expiration_boundary(client,monkeypatch,deadline_offset)
     with SessionLocal() as db: ends=db.get(EventConfigV3,mid).ends_at
     instant=ends+timedelta(hours=24,seconds=deadline_offset)
     monkeypatch.setattr(gs,'now',lambda:instant)
+    monkeypatch.setattr(ms,'utcnow',lambda:ms.as_utc(instant))
     conserved=totals()
     outcomes=race(lambda:call(client,mid,hg,'propose',revision=2,outcome=0,text='Audit boundary').status_code,lambda:gs.process_due())
     assert outcomes[0] in (200,409)
