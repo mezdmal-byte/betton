@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/react-full-preview
+      - fix/post-audit-core-20261024
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend-ci.yml'
