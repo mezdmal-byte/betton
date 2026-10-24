@@ -27,8 +27,9 @@ def test_transaction_history_reserve_fill_refund_settlement(client: TestClient, 
     win = next(row for row in rows if row["type"] == "win")
     fee = next(row for row in rows if row["type"] == "fee")
     assert win["amount_nano"] > 0
-    assert fee["amount_nano"] < 0
-    assert win["display_amount"] == pytest.approx(settlement["payout"])
+    assert fee["amount_nano"] == 0
+    assert fee["informational"] is True
+    assert win["display_amount"] == pytest.approx(settlement["credited"])
     assert fee["display_amount"] == pytest.approx(-settlement["tip"])
     assert win["question"] == settlement["question"]
 

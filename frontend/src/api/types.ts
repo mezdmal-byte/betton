@@ -209,6 +209,7 @@ export type SettlementOut = {
   payout: number
   tip: number
   credited: number
+  guarantor_reward?: number
   result: number
   resolved_at?: string | null
   settlement_kind?: string | null

@@ -19,6 +19,8 @@ TX_CANCEL = "cancel"
 TX_WIN = "win"
 TX_LOSS = "loss"
 TX_FEE = "fee"
+TX_GUARANTOR_REWARD = "guarantor_reward"
+TX_GUARANTOR_FEE = "guarantor_fee"
 TX_VOID = "void"
 TX_CREDIT = "credit"
 TX_DEPOSIT = "deposit"
@@ -27,7 +29,7 @@ TX_WITHDRAW = "withdraw"
 FILTERS = {
     "all": None,
     "bets": {TX_RESERVE, TX_FILL},
-    "wins": {TX_WIN},
+    "wins": {TX_WIN, TX_GUARANTOR_REWARD},
     "refunds": {TX_REFUND, TX_CANCEL, TX_VOID},
     "deposits": {TX_DEPOSIT},
     "withdrawals": {TX_WITHDRAW},
@@ -96,6 +98,13 @@ def list_transactions(db: Session, user_id: int, kind: str | None = None) -> lis
     questions = {mid: (m.question or "") for mid, m in markets.items()}
     settled_markets = {int(row.market_id) for row in settlements}
 
+    # Ledger payouts are the actual net credits, already excluding both fees.
+    net_payouts: dict[int, int] = {}
+    for entry in entries:
+        if entry.op_type == ledger.OP_PAYOUT and entry.to_user_id == user_id:
+            mid = int(entry.market_id)
+            net_payouts[mid] = net_payouts.get(mid, 0) + int(entry.amount)
+
     rows: list[dict] = []
     for entry in entries:
         mid = int(entry.market_id)
@@ -163,6 +172,16 @@ def list_transactions(db: Session, user_id: int, kind: str | None = None) -> lis
                     amount_nano=amount,
                 )
             )
+        elif entry.op_type == ledger.OP_GUARANTOR_REWARD:
+            income = entry.to_user_id == user_id
+            rows.append(_row(
+                key=f"guarantor_reward:{entry.id}",
+                tx_type=TX_GUARANTOR_REWARD if income else TX_GUARANTOR_FEE,
+                market_id=mid, question=question, created_at=created,
+                amount_nano=amount if income else 0,
+                display_nano=amount if income else -amount,
+                informational=not income,
+            ))
         elif entry.op_type == ledger.OP_TIP and entry.to_user_id == user_id and entry.from_user_id != user_id:
             rows.append(
                 _row(
@@ -195,7 +214,7 @@ def list_transactions(db: Session, user_id: int, kind: str | None = None) -> lis
                     market_id=mid,
                     question=question,
                     created_at=created,
-                    amount_nano=payout_nano,
+                    amount_nano=net_payouts.get(mid, credited_nano),
                 )
             )
             if tip_nano > 0:
@@ -206,7 +225,9 @@ def list_transactions(db: Session, user_id: int, kind: str | None = None) -> lis
                         market_id=mid,
                         question=question,
                         created_at=created,
-                        amount_nano=-tip_nano,
+                        amount_nano=0,
+                        display_nano=-tip_nano,
+                        informational=True,
                     )
                 )
         elif stakes_nano > 0:
@@ -222,7 +243,6 @@ def list_transactions(db: Session, user_id: int, kind: str | None = None) -> lis
                     informational=True,
                 )
             )
-        _ = credited_nano
 
     rows.sort(
         key=lambda item: (item["created_at"] or datetime.min.replace(tzinfo=timezone.utc), item["id"]),

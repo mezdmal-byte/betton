@@ -30,6 +30,7 @@ export type HistoryFixture = {
   question: string
   action: string
   actionKey?: string
+  informational?: boolean
   amountTon: number
   time: string
   createdAt?: string
@@ -43,6 +44,7 @@ export type SettlementFixture = {
   chosenOutcomes: string[]
   stakesTotalTon: number
   payoutTon: number
+  guarantorRewardTon?: number
   tipTon: number
   creditedTon: number
   resultTon: number

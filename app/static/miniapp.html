@@ -941,6 +941,8 @@
           <p>${escapeHtml(tt("hist.yourOutcome", "Ваш исход: {name}", {name: chosenText}))}</p>
           <p>${escapeHtml(tt("hist.winning", "Победивший исход: {name}", {name: s.winning_outcome || ""}))}</p>
           <p class="muted">${escapeHtml(tt("hist.stakesPayout", "Сумма ставок {stakes} · выплата {payout}", {stakes: fmtTon(s.stakes_total), payout: fmtTon(s.payout)}))}${tip > 0 ? " · " + escapeHtml(tt("hist.fee", "Сервисный сбор {amt}", {amt: fmtTon(tip)})) : ""}</p>
+          <p>${escapeHtml(tt("hist.credited", "Зачислено: {amt}", {amt: fmtTon(s.credited)}))}</p>
+          ${Number(s.guarantor_reward || 0) > 0 ? `<p class="muted">${escapeHtml(tt("hist.guarantorFee", "Удержано гаранту: {amt}", {amt: fmtTon(s.guarantor_reward)}))}</p>` : ""}
           <p class="history-result ${result.cls}">${escapeHtml(result.text)}</p>
           ${creatorBits}
         </div>`;

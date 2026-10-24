@@ -260,6 +260,7 @@ class SettlementOut(BaseModel):
     payout: float
     tip: float
     credited: float
+    guarantor_reward: float = 0.0
     result: float
     lock_ton: float = 0.0
     residual_returned: float = 0.0
