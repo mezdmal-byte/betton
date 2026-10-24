@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ADMIN_BANKROLL = 1_000_000.0
@@ -9,7 +10,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "sqlite:///./betton.db"
-    bot_token: str = ""
+    bot_token: str = Field(default="", repr=False)
+    telegram_webhook_secret: str = Field(default="", repr=False)
+    telegram_webhook_previous_secret: str = Field(default="", repr=False)
+    telegram_webhook_proxy_secret: str = Field(default="", repr=False)
     mini_app_url: str = ""
     public_base_url: str = ""
     render_external_url: str = ""
