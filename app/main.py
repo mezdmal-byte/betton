@@ -1,3 +1,4 @@
+from app.webhook_security import require_webhook_secret, proxy_headers
 import asyncio
 import logging
 from contextlib import asynccontextmanager
@@ -49,31 +50,8 @@ def _maybe_bot():
 
 
 async def setup_webhook_task():
-    """Register Telegram webhook, report failures, and retry network errors."""
-    logger = logging.getLogger("betton.webhook")
-    await asyncio.sleep(1)
-    while True:
-        try:
-            bot, _dp = _maybe_bot()
-            if bot is None:
-                logger.error("Telegram webhook disabled: BOT_TOKEN is missing")
-                return
-            if not settings.is_public_https():
-                logger.error("Telegram webhook disabled: public HTTPS URL is required")
-                return
-            url = settings.webapp_base() + "/webhook"
-            await asyncio.wait_for(bot.set_webhook(url=url, max_connections=1), timeout=20)
-            info = await asyncio.wait_for(bot.get_webhook_info(), timeout=20)
-            logger.info(
-                "Telegram webhook configured: requested=%s current=%s pending=%s last_error=%s",
-                url, info.url, info.pending_update_count, info.last_error_message,
-            )
-            return
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            logger.exception("Telegram webhook setup failed; retrying in 30 seconds")
-            await asyncio.sleep(30)
+    # Webhook registration is an explicit deployment step.
+    return
 
 
 async def expire_orders_task():
@@ -176,6 +154,7 @@ def health():
 
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
+    require_webhook_secret(request)
     from aiogram import types
 
     bot, dp = _maybe_bot()
