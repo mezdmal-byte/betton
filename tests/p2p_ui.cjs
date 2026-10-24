@@ -1,0 +1,75 @@
+const {JSDOM} = require('jsdom');
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const html = fs.readFileSync(path.join(root,'app/static/miniapp.html'),'utf8');
+const dom = new JSDOM(html, {url:'https://betton.test', runScripts:'outside-only'});
+const w = dom.window;
+const m = {id:1,question:'Will A win?',creator_id:2,mechanism:'p2p',category:'unique',status:'open',pot:0,lock_ton:0,outcomes:['A','B'],accepting_bets:true,close_at:'2030-01-01T12:00:00'};
+const pending = {...m,id:2,creator_id:1,status:'pending',accepting_bets:false};
+let unauthorized = false, failOnce = true;
+const sent=[];
+w.Telegram={WebApp:{initData:'fixture',initDataUnsafe:{user:{id:1,first_name:'Test'}},ready(){},expand(){}}};
+w.fetch=async (url,opts={})=>{
+  let data={};
+  if (url==='/auth/telegram' || url==='/users/1') data={id:1,is_admin:true,balance:1000};
+  else if(url==='/markets' && opts.method!=='POST') data=[m];
+  else if(url==='/users/1/markets' || url==='/moderation/markets') data=[pending];
+  else if(url.endsWith('/positions') || url.endsWith('/settlements')) data=[];
+  else if(url==='/users/1/orders') data=[{id:8,market_id:1,outcome:0,question:'Will A win?',outcome_name:'A',odds:2.2,filled:40,remaining:60,refunded:0,status:'open'}];
+  else if(url.endsWith('/orderbook')) data={forming:true,last_prices:null,queued:[100,0],sides:[[],[{odds:1.83333,available:120}]]};
+  else if(url.endsWith('/orders/quote')) data={requested:{matched:0,remaining:100,average_odds:null},available:{matched:50,remaining:50,average_odds:1.83333,worst_odds:1.83333}};
+  else if(url.endsWith('/orders') && opts.method==='POST') {
+    const body=JSON.parse(opts.body); sent.push({url,body});
+    if(failOnce){failOnce=false;throw new Error('network lost')}
+    data={filled:50,remaining:50,refunded:0};
+  } else if(opts.method==='POST') sent.push({url,body:opts.body ? JSON.parse(opts.body):null});
+  return {ok:!unauthorized,status:unauthorized?401:200,async json(){return data}};
+};
+w.eval(fs.readFileSync(path.join(root,'app/static/p2p.js'),'utf8') + '\n' + html.match(/<script>\s*([\s\S]*?)<\/script>/)[1]);
+const tick=()=>new Promise(r=>setTimeout(r,10));
+async function until(fn){for(let i=0;i<100;i++){if(fn()) return;await tick()}throw new Error('UI did not finish loading: '+w.document.getElementById('error').textContent)}
+(async()=>{
+  await until(()=>w.document.querySelector('.p2p-book')?.textContent.includes('Рынок формируется'));
+  await until(()=>!w.document.querySelector('[data-act="p2p-ioc"]').disabled);
+  assert.equal(w.document.getElementById('moderation-tab').hidden,false);
+  assert.equal(w.document.getElementById('lock'),null);
+  assert.equal(w.document.querySelectorAll('#outcomes-editor .oname').length,2);
+  assert.ok(w.document.querySelector('.p2p-book').textContent.includes('сделок ещё нет'));
+  const place=w.document.querySelector('[data-act="p2p-limit"]');
+  await w.onCardClick({target:place}); // network failure leaves the same retry key
+  await w.onCardClick({target:place});
+  assert.equal(sent[0].body.request_id,sent[1].body.request_id);
+  assert.equal(sent[0].body.kind,'limit');
+  const ioc=w.document.querySelector('[data-act="p2p-ioc"]');
+  await w.onCardClick({target:ioc});
+  assert.equal(sent[2].body.kind,'ioc');
+  assert.ok(sent[2].body.odds<=1.83333);
+  await w.loadMine();
+  assert.ok(w.document.getElementById('mine-created').textContent.includes('На модерации'));
+  const cancel=w.document.querySelector('[data-cancel-order]');
+  await w.document.getElementById('mine-orders').onclick({target:cancel});
+  assert.ok(sent.some(x=>x.url==='/orders/8/cancel'));
+  await w.loadModeration();
+  const card=w.document.querySelector('#moderation-markets .card');
+  card.querySelector('.reject-reason').value='<script>bad</script>';
+  await w.onCardClick({target:card.querySelector('[data-act="reject"]')});
+  assert.ok(sent.some(x=>x.url==='/markets/2/reject'&&x.body.reason==='<script>bad</script>'));
+  w.document.getElementById('question').value='New binary question?';
+  w.document.getElementById('close-at').value='2030-01-01T12:00';
+  await w.document.getElementById('create').onclick();
+  const create=sent.find(x=>x.url==='/markets');
+  assert.equal(create.body.mechanism,'p2p');
+  assert.equal(create.body.outcomes.length,2);
+  assert.equal(create.body.lock_ton,undefined);
+  assert.equal(create.body.target_odds,undefined);
+  await tick();
+  unauthorized=true;
+  await assert.rejects(w.loadModeration());
+  assert.equal(w.document.getElementById('moderation-tab').hidden,true);
+  for(const id of ['mine-created','mine-orders','moderation-markets']) assert.equal(w.document.getElementById(id).innerHTML,'');
+  await tick();
+  dom.window.close();
+  process.stdout.write('P2P UI flows passed\n');
+})().catch(e=>{dom.window.close();console.error(e);process.exitCode=1});
