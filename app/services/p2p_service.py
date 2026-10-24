@@ -1,3 +1,4 @@
+from app.money import adjust_balance_nano, add_pot_nano
 """Binary, fully funded orders. Stakes use nanoTON integers; price ticks are 1e-6."""
 import math
 from collections import defaultdict
@@ -154,7 +155,7 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
             order.remaining -= taker_stake
             order.filled += taker_stake
             payout = maker_stake+taker_stake
-            market.pot += payout/ATOM
+            add_pot_nano(market, payout)
             fill = P2PFill(market_id=market_id, maker_order_id=maker.id, taker_order_id=order.id,
                           maker_user_id=maker.user_id, taker_user_id=user_id,
                           maker_outcome=maker.outcome, maker_stake=maker_stake,
@@ -250,7 +251,7 @@ def void_market(db, market_id, user_id, reason):
             if filled_from_fills[order.id] != order.filled:
                 raise HTTPException(409, 'Несогласованность учёта сделок')
 
-        if abs(float(market.pot or 0) - bank / ATOM) > 1e-7:
+        if market.pot_nano != bank:
             raise HTTPException(409, 'Банк не соответствует обеспечению сделок')
 
         remainder = defaultdict(int)
@@ -297,7 +298,7 @@ def void_market(db, market_id, user_id, reason):
         market.cancellation_reason = reason
         market.cancelled_at = when
         market.cancelled_by = actor.id
-        market.pot = 0
+        market.pot_nano = 0
         market.lock_returned = True
         market.winning_outcome = None
         db.commit()
@@ -360,7 +361,7 @@ def settle(db, market, winning_outcome):
             rows[uid]['chosen'].add(side)
             if side == win:
                 rows[uid]['payout'] += total
-    if abs(market.pot - bank/ATOM) > 1e-7:
+    if market.pot_nano != bank:
         raise HTTPException(409, 'Банк не соответствует обеспечению сделок')
     admin = legacy.find_admin_user(db)
     users = list(rows) + [market.creator_id]
@@ -404,23 +405,14 @@ def settle(db, market, winning_outcome):
     market.resolved_at = when
     market.settlement_kind = 'auto'
     market.lock_returned = True
-    market.pot = 0
+    market.pot_nano = 0
     db.commit()
     db.refresh(market)
     return market
 
 
 def adjust_atoms(db, user_id, atoms):
-    if not atoms:
-        return
-    delta = atoms/ATOM
-    result = db.execute(text("UPDATE users SET balance = balance + :delta WHERE id = :id AND balance >= :need"),
-                        dict(delta=delta, id=user_id, need=max(0, -delta)))
-    if result.rowcount != 1:
-        raise HTTPException(400, 'Недостаточно средств')
-    user = db.get(User, user_id)
-    if user:
-        db.expire(user)
+    adjust_balance_nano(db, user_id, atoms)
 
 
 def expire_due_orders():

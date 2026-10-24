@@ -30,9 +30,6 @@ KIND_RESERVE = "order_reserve"
 KIND_POT = "market_pot"
 
 FLOAT_MONEY_FIELDS = (
-    "User.balance",
-    "Market.pot",
-    "Market.lock_ton",
     "Market.b",
     "Market.q / q_yes / q_no",
     "Position.shares / costs / shares_yes / shares_no / cost_yes / cost_no / tip_paid",
@@ -773,27 +770,29 @@ def reconcile(db: Session, market_id: int) -> dict:
     else:
         expected_pot = bank_from_fills
     actual_pot_ton = float(market.pot or 0)
-    pot_float_ok = abs(actual_pot_ton - expected_pot / NANO_PER_TON) <= FLOAT_TOLERANCE_TON
-    if not pot_float_ok:
+    pot_exact_ok = market.pot_nano == expected_pot
+    if not pot_exact_ok:
         discrepancies.append(
             dict(
                 kind="pot_mismatch",
                 message="остаток банка не совпадает с заявками, сделками и расчётом",
                 expected_nano=expected_pot,
                 actual_ton=actual_pot_ton,
-                float_tolerance_ton=FLOAT_TOLERANCE_TON,
+                actual_nano=str(market.pot_nano),
+                float_tolerance_ton=0,
             )
         )
 
     if market.status in (MarketStatus.open, MarketStatus.closed):
-        if abs(actual_pot_ton - bank_from_fills / NANO_PER_TON) > FLOAT_TOLERANCE_TON:
+        if market.pot_nano != bank_from_fills:
             discrepancies.append(
                 dict(
                     kind="pot_vs_fills",
                     message="банк не равен сумме сделок",
                     fills_nano=bank_from_fills,
                     actual_ton=actual_pot_ton,
-                    float_tolerance_ton=FLOAT_TOLERANCE_TON,
+                actual_nano=str(market.pot_nano),
+                    float_tolerance_ton=0,
                 )
             )
         if payouts or tips or voids:
@@ -806,13 +805,14 @@ def reconcile(db: Session, market_id: int) -> dict:
                     voids_nano=voids,
                 )
             )
-    elif market.status in (MarketStatus.resolved, MarketStatus.cancelled) and abs(actual_pot_ton) > FLOAT_TOLERANCE_TON:
+    elif market.status in (MarketStatus.resolved, MarketStatus.cancelled) and market.pot_nano != 0:
         discrepancies.append(
             dict(
                 kind="pot_not_cleared",
                 message="после расчёта или отмены банк должен быть пуст",
                 actual_ton=actual_pot_ton,
-                float_tolerance_ton=FLOAT_TOLERANCE_TON,
+                actual_nano=str(market.pot_nano),
+                float_tolerance_ton=0,
             )
         )
 
@@ -877,6 +877,7 @@ def reconcile(db: Session, market_id: int) -> dict:
         float_tolerance_ton=FLOAT_TOLERANCE_TON,
         float_fields=list(FLOAT_MONEY_FIELDS),
         integer_fields=[
+            "User.balance_nano / Market.pot_nano / Market.lock_nano",
             "P2POrder.amount / filled / remaining / refunded",
             "P2PFill.maker_stake / taker_stake",
             "P2PMoneyEntry.amount",
@@ -888,13 +889,14 @@ def reconcile(db: Session, market_id: int) -> dict:
         ),
         pot=dict(
             expected_nano=expected_pot,
+            actual_nano=str(market.pot_nano),
             actual_ton=actual_pot_ton,
             fills_nano=bank_from_fills,
             payouts_nano=payouts,
             tips_nano=tips,
             void_returns_nano=voids,
-            consistent=pot_float_ok,
-            float_tolerance_ton=FLOAT_TOLERANCE_TON,
+            consistent=pot_exact_ok,
+            float_tolerance_ton=0,
         ),
         entry_counts=dict(counts),
         coverage_gaps=coverage_gaps,

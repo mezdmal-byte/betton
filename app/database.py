@@ -55,7 +55,13 @@ def ensure_schema() -> None:
         return
 
     market_cols = {c["name"] for c in insp.get_columns("markets")}
+    user_cols = {c["name"] for c in insp.get_columns("users")}
     with engine.begin() as conn:
+        for table, name, columns in [('users', 'balance_nano', user_cols),
+                                     ('markets', 'pot_nano', market_cols),
+                                     ('markets', 'lock_nano', market_cols)]:
+            _add_column_if_missing(conn, table, name,
+                f'BIGINT CHECK ({name} BETWEEN 0 AND 9223372036854775807)', columns)
         _add_column_if_missing(conn, "markets", "category", "VARCHAR(32) DEFAULT 'unique'", market_cols)
         _add_column_if_missing(conn, "markets", "outcomes", "TEXT", market_cols)
         _add_column_if_missing(conn, "markets", "q", "TEXT", market_cols)
@@ -176,3 +182,11 @@ def _as_json_list(value) -> list:
             return []
         return parsed if isinstance(parsed, list) else []
     return []
+
+
+def assert_money_ready():
+    with engine.connect() as conn:
+        for table, condition in [('users', 'balance_nano IS NULL'),
+                                 ('markets', 'pot_nano IS NULL OR lock_nano IS NULL')]:
+            if conn.execute(text(f'SELECT COUNT(*) FROM {table} WHERE {condition}')).scalar_one():
+                raise RuntimeError('Integer money migration required; stop writes and run app.money_migrate on a backed-up database')
