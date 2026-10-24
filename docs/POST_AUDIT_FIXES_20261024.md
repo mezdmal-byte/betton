@@ -25,7 +25,7 @@
 | F3 | Включён FK на соединениях; preflight существующих ссылок | 369 backend passed, 12 PG skipped; два новых FK-теста | Не развёрнуто |
 | S2 | Реализован BIGINT и версия миграции 2 | PostgreSQL миграция заполненной схемы + auth >2³¹; 395 passed | Не развёрнуто |
 | A1 | Реализованы явные версии и startup без DDL | PostgreSQL startup/concurrent migration проверки пройдены; 395 passed | Не развёрнуто |
-| A4 | Не реализован | Не выполнена | Без изменений |
+| A4 | Реализован серверный receipt и сохранение клиентского намерения | PostgreSQL 403 passed; frontend 160 passed + build | Не развёрнуто |
 
 ## S1 — webhook
 
@@ -180,3 +180,19 @@ python -m pytest -q tests
 Покрыты три типа событий, конфликт параметров, параллельный дубль, scope пользователя, эквивалентные часовые пояса, повтор после close_at/перезапуска, единственное приглашение/уведомление, failure после flush приглашения, отсутствие частичных записей и повтор после rollback. Новый migration test проверяет upgrade 2→3 на заполненной SQLite-базе, rollback после DDL/ошибки, сохранение пользователя/nano-баланса и повтор upgrade. Существующие parallel-migrator/PostgreSQL заполненной схемы тесты теперь проходят через ревизию 3 в CI.
 
 A4 пока **реализовано и проверено локально; требуется новый PostgreSQL CI**. F2 денежных операций ещё **не реализовано**: ConnectedQuickTrade и собственный коэффициент пока используют прежние ключи в памяти. Не объявлять все восемь дефектов закрытыми и не объединять PR #20.
+
+### A4 подтверждён PostgreSQL CI
+
+Коммит `cc49fcfc9df44dc168774834f1c39e36153e5b29`, [run 40144264807](https://github.com/mezdmal-byte/betton/actions/runs/40144264807): **403 passed, 0 failed, 0 skipped**, PostgreSQL 16, 72.00 s. Frontend CI [40144264836](https://github.com/mezdmal-byte/betton/actions/runs/40144264836) success (160 tests и build). A4 завершён в коде и проверен SQLite/PostgreSQL; production не изменён. Следующий отдельный блок — F2 денежных действий.
+
+### Точная точка продолжения F2 (реализацию денежных форм ещё не менять до этого checkpoint)
+
+Денежные формы: `frontend/src/app/ConnectedQuickTrade.tsx` и `ConnectedOwnPriceScreen.tsx`. В обеих `useRef(new IdempotencyKeys())`; quick trade проверяет свежую котировку до вызова POST. Для recovery нельзя требовать новую котировку: исходная операция могла исполниться по старой.
+
+1. Добавить read-only `GET /users/{user_id}/orders/by-request/{request_id}`: только текущий пользователь, поиск `P2POrder(user_id, request_id)` по всем статусам, `order_out` без изменения балансов/рынка. Чужой user_id →403, неизвестный ключ →404. Проверить auth, чужие ключи, завершённый/отменённый/частично исполненный order. Отсутствие записи при ещё выполняющемся POST не доказывает неудачу; повтор допускается только с исходным ключом и исходными параметрами.
+2. Общий durable intent store для двух денежных форм: user ID + operation + market + исходный payload/request ID/время, без auth/initData/BOT_TOKEN/share token. Хранилище должно успешно записаться до POST. Не заменять неизвестное намерение при изменении параметров или переходе quick↔own-price/на другой рынок. При смене аккаунта не показывать/не повторять чужое намерение и не применять запоздавший ответ к новому аккаунту.
+3. Recovery после reload/visibility Telegram сначала делает только GET. Если found — показать результат, инвалидировать account/orders/history, убрать intent. Если unknown — явная кнопка безопасного повтора сохранённого payload/key; не пересчитывать money/odds по новой форме. Сбой GET/POST не означает отсутствие списания. Защитить двойное нажатие общим in-flight promise. TTL не должен превращать старое неизвестное намерение в новый ключ: после срока удалить параметры, но оставить блокирующую метку/проверку результата до подтверждения; продумать снятие блокировки при доказанном отсутствии операции.
+4. Согласовать хранение/TTL eventCreationIntent с общим механизмом; сохранить отдельный request ID, уже поддержанный A4. Ошибка storage — fail closed. Проверить React Query и draft retention, не сбрасывать черновик при неизвестном исходе.
+5. Backend: потерянный ответ, read-only lookup, повторный POST и rollback после reserve/ledger insert; сверять balance/reserve/ledger. Frontend: reload/new module instance, два нажатия, смена пользователя, иной payload, 404 до исполнения, network/500, TTL/storage failure и повторное открытие Telegram. Прогнать полный PostgreSQL/frontend/build перед отдельным F2-коммитом.
+
+Интеграционный кандидат пока не создавать. После F2: обновление схемы до 3 только явным maintenance upgrade; backup/restore rehearsal; переход backend/client в контролируемом окне без старых реплик, принимающих создание без request_id; main webhook patch #21 и стабильные admin IDs; smoke-test существующего бота и совместимый rollback без удаления receipts. Main/Render/рабочие данные остаются вне этой задачи.
