@@ -1,0 +1,258 @@
+{
+  "sqlite": [
+    {
+      "table": "demo_environment",
+      "ddl": "\nCREATE TABLE demo_environment (\n\tid INTEGER NOT NULL, \n\tversion INTEGER NOT NULL, \n\tPRIMARY KEY (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "users",
+      "ddl": "\nCREATE TABLE users (\n\tid INTEGER NOT NULL, \n\ttelegram_id INTEGER, \n\tusername VARCHAR(64) NOT NULL, \n\ttelegram_username VARCHAR(64), \n\tdisplay_name VARCHAR(128), \n\tphoto_url VARCHAR(1024), \n\tbalance FLOAT NOT NULL, \n\tbalance_nano BIGINT, \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tCHECK (balance_nano IS NOT NULL AND balance_nano BETWEEN 0 AND 9223372036854775807), \n\tUNIQUE (telegram_id), \n\tUNIQUE (username)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "chat_read_states",
+      "ddl": "\nCREATE TABLE chat_read_states (\n\tid INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tscope_key VARCHAR(64) NOT NULL, \n\tlast_read_message_id INTEGER DEFAULT '0' NOT NULL, \n\tupdated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tCONSTRAINT uq_chat_read_scope UNIQUE (user_id, scope_key), \n\tFOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_chat_read_states_user_id ON chat_read_states (user_id)"
+      ]
+    },
+    {
+      "table": "demo_guarantor_actors",
+      "ddl": "\nCREATE TABLE demo_guarantor_actors (\n\tuser_id INTEGER NOT NULL, \n\tstrategy VARCHAR(24) NOT NULL, \n\tPRIMARY KEY (user_id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tUNIQUE (strategy)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "guarantor_profiles",
+      "ddl": "\nCREATE TABLE guarantor_profiles (\n\tuser_id INTEGER NOT NULL, \n\tstatus VARCHAR(16) NOT NULL, \n\tbio VARCHAR(1000) NOT NULL, \n\ttopics VARCHAR(300) NOT NULL, \n\tavailable_until DATETIME, \n\tlast_seen_at DATETIME, \n\tPRIMARY KEY (user_id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "markets",
+      "ddl": "\nCREATE TABLE markets (\n\tid INTEGER NOT NULL, \n\tquestion VARCHAR(512) NOT NULL, \n\tdescription TEXT NOT NULL, \n\tcreator_id INTEGER NOT NULL, \n\tcategory VARCHAR(32) DEFAULT 'unique' NOT NULL, \n\tmechanism VARCHAR(16) DEFAULT 'lmsr' NOT NULL, \n\tb FLOAT NOT NULL, \n\tq_yes FLOAT NOT NULL, \n\tq_no FLOAT NOT NULL, \n\toutcomes JSON NOT NULL, \n\tq JSON NOT NULL, \n\tlock_ton FLOAT NOT NULL, \n\tpot FLOAT NOT NULL, \n\tpot_nano BIGINT, \n\tlock_nano BIGINT, \n\tclose_at DATETIME, \n\tlock_returned BOOLEAN NOT NULL, \n\tstatus VARCHAR(9) NOT NULL, \n\twinning_outcome VARCHAR(128), \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tresolved_at DATETIME, \n\trejection_reason VARCHAR(1000), \n\tmoderated_at DATETIME, \n\tmoderated_by INTEGER, \n\tcancellation_reason VARCHAR(1000), \n\tcancelled_at DATETIME, \n\tcancelled_by INTEGER, \n\tsettlement_kind VARCHAR(16), \n\tvisibility VARCHAR(16) DEFAULT 'public' NOT NULL, \n\tshare_token VARCHAR(64), \n\tp2p_journal_coverage VARCHAR(16) DEFAULT 'not_applicable' NOT NULL, \n\tPRIMARY KEY (id), \n\tCHECK (pot_nano IS NOT NULL AND pot_nano BETWEEN 0 AND 9223372036854775807), \n\tCHECK (lock_nano IS NOT NULL AND lock_nano BETWEEN 0 AND 9223372036854775807), \n\tFOREIGN KEY(creator_id) REFERENCES users (id), \n\tUNIQUE (share_token)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "app_notifications",
+      "ddl": "\nCREATE TABLE app_notifications (\n\tid INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tmarket_id INTEGER, \n\ttext VARCHAR(1000) NOT NULL, \n\tread BOOLEAN NOT NULL, \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_app_notifications_user_id ON app_notifications (user_id)"
+      ]
+    },
+    {
+      "table": "chat_messages",
+      "ddl": "\nCREATE TABLE chat_messages (\n\tid INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tmarket_id INTEGER, \n\ttext TEXT NOT NULL, \n\treply_to_id INTEGER, \n\tattached_market_id INTEGER, \n\tdeleted_at DATETIME, \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, \n\tFOREIGN KEY(market_id) REFERENCES markets (id) ON DELETE CASCADE, \n\tFOREIGN KEY(reply_to_id) REFERENCES chat_messages (id) ON DELETE SET NULL, \n\tFOREIGN KEY(attached_market_id) REFERENCES markets (id) ON DELETE SET NULL\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_chat_messages_created_at ON chat_messages (created_at)",
+        "CREATE INDEX ix_chat_messages_market_id ON chat_messages (market_id)",
+        "CREATE INDEX ix_chat_messages_reply_to_id ON chat_messages (reply_to_id)",
+        "CREATE INDEX ix_chat_messages_user_id ON chat_messages (user_id)"
+      ]
+    },
+    {
+      "table": "demo_guarantor_runs",
+      "ddl": "\nCREATE TABLE demo_guarantor_runs (\n\tmarket_id INTEGER NOT NULL, \n\tactor_id INTEGER NOT NULL, \n\tenabled BOOLEAN NOT NULL, \n\tscenario VARCHAR(24) NOT NULL, \n\tnext_at DATETIME NOT NULL, \n\tprogress JSON NOT NULL, \n\tlast_error VARCHAR(300), \n\tPRIMARY KEY (market_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(actor_id) REFERENCES demo_guarantor_actors (user_id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "event_config_v3",
+      "ddl": "\nCREATE TABLE event_config_v3 (\n\tmarket_id INTEGER NOT NULL, \n\tevent_type VARCHAR(16) NOT NULL, \n\tends_at DATETIME NOT NULL, \n\trevision INTEGER NOT NULL, \n\tterms JSON NOT NULL, \n\tmoderator_edited BOOLEAN NOT NULL, \n\treward JSON NOT NULL, \n\tPRIMARY KEY (market_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "event_revisions_v3",
+      "ddl": "\nCREATE TABLE event_revisions_v3 (\n\tid INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\trevision INTEGER NOT NULL, \n\tactor_id INTEGER, \n\tkind VARCHAR(32) NOT NULL, \n\tsnapshot JSON NOT NULL, \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(actor_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_event_revisions_v3_market_id ON event_revisions_v3 (market_id)"
+      ]
+    },
+    {
+      "table": "guarantor_cases",
+      "ddl": "\nCREATE TABLE guarantor_cases (\n\tmarket_id INTEGER NOT NULL, \n\tguarantor_id INTEGER NOT NULL, \n\tstate VARCHAR(24) NOT NULL, \n\trevision INTEGER NOT NULL, \n\tcreator_confirmed INTEGER NOT NULL, \n\tcriteria TEXT NOT NULL, \n\tsource TEXT NOT NULL, \n\tresult_due_at DATETIME NOT NULL, \n\tdeadline DATETIME, \n\textension_by INTEGER, \n\tproposed_outcome INTEGER, \n\tdecision_reason TEXT, \n\tPRIMARY KEY (market_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(guarantor_id) REFERENCES users (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "guarantor_messages",
+      "ddl": "\nCREATE TABLE guarantor_messages (\n\tid INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tkind VARCHAR(24) NOT NULL, \n\ttext TEXT NOT NULL, \n\trevision INTEGER NOT NULL, \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_guarantor_messages_market_id ON guarantor_messages (market_id)"
+      ]
+    },
+    {
+      "table": "guarantor_reviews",
+      "ddl": "\nCREATE TABLE guarantor_reviews (\n\tid INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tguarantor_id INTEGER NOT NULL, \n\trating INTEGER NOT NULL, \n\ttext VARCHAR(1000) NOT NULL, \n\tPRIMARY KEY (id), \n\tUNIQUE (market_id, user_id), \n\tCHECK (rating BETWEEN 1 AND 5), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(guarantor_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_guarantor_reviews_guarantor_id ON guarantor_reviews (guarantor_id)"
+      ]
+    },
+    {
+      "table": "p2p_orders",
+      "ddl": "\nCREATE TABLE p2p_orders (\n\tid INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\trequest_id VARCHAR(64) NOT NULL, \n\toutcome INTEGER NOT NULL, \n\tprice INTEGER NOT NULL, \n\tamount BIGINT NOT NULL, \n\tremaining BIGINT NOT NULL, \n\tfilled BIGINT NOT NULL, \n\trefunded BIGINT NOT NULL, \n\tkind VARCHAR(8) NOT NULL, \n\tstatus VARCHAR(16) NOT NULL, \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tUNIQUE (user_id, request_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_p2p_orders_market_id ON p2p_orders (market_id)"
+      ]
+    },
+    {
+      "table": "positions",
+      "ddl": "\nCREATE TABLE positions (\n\tid INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tshares_yes FLOAT NOT NULL, \n\tshares_no FLOAT NOT NULL, \n\tcost_yes FLOAT NOT NULL, \n\tcost_no FLOAT NOT NULL, \n\tshares JSON NOT NULL, \n\tcosts JSON NOT NULL, \n\tclaimed BOOLEAN NOT NULL, \n\ttip_paid FLOAT NOT NULL, \n\tPRIMARY KEY (id), \n\tUNIQUE (user_id, market_id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "private_terms_consents",
+      "ddl": "\nCREATE TABLE private_terms_consents (\n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\trevision INTEGER NOT NULL, \n\tPRIMARY KEY (market_id, user_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "settlement_records",
+      "ddl": "\nCREATE TABLE settlement_records (\n\tid INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tquestion VARCHAR(512) NOT NULL, \n\twinning_outcome VARCHAR(128) NOT NULL, \n\tchosen_outcomes JSON NOT NULL, \n\tstakes_total FLOAT NOT NULL, \n\tpayout FLOAT NOT NULL, \n\ttip FLOAT NOT NULL, \n\tcredited FLOAT NOT NULL, \n\tresult FLOAT NOT NULL, \n\tlock_ton FLOAT NOT NULL, \n\tresidual_returned FLOAT NOT NULL, \n\tresolved_at DATETIME, \n\tPRIMARY KEY (id), \n\tUNIQUE (market_id, user_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "trades",
+      "ddl": "\nCREATE TABLE trades (\n\tid INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\toutcome VARCHAR(128) NOT NULL, \n\tmoney FLOAT NOT NULL, \n\tshares FLOAT NOT NULL, \n\tprice_after FLOAT NOT NULL, \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "p2p_fills",
+      "ddl": "\nCREATE TABLE p2p_fills (\n\tid INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tmaker_order_id INTEGER NOT NULL, \n\ttaker_order_id INTEGER NOT NULL, \n\tmaker_user_id INTEGER NOT NULL, \n\ttaker_user_id INTEGER NOT NULL, \n\tmaker_outcome INTEGER NOT NULL, \n\tmaker_stake BIGINT NOT NULL, \n\ttaker_stake BIGINT NOT NULL, \n\tprice INTEGER NOT NULL, \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(maker_order_id) REFERENCES p2p_orders (id), \n\tFOREIGN KEY(taker_order_id) REFERENCES p2p_orders (id), \n\tFOREIGN KEY(maker_user_id) REFERENCES users (id), \n\tFOREIGN KEY(taker_user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_p2p_fills_market_id ON p2p_fills (market_id)"
+      ]
+    },
+    {
+      "table": "p2p_money_entries",
+      "ddl": "\nCREATE TABLE p2p_money_entries (\n\tid INTEGER NOT NULL, \n\tentry_key VARCHAR(128) NOT NULL, \n\top_type VARCHAR(32) NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\torder_id INTEGER, \n\tfill_id INTEGER, \n\tfrom_kind VARCHAR(32) NOT NULL, \n\tfrom_user_id INTEGER, \n\tfrom_order_id INTEGER, \n\tto_kind VARCHAR(32) NOT NULL, \n\tto_user_id INTEGER, \n\tto_order_id INTEGER, \n\tamount BIGINT NOT NULL, \n\torigin_key VARCHAR(128), \n\treason VARCHAR(32), \n\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, \n\tPRIMARY KEY (id), \n\tCONSTRAINT uq_p2p_money_entry_key UNIQUE (entry_key), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(order_id) REFERENCES p2p_orders (id), \n\tFOREIGN KEY(fill_id) REFERENCES p2p_fills (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_p2p_money_entries_market_id ON p2p_money_entries (market_id)"
+      ]
+    }
+  ],
+  "postgresql": [
+    {
+      "table": "demo_environment",
+      "ddl": "\nCREATE TABLE demo_environment (\n\tid SERIAL NOT NULL, \n\tversion INTEGER NOT NULL, \n\tPRIMARY KEY (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "users",
+      "ddl": "\nCREATE TABLE users (\n\tid SERIAL NOT NULL, \n\ttelegram_id INTEGER, \n\tusername VARCHAR(64) NOT NULL, \n\ttelegram_username VARCHAR(64), \n\tdisplay_name VARCHAR(128), \n\tphoto_url VARCHAR(1024), \n\tbalance FLOAT NOT NULL, \n\tbalance_nano BIGINT, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tCHECK (balance_nano IS NOT NULL AND balance_nano BETWEEN 0 AND 9223372036854775807), \n\tUNIQUE (telegram_id), \n\tUNIQUE (username)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "chat_read_states",
+      "ddl": "\nCREATE TABLE chat_read_states (\n\tid SERIAL NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tscope_key VARCHAR(64) NOT NULL, \n\tlast_read_message_id INTEGER DEFAULT '0' NOT NULL, \n\tupdated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tCONSTRAINT uq_chat_read_scope UNIQUE (user_id, scope_key), \n\tFOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_chat_read_states_user_id ON chat_read_states (user_id)"
+      ]
+    },
+    {
+      "table": "demo_guarantor_actors",
+      "ddl": "\nCREATE TABLE demo_guarantor_actors (\n\tuser_id INTEGER NOT NULL, \n\tstrategy VARCHAR(24) NOT NULL, \n\tPRIMARY KEY (user_id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tUNIQUE (strategy)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "guarantor_profiles",
+      "ddl": "\nCREATE TABLE guarantor_profiles (\n\tuser_id INTEGER NOT NULL, \n\tstatus VARCHAR(16) NOT NULL, \n\tbio VARCHAR(1000) NOT NULL, \n\ttopics VARCHAR(300) NOT NULL, \n\tavailable_until TIMESTAMP WITHOUT TIME ZONE, \n\tlast_seen_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (user_id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "markets",
+      "ddl": "\nCREATE TABLE markets (\n\tid SERIAL NOT NULL, \n\tquestion VARCHAR(512) NOT NULL, \n\tdescription TEXT NOT NULL, \n\tcreator_id INTEGER NOT NULL, \n\tcategory VARCHAR(32) DEFAULT 'unique' NOT NULL, \n\tmechanism VARCHAR(16) DEFAULT 'lmsr' NOT NULL, \n\tb FLOAT NOT NULL, \n\tq_yes FLOAT NOT NULL, \n\tq_no FLOAT NOT NULL, \n\toutcomes JSON NOT NULL, \n\tq JSON NOT NULL, \n\tlock_ton FLOAT NOT NULL, \n\tpot FLOAT NOT NULL, \n\tpot_nano BIGINT, \n\tlock_nano BIGINT, \n\tclose_at TIMESTAMP WITHOUT TIME ZONE, \n\tlock_returned BOOLEAN NOT NULL, \n\tstatus VARCHAR(9) NOT NULL, \n\twinning_outcome VARCHAR(128), \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tresolved_at TIMESTAMP WITHOUT TIME ZONE, \n\trejection_reason VARCHAR(1000), \n\tmoderated_at TIMESTAMP WITHOUT TIME ZONE, \n\tmoderated_by INTEGER, \n\tcancellation_reason VARCHAR(1000), \n\tcancelled_at TIMESTAMP WITHOUT TIME ZONE, \n\tcancelled_by INTEGER, \n\tsettlement_kind VARCHAR(16), \n\tvisibility VARCHAR(16) DEFAULT 'public' NOT NULL, \n\tshare_token VARCHAR(64), \n\tp2p_journal_coverage VARCHAR(16) DEFAULT 'not_applicable' NOT NULL, \n\tPRIMARY KEY (id), \n\tCHECK (pot_nano IS NOT NULL AND pot_nano BETWEEN 0 AND 9223372036854775807), \n\tCHECK (lock_nano IS NOT NULL AND lock_nano BETWEEN 0 AND 9223372036854775807), \n\tFOREIGN KEY(creator_id) REFERENCES users (id), \n\tUNIQUE (share_token)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "app_notifications",
+      "ddl": "\nCREATE TABLE app_notifications (\n\tid SERIAL NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tmarket_id INTEGER, \n\ttext VARCHAR(1000) NOT NULL, \n\tread BOOLEAN NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_app_notifications_user_id ON app_notifications (user_id)"
+      ]
+    },
+    {
+      "table": "chat_messages",
+      "ddl": "\nCREATE TABLE chat_messages (\n\tid SERIAL NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tmarket_id INTEGER, \n\ttext TEXT NOT NULL, \n\treply_to_id INTEGER, \n\tattached_market_id INTEGER, \n\tdeleted_at TIMESTAMP WITHOUT TIME ZONE, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, \n\tFOREIGN KEY(market_id) REFERENCES markets (id) ON DELETE CASCADE, \n\tFOREIGN KEY(reply_to_id) REFERENCES chat_messages (id) ON DELETE SET NULL, \n\tFOREIGN KEY(attached_market_id) REFERENCES markets (id) ON DELETE SET NULL\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_chat_messages_created_at ON chat_messages (created_at)",
+        "CREATE INDEX ix_chat_messages_market_id ON chat_messages (market_id)",
+        "CREATE INDEX ix_chat_messages_reply_to_id ON chat_messages (reply_to_id)",
+        "CREATE INDEX ix_chat_messages_user_id ON chat_messages (user_id)"
+      ]
+    },
+    {
+      "table": "demo_guarantor_runs",
+      "ddl": "\nCREATE TABLE demo_guarantor_runs (\n\tmarket_id INTEGER NOT NULL, \n\tactor_id INTEGER NOT NULL, \n\tenabled BOOLEAN NOT NULL, \n\tscenario VARCHAR(24) NOT NULL, \n\tnext_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, \n\tprogress JSON NOT NULL, \n\tlast_error VARCHAR(300), \n\tPRIMARY KEY (market_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(actor_id) REFERENCES demo_guarantor_actors (user_id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "event_config_v3",
+      "ddl": "\nCREATE TABLE event_config_v3 (\n\tmarket_id INTEGER NOT NULL, \n\tevent_type VARCHAR(16) NOT NULL, \n\tends_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, \n\trevision INTEGER NOT NULL, \n\tterms JSON NOT NULL, \n\tmoderator_edited BOOLEAN NOT NULL, \n\treward JSON NOT NULL, \n\tPRIMARY KEY (market_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "event_revisions_v3",
+      "ddl": "\nCREATE TABLE event_revisions_v3 (\n\tid SERIAL NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\trevision INTEGER NOT NULL, \n\tactor_id INTEGER, \n\tkind VARCHAR(32) NOT NULL, \n\tsnapshot JSON NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(actor_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_event_revisions_v3_market_id ON event_revisions_v3 (market_id)"
+      ]
+    },
+    {
+      "table": "guarantor_cases",
+      "ddl": "\nCREATE TABLE guarantor_cases (\n\tmarket_id INTEGER NOT NULL, \n\tguarantor_id INTEGER NOT NULL, \n\tstate VARCHAR(24) NOT NULL, \n\trevision INTEGER NOT NULL, \n\tcreator_confirmed INTEGER NOT NULL, \n\tcriteria TEXT NOT NULL, \n\tsource TEXT NOT NULL, \n\tresult_due_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, \n\tdeadline TIMESTAMP WITHOUT TIME ZONE, \n\textension_by INTEGER, \n\tproposed_outcome INTEGER, \n\tdecision_reason TEXT, \n\tPRIMARY KEY (market_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(guarantor_id) REFERENCES users (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "guarantor_messages",
+      "ddl": "\nCREATE TABLE guarantor_messages (\n\tid SERIAL NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tkind VARCHAR(24) NOT NULL, \n\ttext TEXT NOT NULL, \n\trevision INTEGER NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_guarantor_messages_market_id ON guarantor_messages (market_id)"
+      ]
+    },
+    {
+      "table": "guarantor_reviews",
+      "ddl": "\nCREATE TABLE guarantor_reviews (\n\tid SERIAL NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tguarantor_id INTEGER NOT NULL, \n\trating INTEGER NOT NULL, \n\ttext VARCHAR(1000) NOT NULL, \n\tPRIMARY KEY (id), \n\tUNIQUE (market_id, user_id), \n\tCHECK (rating BETWEEN 1 AND 5), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(guarantor_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_guarantor_reviews_guarantor_id ON guarantor_reviews (guarantor_id)"
+      ]
+    },
+    {
+      "table": "p2p_orders",
+      "ddl": "\nCREATE TABLE p2p_orders (\n\tid SERIAL NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\trequest_id VARCHAR(64) NOT NULL, \n\toutcome INTEGER NOT NULL, \n\tprice INTEGER NOT NULL, \n\tamount BIGINT NOT NULL, \n\tremaining BIGINT NOT NULL, \n\tfilled BIGINT NOT NULL, \n\trefunded BIGINT NOT NULL, \n\tkind VARCHAR(8) NOT NULL, \n\tstatus VARCHAR(16) NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tUNIQUE (user_id, request_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_p2p_orders_market_id ON p2p_orders (market_id)"
+      ]
+    },
+    {
+      "table": "positions",
+      "ddl": "\nCREATE TABLE positions (\n\tid SERIAL NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tshares_yes FLOAT NOT NULL, \n\tshares_no FLOAT NOT NULL, \n\tcost_yes FLOAT NOT NULL, \n\tcost_no FLOAT NOT NULL, \n\tshares JSON NOT NULL, \n\tcosts JSON NOT NULL, \n\tclaimed BOOLEAN NOT NULL, \n\ttip_paid FLOAT NOT NULL, \n\tPRIMARY KEY (id), \n\tUNIQUE (user_id, market_id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "private_terms_consents",
+      "ddl": "\nCREATE TABLE private_terms_consents (\n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\trevision INTEGER NOT NULL, \n\tPRIMARY KEY (market_id, user_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "settlement_records",
+      "ddl": "\nCREATE TABLE settlement_records (\n\tid SERIAL NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tquestion VARCHAR(512) NOT NULL, \n\twinning_outcome VARCHAR(128) NOT NULL, \n\tchosen_outcomes JSON NOT NULL, \n\tstakes_total FLOAT NOT NULL, \n\tpayout FLOAT NOT NULL, \n\ttip FLOAT NOT NULL, \n\tcredited FLOAT NOT NULL, \n\tresult FLOAT NOT NULL, \n\tlock_ton FLOAT NOT NULL, \n\tresidual_returned FLOAT NOT NULL, \n\tresolved_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tUNIQUE (market_id, user_id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "trades",
+      "ddl": "\nCREATE TABLE trades (\n\tid SERIAL NOT NULL, \n\tuser_id INTEGER NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\toutcome VARCHAR(128) NOT NULL, \n\tmoney FLOAT NOT NULL, \n\tshares FLOAT NOT NULL, \n\tprice_after FLOAT NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id)\n)\n\n",
+      "indexes": []
+    },
+    {
+      "table": "p2p_fills",
+      "ddl": "\nCREATE TABLE p2p_fills (\n\tid SERIAL NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\tmaker_order_id INTEGER NOT NULL, \n\ttaker_order_id INTEGER NOT NULL, \n\tmaker_user_id INTEGER NOT NULL, \n\ttaker_user_id INTEGER NOT NULL, \n\tmaker_outcome INTEGER NOT NULL, \n\tmaker_stake BIGINT NOT NULL, \n\ttaker_stake BIGINT NOT NULL, \n\tprice INTEGER NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(maker_order_id) REFERENCES p2p_orders (id), \n\tFOREIGN KEY(taker_order_id) REFERENCES p2p_orders (id), \n\tFOREIGN KEY(maker_user_id) REFERENCES users (id), \n\tFOREIGN KEY(taker_user_id) REFERENCES users (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_p2p_fills_market_id ON p2p_fills (market_id)"
+      ]
+    },
+    {
+      "table": "p2p_money_entries",
+      "ddl": "\nCREATE TABLE p2p_money_entries (\n\tid SERIAL NOT NULL, \n\tentry_key VARCHAR(128) NOT NULL, \n\top_type VARCHAR(32) NOT NULL, \n\tmarket_id INTEGER NOT NULL, \n\torder_id INTEGER, \n\tfill_id INTEGER, \n\tfrom_kind VARCHAR(32) NOT NULL, \n\tfrom_user_id INTEGER, \n\tfrom_order_id INTEGER, \n\tto_kind VARCHAR(32) NOT NULL, \n\tto_user_id INTEGER, \n\tto_order_id INTEGER, \n\tamount BIGINT NOT NULL, \n\torigin_key VARCHAR(128), \n\treason VARCHAR(32), \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tCONSTRAINT uq_p2p_money_entry_key UNIQUE (entry_key), \n\tFOREIGN KEY(market_id) REFERENCES markets (id), \n\tFOREIGN KEY(order_id) REFERENCES p2p_orders (id), \n\tFOREIGN KEY(fill_id) REFERENCES p2p_fills (id)\n)\n\n",
+      "indexes": [
+        "CREATE INDEX ix_p2p_money_entries_market_id ON p2p_money_entries (market_id)"
+      ]
+    }
+  ]
+}

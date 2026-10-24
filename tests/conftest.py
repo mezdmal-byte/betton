@@ -32,6 +32,8 @@ os.environ["RENDER_EXTERNAL_URL"] = ""
 @pytest.fixture
 def client():
     from app.main import app
+    from app.database import ensure_schema
+    ensure_schema()  # Explicit test setup, outside application lifespan.
 
     with TestClient(app) as test_client:
         yield test_client

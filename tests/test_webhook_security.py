@@ -72,7 +72,7 @@ def test_replica_shutdown_does_not_remove_webhook(monkeypatch):
     import app.main as main
     bot = SimpleNamespace(set_webhook=AsyncMock(), delete_webhook=AsyncMock(), session=SimpleNamespace(close=AsyncMock()))
     monkeypatch.setattr(main, '_maybe_bot', lambda: (bot, None))
-    monkeypatch.setattr(main, 'ensure_schema', lambda: None)
+    monkeypatch.setattr(main, 'assert_schema_ready', lambda: None)
     if hasattr(main, 'assert_money_ready'):
         monkeypatch.setattr(main, 'assert_money_ready', lambda: None)
     async def lifecycle():

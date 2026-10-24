@@ -15,6 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
+from app.migrations import assert_schema_ready
 from app.models import Market, MarketStatus, User, P2POrder
 from sqlalchemy import func
 from app.telegram_auth import get_current_user, get_optional_user
@@ -162,7 +163,7 @@ async def demo_guarantors_task():
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
     settings.validate_admin_configuration()
-    ensure_schema()
+    assert_schema_ready()
     assert_money_ready()
     if settings.betton_preview_seed:
         from app.preview_seed import seed_preview_data
