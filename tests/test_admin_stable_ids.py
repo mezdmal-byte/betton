@@ -34,3 +34,14 @@ def test_malformed_ids_fail_closed(monkeypatch):
     assert not settings.is_admin_telegram(90900001)
     with pytest.raises(RuntimeError):
         settings.validate_admin_configuration()
+
+
+def test_revoke_platform_admin_without_changing_treasury(monkeypatch):
+    monkeypatch.setattr(settings, 'admin_telegram_id', '90900001')
+    monkeypatch.setattr(settings, 'admin_telegram_ids', '90900002')
+    monkeypatch.setattr(settings, 'admin_telegram_revoked_ids', '90900001')
+    monkeypatch.setattr(settings, 'admin_telegram_usernames', '')
+    settings.validate_admin_configuration()
+    assert not settings.is_admin_telegram(90900001)
+    assert settings.is_admin_telegram(90900002)
+    assert settings.admin_tg_id() == 90900001
