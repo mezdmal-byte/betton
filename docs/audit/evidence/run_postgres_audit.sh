@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 command -v docker >/dev/null
-audit_name="betton_audit_$(date +%s)_${RANDOM}"
+audit_name="betton_test_audit_$(date +%s)_${RANDOM}"
 cleanup() { docker rm -f "$audit_name" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 docker run -d --name "$audit_name" -e POSTGRES_USER=betton -e POSTGRES_PASSWORD=audit_local_only -e POSTGRES_DB="$audit_name" -p 127.0.0.1::5432 postgres:16 >/dev/null
@@ -15,6 +15,8 @@ done
 docker exec "$audit_name" pg_isready -U betton -d "$audit_name"
 audit_port="$(docker port "$audit_name" 5432/tcp | awk -F: '{print $NF}')"
 export BETTON_TEST_DATABASE_URL="postgresql+psycopg2://betton:audit_local_only@127.0.0.1:${audit_port}/${audit_name}"
+# Bound blocked SQL in diagnostic races. Never change server-wide settings.
+export PGOPTIONS='-c statement_timeout=15000 -c lock_timeout=10000'
 unset DATABASE_URL
 "${AUDIT_PYTHON:-python}" -m pytest -o addopts='' -q -s \
   tests/test_p2p_journal_postgres.py tests/test_p2p.py tests/test_p2p_cancel.py \

@@ -1,4 +1,4 @@
-sssssssss                                                                [100%]
+ssssssssssss                                                             [100%]
 =============================== warnings summary ===============================
 ../betton-ux/.ux-preview/venv/lib/python3.12/site-packages/fastapi/testclient.py:1
   /workspace/scratch/6d5c370323b7/betton-ux/.ux-preview/venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
@@ -13,4 +13,4 @@ app/schemas.py:187
     class MarketOut(BaseModel):
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-9 skipped, 3 warnings in 0.43s
+12 skipped, 3 warnings in 0.91s

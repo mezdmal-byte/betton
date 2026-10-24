@@ -3,7 +3,7 @@ Run through run_postgres_audit.sh; NOT verified on PostgreSQL in this Work sessi
 """
 from tests.conftest import client
 from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier, current_thread
+from threading import Barrier, Event, current_thread
 from datetime import timedelta
 import os
 import uuid
@@ -18,6 +18,11 @@ from tests.test_guarantor_funding import secured_pair, totals
 from tests.test_guarantors import call
 from tests.test_markets_api import _login
 from tests.test_ux_v3_events import payload
+from tests.test_demo_guarantors import enable
+from tests.test_markets_api import _admin
+from tests.test_ux_v3_events import create
+from app.models import GuarantorCase, GuarantorMessage, DemoGuarantorRun
+from app.services import demo_guarantors as demo, market_service as ms
 
 pytestmark=pytest.mark.skipif(not os.environ.get('BETTON_TEST_DATABASE_URL','').startswith('postgresql'),reason='isolated PostgreSQL required; SQLite is not a concurrency substitute')
 
@@ -36,6 +41,101 @@ def verify(mid,conserved):
         assert ledger.reconcile(db,mid)['fully_verified']
         keys=[r.entry_key for r in db.query(P2PMoneyEntry).filter_by(market_id=mid)]
         assert len(keys)==len(set(keys))
+
+def demo_cases(client, monkeypatch, count=1):
+    """Only synthetic actors; actual environment guard remains active."""
+    admin, ah = _admin(client, monkeypatch)
+    _, ch = _login(client)
+    enable(monkeypatch)  # disables background process_due; tests call tick explicitly
+    result = client.post('/demo/guarantors/install', headers=ah)
+    assert result.status_code == 200, result.text
+    mids = []
+    for actor in result.json()[:count]:
+        mid = create(client, ch, payload('guarantor', actor['user_id']))['id']
+        response = client.put(f'/demo/guarantors/events/{mid}', headers=ah,
+                              json={'scenario': 'negotiate'})
+        assert response.status_code == 200, response.text
+        mids.append(mid)
+    instant = gs.now() + timedelta(seconds=16)
+    monkeypatch.setattr(gs, 'now', lambda: instant)
+    return admin['id'], mids
+
+def worker_tick():
+    with SessionLocal() as db:
+        demo.tick(db)
+
+def test_pg_two_workers_two_actors_once(client, monkeypatch):
+    _, mids = demo_cases(client, monkeypatch, count=2)
+    conserved = totals()
+    race(worker_tick, worker_tick)
+    for mid in mids:
+        verify(mid, conserved)
+        with SessionLocal() as db:
+            assert db.get(GuarantorCase, mid).state == 'review'
+            assert db.query(GuarantorMessage).filter_by(market_id=mid, kind='acknowledge').count() == 1
+            run = db.get(DemoGuarantorRun, mid)
+            assert run.enabled and run.next_at > gs.now() and run.last_error is None
+
+@pytest.mark.parametrize('worker_has_lock', [False, True])
+def test_pg_disable_while_worker_running(client, monkeypatch, worker_has_lock):
+    """Force disable before market lock, or while an action holds that lock.
+
+    Disabling is serialized: an action already holding the lock may finish;
+    no action may begin after the disable transaction commits.
+    """
+    admin_id, (mid,) = demo_cases(client, monkeypatch)
+    conserved = totals()
+    reached, release, disable_started = Event(), Event(), Event()
+    original_lock, original_step = ms._lock_market, demo._step
+    worker_ident = []
+
+    def pause():
+        reached.set()
+        assert release.wait(8), 'diagnostic gate was not released'
+
+    def lock(db, market_id):
+        if market_id == mid and current_thread().ident in worker_ident and not worker_has_lock:
+            pause()  # enabled ids already read by tick; disable must now win
+        return original_lock(db, market_id)
+
+    def step(db, run, actor, market, case, config):
+        if market.id == mid and worker_has_lock:
+            pause()  # tick already holds market/run locks
+        return original_step(db, run, actor, market, case, config)
+
+    def worker():
+        worker_ident.append(current_thread().ident)
+        worker_tick()
+
+    def disable():
+        with SessionLocal() as db:
+            disable_started.set()
+            demo.configure(db, db.get(User, admin_id), mid, 'negotiate', enabled=False)
+
+    monkeypatch.setattr(ms, '_lock_market', lock)
+    monkeypatch.setattr(demo, '_step', step)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        work = pool.submit(worker)
+        try:
+            assert reached.wait(8)
+            stopping = pool.submit(disable)
+            assert disable_started.wait(8)
+            if not worker_has_lock:
+                stopping.result(timeout=8)
+        finally:
+            release.set()
+        work.result(timeout=20)
+        stopping.result(timeout=20)
+    with SessionLocal() as db:
+        run = db.get(DemoGuarantorRun, mid)
+        assert not run.enabled and run.last_error is None
+        assert run.progress['_generation'] == 2
+        assert db.get(GuarantorCase, mid).state == ('review' if worker_has_lock else 'invited')
+        message_count = db.query(GuarantorMessage).filter_by(market_id=mid).count()
+    worker_tick()
+    with SessionLocal() as db:
+        assert db.query(GuarantorMessage).filter_by(market_id=mid).count() == message_count
+    verify(mid, conserved)
 
 @pytest.mark.parametrize('other',['resolve','cancel'])
 def test_pg_settle_against_settle_or_cancel(client,monkeypatch,other):
