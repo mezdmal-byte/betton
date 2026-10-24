@@ -1,0 +1,21 @@
+origin/main unsigned /help update reached mock dispatcher; zero Telegram traffic
+.origin/feature/ux-v3-full-integration unsigned /help update reached mock dispatcher; zero Telegram traffic
+.Different immutable ID acquires admin through configured username; only test-signed identities used
+.Winner settlement credit=194 TON; history win-fee=199 TON; guarantor balance +5 TON
+.Injected failure after reward journal insert rolled back balances, journal, settlement
+.
+=============================== warnings summary ===============================
+../betton-ux/.ux-preview/venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /workspace/scratch/6d5c370323b7/betton-ux/.ux-preview/venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+app/schemas.py:59
+  /workspace/scratch/6d5c370323b7/betton-audit/app/schemas.py:59: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class UserOut(BaseModel):
+
+app/schemas.py:187
+  /workspace/scratch/6d5c370323b7/betton-audit/app/schemas.py:187: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MarketOut(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+5 passed, 3 warnings in 3.48s

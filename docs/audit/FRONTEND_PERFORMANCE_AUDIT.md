@@ -1,5 +1,25 @@
 # React и производительность
 
+## Эксперимент продолжения
+
+Изолированная локальная ветка `audit/code-splitting-20261024`, commit `adb4669`. Скрипт виртуально преобразует imports только при диагностической сборке; исходники приложения не изменены. Копии [скрипта](evidence/diagnostic-splitting.mjs) и [измерений](evidence/splitting-result.json) сохранены в аудите. Скрипт запускается из корня отдельного checkout, файл нужно скопировать туда из evidence.
+
+| Стартовый JS, включая статические shared imports | До | После | Уменьшение |
+|---|---:|---:|---:|
+| Байты | 706233 | 605852 | 100381 (14,21%) |
+| gzip | 207954 | 180529 | 27425 (13,19%) |
+| Brotli | 166509 | 147703 | 18806 (11,29%) |
+
+Проценты = (до − после) / до × 100. Сжатие каждого файла независимо. Это перенос загрузки на позднее время, не удаление функциональности и не замер времени устройства. Предупреждение Vite может остаться; цель не его скрытие.
+
+Отложены ConnectedCreateMarketScreen, ConnectedModerationScreen, ConnectedChatScreen, ConnectedPortfolioScreen, ConnectedPublicProfileScreen, HelpScreen, WalletScreen, CreateMarketResult. В старте оставлены auth, feed, navigation, текущие core detail/trade, onboarding и общие alerts. Каталог гарантов делит модуль с GuarantorAlerts: простой lazy всего модуля не уберёт его из старта. Сначала отделить alerts; затем измерить заново. Для onboarding отдельный chunk оправдан после чтения флага первого входа, с preload сразу для нового пользователя.
+
+**P1 / желательное, доказанное уменьшение сборки:** внедрять небольшими группами. Boundary должен оборачивать область экрана, сохраняя навигацию; экспериментальный общий Suspense не является готовым UX. Preload на намерение открыть вкладку/после завершения критических запросов; не prefetch всех экранов при старте. Ключи request ID и черновики хранятся выше ленивого экрана. Ошибка chunk → понятный экран «Не удалось загрузить раздел», повтор; при устаревшем asset после deploy — предложить обновить приложение только после сохранения черновика/неопределённого запроса. Приёмка: cold/warm переход, offline, удалённый chunk, Back, потеря ответа, длинный черновик. Runtime эксперимент не проверен.
+
+**P2 / важное для актуальности, риск по коду:** api/query.ts:4–12 отключает focus refetch, useAccount не опрашивается по таймеру. После фонового Telegram balance может оставаться старым до нового запроса. StaleTime сам запрос не запускает. Добавить одно обновление account/visible market/orders при возвращении, с debounce; до подтверждения ставки всё равно проверяет сервер. Скрытый polling у TanStack по умолчанию не включён: нельзя считать 5-секундный таймер доказательством запросов в фоне. Сверить actual visibilityChanged Telegram и document.visibilitychange на устройстве.
+
+**P3 / желательное:** ConnectedGuarantors.tsx:75 invalidates весь кеш. invalidate.ts:17–23 инвалидирует market-prefix, дочерние ключи и снова весь markets-prefix: сократить пересекающиеся invalidation после сетевого trace, не считать число вызовов числом HTTP. History/settlements в ConnectedPortfolioScreen:80–105 запрашиваются даже до открытия соответствующего подраздела; использовать enabled по вкладке и prefetch по намерению. Избыточные rerender не измерены; memo повсюду не обоснован.
+
 Сборка выполнена заново на SHA 1c0f7cb. Данные: evidence/frontend-build.txt и bundle-analysis.json; воспроизведение: `node docs/audit/evidence/inspect-bundle.mjs` из корня после установки frontend dependencies.
 
 | Артефакт | Байты | gzip | Brotli |

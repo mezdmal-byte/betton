@@ -1,0 +1,234 @@
+{
+  "source": "1c0f7cb0fa802e3d6a2a77f7873489208a775327",
+  "selected": [
+    "ConnectedCreateMarketScreen",
+    "ConnectedModerationScreen",
+    "ConnectedChatScreen",
+    "ConnectedPortfolioScreen",
+    "ConnectedPublicProfileScreen",
+    "HelpScreen",
+    "WalletScreen",
+    "CreateMarketResult"
+  ],
+  "initialJS": {
+    "bytes": 605852,
+    "gzip": 180529,
+    "brotli": 147703
+  },
+  "artifacts": [
+    {
+      "file": "assets/index-DalZLnIv.js",
+      "initialJS": true,
+      "bytes": 605852,
+      "gzip": 180529,
+      "brotli": 147703,
+      "imports": [],
+      "dynamicImports": [
+        "assets/ConnectedChatScreen-D_TqMIlx.js",
+        "assets/ConnectedCreateMarketScreen-TdeIUjyw.js",
+        "assets/ConnectedModerationScreen-BVAkxmaq.js",
+        "assets/ConnectedPortfolioScreen-CVySbryl.js",
+        "assets/ConnectedPublicProfileScreen-CuRYJKHU.js",
+        "assets/CreateMarketResult-YOnlttby.js",
+        "assets/HelpScreen-D2Ulvg-7.js",
+        "assets/WalletScreen-6sfYjayg.js"
+      ]
+    },
+    {
+      "file": "assets/ConnectedChatScreen-D_TqMIlx.js",
+      "initialJS": false,
+      "bytes": 9269,
+      "gzip": 3645,
+      "brotli": 3149,
+      "imports": [
+        "assets/index-DalZLnIv.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/ConnectedCreateMarketScreen-TdeIUjyw.js",
+      "initialJS": false,
+      "bytes": 15522,
+      "gzip": 5476,
+      "brotli": 4733,
+      "imports": [
+        "assets/index-DalZLnIv.js",
+        "assets/eventsV3-DUhCOHne.js",
+        "assets/eventsV3Copy-BKHRNOnV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/ConnectedModerationScreen-BVAkxmaq.js",
+      "initialJS": false,
+      "bytes": 16456,
+      "gzip": 5319,
+      "brotli": 4590,
+      "imports": [
+        "assets/index-DalZLnIv.js",
+        "assets/eventsV3-DUhCOHne.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/eventsV3-DUhCOHne.js",
+      "initialJS": false,
+      "bytes": 4588,
+      "gzip": 1702,
+      "brotli": 1409,
+      "imports": [
+        "assets/index-DalZLnIv.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/ConnectedPortfolioScreen-CVySbryl.js",
+      "initialJS": false,
+      "bytes": 20263,
+      "gzip": 5820,
+      "brotli": 4994,
+      "imports": [
+        "assets/index-DalZLnIv.js",
+        "assets/chevron-left-C-bnJz50.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/ConnectedPublicProfileScreen-CuRYJKHU.js",
+      "initialJS": false,
+      "bytes": 6685,
+      "gzip": 2160,
+      "brotli": 1841,
+      "imports": [
+        "assets/index-DalZLnIv.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/CreateMarketResult-YOnlttby.js",
+      "initialJS": false,
+      "bytes": 4973,
+      "gzip": 1864,
+      "brotli": 1538,
+      "imports": [
+        "assets/index-DalZLnIv.js",
+        "assets/eventsV3Copy-BKHRNOnV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/eventsV3Copy-BKHRNOnV.js",
+      "initialJS": false,
+      "bytes": 15953,
+      "gzip": 5715,
+      "brotli": 4514,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/HelpScreen-D2Ulvg-7.js",
+      "initialJS": false,
+      "bytes": 8094,
+      "gzip": 2791,
+      "brotli": 2323,
+      "imports": [
+        "assets/index-DalZLnIv.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/WalletScreen-6sfYjayg.js",
+      "initialJS": false,
+      "bytes": 3105,
+      "gzip": 1093,
+      "brotli": 966,
+      "imports": [
+        "assets/index-DalZLnIv.js",
+        "assets/chevron-left-C-bnJz50.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/chevron-left-C-bnJz50.js",
+      "initialJS": false,
+      "bytes": 303,
+      "gzip": 249,
+      "brotli": 204,
+      "imports": [
+        "assets/index-DalZLnIv.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/index-BYn9WZVL.css",
+      "initialJS": false,
+      "bytes": 101088,
+      "gzip": 16565,
+      "brotli": 14193
+    },
+    {
+      "file": "assets/ConnectedChatScreen-H7y6KZoc.css",
+      "initialJS": false,
+      "bytes": 5007,
+      "gzip": 1183,
+      "brotli": 997
+    },
+    {
+      "file": "assets/ConnectedCreateMarketScreen-PpwP3ZQ2.css",
+      "initialJS": false,
+      "bytes": 5547,
+      "gzip": 1431,
+      "brotli": 1174
+    },
+    {
+      "file": "assets/ConnectedModerationScreen-BgdDpFcZ.css",
+      "initialJS": false,
+      "bytes": 3372,
+      "gzip": 928,
+      "brotli": 749
+    },
+    {
+      "file": "assets/ConnectedPortfolioScreen-Dk7r-xUR.css",
+      "initialJS": false,
+      "bytes": 10456,
+      "gzip": 1902,
+      "brotli": 1618
+    },
+    {
+      "file": "assets/ConnectedPublicProfileScreen-BkjdRYK9.css",
+      "initialJS": false,
+      "bytes": 3425,
+      "gzip": 915,
+      "brotli": 747
+    },
+    {
+      "file": "assets/CreateMarketResult-mfybq-9n.css",
+      "initialJS": false,
+      "bytes": 2459,
+      "gzip": 773,
+      "brotli": 611
+    },
+    {
+      "file": "assets/HelpScreen-C5N4Q-th.css",
+      "initialJS": false,
+      "bytes": 2174,
+      "gzip": 725,
+      "brotli": 584
+    },
+    {
+      "file": "assets/WalletScreen-CJCUwUU-.css",
+      "initialJS": false,
+      "bytes": 2771,
+      "gzip": 765,
+      "brotli": 639
+    },
+    {
+      "file": "index.html",
+      "initialJS": false,
+      "bytes": 489,
+      "gzip": 306,
+      "brotli": 195
+    }
+  ],
+  "limits": "Build experiment only: no runtime/navigation or error-boundary validation. Initial sums include statically imported shared chunks; gzip/Brotli are independent per-file streams."
+}

@@ -1,7 +1,0 @@
-.shell {
-  width: var(--shell-width, 390px);
-  height: var(--shell-height, 844px);
-  overflow: hidden;
-  background: var(--color-canvas);
-  position: relative;
-}

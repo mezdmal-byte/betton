@@ -1,0 +1,4063 @@
+{
+  "python_modules": 33,
+  "python_edges": [
+    {
+      "source": "app.main",
+      "target": "app.config",
+      "line": 15,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.database",
+      "line": 16,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.models",
+      "line": 17,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.telegram_auth",
+      "line": 19,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.schemas",
+      "line": 20,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.chat_service",
+      "line": 49,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.discovery",
+      "line": 49,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.history",
+      "line": 49,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.market_access",
+      "line": 49,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.market_service",
+      "line": 49,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.p2p_service",
+      "line": 49,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.sports_provider",
+      "line": 49,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.p2p_ledger",
+      "line": 50,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.ux_v3_routes",
+      "line": 51,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.guarantor_routes",
+      "line": 919,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "app.demo_routes",
+      "line": 922,
+      "delayed": false
+    },
+    {
+      "source": "app.main",
+      "target": "bot.main",
+      "line": 109,
+      "delayed": true
+    },
+    {
+      "source": "app.main",
+      "target": "bot.main",
+      "line": 146,
+      "delayed": true
+    },
+    {
+      "source": "app.main",
+      "target": "app.preview_seed",
+      "line": 177,
+      "delayed": true
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.guarantors",
+      "line": 155,
+      "delayed": true
+    },
+    {
+      "source": "app.main",
+      "target": "app.services.demo_guarantors",
+      "line": 165,
+      "delayed": true
+    },
+    {
+      "source": "app.money_migrate",
+      "target": "app.money_preflight",
+      "line": 24,
+      "delayed": false
+    },
+    {
+      "source": "app.preview_seed",
+      "target": "app.database",
+      "line": 5,
+      "delayed": false
+    },
+    {
+      "source": "app.preview_seed",
+      "target": "app.models",
+      "line": 6,
+      "delayed": false
+    },
+    {
+      "source": "app.preview_seed",
+      "target": "app.money",
+      "line": 7,
+      "delayed": false
+    },
+    {
+      "source": "app.money",
+      "target": "app.models",
+      "line": 59,
+      "delayed": true
+    },
+    {
+      "source": "app.database",
+      "target": "app.config",
+      "line": 8,
+      "delayed": false
+    },
+    {
+      "source": "app.database",
+      "target": "app.models",
+      "line": 49,
+      "delayed": true
+    },
+    {
+      "source": "app.models",
+      "target": "app.config",
+      "line": 21,
+      "delayed": false
+    },
+    {
+      "source": "app.models",
+      "target": "app.database",
+      "line": 22,
+      "delayed": false
+    },
+    {
+      "source": "app.models",
+      "target": "app.money",
+      "line": 60,
+      "delayed": true
+    },
+    {
+      "source": "app.models",
+      "target": "app.money",
+      "line": 65,
+      "delayed": true
+    },
+    {
+      "source": "app.models",
+      "target": "app.money",
+      "line": 127,
+      "delayed": true
+    },
+    {
+      "source": "app.models",
+      "target": "app.money",
+      "line": 132,
+      "delayed": true
+    },
+    {
+      "source": "app.models",
+      "target": "app.money",
+      "line": 139,
+      "delayed": true
+    },
+    {
+      "source": "app.models",
+      "target": "app.money",
+      "line": 144,
+      "delayed": true
+    },
+    {
+      "source": "app.guarantor_routes",
+      "target": "app.database",
+      "line": 6,
+      "delayed": false
+    },
+    {
+      "source": "app.guarantor_routes",
+      "target": "app.telegram_auth",
+      "line": 7,
+      "delayed": false
+    },
+    {
+      "source": "app.guarantor_routes",
+      "target": "app.models",
+      "line": 8,
+      "delayed": false
+    },
+    {
+      "source": "app.guarantor_routes",
+      "target": "app.services.guarantors",
+      "line": 18,
+      "delayed": false
+    },
+    {
+      "source": "app.guarantor_routes",
+      "target": "app.services.market_service",
+      "line": 18,
+      "delayed": false
+    },
+    {
+      "source": "app.guarantor_routes",
+      "target": "app.services.market_access",
+      "line": 18,
+      "delayed": false
+    },
+    {
+      "source": "app.ux_v3_routes",
+      "target": "app.database",
+      "line": 11,
+      "delayed": false
+    },
+    {
+      "source": "app.ux_v3_routes",
+      "target": "app.models",
+      "line": 12,
+      "delayed": false
+    },
+    {
+      "source": "app.ux_v3_routes",
+      "target": "app.telegram_auth",
+      "line": 23,
+      "delayed": false
+    },
+    {
+      "source": "app.ux_v3_routes",
+      "target": "app.services.market_service",
+      "line": 24,
+      "delayed": false
+    },
+    {
+      "source": "app.ux_v3_routes",
+      "target": "app.services.market_access",
+      "line": 24,
+      "delayed": false
+    },
+    {
+      "source": "app.ux_v3_routes",
+      "target": "app.services.discovery",
+      "line": 24,
+      "delayed": false
+    },
+    {
+      "source": "app.ux_v3_routes",
+      "target": "app.services.guarantors",
+      "line": 24,
+      "delayed": false
+    },
+    {
+      "source": "app.ux_v3_routes",
+      "target": "app.services.p2p_service",
+      "line": 24,
+      "delayed": false
+    },
+    {
+      "source": "app.demo_routes",
+      "target": "app.database",
+      "line": 4,
+      "delayed": false
+    },
+    {
+      "source": "app.demo_routes",
+      "target": "app.models",
+      "line": 5,
+      "delayed": false
+    },
+    {
+      "source": "app.demo_routes",
+      "target": "app.telegram_auth",
+      "line": 6,
+      "delayed": false
+    },
+    {
+      "source": "app.demo_routes",
+      "target": "app.services.demo_guarantors",
+      "line": 7,
+      "delayed": false
+    },
+    {
+      "source": "app.demo_routes",
+      "target": "app.services.market_service",
+      "line": 7,
+      "delayed": false
+    },
+    {
+      "source": "app.schemas",
+      "target": "app.models",
+      "line": 6,
+      "delayed": false
+    },
+    {
+      "source": "app.telegram_auth",
+      "target": "app.config",
+      "line": 15,
+      "delayed": false
+    },
+    {
+      "source": "app.telegram_auth",
+      "target": "app.database",
+      "line": 16,
+      "delayed": false
+    },
+    {
+      "source": "app.telegram_auth",
+      "target": "app.models",
+      "line": 17,
+      "delayed": false
+    },
+    {
+      "source": "app.telegram_auth",
+      "target": "app.services.market_service",
+      "line": 162,
+      "delayed": true
+    },
+    {
+      "source": "app.bot.__init__",
+      "target": "bot.main",
+      "line": 3,
+      "delayed": false
+    },
+    {
+      "source": "app.services.sports_provider",
+      "target": "app.config",
+      "line": 8,
+      "delayed": false
+    },
+    {
+      "source": "app.services.discovery",
+      "target": "app.models",
+      "line": 11,
+      "delayed": false
+    },
+    {
+      "source": "app.services.discovery",
+      "target": "app.money",
+      "line": 12,
+      "delayed": false
+    },
+    {
+      "source": "app.services.discovery",
+      "target": "app.schemas",
+      "line": 13,
+      "delayed": false
+    },
+    {
+      "source": "app.services.discovery",
+      "target": "app.services.market_service",
+      "line": 14,
+      "delayed": false
+    },
+    {
+      "source": "app.services.discovery",
+      "target": "app.services.p2p_ledger",
+      "line": 15,
+      "delayed": false
+    },
+    {
+      "source": "app.services.discovery",
+      "target": "app.services.p2p_service",
+      "line": 333,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.money",
+      "line": 2,
+      "delayed": false
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.config",
+      "line": 12,
+      "delayed": false
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.lmsr",
+      "line": 13,
+      "delayed": false
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.models",
+      "line": 14,
+      "delayed": false
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.schemas",
+      "line": 15,
+      "delayed": false
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.services.discovery",
+      "line": 554,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.models",
+      "line": 809,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.services.p2p_service",
+      "line": 157,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.services.p2p_service",
+      "line": 820,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.models",
+      "line": 885,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.models",
+      "line": 886,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.models",
+      "line": 1190,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.services.p2p_service",
+      "line": 905,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_service",
+      "target": "app.services.guarantors",
+      "line": 1217,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_ledger",
+      "target": "app.models",
+      "line": 12,
+      "delayed": false
+    },
+    {
+      "source": "app.services.p2p_ledger",
+      "target": "app.services.market_service",
+      "line": 743,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_ledger",
+      "target": "app.models",
+      "line": 756,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_ledger",
+      "target": "app.services.guarantor_funding",
+      "line": 757,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_ledger",
+      "target": "app.services.guarantor_rewards",
+      "line": 760,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.money",
+      "line": 1,
+      "delayed": false
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 15,
+      "delayed": false
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.market_service",
+      "line": 16,
+      "delayed": false
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.p2p_ledger",
+      "line": 17,
+      "delayed": false
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.market_access",
+      "line": 115,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantors",
+      "line": 166,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 624,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantor_funding",
+      "line": 625,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.database",
+      "line": 699,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantors",
+      "line": 61,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 181,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantor_funding",
+      "line": 182,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantors",
+      "line": 223,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 235,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantor_funding",
+      "line": 236,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 328,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 356,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 358,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantors",
+      "line": 337,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 366,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantor_funding",
+      "line": 369,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantors",
+      "line": 452,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.models",
+      "line": 379,
+      "delayed": true
+    },
+    {
+      "source": "app.services.p2p_service",
+      "target": "app.services.guarantors",
+      "line": 383,
+      "delayed": true
+    },
+    {
+      "source": "app.services.__init__",
+      "target": "app.services.market_service",
+      "line": 1,
+      "delayed": false
+    },
+    {
+      "source": "app.services.ux_v3_governance",
+      "target": "app.services.guarantors",
+      "line": 6,
+      "delayed": false
+    },
+    {
+      "source": "app.services.ux_v3_governance",
+      "target": "app.services.p2p_service",
+      "line": 7,
+      "delayed": false
+    },
+    {
+      "source": "app.services.ux_v3_governance",
+      "target": "app.models",
+      "line": 8,
+      "delayed": false
+    },
+    {
+      "source": "app.services.ux_v3_governance",
+      "target": "app.services.guarantor_funding",
+      "line": 65,
+      "delayed": true
+    },
+    {
+      "source": "app.services.history",
+      "target": "app.models",
+      "line": 10,
+      "delayed": false
+    },
+    {
+      "source": "app.services.history",
+      "target": "app.money",
+      "line": 11,
+      "delayed": false
+    },
+    {
+      "source": "app.services.history",
+      "target": "app.services.p2p_ledger",
+      "line": 12,
+      "delayed": false
+    },
+    {
+      "source": "app.services.history",
+      "target": "app.services.market_service",
+      "line": 13,
+      "delayed": false
+    },
+    {
+      "source": "app.services.chat_service",
+      "target": "app.models",
+      "line": 8,
+      "delayed": false
+    },
+    {
+      "source": "app.services.guarantor_funding",
+      "target": "app.config",
+      "line": 5,
+      "delayed": false
+    },
+    {
+      "source": "app.services.guarantor_funding",
+      "target": "app.models",
+      "line": 6,
+      "delayed": false
+    },
+    {
+      "source": "app.services.guarantor_funding",
+      "target": "app.services.guarantor_rewards",
+      "line": 7,
+      "delayed": false
+    },
+    {
+      "source": "app.services.guarantor_funding",
+      "target": "app.services.guarantors",
+      "line": 55,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantor_funding",
+      "target": "app.services.p2p_ledger",
+      "line": 135,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantor_funding",
+      "target": "app.services.guarantors",
+      "line": 91,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.models",
+      "line": 10,
+      "delayed": false
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.market_service",
+      "line": 23,
+      "delayed": false
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.guarantor_funding",
+      "line": 199,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.market_access",
+      "line": 251,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.p2p_service",
+      "line": 252,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.database",
+      "line": 559,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.p2p_service",
+      "line": 560,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.p2p_service",
+      "line": 152,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.p2p_service",
+      "line": 156,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.p2p_service",
+      "line": 171,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.ux_v3_governance",
+      "line": 266,
+      "delayed": true
+    },
+    {
+      "source": "app.services.guarantors",
+      "target": "app.services.guarantor_funding",
+      "line": 411,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_access",
+      "target": "app.models",
+      "line": 8,
+      "delayed": false
+    },
+    {
+      "source": "app.services.market_access",
+      "target": "app.models",
+      "line": 40,
+      "delayed": true
+    },
+    {
+      "source": "app.services.market_access",
+      "target": "app.models",
+      "line": 47,
+      "delayed": true
+    },
+    {
+      "source": "app.services.demo_guarantors",
+      "target": "app.config",
+      "line": 12,
+      "delayed": false
+    },
+    {
+      "source": "app.services.demo_guarantors",
+      "target": "app.models",
+      "line": 13,
+      "delayed": false
+    },
+    {
+      "source": "app.services.demo_guarantors",
+      "target": "app.services.guarantors",
+      "line": 16,
+      "delayed": false
+    },
+    {
+      "source": "app.services.demo_guarantors",
+      "target": "app.services.market_service",
+      "line": 16,
+      "delayed": false
+    },
+    {
+      "source": "app.services.demo_guarantors",
+      "target": "app.guarantor_routes",
+      "line": 128,
+      "delayed": true
+    },
+    {
+      "source": "app.services.demo_guarantors",
+      "target": "app.database",
+      "line": 251,
+      "delayed": true
+    },
+    {
+      "source": "app.services.demo_guarantors",
+      "target": "app.ux_v3_routes",
+      "line": 159,
+      "delayed": true
+    },
+    {
+      "source": "app.services.demo_guarantors",
+      "target": "app.ux_v3_routes",
+      "line": 169,
+      "delayed": true
+    },
+    {
+      "source": "bot.main",
+      "target": "app.config",
+      "line": 27,
+      "delayed": false
+    }
+  ],
+  "python_all_cycles": [
+    [
+      "app.database",
+      "app.models",
+      "app.money"
+    ],
+    [
+      "app.services.discovery",
+      "app.services.guarantor_funding",
+      "app.services.guarantors",
+      "app.services.market_service",
+      "app.services.p2p_ledger",
+      "app.services.p2p_service",
+      "app.services.ux_v3_governance"
+    ]
+  ],
+  "python_eager_cycles": [],
+  "typescript_modules": 190,
+  "typescript_edges": [
+    {
+      "source": "frontend/src/App.tsx",
+      "target": "frontend/src/app/ConnectedApp.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/App.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/App.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/App.tsx",
+      "target": "frontend/src/theme/ThemeProvider.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/main.tsx",
+      "target": "frontend/src/App.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/product.test.ts",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/product.test.ts",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/product.test.ts",
+      "target": "frontend/src/api/query.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/product.test.ts",
+      "target": "frontend/src/components/FilterSheet/FilterSheet.tsx",
+      "line": 66
+    },
+    {
+      "source": "frontend/src/telegram/webapp.test.ts",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/lib/format.test.ts",
+      "target": "frontend/src/lib/format.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/lib/quote.test.ts",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/lib/quote.test.ts",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/lib/quickTrade.ts",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/lib/quickTrade.ts",
+      "target": "frontend/src/types/market.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/lib/demoMarketActivity.ts",
+      "target": "frontend/src/types/market.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/lib/quote.ts",
+      "target": "frontend/src/types/market.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/lib/quickTrade.test.ts",
+      "target": "frontend/src/lib/constants.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/lib/quickTrade.test.ts",
+      "target": "frontend/src/lib/quickTrade.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/lib/money.test.ts",
+      "target": "frontend/src/lib/money.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/lib/money.test.ts",
+      "target": "frontend/src/lib/datetime.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/lib/time.ts",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/lib/fill.ts",
+      "target": "frontend/src/types/market.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/lib/time.test.ts",
+      "target": "frontend/src/lib/time.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/fixtures/markets.ts",
+      "target": "frontend/src/types/market.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/fixtures/account.ts",
+      "target": "frontend/src/types/account.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/fixtures/account.ts",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/ConnectedProfileScreen.tsx",
+      "target": "frontend/src/api/account.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/ConnectedProfileScreen.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedProfileScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedProfileScreen.tsx",
+      "target": "frontend/src/screens/ProfileScreen.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedProfileScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/ConnectedProfileScreen.tsx",
+      "target": "frontend/src/types/account.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/CreateMarketResult.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/app/CreateMarketResult.tsx",
+      "target": "frontend/src/api/eventsV3Copy.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/CreateMarketResult.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/CreateMarketResult.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/CreateMarketResult.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/CreateMarketResult.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/EventTermsV3Panel.tsx",
+      "target": "frontend/src/api/eventGovernanceV3.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/EventTermsV3Panel.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/EventTermsV3Panel.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/EventTermsV3Panel.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/EventTermsV3Panel.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/api/client.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/api/markets.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/app/GuarantorPanel.tsx",
+      "line": 18
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/lib/legacy.ts",
+      "line": 19
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 20
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/screens/MarketDetailScreen.tsx",
+      "line": 21
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/screens/MarketDetailScreen.tsx",
+      "line": 22
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 24
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/app/AdminMarketPanel.tsx",
+      "line": 25
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/api/account.ts",
+      "line": 26
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/app/EventTermsV3Panel.tsx",
+      "line": 27
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 28
+    },
+    {
+      "source": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "target": "frontend/src/api/eventsV3.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "target": "frontend/src/screens/CreateEventWizard.tsx",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/moderationV3.test.ts",
+      "target": "frontend/src/api/eventsV3.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/moderationV3.test.ts",
+      "target": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/moderationV3.test.ts",
+      "target": "frontend/src/app/moderationV3.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/navigation.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/app/navigation.ts",
+      "target": "frontend/src/types/market.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/GuarantorRewardDetails.test.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/GuarantorRewardDetails.test.tsx",
+      "target": "frontend/src/app/GuarantorV3Panel.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/GuarantorRewardDetails.test.tsx",
+      "target": "frontend/src/app/GuarantorCancellationForm.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/GuarantorRewardDetails.test.tsx",
+      "target": "frontend/src/app/GuarantorReputation.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/GuarantorRewardDetails.test.tsx",
+      "target": "frontend/src/app/GuarantorRewardDetails.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/IntegrationUnavailableScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/IntegrationUnavailableScreen.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedPublicProfileScreen.tsx",
+      "target": "frontend/src/api/account.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/ConnectedPublicProfileScreen.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedPublicProfileScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedPublicProfileScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedPublicProfileScreen.tsx",
+      "target": "frontend/src/lib/money.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/ConnectedPublicProfileScreen.tsx",
+      "target": "frontend/src/screens/PublicProfileScreen.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/ConnectedPublicProfileScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/GuarantorReputation.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/GuarantorReputation.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/moderationV3.ts",
+      "target": "frontend/src/api/eventsV3.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/api/idempotency.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/api/markets.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/api/orders.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "line": 18
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 19
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "line": 20
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/lib/useDebouncedValue.ts",
+      "line": 21
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 22
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/lib/quickTrade.ts",
+      "line": 28
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 29
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 30
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 31
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 32
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 33
+    },
+    {
+      "source": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "target": "frontend/src/app/invalidate.ts",
+      "line": 35
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/api/moderation.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/api/eventGovernanceV3.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/api/eventsV3.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "target": "frontend/src/app/moderationV3.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/api/client.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/components/BottomNavigation/NotificationBadgeContext.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedNotificationsScreen.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/api/account.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/api/chat.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/api/markets.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/types/account.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedChatScreen.tsx",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedCreateMarketScreen.tsx",
+      "line": 18
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedMarketDetailScreen.tsx",
+      "line": 19
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "line": 20
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "line": 21
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "line": 22
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedModerationScreen.tsx",
+      "line": 23
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "line": 24
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "line": 25
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "line": 26
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedProfileScreen.tsx",
+      "line": 27
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedPublicProfileScreen.tsx",
+      "line": 28
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/CreateMarketResult.tsx",
+      "line": 29
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/screens/AuthExpiredScreen.tsx",
+      "line": 30
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/screens/HelpScreen.tsx",
+      "line": 31
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/screens/MarketDetailScreen.tsx",
+      "line": 32
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/ConnectedGuarantors.tsx",
+      "line": 33
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/screens/OnboardingScreen.tsx",
+      "line": 34
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/screens/SystemStateScreen.tsx",
+      "line": 35
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/screens/WalletScreen.tsx",
+      "line": 36
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/navigation.ts",
+      "line": 37
+    },
+    {
+      "source": "frontend/src/app/ConnectedApp.tsx",
+      "target": "frontend/src/app/session.ts",
+      "line": 38
+    },
+    {
+      "source": "frontend/src/app/ConnectedChatScreen.tsx",
+      "target": "frontend/src/api/chat.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedChatScreen.tsx",
+      "target": "frontend/src/api/markets.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/ConnectedChatScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/ConnectedChatScreen.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/ConnectedChatScreen.tsx",
+      "target": "frontend/src/screens/ChatScreen.tsx",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/navigation.test.ts",
+      "target": "frontend/src/app/navigation.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/api/client.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/api/eventGovernanceV3.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/api/moderation.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/app/AdminMarketPanel.tsx",
+      "target": "frontend/src/app/invalidate.ts",
+      "line": 18
+    },
+    {
+      "source": "frontend/src/app/IntegrationUnavailableScreen.test.tsx",
+      "target": "frontend/src/app/IntegrationUnavailableScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/invalidate.ts",
+      "target": "frontend/src/api/query.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/ConnectedNotificationsScreen.tsx",
+      "target": "frontend/src/api/client.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/ConnectedNotificationsScreen.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedNotificationsScreen.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedNotificationsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedNotificationsScreen.tsx",
+      "target": "frontend/src/screens/NotificationsScreen.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/api/orders.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/api/portfolio.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 18
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/screens/PortfolioScreen.tsx",
+      "line": 22
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/screens/ActivityScreen.tsx",
+      "line": 23
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/types/account.ts",
+      "line": 24
+    },
+    {
+      "source": "frontend/src/app/ConnectedPortfolioScreen.tsx",
+      "target": "frontend/src/app/invalidate.ts",
+      "line": 25
+    },
+    {
+      "source": "frontend/src/app/GuarantorPanel.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/GuarantorPanel.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/GuarantorPanel.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/GuarantorPanel.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/app/GuarantorPanel.tsx",
+      "target": "frontend/src/app/useClock.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/app/GuarantorPanel.tsx",
+      "target": "frontend/src/app/GuarantorV3Panel.tsx",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "target": "frontend/src/api/account.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "target": "frontend/src/screens/MyEventsScreen.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedMyMarketsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/ConnectedGuarantors.tsx",
+      "target": "frontend/src/api/client.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedGuarantors.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/ConnectedGuarantors.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/app/ConnectedGuarantors.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/app/ConnectedGuarantors.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 19
+    },
+    {
+      "source": "frontend/src/app/ConnectedGuarantors.tsx",
+      "target": "frontend/src/app/GuarantorReputation.tsx",
+      "line": 20
+    },
+    {
+      "source": "frontend/src/app/ConnectedGuarantors.tsx",
+      "target": "frontend/src/app/useClock.ts",
+      "line": 22
+    },
+    {
+      "source": "frontend/src/app/session.ts",
+      "target": "frontend/src/api/account.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/session.ts",
+      "target": "frontend/src/api/authExpiry.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/session.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/session.ts",
+      "target": "frontend/src/api/query.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/api/eventGovernanceV3.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/app/GuarantorReputation.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/app/IntegrationUnavailableScreen.tsx",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/app/GuarantorRewardDetails.tsx",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/GuarantorV3Panel.tsx",
+      "target": "frontend/src/app/GuarantorCancellationForm.tsx",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/GuarantorRewardDetails.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/app/GuarantorCancellationForm.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/app/GuarantorCancellationForm.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/api/markets.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/api/account.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/components/FilterSheet/FilterSheet.tsx",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/lib/useDebouncedValue.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/screens/MarketsScreen.tsx",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/app/ConnectedMarketsScreen.tsx",
+      "target": "frontend/src/app/ConnectedQuickTrade.tsx",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/client.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/errors.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/idempotency.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/markets.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/orders.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/query.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/share.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/lib/useDebouncedValue.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/screens/OwnPriceScreen.tsx",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 18
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 19
+    },
+    {
+      "source": "frontend/src/app/ConnectedOwnPriceScreen.tsx",
+      "target": "frontend/src/app/invalidate.ts",
+      "line": 20
+    },
+    {
+      "source": "frontend/src/i18n/index.ts",
+      "target": "frontend/src/i18n/messages.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/i18n/index.ts",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/i18n/index.ts",
+      "target": "frontend/src/i18n/messages.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/i18n/index.ts",
+      "target": "frontend/src/i18n/messages.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/i18n/i18n.test.ts",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/i18n/i18n.test.ts",
+      "target": "frontend/src/lib/time.ts",
+      "line": 46
+    },
+    {
+      "source": "frontend/src/api/eventGovernanceV3.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/eventGovernanceV3.ts",
+      "target": "frontend/src/api/share.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/eventGovernanceV3.ts",
+      "target": "frontend/src/api/eventsV3.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/api/eventsV3.test.ts",
+      "target": "frontend/src/api/eventsV3.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/api/markets.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/markets.ts",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/markets.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/api/client.test.ts",
+      "target": "frontend/src/api/authExpiry.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/client.test.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/api/errors.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/moderation.test.ts",
+      "target": "frontend/src/api/moderation.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/eventsV3.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/eventsV3.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/guarantors.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/guarantors.ts",
+      "target": "frontend/src/api/share.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/orders.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/orders.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/api/orders.ts",
+      "target": "frontend/src/lib/quickTrade.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/api/sports.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/sports.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/portfolio.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/portfolio.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/markets.test.ts",
+      "target": "frontend/src/api/markets.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/moderation.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/moderation.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/share.test.ts",
+      "target": "frontend/src/api/share.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/eventsV3Copy.ts",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/chat.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/chat.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/api/adapters.test.ts",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 23
+    },
+    {
+      "source": "frontend/src/api/adapters.test.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 24
+    },
+    {
+      "source": "frontend/src/api/orders.test.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/orders.test.ts",
+      "target": "frontend/src/api/errors.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/api/orders.test.ts",
+      "target": "frontend/src/api/idempotency.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/api/orders.test.ts",
+      "target": "frontend/src/api/orders.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/api/orders.test.ts",
+      "target": "frontend/src/api/adapters.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/api/orders.test.ts",
+      "target": "frontend/src/api/markets.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/api/adapters.ts",
+      "target": "frontend/src/types/account.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/adapters.ts",
+      "target": "frontend/src/types/account.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/adapters.ts",
+      "target": "frontend/src/types/market.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/api/adapters.ts",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/api/adapters.ts",
+      "target": "frontend/src/lib/money.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/api/adapters.ts",
+      "target": "frontend/src/lib/time.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/api/adapters.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 23
+    },
+    {
+      "source": "frontend/src/api/account.ts",
+      "target": "frontend/src/api/client.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/account.ts",
+      "target": "frontend/src/api/types.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/share.ts",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/guarantors.test.ts",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/api/client.ts",
+      "target": "frontend/src/api/authExpiry.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/api/client.ts",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/OnboardingScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/OnboardingScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/OnboardingScreen.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/OnboardingScreen.tsx",
+      "target": "frontend/src/screens/EventTypeInfo.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/OnboardingScreen.tsx",
+      "target": "frontend/src/screens/OnboardingAssets.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/MyEvents.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/MyEvents.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/MyEvents.stories.tsx",
+      "target": "frontend/src/screens/MyEventsScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/app/GuarantorReputation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/components/Chip/Chip.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/components/ThemeToggle/ThemeToggle.tsx",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/fixtures/account.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/screens/CreateMarketScreen.tsx",
+      "target": "frontend/src/types/account.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/screens/SystemStateScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/screens/EventTypeInfo.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/screens/EventTypeInfo.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/EventTypeInfo.tsx",
+      "target": "frontend/src/screens/OnboardingAssets.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/AuthExpired.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/AuthExpired.stories.tsx",
+      "target": "frontend/src/screens/AuthExpiredScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 23
+    },
+    {
+      "source": "frontend/src/screens/OwnPriceScreen.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 25
+    },
+    {
+      "source": "frontend/src/screens/OwnPrice.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/OwnPrice.stories.tsx",
+      "target": "frontend/src/screens/OwnPriceScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/AccountUx.test.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/AccountUx.test.tsx",
+      "target": "frontend/src/components/BottomNavigation/NotificationBadgeContext.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/AccountUx.test.tsx",
+      "target": "frontend/src/screens/NotificationsScreen.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/AccountUx.test.tsx",
+      "target": "frontend/src/screens/PortfolioScreen.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/api/guarantors.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/api/eventsV3.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/app/GuarantorReputation.tsx",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/api/eventsV3Copy.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/screens/CreateEventWizard.tsx",
+      "target": "frontend/src/screens/EventTypeInfo.tsx",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/screens/PublicProfile.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/PublicProfile.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/PublicProfile.stories.tsx",
+      "target": "frontend/src/screens/PublicProfileScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/Portfolio.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Portfolio.stories.tsx",
+      "target": "frontend/src/screens/PortfolioScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/Activity.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Activity.stories.tsx",
+      "target": "frontend/src/fixtures/account.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/Activity.stories.tsx",
+      "target": "frontend/src/screens/ActivityScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/CreateMarket.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/CreateMarket.stories.tsx",
+      "target": "frontend/src/fixtures/account.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/CreateMarket.stories.tsx",
+      "target": "frontend/src/screens/CreateMarketScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/MarketDetail.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/MarketDetail.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/MarketDetail.stories.tsx",
+      "target": "frontend/src/screens/MarketDetailScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/Moderation.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Moderation.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/Moderation.stories.tsx",
+      "target": "frontend/src/screens/ModerationScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/createEventWizard.test.ts",
+      "target": "frontend/src/api/eventsV3.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/createEventWizard.test.ts",
+      "target": "frontend/src/screens/CreateEventWizard.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/createEventWizard.test.ts",
+      "target": "frontend/src/app/CreateMarketResult.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/createEventWizard.test.ts",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/createEventWizard.test.ts",
+      "target": "frontend/src/api/eventsV3Copy.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/CreateResult.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/CreateResult.stories.tsx",
+      "target": "frontend/src/app/CreateMarketResult.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/CreateResult.stories.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/SystemState.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/SystemState.stories.tsx",
+      "target": "frontend/src/screens/SystemStateScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/Profile.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Profile.stories.tsx",
+      "target": "frontend/src/fixtures/account.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/Profile.stories.tsx",
+      "target": "frontend/src/screens/ProfileScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/MyEventsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/MyEventsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/MyEventsScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/MyEventsScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/MyEventsScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/MyEventsScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/MyEventsScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/components/IconButton/IconButton.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/components/ThemeToggle/ThemeToggle.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/fixtures/account.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/lib/time.ts",
+      "line": 17
+    },
+    {
+      "source": "frontend/src/screens/PortfolioScreen.tsx",
+      "target": "frontend/src/types/account.ts",
+      "line": 25
+    },
+    {
+      "source": "frontend/src/screens/Markets.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Markets.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/Markets.stories.tsx",
+      "target": "frontend/src/screens/MarketsScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/Onboarding.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Onboarding.stories.tsx",
+      "target": "frontend/src/screens/OnboardingScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/Wallet.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Wallet.stories.tsx",
+      "target": "frontend/src/screens/WalletScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/QuickTrade.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/QuickTrade.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/QuickTrade.stories.tsx",
+      "target": "frontend/src/screens/QuickTradeScreen.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/components/Avatar/Avatar.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/components/Chip/Chip.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/components/ThemeToggle/ThemeToggle.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/fixtures/account.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/theme/ThemeProvider.tsx",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/screens/ProfileScreen.tsx",
+      "target": "frontend/src/types/account.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.test.ts",
+      "target": "frontend/src/screens/MarketsScreen.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Notifications.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Notifications.stories.tsx",
+      "target": "frontend/src/screens/NotificationsScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/AuthExpiredScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/screens/AuthExpiredScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/PublicProfileScreen.tsx",
+      "target": "frontend/src/components/Avatar/Avatar.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/PublicProfileScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/PublicProfileScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/PublicProfileScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/PublicProfileScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/PublicProfileScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/PublicProfileScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/PublicProfileScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/Help.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/Help.stories.tsx",
+      "target": "frontend/src/screens/HelpScreen.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/NotificationsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/NotificationsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/NotificationsScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/NotificationsScreen.tsx",
+      "target": "frontend/src/components/Tabs/Tabs.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/NotificationsScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/NotificationsScreen.tsx",
+      "target": "frontend/src/components/ThemeToggle/ThemeToggle.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/NotificationsScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/IconButton/IconButton.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/MarketCard/MarketCard.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/MarketFilters/MarketFilters.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/SearchField/SearchField.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/components/ThemeToggle/ThemeToggle.tsx",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/screens/MarketsScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/screens/ActivityScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/ActivityScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/ActivityScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/ActivityScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/ActivityScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/ActivityScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/ActivityScreen.tsx",
+      "target": "frontend/src/lib/time.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/ActivityScreen.tsx",
+      "target": "frontend/src/types/account.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/ChatScreen.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/HelpScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/WalletScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/WalletScreen.tsx",
+      "target": "frontend/src/types/account.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/WalletScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/WalletScreen.tsx",
+      "target": "frontend/src/components/Chip/Chip.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/WalletScreen.tsx",
+      "target": "frontend/src/components/IconButton/IconButton.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/WalletScreen.tsx",
+      "target": "frontend/src/components/Tabs/Tabs.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/WalletScreen.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/WalletScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/screens/QuickTradeScreen.tsx",
+      "target": "frontend/src/screens/MarketsScreen.tsx",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/screens/QuickTradeScreen.tsx",
+      "target": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/QuickTradeScreen.tsx",
+      "target": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/QuickTradeScreen.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/QuickTradeScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/components/MarketChart/MarketChart.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/components/MarketStatusPanel/MarketStatusPanel.tsx",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/components/OrderBookPanel/OrderBookPanel.tsx",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 13
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/screens/MarketDetailScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 22
+    },
+    {
+      "source": "frontend/src/screens/ModerationScreen.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/screens/ModerationScreen.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/screens/ModerationScreen.tsx",
+      "target": "frontend/src/components/TextField/TextField.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/screens/ModerationScreen.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/screens/ModerationScreen.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/theme/theme.test.ts",
+      "target": "frontend/src/theme/theme.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/theme/theme.ts",
+      "target": "frontend/src/telegram/webapp.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/theme/ThemeProvider.tsx",
+      "target": "frontend/src/theme/theme.ts",
+      "line": 20
+    },
+    {
+      "source": "frontend/src/prototypes/app/data.ts",
+      "target": "frontend/src/prototypes/feed/fixture.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/prototypes/app/main.tsx",
+      "target": "frontend/src/prototypes/app/data.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/prototypes/app/main.tsx",
+      "target": "frontend/src/prototypes/feed/fixture.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/prototypes/feed/Harness.tsx",
+      "target": "frontend/src/prototypes/feed/variants/ClockFeed.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/prototypes/feed/Harness.tsx",
+      "target": "frontend/src/prototypes/feed/variants/RailFeed.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/prototypes/feed/Harness.tsx",
+      "target": "frontend/src/prototypes/feed/variants/RuleFeed.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/prototypes/feed/main.tsx",
+      "target": "frontend/src/prototypes/feed/Harness.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/prototypes/feed/variants/RailFeed.tsx",
+      "target": "frontend/src/prototypes/feed/fixture.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/prototypes/feed/variants/ClockFeed.tsx",
+      "target": "frontend/src/prototypes/feed/fixture.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/prototypes/feed/variants/RuleFeed.tsx",
+      "target": "frontend/src/prototypes/feed/fixture.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/OutcomeQuote/OutcomeQuote.stories.tsx",
+      "target": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/components/Avatar/Avatar.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/components/Avatar/Avatar.stories.tsx",
+      "target": "frontend/src/components/Avatar/Avatar.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/IconButton/IconButton.stories.tsx",
+      "target": "frontend/src/components/IconButton/IconButton.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/IconButton/IconButton.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/Button/Button.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/Button/Button.stories.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/MarketChart/MarketChart.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/MarketChart/MarketChart.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/MarketChart/MarketChart.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/MarketChart/MarketChart.stories.tsx",
+      "target": "frontend/src/components/MarketChart/MarketChart.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OrderBookPanel/OrderBookPanel.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/OrderBookPanel/OrderBookPanel.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OrderBookPanel/OrderBookPanel.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/OrderBookPanel/OrderBookPanel.tsx",
+      "target": "frontend/src/components/OrderBookRow/OrderBookRow.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/components/OrderBookPanel/OrderBookPanel.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/components/TextField/TextField.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/components/AmountInput/AmountInput.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/components/MarketChart/MarketChart.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 9
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 10
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/lib/quickTrade.ts",
+      "line": 16
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 21
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 23
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "target": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.tsx",
+      "line": 24
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.stories.tsx",
+      "target": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/SearchField/SearchField.stories.tsx",
+      "target": "frontend/src/components/SearchField/SearchField.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/SearchField/SearchField.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/MarketFilters/MarketFilters.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/components/MarketFilters/MarketFilters.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/MarketFilters/MarketFilters.stories.tsx",
+      "target": "frontend/src/components/MarketFilters/MarketFilters.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/MarketCard/MarketCard.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 11
+    },
+    {
+      "source": "frontend/src/components/MarketCard/MarketCard.stories.tsx",
+      "target": "frontend/src/components/MarketCard/MarketCard.tsx",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/components/MarketCard/MarketCard.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/components/MarketCard/MarketCard.tsx",
+      "target": "frontend/src/lib/quote.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/MarketCard/MarketCard.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/MarketCard/MarketCard.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/MarketCard/MarketCard.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/components/MarketCard/MarketCard.tsx",
+      "target": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/components/StatusMessage/StatusMessage.stories.tsx",
+      "target": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/StatusMessage/StatusMessage.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/ThemeToggle/ThemeToggle.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/components/ThemeToggle/ThemeToggle.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/ThemeToggle/ThemeToggle.tsx",
+      "target": "frontend/src/theme/ThemeProvider.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/AmountInput/AmountInput.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/AmountInput/AmountInput.stories.tsx",
+      "target": "frontend/src/components/AmountInput/AmountInput.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/DateTimeField/DateTimeField.stories.tsx",
+      "target": "frontend/src/components/DateTimeField/DateTimeField.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/DateTimeField/DateTimeField.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/RangeSelector/RangeSelector.stories.tsx",
+      "target": "frontend/src/components/RangeSelector/RangeSelector.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/RangeSelector/RangeSelector.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.test.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.test.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.test.tsx",
+      "target": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.test.tsx",
+      "target": "frontend/src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.test.tsx",
+      "target": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.tsx",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/components/FilterSheet/FilterSheet.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/FilterSheet/FilterSheet.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/FilterSheet/FilterSheet.tsx",
+      "target": "frontend/src/components/Chip/Chip.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/FilterSheet/FilterSheet.stories.tsx",
+      "target": "frontend/src/layouts/PhoneShell.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/FilterSheet/FilterSheet.stories.tsx",
+      "target": "frontend/src/components/FilterSheet/FilterSheet.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.test.tsx",
+      "target": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.test.ts",
+      "target": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.stories.tsx",
+      "target": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/components/AmountInput/AmountInput.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/components/Button/Button.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/components/OutcomeQuote/OutcomeQuote.tsx",
+      "line": 4
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/lib/fill.ts",
+      "line": 5
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 6
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 7
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 12
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/api/types.ts",
+      "line": 14
+    },
+    {
+      "source": "frontend/src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "target": "frontend/src/components/GuarantorTradeCosts/GuarantorTradeCosts.tsx",
+      "line": 15
+    },
+    {
+      "source": "frontend/src/components/MarketStatusPanel/MarketStatusPanel.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/MarketStatusPanel/MarketStatusPanel.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OrderBookRow/OrderBookRow.stories.tsx",
+      "target": "frontend/src/fixtures/markets.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/OrderBookRow/OrderBookRow.stories.tsx",
+      "target": "frontend/src/components/OrderBookRow/OrderBookRow.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/OrderBookRow/OrderBookRow.tsx",
+      "target": "frontend/src/lib/format.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/components/OrderBookRow/OrderBookRow.tsx",
+      "target": "frontend/src/types/market.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "target": "frontend/src/i18n/index.ts",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "target": "frontend/src/components/BottomNavigation/NotificationBadgeContext.ts",
+      "line": 8
+    },
+    {
+      "source": "frontend/src/components/BottomNavigation/BottomNavigation.stories.tsx",
+      "target": "frontend/src/components/BottomNavigation/BottomNavigation.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/Tabs/Tabs.stories.tsx",
+      "target": "frontend/src/components/Tabs/Tabs.tsx",
+      "line": 3
+    },
+    {
+      "source": "frontend/src/components/Tabs/Tabs.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 1
+    },
+    {
+      "source": "frontend/src/components/Chip/Chip.stories.tsx",
+      "target": "frontend/src/components/Chip/Chip.tsx",
+      "line": 2
+    },
+    {
+      "source": "frontend/src/components/Chip/Chip.tsx",
+      "target": "frontend/src/lib/cx.ts",
+      "line": 2
+    }
+  ],
+  "typescript_cycles": [],
+  "limits": "Python AST includes function-local edges; TS regex includes type/test/story edges; not runtime tracing or plugin/generated imports."
+}
