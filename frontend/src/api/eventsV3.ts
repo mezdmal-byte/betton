@@ -1,3 +1,4 @@
+import { newRequestId } from "./idempotency";
 import { apiRequest } from "./client";
 import type { MarketOut } from "./types";
 
@@ -220,10 +221,10 @@ export function buildEventBody(draft: EventDraft): CreateEventBody {
   };
 }
 
-export async function createEvent(body: CreateEventBody): Promise<MarketOut> {
+export async function createEvent(body: CreateEventBody, requestId = newRequestId()): Promise<MarketOut> {
   const { data } = await apiRequest<MarketOut>("/ux-v3/events", {
     method: "POST",
-    jsonBody: body,
+    jsonBody: { ...body, request_id: requestId },
   });
   return data;
 }

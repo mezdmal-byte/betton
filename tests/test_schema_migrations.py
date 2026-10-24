@@ -78,3 +78,31 @@ def test_pg_populated_baseline_bigint_preserves_fk_unique_and_transaction_rollba
         isolated.dispose()
         with engine.begin() as conn:
             conn.exec_driver_sql(f'DROP SCHEMA {schema} CASCADE')
+
+
+def test_revision_three_upgrade_failure_rolls_back_without_touching_users(tmp_path, monkeypatch):
+    from app.migrations import event_intents
+    db = create_engine('sqlite:///' + str(tmp_path / 'revision2.db'))
+    enforce_sqlite_foreign_keys(db)
+    upgrade(db)
+    with db.begin() as conn:
+        conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance,balance_nano) VALUES(1,123,'preserved',1,1000000000)")
+        conn.exec_driver_sql('DROP TABLE event_creation_intents')
+        conn.exec_driver_sql('UPDATE betton_schema_version SET revision=2')
+    original = event_intents.upgrade
+    def failure(conn):
+        original(conn)
+        raise RuntimeError('migration failure')
+    monkeypatch.setattr(event_intents, 'upgrade', failure)
+    with pytest.raises(RuntimeError, match='migration failure'):
+        upgrade(db)
+    with db.connect() as conn:
+        assert conn.exec_driver_sql('SELECT revision FROM betton_schema_version').scalar_one() == 2
+        assert conn.exec_driver_sql('SELECT balance_nano FROM users WHERE id=1').scalar_one() == 1000000000
+        assert 'event_creation_intents' not in inspect(conn).get_table_names()
+    monkeypatch.setattr(event_intents, 'upgrade', original)
+    upgrade(db); upgrade(db)
+    assert_schema_ready(db)
+    with db.connect() as conn:
+        assert conn.exec_driver_sql('SELECT telegram_id FROM users WHERE id=1').scalar_one() == 123
+    db.dispose()

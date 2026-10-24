@@ -1,6 +1,7 @@
+import { pendingEventIntent, submitEventIntent } from "../api/eventCreationIntent";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { buildEventBody, createEvent, type EventDraft } from "../api/eventsV3";
+import { buildEventBody, type EventDraft } from "../api/eventsV3";
 import { errorDetail } from "../api/errors";
 import { guarantors } from "../api/guarantors";
 import { rememberShareToken } from "../api/share";
@@ -36,7 +37,10 @@ export function ConnectedCreateMarketScreen({
     refetchInterval: 15_000,
   });
   const mutation = useMutation({
-    mutationFn: (draft: EventDraft) => createEvent(buildEventBody(draft)),
+    mutationFn: (draft: EventDraft | undefined) => {
+      if (!userId) throw new Error("Откройте приложение через Telegram.");
+      return submitEventIntent(userId, draft ? buildEventBody(draft) : undefined);
+    },
     retry: false,
     onSuccess: (market) => {
       if (market.share_token) rememberShareToken(market.id, market.share_token);
@@ -58,7 +62,12 @@ export function ConnectedCreateMarketScreen({
     },
   });
 
+  let pending = false;
+  try { pending = !!userId && !!pendingEventIntent(userId); } catch { pending = true; }
+
   return (
+    <>
+    {pending ? <div role="status">Результат предыдущего создания события неизвестен. <button disabled={mutation.isPending} onClick={() => mutation.mutate(undefined)}>Проверить результат</button></div> : null}
     <CreateEventWizard
       key={userId ?? "guest"}
       userId={userId}
@@ -79,5 +88,6 @@ export function ConnectedCreateMarketScreen({
         void directory.refetch();
       }}
     />
+    </>
   );
 }

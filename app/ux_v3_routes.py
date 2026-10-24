@@ -1,12 +1,17 @@
 """Additive UX v3 contracts. Existing events, matching and fee arithmetic stay unchanged."""
 
 from datetime import datetime, timedelta
-from typing import Literal
+from typing import Literal, ClassVar
+from uuid import UUID
+import hashlib
+import json
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, HttpUrl, model_validator
 from sqlalchemy.orm import Session
+from sqlalchemy import text
+from fastapi.encoders import jsonable_encoder
 
 from app.database import get_db
 from app.models import (
@@ -45,6 +50,7 @@ class Source(BaseModel):
 
 
 class EventInput(BaseModel):
+    check_future: ClassVar[bool] = True
     event_type: Literal["public", "private", "guarantor"]
     question: str = Field(min_length=8, max_length=512)
     outcomes: list[str] = Field(min_length=2, max_length=2)
@@ -85,7 +91,7 @@ class EventInput(BaseModel):
             not value.strip() or len(value) > 4000 for value in self.criteria
         ):
             raise ValueError("Укажите критерии обоих исходов")
-        if ms.as_utc(self.close_at) <= ms.utcnow() or ms.as_utc(
+        if (self.check_future and ms.as_utc(self.close_at) <= ms.utcnow()) or ms.as_utc(
             self.ends_at
         ) < ms.as_utc(self.close_at):
             raise ValueError("Проверьте окончание приёма ставок и завершение события")
@@ -142,13 +148,45 @@ def visible(db, mid, user, request):
     return market, config_for(db, mid)
 
 
+class EventCreateInput(EventInput):
+    # A completed request remains replayable after the betting cutoff.
+    check_future: ClassVar[bool] = False
+    request_id: UUID
+
+
+def event_payload(req: EventCreateInput) -> dict:
+    body = req.model_dump(mode="json", exclude={"request_id"})
+    for field in ("close_at", "ends_at"):
+        body[field] = ms.as_utc(getattr(req, field)).isoformat()
+    return body
+
+
 @router.post("/events")
 def create_event(
-    req: EventInput,
+    req: EventCreateInput,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     try:
+        body = event_payload(req)
+        payload_hash = hashlib.sha256(json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        params = {"uid": user.id, "key": str(req.request_id), "hash": payload_hash}
+        claim = db.execute(text("""INSERT INTO event_creation_intents(user_id,operation,request_id,payload_hash)
+            VALUES(:uid,'create_event',:key,:hash)
+            ON CONFLICT(user_id,operation,request_id) DO NOTHING"""), params)
+        if claim.rowcount == 0:
+            previous = db.execute(text("""SELECT payload_hash,response FROM event_creation_intents
+                WHERE user_id=:uid AND operation='create_event' AND request_id=:key"""), params).mappings().one()
+            if previous['payload_hash'] != payload_hash:
+                raise HTTPException(409, "Этот идентификатор уже использован для другого события")
+            if previous['response'] is None:
+                raise HTTPException(409, "Результат создания события ещё не определён")
+            result = json.loads(previous['response'])
+            db.rollback()
+            return result
+        # Time-sensitive validation applies only to a new intent, never to replay.
+        if ms.as_utc(req.close_at) <= ms.utcnow():
+            raise HTTPException(422, "Приём ставок должен завершаться в будущем")
         private = req.event_type != "public"
         market = Market(
             question=req.question,
@@ -180,7 +218,7 @@ def create_event(
             market_id=market.id,
             event_type=req.event_type,
             ends_at=ms._naive_utc(req.ends_at),
-            terms=req.model_dump(mode="json"),
+            terms=body,
             revision=1,
             moderator_edited=False,
             reward={},
@@ -202,8 +240,13 @@ def create_event(
                     result_due_at=req.ends_at + timedelta(hours=24),
                 ),
             )
+        db.flush()
+        result = jsonable_encoder(discovery.attach_market_views(db, [market], include_share_token=True)[0])
+        db.execute(text("""UPDATE event_creation_intents SET response=:response
+            WHERE user_id=:uid AND operation='create_event' AND request_id=:key"""),
+            {**params, "response": json.dumps(result, ensure_ascii=False)})
         db.commit()
-        return discovery.attach_market_views(db, [market], include_share_token=True)[0]
+        return result
     except Exception:
         db.rollback()
         raise
