@@ -195,8 +195,6 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     # Preview-only: production's /auth/telegram is authoritative for admin status.
     # Persist the verified admin Telegram ID in this process so service functions
     # that reload the local user still see the same admin identity.
-    if settings.telegram_auth_proxy_url and tg_user.get("is_admin"):
-        settings.admin_telegram_id = int(tg_user["id"])
 
     return user
 

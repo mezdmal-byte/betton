@@ -34,13 +34,14 @@ def test_preview_auth_can_delegate_to_production_verifier(client, monkeypatch):
     assert body["telegram_id"] == 42424242
     assert body["telegram_username"] == "preview_admin"
     assert body["display_name"] == "Preview Admin"
-    assert body["is_admin"] is True
+    assert body["is_admin"] is False
+    assert settings.admin_tg_id() is None
 
     moderation = client.get(
         "/moderation/markets",
         headers={"Authorization": "tma proxy-signed-init-data"},
     )
-    assert moderation.status_code == 200
+    assert moderation.status_code == 403
 
 
 def test_preview_auth_proxy_requires_https(client, monkeypatch):

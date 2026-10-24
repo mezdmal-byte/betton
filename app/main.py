@@ -1,3 +1,4 @@
+from app.webhook_security import require_webhook_secret, proxy_headers
 import asyncio
 from datetime import timedelta
 import logging
@@ -133,19 +134,8 @@ async def _cache_bot_username() -> None:
 
 
 async def setup_webhook_task():
-    await asyncio.sleep(1)
+    # Only resolve metadata; webhook registration is an explicit deployment step.
     await _cache_bot_username()
-    bot, _dp = _maybe_bot()
-    if bot is None or not settings.is_public_https():
-        print("Webhook пропущен: нужен BOT_TOKEN и публичный HTTPS (MINI_APP_URL / RENDER_EXTERNAL_URL).")
-        return
-    url = settings.webapp_base() + "/webhook"
-    await bot.set_webhook(url=url)
-    print(f"Вебхук Telegram: {url}")
-    print(f"Mini App: {settings.webapp_base()}/v2/")
-    from bot.main import sync_menu_button
-
-    await sync_menu_button(bot)
 
 
 async def expire_orders_task():
@@ -171,6 +161,7 @@ async def demo_guarantors_task():
 
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
+    settings.validate_admin_configuration()
     ensure_schema()
     assert_money_ready()
     if settings.betton_preview_seed:
@@ -183,14 +174,10 @@ async def async_lifespan(app: FastAPI):
     task.cancel()
     expiry.cancel()
     demo_task.cancel()
-    await asyncio.gather(expiry, demo_task, return_exceptions=True)
+    await asyncio.gather(task, expiry, demo_task, return_exceptions=True)
     bot, _dp = _maybe_bot()
     if bot is not None:
-        try:
-            if settings.is_public_https():
-                await bot.delete_webhook()
-        except Exception:
-            pass
+        # Old replicas must never delete the replacement replica webhook.
         await bot.session.close()
 
 
@@ -275,6 +262,7 @@ def health():
 
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
+    require_webhook_secret(request)
     from aiogram import types
 
     payload = await request.json()
@@ -287,7 +275,7 @@ async def telegram_webhook(request: Request):
             import httpx
             try:
                 async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.post(proxy + "/webhook", json=payload)
+                    response = await client.post(proxy + "/webhook", json=payload, headers=proxy_headers())
             except httpx.HTTPError:
                 raise HTTPException(status_code=502, detail="Webhook proxy unavailable") from None
             if response.status_code >= 400:
