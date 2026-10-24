@@ -52,7 +52,7 @@ def test_pg_populated_baseline_bigint_preserves_fk_unique_and_transaction_rollba
     try:
         with isolated.begin() as conn:
             baseline(conn)
-            conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance_nano) VALUES (1,123456,'original',1000000000)")
+            conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance,balance_nano) VALUES (1,123456,'original',1,1000000000)")
             conn.exec_driver_sql('CREATE TABLE migration_child (id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id))')
             conn.exec_driver_sql('INSERT INTO migration_child VALUES(1,1)')
         with ThreadPoolExecutor(2) as pool:
@@ -61,11 +61,11 @@ def test_pg_populated_baseline_bigint_preserves_fk_unique_and_transaction_rollba
         assert_schema_ready(isolated)
         with isolated.begin() as conn:
             assert str(inspect(conn).get_columns('users')[1]['type']) == 'BIGINT'
-            conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance_nano) VALUES (2,4294967303,'large',1000000000)")
+            conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance,balance_nano) VALUES (2,4294967303,'large',1,1000000000)")
             conn.exec_driver_sql('INSERT INTO migration_child VALUES(2,2)')
         with pytest.raises(IntegrityError):
             with isolated.begin() as conn:
-                conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance_nano) VALUES (3,123456,'duplicate',1000000000)")
+                conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance,balance_nano) VALUES (3,123456,'duplicate',1,1000000000)")
         # An error after a narrowing attempt rolls back DDL as well as data.
         with pytest.raises(DataError):
             with isolated.begin() as conn:
