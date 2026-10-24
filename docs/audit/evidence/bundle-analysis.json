@@ -1,0 +1,247 @@
+{
+  "note": "renderedLength is Rollup module contribution before final chunk minification; not additive compressed bytes",
+  "artifacts": [
+    {
+      "file": "assets/index-Df8XuKTx.js",
+      "bytes": 706233,
+      "gzip": 207954,
+      "brotli": 166509
+    },
+    {
+      "file": "assets/index-DZ8jrKmK.css",
+      "bytes": 136291,
+      "gzip": 21235,
+      "brotli": 17751
+    },
+    {
+      "file": "index.html",
+      "bytes": 489,
+      "gzip": 305,
+      "brotli": 193
+    }
+  ],
+  "groups": {
+    "other": 1280,
+    "react": 21109,
+    "react-dom": 653699,
+    "other-dependencies": 11420,
+    "tanstack": 126074,
+    "src/i18n": 43698,
+    "src/telegram": 2138,
+    "src/lib": 7567,
+    "src/api": 48396,
+    "src/components": 83138,
+    "lucide": 12654,
+    "src/assets": 3069,
+    "src/theme": 4546,
+    "src/screens": 250931,
+    "src/app": 202109,
+    "src/fixtures": 8132,
+    "src/App.module.css": 57,
+    "src/App.tsx": 438,
+    "src/styles": 0,
+    "src/main.tsx": 195
+  },
+  "topModules": [
+    {
+      "id": "/workspace/scratch/6d5c370323b7/betton-ux/frontend/node_modules/react-dom/cjs/react-dom-client.production.js",
+      "renderedLength": 644593,
+      "originalLength": 625168
+    },
+    {
+      "id": "src/i18n/messages.ts",
+      "renderedLength": 41291,
+      "originalLength": 41754
+    },
+    {
+      "id": "src/screens/PortfolioScreen.tsx",
+      "renderedLength": 26155,
+      "originalLength": 24218
+    },
+    {
+      "id": "src/screens/CreateEventWizard.tsx",
+      "renderedLength": 25161,
+      "originalLength": 23359
+    },
+    {
+      "id": "/workspace/scratch/6d5c370323b7/betton-ux/frontend/node_modules/@tanstack/query-core/build/modern/queryClient.js",
+      "renderedLength": 22815,
+      "originalLength": 23277
+    },
+    {
+      "id": "src/components/QuickTradeSheet/QuickTradeSheet.tsx",
+      "renderedLength": 22113,
+      "originalLength": 21292
+    },
+    {
+      "id": "src/screens/MarketDetailScreen.tsx",
+      "renderedLength": 21930,
+      "originalLength": 22078
+    },
+    {
+      "id": "src/app/ConnectedModerationScreen.tsx",
+      "renderedLength": 19757,
+      "originalLength": 15427
+    },
+    {
+      "id": "/workspace/scratch/6d5c370323b7/betton-ux/frontend/node_modules/react/cjs/react.production.js",
+      "renderedLength": 19185,
+      "originalLength": 18040
+    },
+    {
+      "id": "src/app/AdminMarketPanel.tsx",
+      "renderedLength": 18927,
+      "originalLength": 15353
+    },
+    {
+      "id": "src/screens/OnboardingScreen.tsx",
+      "renderedLength": 18907,
+      "originalLength": 13254
+    },
+    {
+      "id": "src/app/GuarantorV3Panel.tsx",
+      "renderedLength": 17543,
+      "originalLength": 12220
+    },
+    {
+      "id": "/workspace/scratch/6d5c370323b7/betton-ux/frontend/node_modules/@tanstack/query-core/build/modern/queryObserver.js",
+      "renderedLength": 17483,
+      "originalLength": 17984
+    },
+    {
+      "id": "src/app/ConnectedApp.tsx",
+      "renderedLength": 17213,
+      "originalLength": 18509
+    },
+    {
+      "id": "src/app/GuarantorPanel.tsx",
+      "renderedLength": 16722,
+      "originalLength": 14876
+    },
+    {
+      "id": "src/app/ConnectedGuarantors.tsx",
+      "renderedLength": 16148,
+      "originalLength": 16043
+    },
+    {
+      "id": "/workspace/scratch/6d5c370323b7/betton-ux/frontend/node_modules/@tanstack/query-core/build/modern/query.js",
+      "renderedLength": 15432,
+      "originalLength": 15719
+    },
+    {
+      "id": "src/api/adapters.ts",
+      "renderedLength": 14305,
+      "originalLength": 19506
+    },
+    {
+      "id": "src/app/GuarantorReputation.tsx",
+      "renderedLength": 12002,
+      "originalLength": 7448
+    },
+    {
+      "id": "src/components/OwnPricePanel/OwnPricePanel.tsx",
+      "renderedLength": 11885,
+      "originalLength": 11845
+    },
+    {
+      "id": "src/api/eventsV3Copy.ts",
+      "renderedLength": 11717,
+      "originalLength": 12059
+    },
+    {
+      "id": "/workspace/scratch/6d5c370323b7/betton-ux/frontend/node_modules/scheduler/cjs/scheduler.production.js",
+      "renderedLength": 11134,
+      "originalLength": 10181
+    },
+    {
+      "id": "src/screens/OwnPriceScreen.tsx",
+      "renderedLength": 10911,
+      "originalLength": 13041
+    },
+    {
+      "id": "src/screens/PublicProfileScreen.tsx",
+      "renderedLength": 10797,
+      "originalLength": 8970
+    },
+    {
+      "id": "src/screens/ProfileScreen.tsx",
+      "renderedLength": 10795,
+      "originalLength": 9707
+    },
+    {
+      "id": "src/app/ConnectedQuickTrade.tsx",
+      "renderedLength": 10110,
+      "originalLength": 12477
+    },
+    {
+      "id": "src/screens/ChatScreen.tsx",
+      "renderedLength": 10104,
+      "originalLength": 8554
+    },
+    {
+      "id": "src/screens/SystemStateScreen.tsx",
+      "renderedLength": 9957,
+      "originalLength": 9171
+    },
+    {
+      "id": "/workspace/scratch/6d5c370323b7/betton-ux/frontend/node_modules/@tanstack/query-core/build/modern/mutation.js",
+      "renderedLength": 8764,
+      "originalLength": 8995
+    },
+    {
+      "id": "src/screens/MyEventsScreen.tsx",
+      "renderedLength": 8752,
+      "originalLength": 7770
+    },
+    {
+      "id": "/workspace/scratch/6d5c370323b7/betton-ux/frontend/node_modules/react-dom/cjs/react-dom.production.js",
+      "renderedLength": 7918,
+      "originalLength": 7326
+    },
+    {
+      "id": "src/screens/ActivityScreen.tsx",
+      "renderedLength": 7897,
+      "originalLength": 7630
+    },
+    {
+      "id": "src/components/MarketChart/MarketChart.tsx",
+      "renderedLength": 7730,
+      "originalLength": 6702
+    },
+    {
+      "id": "src/screens/NotificationsScreen.tsx",
+      "renderedLength": 7721,
+      "originalLength": 12504
+    },
+    {
+      "id": "src/app/ConnectedOwnPriceScreen.tsx",
+      "renderedLength": 7647,
+      "originalLength": 9129
+    },
+    {
+      "id": "src/app/ConnectedMarketDetailScreen.tsx",
+      "renderedLength": 7612,
+      "originalLength": 9587
+    },
+    {
+      "id": "src/screens/HelpScreen.tsx",
+      "renderedLength": 7556,
+      "originalLength": 7049
+    },
+    {
+      "id": "src/app/CreateMarketResult.tsx",
+      "renderedLength": 7475,
+      "originalLength": 6903
+    },
+    {
+      "id": "src/screens/MarketsScreen.tsx",
+      "renderedLength": 6795,
+      "originalLength": 8129
+    },
+    {
+      "id": "src/app/ConnectedMarketsScreen.tsx",
+      "renderedLength": 6567,
+      "originalLength": 8492
+    }
+  ]
+}

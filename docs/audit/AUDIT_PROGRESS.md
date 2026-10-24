@@ -1,45 +1,48 @@
-# BetTON: журнал независимого аудита
+# BetTON — журнал и закрытие независимого аудита
 
-Дата: 24.10.2026 (Asia/Krasnoyarsk). Ветка материалов: `audit/comprehensive-20261024`.
+Дата: 24 октября 2026 года (Asia/Krasnoyarsk). Ветка: `audit/comprehensive-20261024`.
 
-## Зафиксированные исходники
+**Статус: аудит закрыт в пределах доступной среды.** Следующий этап — согласованные исправления по BETTON_AUDIT_SUMMARY.md и приёмка ниже. Не начинать заново и не считать инструментальные блокеры успешными тестами.
 
-| Назначение | Ветка | Проверяемый SHA |
+## Проверенные версии
+
+| Назначение | Ветка | SHA |
 |---|---|---|
-| Основной предмет аудита | feature/ux-v3-full-integration | 1c0f7cb0fa802e3d6a2a77f7873489208a775327 |
-| Демоверсия | feature/ux-v3-render-demo-20261024 | 82c0e9f2d43ca54952f28c33f9fcf092cfd54261 |
-| Действующий бот | main | d4ed4e7d5978300244d0bcde09a2ce10b6ee6b0a |
+| UX v3 | feature/ux-v3-full-integration | 1c0f7cb0fa802e3d6a2a77f7873489208a775327 |
+| Demo | feature/ux-v3-render-demo-20261024 | 82c0e9f2d43ca54952f28c33f9fcf092cfd54261 |
+| Основной бот | main | d4ed4e7d5978300244d0bcde09a2ce10b6ee6b0a |
 | Отложенный Admin Center | feature/admin-center-readonly-v1 | 7b8f8cc7ed7ebf093d63ec48232342e4006e1310 |
 
-Git fetch выполнен; отдельный worktree. Рабочие ветки, Render, webhook и рабочие БД не изменяются. Тесты запускаются только с временной БД, заданной tests/conftest.py. Старые отчёты используются как список заявлений для перепроверки, не как доказательство.
+Исходные четыре SHA на проверенном срезе не изменились. Последовательность remote checkpoints: `5b7f062` (первый этап), `cfb4094` и `4d135b3234dae7299a7e82bfaef34f1cf20717f0` (продолжение), `d7fd805f175ea0fe73fed62fe1de25965b427769` (финальный PG-комплект). Окончательный commit содержит этот журнал и итоговые отчёты. Дальнейшие SHA приложения этим заключением не охвачены; сравнивать diff перед применением выводов.
 
-## Продолжение 24.10.2026
+## Реестр выполненных проверок
 
-Удалённый аудит на начало продолжения: `5b7f062cbdd5d0506a7ec1d668bf1ab4a0690421` (предыдущий `a11a258`). Git fetch и ls-remote подтверждают: все четыре исходных SHA выше неизменны. Локальная история отчётов приведена к удалённой; прежний локальный checkpoint сохранён отдельной локальной веткой.
-
-| Направление | Состояние на начало продолжения | Осталось |
+| Направление | Результат | Доказательство / предел |
 |---|---|---|
-| Backend | 352 passed / 12 skipped; 4 диагностических теста | PostgreSQL, дополнительные гонки, перепроверка F1/S1/S2/S3/F2/F3/A4 |
-| Архитектура | Основные связи и запуск изучены | Граф импортов, циклы, миграции и восстановление, фоновые задачи |
-| Frontend | 156 тестов, build, 706233 B / gzip 207954 / Brotli 166509 | Изолированный эксперимент splitting, lifecycle/cache |
-| Тексты | 18 первичных рекомендаций | Полный проход TSX/backend/legacy, точные ссылки |
-| Визуальная часть | Один Figma-frame; React не проверен | Доступный безопасный браузер и матрица размеров/тем |
-| Отчёты | Все шесть сохранены | Итоговая систематизация и порядок исправлений |
+| Backend, первый этап | 352 passed / 12 skipped, exit 0 | evidence/backend-tests.txt; число по символам полного вывода. Повторно не запускался |
+| Frontend | 156 passed | evidence/frontend-tests.txt; повторно не запускался |
+| Первичные диагностики | 4 passed | evidence/test_audit_probes.py, audit-probes.txt |
+| Дополнительные диагностики | 5 passed | evidence/test_audit_followup.py, followup-tests.txt; F1, unsigned webhook main/UX, username admin, rollback после reward |
+| PG-комплект | 12 дополнительных случая skipped, не passed | evidence/test_postgres_followup.py, postgres-kit-collection.txt; отдельно от 12 штатных пропусков |
+| Runner | bash syntax проверен; исполнение PG отсутствует | evidence/run_postgres_audit.sh; уникальная betton_test_audit_* БД, loopback, cleanup собственного контейнера, SQL timeouts |
+| Граф зависимостей | 33 Python / 190 TS/TSX | evidence/dependency-graph.json и генератор; Python AST/TS regex, не полный runtime graph |
+| Production build | JS706233 / gzip207954 / br166509 | frontend-build.txt, bundle-analysis.json; прежний результат |
+| Splitting | старт605852 / gzip180529 / br147703 | diagnostic-splitting.mjs, splitting-result.json; build-only, локальная ветка audit/code-splitting-20261024, commit adb4669; не объединён |
+| Тексты | C1–C68, новые C56–68 | UX_CONTENT_AUDIT.md; предложения не внедрены, C16 уточнён как неиспользуемая строка |
+| Локализация | legacy362 / React321 ключ на язык, eventCopy139 пар | check_copy_catalogues.cjs и copy-catalogues.json; ключи/подстановки, не полная языковая/визуальная приёмка |
+| Figma | Просмотрены кадры 22:10070 и 463:683 | figma-funding-390.png — только дизайн; не screenshot React |
+| React visual | Не выполнен | Облачный браузер не достигает local loopback; Render после cold start возвращает Demo access required. Auth не отключалась |
+| Restore/rolling/BIGINT PG | Не выполнены практически | План на изолированной копии в ARCHITECTURE_AUDIT.md; рабочая БД не использовалась |
 
-Полные прежние прогоны без новой причины не повторяются. Рабочие данные/настройки/ветки не затрагиваются. После крупных направлений — checkpoint GitHub. Непроверенные пункты остаются явно обозначенными.
+Финальный PG-проход добавил три случая: два worker/два синтетических актора; admin disable до market lock; admin disable во время action. Переговорный worker race не равен полной проверке payout worker — дополнительный совмещённый сценарий явно указан в финансовом отчёте. SQLite rollback не выдаётся за PG rollback.
 
-## Checkpoint продолжения
+## Условия приёмки после исправлений — не новый бесконечный аудит
 
-Выполнено: 5 дополнительных диагностик passed, граф зависимостей, планы F1/S1/S2/S3/A4/F2/F3, 9 подготовленных PG случаев (skipped), build-only splitting 605852/180529/147703 B, текстовые рекомендации до C55. Копии экспериментального скрипта/результата в evidence; локальная ветка audit/code-splitting-20261024 commit adb4669. Рабочий код не менялся.
+1. S1/S3: missing/wrong/correct webhook secret, proxy, rolling shutdown; rename не повышает роль, отзыв прав одинаков во всех процессах. Без реального webhook трафика при диагностике.
+2. F1: истории победителя/автора/гаранта, несколько победителей, противоположные позиции, отмены; сумма проводок равна изменению баланса. Не проводить деньги второй раз.
+3. A1 → S2/F3 → A4/F2: сначала версия схемы и восстановление копии, затем BIGINT/FK/таблица ключей, потом persistent pending intent. Потеря ответа после commit, reload/crash, same key/body, иной body, конкурентные запросы.
+4. PG: Docker + Python dependencies → `AUDIT_PYTHON="$PWD/.audit-venv/bin/python" bash docs/audit/evidence/run_postgres_audit.sh`. Сохранить server/image/dependency versions, SHA, полный output/exit code. Исполнить все штатные и дополнительные случаи, не оставлять skips как зелёный допуск. Добавить полный payout worker crash/retry; проверить SQL interleaving.
+5. Visual: доступный браузер рядом с isolated preview либо авторизованная demo-сессия без публикации ключа. 360×800,390×844,430×932,1440×900 × обе темы; RU/EN/ZH, длинные формы/названия, четыре тарифа, partial/cancel, модальные окна, история, loading/error/empty, Back. Figma и React с одинаковым fixture. Telegram iOS/Android отдельно.
+6. Restore/rolling: новые тестовые базы, backup → restore → сверка сумм/FK/sequence/reconcile → миграция → old/new процессы с fake Telegram. Production не затрагивать в диагностике.
 
-Следующий запуск НЕ повторяет прошлые прогоны:
-1. В Docker-среде выполнить `bash docs/audit/evidence/run_postgres_audit.sh`; дополнить две гонки demo worker и admin disable, SQL interleaving. Здесь нет Docker/postgres, установка пакетов не завершилась; 9 skipped не считать passed.
-2. React: локальный браузер рядом с scripts/ux_v3_preview.py либо авторизованное Render demo; 360×800,390×844,430×932,1440×900 × light/dark. Проверить длинные формы/названия, четыре тарифа, переговоры, partial/cancel, ошибки, Back, фон Telegram. Все 8 сочетаний ещё не проверены.
-3. Завершить построчный app/static/{miniapp.html,p2p.js,account.js,i18n.js}, неосновные TSX-состояния и EN/ZH смысловую сверку; превратить ссылки первичной таблицы в прямые permalinks.
-4. Отдельная копия инфраструктуры: backup/restore, BIGINT и rolling; не подключаться к рабочим данным.
-
-Браузер Render показал Demo access required. Локальный Chromium не установлен: download ZIP завершился ошибкой. Figma 463:683 открыт, screenshot сохранён локально; это не визуальная проверка React.
-
-## Заключительный этап — начат
-
-Продолжение от подтверждённого remote commit `4d135b3234dae7299a7e82bfaef34f1cf20717f0`. Завершённые прогоны не повторяются. Финансы, граф зависимостей и splitting завершены в пределах прежней среды; PostgreSQL, визуальный React и restore остаются инструментальными пробелами. Сейчас: статическая проверка PG-комплекта и дополнение worker races; остаточный legacy/RU–EN–ZH проход; финальная систематизация отчётов. Docker/postgres по-прежнему отсутствуют.
+Все изменения этого аудита ограничены docs/audit и изолированным экспериментом. App/frontend/bot/финансовые настройки и рабочие ветки не изменялись. Никаких автоматических текстовых замен, Admin Center интеграции или production deployment не выполнено.

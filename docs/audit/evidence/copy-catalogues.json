@@ -1,0 +1,45 @@
+{
+  "scope": "Static catalogue keys and named placeholders only; excludes dynamic rendering, raw backend text and language quality",
+  "legacy": {
+    "ru": {
+      "keys": 362,
+      "missing": [],
+      "extra": [],
+      "placeholderMismatch": []
+    },
+    "en": {
+      "keys": 362,
+      "missing": [],
+      "extra": [],
+      "placeholderMismatch": []
+    },
+    "zh": {
+      "keys": 362,
+      "missing": [],
+      "extra": [],
+      "placeholderMismatch": []
+    }
+  },
+  "react": {
+    "ru": {
+      "keys": 321,
+      "missing": [],
+      "extra": [],
+      "placeholderMismatch": []
+    },
+    "en": {
+      "keys": 321,
+      "missing": [],
+      "extra": [],
+      "placeholderMismatch": []
+    },
+    "zh": {
+      "keys": 321,
+      "missing": [],
+      "extra": [],
+      "placeholderMismatch": []
+    }
+  },
+  "eventCopyEntries": 139,
+  "eventCopyIncomplete": []
+}

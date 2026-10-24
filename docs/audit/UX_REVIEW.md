@@ -32,9 +32,33 @@ Figma прочитана заново: получен список страни�
 
 24.10.2026 облачный браузер открыл https://betton-ux-v3-demo.onrender.com/; после холодного запуска — `Demo access required`. Ключ не вводился, авторизация не отключалась. Локального Chromium нет; штатная загрузка Playwright закончилась ошибкой ZIP. Все 8 комбинаций React (360×800/390×844/430×932/1440×900 × light/dark) остаются непроверенными.
 
-Открыт Figma node 463:683, светлый 390×844: «Ожидаем объём ставок». На этом кадре CTA «Вернуться в чат» виден, предупреждение о возврате и 20% читается, явного обрезания нет. Screenshot локально evidence/figma-funding-390.png. Это относится только к Figma. Редакторское предложение U1: разделить длинный абзац на три правила, сохранив исполнение, минимум прибыли и возврат.
+Открыт Figma node 463:683, светлый 390×844: «Ожидаем объём ставок». На этом кадре CTA «Вернуться в чат» виден, предупреждение о возврате и 20% читается, явного обрезания нет. Screenshot: evidence/figma-funding-390.png. Это относится только к Figma. Редакторское предложение U1: разделить длинный абзац на три правила, сохранив исполнение, минимум прибыли и возврат.
 
 По коду, не по изображению: U2 GuarantorV3Panel:67 повторяет body внутри chat — проверить перегрузку длинного диалога; U3 overlays EventTermsV3Panel:34–39 и GuarantorV3Panel:66–72 требуют проверки focus/Back/клавиатуры; U4 PortfolioScreen:440,604 показывает gross как выплату — исправить по F1; U5 retry создания требует A4 прежде упрощения сценария. Уверенность в коде высокая, визуальные последствия не подтверждены.
 
 Способ завершения: браузер в той же среде, что isolated scripts/ux_v3_preview.py, либо доступная авторизованная сессия Render demo. Sandbox не публиковать. Матрица: onboarding → feed/filter → длинное событие → partial → cancel remainder → три формы → четыре тарифа → переговоры → решение/timeout → история → модерация → empty/error. Сохранять viewport/fullpage, SHA, fixture, роль, тему и локаль. Реальный Telegram проверить отдельно.
 
+
+## Окончательный статус визуальной проверки
+
+Заключительная попытка открыла существующую demo https://betton-ux-v3-demo.onrender.com/ через облачный браузер. После страницы холодного запуска показано `{"detail":"Demo access required"}`. Секрет не вводился, авторизация не отключалась; защищённой сессии нет. Повторных попыток к недоступному 127.0.0.1 не выполняли. Это блокер доступа, не доказательство ошибки интерфейса.
+
+| Размер | Светлая тема React | Тёмная тема React |
+|---|---|---|
+| 360×800 | Не проверена | Не проверена |
+| 390×844 | Не проверена | Не проверена |
+| 430×932 | Не проверена | Не проверена |
+| 1440×900 | Не проверена | Не проверена |
+
+Сохранённый Figma-кадр [463:683](evidence/figma-funding-390.png) — дизайн, **не screenshot React**. Сопоставление внешнего вида не выполнено. Не подтверждены обрезания, наложения, touch/контраст, модальные окна, safe area, скролл или Telegram Back.
+
+| ID / тип | Экран / источник | Вывод и действие | Приоритет / уверенность | Приёмка |
+|---|---|---|---|---|
+| U1 / предложение | Figma 463:683, формирование фонда | Разделить длинный абзац на 3 правила, сохранив исполнение, 20% и возврат | Желательное / средняя | Согласованный кадр, чтение без потери финансовых условий |
+| U2 / гипотеза | [frontend/src/app/GuarantorV3Panel.tsx:67](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/frontend/src/app/GuarantorV3Panel.tsx#L67) | Body повторяется в чате; оставить одно резюме и раскрываемые детали | Желательное / высокая в коде, визуально не подтверждено | Длинные переговоры на 360px, основное действие видно |
+| U3 / непроверенный риск | [frontend/src/app/EventTermsV3Panel.tsx:34–39](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/frontend/src/app/EventTermsV3Panel.tsx#L34-L39); [frontend/src/app/GuarantorV3Panel.tsx:66–72](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/frontend/src/app/GuarantorV3Panel.tsx#L66-L72) | Проверить focus, Back, клавиатуру, закрытие верхнего overlay | Важное / поведение не подтверждено | Back закрывает один уровень, форма и скролл сохраняются |
+| U4 / доказанный дефект данных | [frontend/src/screens/PortfolioScreen.tsx:440,604](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/frontend/src/screens/PortfolioScreen.tsx#L440); [app/static/miniapp.html:943](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/app/static/miniapp.html#L943) | Gross подписан как выплата; исправить по F1 | Важное / высокая | Зачисление и удержания совпадают с балансом |
+| U5 / доказанная проблема повторов | [frontend/src/screens/CreateEventWizard.tsx:710](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/frontend/src/screens/CreateEventWizard.tsx#L710); [app/ux_v3_routes.py:146–209](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/app/ux_v3_routes.py#L146-L209) | Нельзя безопасно упрощать retry до A4 | Важное / высокая | Потерянный ответ и повтор дают одно событие |
+| U6 / доказанное несоответствие кнопки | [frontend/src/screens/AuthExpiredScreen.tsx:20](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/frontend/src/screens/AuthExpiredScreen.tsx#L20); [frontend/src/app/ConnectedApp.tsx:181](https://github.com/mezdmal-byte/betton/blob/1c0f7cb0fa802e3d6a2a77f7873489208a775327/frontend/src/app/ConnectedApp.tsx#L181) | «Открыть заново» вызывает только close; C64 | Важное / высокая по коду | Название описывает действие, инструкция повторного входа понятна |
+
+Изолированный visual pass после доступа: использовать fixture с длинными названиями, empty/loading/error, partial order, четырьмя тарифами и историей переговоров. Пройти три формы создания, карточку/стакан, ставку и отмену остатка, решение/timeout, профиль/историю, модерацию. Отдельно сравнить RU/EN/ZH и Telegram host на iOS/Android. Сохранять SHA, роль, тему, локаль, viewport, fixture, DOM и fullpage/viewport снимки без секретов. До этого визуальный допуск к выпуску отсутствует. Статический UX-аудит закрыт, интерфейс не переделан.

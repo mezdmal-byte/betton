@@ -17,7 +17,7 @@ from tests.test_guarantors import call
 from tests.test_p2p import submit
 from tests.auth_helpers import tma_headers
 
-@pytest.mark.parametrize('revision', ['origin/main', 'origin/feature/ux-v3-full-integration'])
+@pytest.mark.parametrize('revision', ['d4ed4e7d5978300244d0bcde09a2ce10b6ee6b0a', '1c0f7cb0fa802e3d6a2a77f7873489208a775327'])
 def test_unsigned_webhook_real_handler_with_mock_transport(revision):
     source = subprocess.check_output(['git','show',revision+':app/main.py'], text=True)
     fn = next(n for n in ast.parse(source).body if isinstance(n,ast.AsyncFunctionDef) and n.name=='telegram_webhook')
