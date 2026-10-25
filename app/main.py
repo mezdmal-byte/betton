@@ -15,7 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
-from app.migrations import assert_schema_ready
+from app.migrations import assert_schema_ready, CURRENT_REVISION
 from app.models import Market, MarketStatus, User, P2POrder
 from sqlalchemy import func, text
 import hashlib
@@ -253,6 +253,19 @@ def mini_app():
     if settings.preview_root_to_v2:
         return RedirectResponse(url="/v2/", status_code=307)
     return FileResponse(STATIC_DIR / "miniapp.html")
+
+
+@app.get("/ready")
+def readiness(db: Session = Depends(get_db)):
+    try:
+        version = db.execute(text('SELECT revision FROM betton_schema_version WHERE id=1')).scalar_one()
+        from app.webhook_security import valid_secret
+        if version != CURRENT_REVISION or (settings.bot_token and (not valid_secret(settings.telegram_webhook_secret) or (settings.telegram_webhook_previous_secret and not valid_secret(settings.telegram_webhook_previous_secret)))):
+            return JSONResponse(status_code=503, content={"status":"not_ready"})
+        return {"status":"ready", "schema_revision":version,
+                "legacy_buy_requires_request_id":not settings.allow_unkeyed_legacy_buy}
+    except Exception:
+        return JSONResponse(status_code=503, content={"status":"not_ready"})
 
 
 @app.get("/health")
@@ -720,6 +733,10 @@ def buy_shares_endpoint(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if not req.request_id and not settings.allow_unkeyed_legacy_buy:
+        raise HTTPException(428, "Обновите приложение: для покупки нужен request_id")
+    if not req.request_id:
+        logging.getLogger(__name__).warning("Unkeyed legacy purchase accepted in explicit compatibility mode")
     if req.expected_user_id is not None and req.expected_user_id != current_user.id:
         raise HTTPException(409, "Аккаунт изменился. Обновите приложение")
     try:

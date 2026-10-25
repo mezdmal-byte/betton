@@ -1,0 +1,61 @@
+import { test, expect, type Page } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
+
+async function open(page:Page) {
+  await page.addInitScript(()=>localStorage.setItem('betton.onboarding.v1','done'))
+  await page.goto('/sandbox/?actor=creator')
+  const session=await (await page.request.get('/sandbox/session?actor=creator')).json()
+  const headers={Authorization:'tma '+session.init_data}
+  const actor=await (await page.request.post('/auth/telegram',{headers})).json()
+  return {headers,userId:actor.id,marketId:session.sandbox.public_event_id}
+}
+async function own(page:Page) {
+  await page.getByText('Тест: кто победит в финальном матче?',{exact:true}).first().click()
+  await page.getByRole('button',{name:'Свой коэффициент',exact:true}).click()
+}
+async function store(page:Page,userId:number,marketId:number,requestId:string) {
+  await page.evaluate(({userId,marketId,requestId})=>{
+    localStorage.setItem(`betton:order-intent:v1:${userId}`,JSON.stringify({userId,marketId,requestId,createdAt:Date.now(),body:{outcome:0,money:'10',odds:2,kind:'limit'}}))
+    window.dispatchEvent(new Event('betton:order-intent'))
+  },{userId,marketId,requestId})
+}
+
+test('committed POST with lost response survives closing/reopening the page without another debit',async({page,context},info)=>{
+  const {headers,userId,marketId}=await open(page)
+  const before=await (await page.request.get(`/users/${userId}`,{headers})).json()
+  const requestId=randomUUID()
+  await store(page,userId,marketId,requestId)
+  await page.route(`**/markets/${marketId}/orders`,async route=>{await route.fetch();await route.abort('failed')})
+  await page.evaluate(async({marketId,requestId})=>{
+    try { await fetch(`/markets/${marketId}/orders`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'tma '+window.Telegram!.WebApp!.initData},body:JSON.stringify({outcome:0,money:'10',odds:2,kind:'limit',request_id:requestId})}) } catch { /* deliberately lost response */ }
+  },{marketId,requestId})
+  await page.close()
+  const reopened=await context.newPage();await open(reopened);await own(reopened)
+  await expect(reopened.getByText('Результат операции подтверждён',{exact:true})).toBeVisible()
+  await reopened.screenshot({path:info.outputPath('recovered.png')})
+  await reopened.getByRole('button',{name:'Продолжить',exact:true}).click()
+  expect(await reopened.evaluate(uid=>localStorage.getItem(`betton:order-intent:v1:${uid}`),userId)).toBeNull()
+  const after=await (await reopened.request.get(`/users/${userId}`,{headers})).json()
+  expect(before.balance-after.balance).toBe(10)
+  const orders=await (await reopened.request.get(`/users/${userId}/orders`,{headers})).json()
+  expect(orders.filter((o:{request_id:string})=>o.request_id===requestId)).toHaveLength(1)
+})
+
+test('offline unresolved intent is checked after reload, then explicitly retried with original key',async({page,context})=>{
+  const {headers,userId,marketId}=await open(page)
+  await own(page)
+  const before=await (await page.request.get(`/users/${userId}`,{headers})).json()
+  const requestId=randomUUID()
+  await context.setOffline(true);await store(page,userId,marketId,requestId)
+  await expect(page.getByText('Не удалось определить результат. Проверьте историю перед повторной попыткой.',{exact:true})).toBeVisible()
+  await context.setOffline(false);await page.reload();await own(page)
+  const status=await page.request.get(`/users/${userId}/orders/by-request/${requestId}`,{headers})
+  expect(status.status()).toBe(404)
+  await page.getByRole('button',{name:'Повторить прежнее предложение',exact:true}).click()
+  await expect(page.getByText('Результат операции подтверждён',{exact:true})).toBeVisible()
+  await page.getByRole('button',{name:'Продолжить',exact:true}).click()
+  const after=await (await page.request.get(`/users/${userId}`,{headers})).json()
+  expect(before.balance-after.balance).toBe(10)
+  const result=await (await page.request.get(`/users/${userId}/orders/by-request/${requestId}`,{headers})).json()
+  expect(result.amount).toBe(10);expect(result.request_id).toBe(requestId)
+})

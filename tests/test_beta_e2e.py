@@ -6,6 +6,7 @@ before and after each critical step. Live API payloads are rendered through
 the Mini App JS — not hardcoded UI strings.
 """
 from __future__ import annotations
+from uuid import uuid4
 
 import json
 import os
@@ -608,8 +609,8 @@ def test_beta_e2e_legacy_lmsr_regression(client, monkeypatch):
     quote = client.post(f"/markets/{mid}/quote", json={"outcome": 0, "money": 20})
     assert quote.status_code == 200, quote.text
     assert quote.json()["shares"] > 0
-    assert client.post(f"/markets/{mid}/buy", headers=wh, json={"outcome": 0, "money": 20}).status_code == 200
-    assert client.post(f"/markets/{mid}/buy", headers=lh, json={"outcome": 1, "money": 10}).status_code == 200
+    assert client.post(f"/markets/{mid}/buy", headers=wh, json={"request_id": str(uuid4()), "outcome": 0, "money": 20}).status_code == 200
+    assert client.post(f"/markets/{mid}/buy", headers=lh, json={"request_id": str(uuid4()), "outcome": 1, "money": 10}).status_code == 200
     assert client.post(f"/markets/{mid}/close", headers=ah).status_code == 200
     before_w = api_balance(client, winner, wh)[1]
     before_l = api_balance(client, loser, lh)[1]

@@ -1,3 +1,4 @@
+from uuid import uuid4
 from tests.legacy_helpers import post_legacy_market
 import math
 import random
@@ -50,7 +51,7 @@ def test_unequal_market_resolves_full_payout(client, monkeypatch, winner):
     shares = []
     for i in range(3):
         response = client.post(f'/markets/{mid}/buy', headers=player_h,
-                               json={'outcome': i, 'money': 100})
+                               json={"request_id": str(uuid4()), 'outcome': i, 'money': 100})
         assert response.status_code == 200, response.text
         shares.append(response.json()['shares'])
     assert client.post(f'/markets/{mid}/close', headers=admin_h).status_code == 200
@@ -68,7 +69,7 @@ def test_original_90_10_failure_is_funded(client, monkeypatch):
         'question': '50 collateral, 100 on rare outcome', 'lock_ton': 50,
         'target_odds': [1/0.9, 10], 'close_at': _close_at(),
     }).json()['id']
-    response = client.post(f'/markets/{mid}/buy', headers=player_h, json={'outcome': 1, 'money': 100})
+    response = client.post(f'/markets/{mid}/buy', headers=player_h, json={"request_id": str(uuid4()), 'outcome': 1, 'money': 100})
     assert response.status_code == 200, response.text
     assert 100 < response.json()['shares'] <= 150
     client.post(f'/markets/{mid}/close', headers=admin_h)
@@ -90,7 +91,7 @@ def test_legacy_unfunded_trade_is_rejected_without_mutations(client, monkeypatch
     balance = client.get(f"/users/{player['id']}", headers=player_h).json()['balance']
     for action in ['quote', 'buy']:
         response = client.post(f'/markets/{mid}/{action}', headers=player_h,
-                               json={'outcome': 1, 'money': 100})
+                               json={'request_id': str(uuid4()), 'outcome': 1, 'money': 100})
         assert response.status_code == 409, response.text
     after = client.get(f'/markets/{mid}').json()
     assert (after['q'], after['b'], after['pot']) == (before['q'], before['b'], before['pot'])

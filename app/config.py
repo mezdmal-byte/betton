@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     render_external_url: str = ""
     tip_cap: float = 0.01
     starting_balance: float = 1000.0
+    allow_unkeyed_legacy_buy: bool = False
     admin_telegram_id: str | int | None = None
     admin_telegram_usernames: str = ""  # Deprecated: never grants permissions.
     admin_telegram_ids: str = ""

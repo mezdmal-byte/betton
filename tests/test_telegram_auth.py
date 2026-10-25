@@ -1,3 +1,4 @@
+from uuid import uuid4
 from tests.legacy_helpers import post_legacy_market
 import json
 import time
@@ -113,7 +114,7 @@ def test_relogin_keeps_account_and_balance(client: TestClient):
     buy = client.post(
         f"/markets/{mid}/buy",
         headers=headers,
-        json={"outcome": 0, "money": 15},
+        json={"request_id": str(uuid4()), "outcome": 0, "money": 15},
     )
     assert buy.status_code == 200, buy.text
     after = client.get(f"/users/{user['id']}", headers=headers).json()
@@ -308,7 +309,7 @@ def test_foreign_user_id_cannot_spend_create_or_read(client: TestClient):
     buy = client.post(
         f"/markets/{market['id']}/buy",
         headers=attacker_headers,
-        json={"user_id": victim["id"], "outcome": 0, "money": 20},
+        json={"request_id": str(uuid4()), "user_id": victim["id"], "outcome": 0, "money": 20},
     )
     assert buy.status_code == 200, buy.text
     assert _user_balance(victim["id"]) == pytest.approx(victim_start)
@@ -347,7 +348,7 @@ def test_regular_user_cannot_admin_even_with_admin_id_in_body(client: TestClient
     client.post(
         f"/markets/{mid}/buy",
         headers=user_headers,
-        json={"outcome": 0, "money": 10},
+        json={"request_id": str(uuid4()), "outcome": 0, "money": 10},
     )
     before_status = client.get(f"/markets/{mid}").json()["status"]
     before_q = client.get(f"/markets/{mid}").json()["q"]
@@ -409,7 +410,7 @@ def test_auth_failure_does_not_change_state(client: TestClient):
         },
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=headers, json={"outcome": 0, "money": 12})
+    client.post(f"/markets/{mid}/buy", headers=headers, json={"request_id": str(uuid4()), "outcome": 0, "money": 12})
     snapshot = {
         "counts": _counts(),
         "balance": _user_balance(user["id"]),
@@ -419,7 +420,7 @@ def test_auth_failure_does_not_change_state(client: TestClient):
     res = client.post(
         f"/markets/{mid}/buy",
         headers={"Authorization": f"tma {bad}"},
-        json={"outcome": 1, "money": 8, "user_id": user["id"]},
+        json={"request_id": str(uuid4()), "outcome": 1, "money": 8, "user_id": user["id"]},
     )
     _assert_unauthorized(res, bad)
     assert _counts() == snapshot["counts"]
