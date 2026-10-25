@@ -1,7 +1,7 @@
 """Opt-in demo actors. No Telegram impersonation, direct balance writes or fake fills.
 
 Every action uses the same revision/authority/funding services as a real guarantor.
-The environment guard and per-event admin allowlist are both mandatory.
+The environment guard, database marker and registered synthetic actor are mandatory.
 """
 from datetime import timedelta
 from pathlib import PurePosixPath
@@ -112,6 +112,16 @@ def configure(db, admin, mid, scenario, enabled=True):
     row = db.get(DemoGuarantorRun, mid)
     if row and row.actor_id != actor.user_id:
         raise HTTPException(409, 'Гарант события изменился; старый сценарий нельзя переназначить')
+    if actor.strategy not in STRATEGIES:
+        raise HTTPException(409, 'Неизвестная стратегия тестового гаранта')
+    if enabled and case.state in ('settled', 'cancelled', 'needs_guarantor'):
+        raise HTTPException(409, 'Завершённый сценарий нельзя запустить заново')
+    # Overrides change future behaviour only. Never rewind acknowledgements,
+    # questions, counteroffers or financial history by clearing the cursor.
+    final_choices = {'negotiate', 'winner_0', 'winner_1', 'cancel', 'timeout'}
+    if row and scenario != row.scenario and case.state != 'invited' and not (
+            case.state in ('review', 'collecting', 'active') and scenario in final_choices):
+        raise HTTPException(409, 'Гарант уже ответил: можно изменить только будущий тестовый результат или остановить сценарий')
     if not row:
         row = DemoGuarantorRun(market_id=mid, actor_id=actor.user_id, progress={})
         db.add(row)
@@ -122,6 +132,32 @@ def configure(db, admin, mid, scenario, enabled=True):
         kind='demo_control', snapshot={'scenario': scenario, 'enabled': enabled, 'guarantor_id': actor.user_id}))
     db.commit()
     return {'market_id': mid, 'enabled': row.enabled, 'scenario': scenario, 'next_at': row.next_at}
+
+
+def register_created_event(db, market, config, case):
+    """Join create_event's intent transaction; never commit or adopt old events.
+
+    The event intent serializes retries and market_id is the run's primary key.
+    Real guarantors take no demo path, even in an ordinary production database.
+    """
+    actor = db.get(DemoGuarantorActor, case.guarantor_id)
+    if not actor:
+        return
+    require_demo(db)
+    user = db.get(User, actor.user_id)
+    if user.telegram_id is not None:
+        raise HTTPException(403, 'Автоматизация Telegram-аккаунтов запрещена')
+    if actor.strategy not in STRATEGIES or config.terms.get('_reward_engine') != 1:
+        raise HTTPException(409, 'Недействительная стратегия тестового гаранта')
+    if db.get(DemoGuarantorRun, market.id):
+        raise HTTPException(409, 'Автоматический сценарий уже зарегистрирован')
+    db.add(DemoGuarantorRun(market_id=market.id, actor_id=actor.user_id,
+        scenario='winner_0', enabled=True, progress={'_generation': 1},
+        next_at=gs.now() + timedelta(seconds=STRATEGIES[actor.strategy][-1])))
+    db.add(EventRevisionV3(market_id=market.id, revision=config.revision,
+        actor_id=actor.user_id, kind='demo_default', snapshot={
+            'scenario': 'winner_0', 'strategy': actor.strategy,
+            'result_policy': 'ТЕСТ: первый исход после срока; не результат реального события'}))
 
 
 def _act(db, market, actor, action, **fields):
@@ -188,7 +224,7 @@ def _step(db, run, actor, market, case, config):
     if case.state == 'active' and gs.now() >= config.ends_at:
         if run.scenario in ('winner_0', 'winner_1'):
             _act(db, market, user, 'propose', revision=case.revision,
-                outcome=int(run.scenario[-1]), text='ТЕСТ: исход выбран администратором демонстрационного сценария, не реальный результат')
+                outcome=int(run.scenario[-1]), text='ТЕСТ: воспроизводимый демонстрационный исход №' + str(int(run.scenario[-1]) + 1) + '; не результат реального события')
         elif run.scenario == 'cancel':
             _act(db, market, user, 'cancel', revision=case.revision,
                 text='ТЕСТ: отмена без определения победителя')

@@ -83,6 +83,8 @@ def test_pg_disable_while_worker_running(client, monkeypatch, worker_has_lock):
     no action may begin after the disable transaction commits.
     """
     admin_id, (mid,) = demo_cases(client, monkeypatch)
+    with SessionLocal() as db:
+        initial_generation = db.get(DemoGuarantorRun, mid).progress['_generation']
     conserved = totals()
     reached, release, disable_started = Event(), Event(), Event()
     original_lock, original_step = ms._lock_market, demo._step
@@ -128,7 +130,7 @@ def test_pg_disable_while_worker_running(client, monkeypatch, worker_has_lock):
     with SessionLocal() as db:
         run = db.get(DemoGuarantorRun, mid)
         assert not run.enabled and run.last_error is None
-        assert run.progress['_generation'] == 2
+        assert run.progress['_generation'] == initial_generation + 1
         assert db.get(GuarantorCase, mid).state == ('review' if worker_has_lock else 'invited')
         message_count = db.query(GuarantorMessage).filter_by(market_id=mid).count()
     worker_tick()

@@ -3,7 +3,7 @@ import type { HistoryFixture, OrderFixture, PositionFixture, SettlementFixture }
 import type { CreatorFixture, MarketFixture, MarketStatus, OrderBookLevel, OutcomeFixture, ChartPoint, RecentTrade } from '../types/market'
 import { translate, type Locale } from '../i18n'
 import { moneyJsonValue, nanoToTon } from '../lib/money'
-import { formatTimeLeft, isClosingSoon } from '../lib/time'
+import { formatTimeLeft, isClosingSoon, parseDate } from '../lib/time'
 import type {
   AccountOut,
   BestOfferDto,
@@ -513,7 +513,7 @@ export function mapTradesToChartPoints(trades: MarketTradeOut[] | null | undefin
     .map((trade) => {
       const odds = oddsForOutcome(trade, outcomeIndex)
       if (odds == null || !(odds > 0)) return null
-      const created = trade.created_at ? Date.parse(trade.created_at) : Number.NaN
+      const created = parseDate(trade.created_at)?.getTime() ?? Number.NaN
       return {
         t: Number.isFinite(created) ? created : trade.id,
         odds,
@@ -528,7 +528,7 @@ export function mapTradesToRecent(trades: MarketTradeOut[] | null | undefined, o
   return [...trades].reverse().slice(0, 8).flatMap((trade) => {
     const odds = oddsForOutcome(trade, outcomeIndex)
     if (odds == null) return []
-    const created = trade.created_at ? Date.parse(trade.created_at) : Number.NaN
+    const created = parseDate(trade.created_at)?.getTime() ?? Number.NaN
     return [
       {
         id: trade.id,

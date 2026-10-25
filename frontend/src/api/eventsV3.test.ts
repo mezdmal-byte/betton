@@ -80,7 +80,7 @@ describe("UX v3 event form validation", () => {
         "conditions",
         now,
       ).backupUrl,
-    ).toBeTruthy();
+    ).toBeUndefined();
     expect(
       validateEventStep(
         { ...validPublic(), backupUrl: "https://example.org/backup" },

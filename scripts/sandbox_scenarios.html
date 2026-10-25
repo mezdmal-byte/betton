@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BetTON · карта тестовых сценариев</title>
+<style>
+body{font:16px/1.5 system-ui,sans-serif;max-width:900px;margin:32px auto;padding:0 20px;color:#202326;background:#fafaf8}
+h1{font-size:28px;line-height:1.2}h2{font-size:21px;margin-top:32px}a{color:#174dc5;text-underline-offset:3px}
+nav{display:flex;gap:16px;flex-wrap:wrap}li{margin:12px 0}select,button{font:inherit;padding:10px;max-width:100%;margin:4px 0}
+label{display:block;margin-top:12px}button{cursor:pointer}button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #174dc5;outline-offset:3px}
+.note{color:#4e545b}#status{white-space:pre-wrap}fieldset{border:1px solid #bbb;padding:16px}fieldset button{display:block;margin-top:16px}
+</style><script src="/sandbox/scenarios.js" defer></script></head>
+<body><h1>BetTON · тестовые сценарии</h1>
+<p>Отдельная локальная база, только синтетические средства. Это браузерный симулятор Telegram.</p>
+<nav aria-label="Тестовые роли" id="roles"></nav>
+<p class="note">Открывайте роли в отдельных вкладках. Настоящая Telegram-авторизация обычного приложения не меняется.</p>
+<h2>Рынки</h2><p>Пустой стакан, разные уровни цены, реальные исполнения, расчёт и возврат. Ссылки открываются от создателя; для ставок выберите участника.</p>
+<ol id="scenarios"></ol>
+<h2>Проверить переговоры в своём пари</h2>
+<p>Создайте событие «Частное с гарантом» и выберите «ТЕСТ». Гарант ответит автоматически в течение минуты и начнёт переговоры. Фикс — 5 TON; Процент — 3% с торгом; Процент + фикс — 3% + 2 TON; Процент с минимумом — 3%, минимум 20 TON; Переговорщик — сначала вопросы, затем 4%; Гибкий — 1,5% или 2% + 2 TON для сложных правил. После срока стандартный демонстрационный результат — первый исход, с пометкой ТЕСТ.</p>
+<details><summary>Дополнительные настройки тестирования · только тестовый администратор</summary>
+<fieldset><legend>Изменить будущий QA-сценарий (необязательно)</legend>
+<button id="refresh" type="button">Обновить список моих пари</button>
+<label for="event">Пари</label><select id="event"></select>
+<label for="scenario">Ответ гаранта</label><select id="scenario">
+<option value="negotiate">Согласование и переговоры</option><option value="decline">Отказ</option>
+<option value="no_response">Без ответа</option><option value="agreement_error">Контролируемая ошибка</option>
+<option value="winner_0">Первый исход после настоящего срока</option><option value="winner_1">Второй исход после настоящего срока</option>
+<option value="cancel">Отмена после настоящего срока</option><option value="timeout">Пропуск срока решения</option>
+</select><button id="enable" type="button">Включить сценарий для выбранного пари</button>
+<p class="note">Создатель сам подтверждает правила и тариф. Тестовый гарант не подтверждает вместо него. Сроки и ограничения остаются настоящими.</p>
+</fieldset></details><p id="status" role="status"></p>
+<p>Для чистого начала закройте симуляцию и запустите reset-betton-simulation.bat. Текущая база сохранится, новая будет создана отдельно.</p>
+</body></html>

@@ -408,7 +408,7 @@ class DemoGuarantorActor(Base):
 
 
 class DemoGuarantorRun(Base):
-    """Admin-opted-in event allowlist for isolated demo automation."""
+    """Per-event run for registered actors in a marked isolated demo database."""
     __tablename__ = 'demo_guarantor_runs'
     market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
     actor_id: Mapped[int] = mapped_column(ForeignKey('demo_guarantor_actors.user_id'))

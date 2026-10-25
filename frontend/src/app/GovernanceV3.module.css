@@ -3,7 +3,7 @@
 .summary summary { cursor:pointer; font-weight:600; min-height:28px; }
 .summary h2 { margin:0; font-size:19px; }
 .note { color:var(--color-text-secondary); font-size:12px; }
-.overlay { position:fixed; z-index:60; inset:0; width:min(100%,560px); height:100dvh; max-height:100%; margin:auto; display:flex; flex-direction:column; background:var(--color-background-primary); color:var(--color-text-primary); text-align:left; }
+.overlay { position:fixed; z-index:90; inset:0; width:min(100%,560px); height:100dvh; max-height:100%; margin:auto; display:flex; flex-direction:column; background:var(--color-background-primary); color:var(--color-text-primary); text-align:left; }
 .overlay header { flex-shrink:0; padding: max(12px,var(--safe-top)) 20px 12px; border-bottom:1px solid var(--color-border-subtle); }
 .overlay header button { border:0; background:transparent; color:var(--color-text-secondary); padding:10px 0; cursor:pointer; }
 .overlay h2 { margin:10px 0 0; font-size:24px; line-height:30px; }

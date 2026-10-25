@@ -2,6 +2,7 @@ import type { Locale } from "../i18n";
 
 /** Scope-specific copy; values supplied by users and unknown server errors are never translated. */
 const COPY: Record<string, readonly [string, string]> = {
+  'Сохранить и выйти': ['Save and exit', '保存并退出'],
   "Создать событие": ["Create event", "创建事件"],
   "Вопрос и исходы": ["Question and outcomes", "问题与结果"],
   "Условия и сроки": ["Rules and timing", "规则与时间"],
