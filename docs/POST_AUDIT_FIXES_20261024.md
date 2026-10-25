@@ -300,3 +300,5 @@ F2 реализован и проверен локально. **До резул�
 Дополнительно: защищённый по умолчанию `/buy` (428 без request ID до денег), `/ready`, отдельный maintenance server, синтетический полный backup/restore + upgrade/rollback rehearsal и Chromium recovery CI. Локально интеграция: **395 passed, 25 PostgreSQL-only skipped**, **172 frontend passed**, production build успешен. Пропуски не считаются PG-проверкой.
 
 Подробные SHA, точные границы подтверждения, CI и обязательный порядок согласованного выпуска/отката: [PRODUCTION_READINESS_20261025.md](PRODUCTION_READINESS_20261025.md). Старый раздел «План безопасной интеграции» выше описывает состояние до PR #22; актуальная инструкция — в этом документе. Реальный Render, main, webhook и базы не изменены.
+
+PostgreSQL интеграции дополнительно выявил deadlock keyed legacy buy при двух разных ключах одного пользователя (419 passed / 1 failed на `1b6baa9`). Исправлен порядок market→user→receipt, исходный тест сохранён; добавлены разные/одинаковые рынки, replay и финансовая сверка. Локально целевые legacy/recovery/settlement тесты: 27 passed. Финальная PG-регрессия указана в readiness-документе после её выполнения.

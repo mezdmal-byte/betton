@@ -1,9 +1,16 @@
 import { test, expect, type Page } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 
+test.beforeEach(async ({context}, info) => {
+  // The local Telegram simulator defaults to light; choose the actual app theme explicitly.
+  const scheme = info.project.use.colorScheme === 'dark' ? 'dark' : 'light'
+  await context.addInitScript(value => localStorage.setItem('betton.theme', value), scheme)
+})
+
 async function open(page:Page) {
   await page.addInitScript(()=>localStorage.setItem('betton.onboarding.v1','done'))
   await page.goto('/sandbox/?actor=creator')
+  await expect(page.locator('html')).toHaveAttribute('data-theme',test.info().project.use.colorScheme === 'dark' ? 'dark' : 'light')
   const session=await (await page.request.get('/sandbox/session?actor=creator')).json()
   const headers={Authorization:'tma '+session.init_data}
   const actor=await (await page.request.post('/auth/telegram',{headers})).json()

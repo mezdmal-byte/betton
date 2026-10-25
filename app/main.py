@@ -740,6 +740,12 @@ def buy_shares_endpoint(
     if req.expected_user_id is not None and req.expected_user_id != current_user.id:
         raise HTTPException(409, "Аккаунт изменился. Обновите приложение")
     try:
+        market = market_service._lock_market(db, market_id)
+        if req.request_id:
+            # Follow the monetary lock order (market -> user -> receipt).
+            # INSERT's user FK otherwise takes KEY SHARE before buy_shares'
+            # FOR UPDATE, deadlocking two different keys of the same actor.
+            market_service._lock_users(db, [current_user.id])
         params = {"uid":current_user.id, "key":req.request_id}
         if req.request_id:
             digest = hashlib.sha256(json.dumps([market_id, req.outcome, market_service.to_nano(req.money)], sort_keys=True).encode()).hexdigest()
@@ -750,7 +756,6 @@ def buy_shares_endpoint(
                 if old['payload_hash'] != digest or not old['response']:
                     raise HTTPException(409,"Идентификатор уже использован для другой операции")
                 result=json.loads(old['response']); db.rollback(); return result
-        market = market_service._lock_market(db, market_id)
         market_access.require_unlisted_access(market, viewer=current_user, share_token=market_access.share_token_from_request(request))
         res = market_service.buy_shares(db, market_id=market_id, user_id=current_user.id, outcome=req.outcome, money=req.money, commit=False)
         result = jsonable_encoder({
