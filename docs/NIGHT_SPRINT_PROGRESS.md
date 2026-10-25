@@ -32,3 +32,18 @@ No nightly tests or deployments claimed yet. Preserve exact commands, counts, co
 - Updated historical float-storage warning in `docs/p2p.md`; no money formulas changed.
 - Financial agent found a distinction worth preserving: unversioned legacy snapshot has nano/journal data but diverging float mirrors; exact classification/tests pending its commit. Do not label it proven double-credit or silently convert it.
 - Next: integrate tested diagnostic/Admin/skills commits; run combined suites on separate databases; build isolated onboarding variants.
+
+## Checkpoint 2 — diagnostics, Admin Center, skills integrated
+
+- Release tooling commit: `c204b9f` (pushed).
+- Financial toolkit: `b350253` (agent source `162a2a2`); **20 passed** again in this branch.
+- Admin Center: `d98c388` + PG fixture-boundary patch `d598c51`; **24 passed** integrated SQLite tests.
+- Pinned design skills + six BetTON skills/workflow: `5b952a1`; inline-path correction `a3b0828`.
+- Root developer gate: **8 passed** before path-regression extension; agent final extension **10 passed**, 26 inline references verified. Root `--skills` succeeds after integration.
+- Skills are filesystem-installed and validated, discoverable by Codex on its next turn; manually read/used financial-safety and official prototype instructions during this sprint.
+- Root Admin browser: **14 sections**, zero write/external requests, snapshot SHA unchanged, schema4 diagnostics `checks_passed`; desktop/mobile screenshots actually viewed under `.ux-preview/admin-center-runtime/screenshots/`.
+- Admin Center is running on loopback **8885**, generated local credentials only in `.ux-preview/admin-center-runtime/access.json`. Stop with `stop-admin-simulation.bat`. It does not share a writable database or start app workers.
+- Confirmed Windows defect fixed: SQLAlchemy2.1 escaped `C:` as `C%3A`; Admin's manual SQLite URL parsing now decodes once, with regression.
+- Legacy snapshot findings: 263 markets / 217 orders / 73 fills / 564 journal rows / 26 settlements; 36 float pot mismatches versus internally consistent nano/journal facts. Storage authority remains unknown because version/migration markers are missing. No corrective postings or migration performed.
+- Product Guardian reviewed isolated onboarding flow: **compatible**, with explicit examples, IOC/limit distinction, 1%/75:25, private-link rules and final guarantor decisions. Art Director now builds three separate live directions; actual onboarding untouched.
+- In progress: full combined SQLite run; native PG admin role regression; separate prototype mobile/theme/language/motion checks. Never substitute previous counts for these pending results.
