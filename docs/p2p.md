@@ -1,5 +1,14 @@
 # BetTON: binary P2P orders
 
+> **Current storage note — 26 October 2026.** The float-storage statements and
+> historical test counts below describe the original P2P rollout. Current schema 4
+> uses integer `balance_nano`, `pot_nano`, `lock_nano` and integer settlement money;
+> old float columns remain compatibility mirrors, not authority for schema-4
+> operations. See `docs/BETTON_BIBLE.md` (confirmed October 23–25 decisions),
+> `app/models.py`, `app/money_migrate.py` and `docs/PRODUCTION_READINESS_20261025.md`.
+> Do not infer authority for an unversioned historical database merely from the
+> presence of nano columns. Audit both representations and retain uncertainty.
+
 ## Preserving LMSR
 
 The pre-P2P source is archived on `archive/lmsr-before-p2p` at
