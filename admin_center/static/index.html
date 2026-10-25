@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>BetTON Admin Center</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="logo">BetTON</div>
+        <div class="sublogo">ADMIN CENTER · READ ONLY</div>
+        <nav id="navigation" aria-label="Разделы"></nav>
+        <div class="sidebar-foot">
+          Локальная панель. Действия с балансами и ставками отключены.
+        </div>
+      </aside>
+      <div class="workspace">
+        <header class="header">
+          <div>
+            <h1 id="page-title">Обзор</h1>
+            <p id="page-desc">Данные из существующей базы BetTON</p>
+          </div>
+          <span class="badge">ЛОКАЛЬНО / ТОЛЬКО ЧТЕНИЕ</span>
+        </header>
+        <main id="app" role="main" aria-live="polite"></main>
+      </div>
+    </div>
+    <script src="/assets/app.js" defer></script>
+  </body>
+</html>

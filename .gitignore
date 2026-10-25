@@ -23,3 +23,6 @@ build/
 .uvicorn.out.log
 /start-betton.ps1
 /stop-betton.ps1
+/.admin-center.json
+/.venv-admin/
+/.admin-center-qa/
