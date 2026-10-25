@@ -29,6 +29,9 @@ async function store(page:Page,userId:number,marketId:number,requestId:string) {
 
 test('committed POST with lost response survives closing/reopening the page without another debit',async({page,context},info)=>{
   const {headers,userId,marketId}=await open(page)
+  const notices=await (await page.request.get('/notifications',{headers})).json()
+  const notice=notices.find((n:{read:boolean})=>!n.read)
+  expect(notice).toBeTruthy() // Real approval notification must not cover monetary recovery.
   const before=await (await page.request.get(`/users/${userId}`,{headers})).json()
   const requestId=randomUUID()
   await store(page,userId,marketId,requestId)
@@ -39,8 +42,12 @@ test('committed POST with lost response survives closing/reopening the page with
   await page.close()
   const reopened=await context.newPage();await open(reopened);await own(reopened)
   await expect(reopened.getByText('Результат операции подтверждён',{exact:true})).toBeVisible()
+  await expect(reopened.getByRole('complementary')).toHaveCount(0)
   await reopened.screenshot({path:info.outputPath('recovered.png')})
   await reopened.getByRole('button',{name:'Продолжить',exact:true}).click()
+  await expect(reopened.getByRole('complementary')).toBeVisible()
+  const remainingNotices=await (await reopened.request.get('/notifications',{headers})).json()
+  expect(remainingNotices.find((n:{id:number})=>n.id===notice.id).read).toBe(false)
   expect(await reopened.evaluate(uid=>localStorage.getItem(`betton:order-intent:v1:${uid}`),userId)).toBeNull()
   const after=await (await reopened.request.get(`/users/${userId}`,{headers})).json()
   expect(before.balance-after.balance).toBe(10)

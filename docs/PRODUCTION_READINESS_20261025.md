@@ -23,6 +23,7 @@ Merge `97ef68077f758db60a1ceeed90e54379784eabbb` сохраняет истори
 - В keyed `/buy` исправлен выявленный PostgreSQL тестом deadlock: теперь порядок market → user → receipt. Ранее два разных ключа одного пользователя могли удерживать FK KEY SHARE и ждать FOR UPDATE; одна транзакция откатывалась с 500. Двойное списание этим отказом не доказано. Matching/суммы не менялись; добавлены конкурентные покупки с разными ключами в одном и разных событиях, replay и сверка balance/pot/trades/receipts. Исходный падающий тест сохранён.
 - Старый `/markets/{id}/buy` остаётся доступен с прежним URL и keyed-контрактом/receipt. По умолчанию запрос без `request_id` получает **428 до денежной операции**. Это исключает незащищённые повторы старых клиентов. `ALLOW_UNKEYED_LEGACY_BUY=true` — только явное временное исключение с прежним риском дубля; для выпуска оставить `false`. Серверные расчёты не менялись.
 - Актуальные legacy/React формы сохраняют request ID до отправки; неизвестный результат проверяется через owned lookup. Не очищать unresolved intent или receipts при выпуске. Старую форму без ключей следует обновить; сообщение 428 просит обновить приложение.
+- Chromium обнаружил перекрытие F2-кнопок верхним notification popup. На экранах quick-trade/own-price при unresolved intent popup теперь временно скрыт; heartbeat/query продолжаются, notification не помечается прочитанной и возвращается после подтверждения восстановления. Recovery использует существующие Button/design tokens и собственную прокрутку. E2E проверяет обычный click без force и сохранение непрочитанного уведомления.
 - `/ready` проверяет доступность БД, **точную** версию схемы и наличие корректной webhook-конфигурации при настроенном боте; ошибку выдаёт без секретов. `/health` оставлен совместимым. HTTP startup дополнительно проверяет денежную готовность. На финальной версии Render health path должен быть `/ready`.
 - `python -m app.maintenance` — отдельный сервер без импорта БД, бота и worker. Только `GET /health` возвращает 200 с `writes_enabled:false`; все остальные запросы получают 503/Retry-After. Он включается только отдельным согласованным deployment, а не автоматически при старте.
 
@@ -44,7 +45,7 @@ npx playwright test --config playwright.release.config.ts
 
 `frontend/release-tests/recovery.spec.ts` запускается в Chromium с реальной production-сборкой и локальным API/HMAC-auth на синтетических данных: сервер принял POST, ответ потерян, страница закрыта/открыта; сеть недоступна, затем reload/lookup/явный повтор прежним ключом. Проверяются одна заявка и ровно одно уменьшение баланса. Два мобильных viewport/темы, screenshot recovery хранится в CI artifact. Intent специально создаётся тестовым fixture; сами формы отправки дополнительно покрыты unit/backend-тестами. Это браузерная интеграция, **не Telegram WebView** и не полный визуальный аудит.
 
-Результаты финального коммита и ссылки на CI фиксируются ниже после выполнения. Промежуточный PG run на `1b6baa9` дал 419 passed / 1 failed и выявил описанный выше deadlock; этот run не является успешной регрессией. Локально: 395 passed, 25 PostgreSQL-only skipped; frontend 172 passed. Пропуски не являются подтверждением PostgreSQL.
+Результаты финального коммита и ссылки на CI фиксируются ниже после выполнения. Промежуточный PG run на `1b6baa9` дал 419 passed / 1 failed и выявил описанный выше deadlock; этот run не является успешной регрессией. После исправления: локально 397 passed, 25 PostgreSQL-only skipped; frontend 172 passed. PostgreSQL 16 CI на `dfd41c965dbe6b077be99c6d45c72fc15634b342`: **422 passed, 0 failed, 0 skipped**, включая настоящий полный backup/restore. Пропуски SQLite не являются подтверждением PostgreSQL.
 
 ## 4. Что остаётся неподтверждённым
 
@@ -64,6 +65,24 @@ npx playwright test --config playwright.release.config.ts
 2. Не выполнять backup/DDL, пока старые процессы продолжают записывать. Сроки 24 часа гарантов продолжают идти по часам; выбрать окно без близких дедлайнов, после запуска проверить обработку просроченных событий по прежним правилам, не менять экономические условия.
 3. SQLite: копировать через `sqlite3.Connection.backup` при остановленных writers, проверить integrity_check и foreign_key_check; не копировать только .db, игнорируя WAL. Backup хранить с правами 0600 вне перезаписываемой release-директории. PostgreSQL: `pg_dump --format=custom`, credentials через защищённое окружение/pgpass, не CLI/логи; сохранить checksum и ограничения доступа.
 4. Восстановить копию в **новую изолированную** БД. Сравнить полные fingerprints, число/ID пользователей и событий, балансы, резервы, pot, заявки, исполнения, receipts и журнал. Выполнить reconcile для покрытых журналом событий; отдельно документировать старые события с неполным покрытием. После копии не должно быть новых записей в источнике.
+
+Пример SQLite backup, только в согласованном окне, с приватными абсолютными путями в `BETTON_SOURCE_SQLITE`/`BETTON_RELEASE_BACKUP` (скрипт не загружает app/.env и не меняет схему):
+
+```python
+import os, sqlite3
+from pathlib import Path
+source = Path(os.environ['BETTON_SOURCE_SQLITE']).resolve(strict=True)
+backup = Path(os.environ['BETTON_RELEASE_BACKUP']).resolve()
+fd = os.open(backup, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+os.close(fd)
+with sqlite3.connect(source.as_uri() + '?mode=ro', uri=True) as src:
+    with sqlite3.connect(backup) as dst:
+        src.backup(dst)
+        assert dst.execute('PRAGMA integrity_check').fetchone() == ('ok',)
+        assert dst.execute('PRAGMA foreign_key_check').fetchall() == []
+```
+
+Для PostgreSQL после остановки writers: `pg_dump --format=custom --file "$BETTON_RELEASE_BACKUP"` с приватными PGHOST/PGDATABASE/PGUSER/PGPASSFILE и `umask 077`. Восстановление выполнять **на другом тестовом host/database**, `pg_restore --no-owner --no-acl --exit-on-error --dbname "$BETTON_RESTORE_DATABASE" "$BETTON_RELEASE_BACKUP"`; проверить окружение подключения до запуска. Без `--clean`/перезаписи источника. Для SQLite restore выполнить online backup из файла копии в новый файл с другим именем. Финансовая сверка обязательна сверх integrity_check. Эти примеры на рабочем окружении не запускались.
 
 У Render pre-deploy отдельная среда, не имеющая доступа к persistent disk. Для SQLite выполнить ручную миграцию из disk-bearing maintenance instance/его shell; не помещать её в недоступный disk pre-deploy. PostgreSQL может использовать отдельный maintenance job с сетевым доступом, но только после остановки старых writers. Persistent disk также исключает обычный zero-downtime rollout; этот план намеренно использует окно обслуживания.
 
@@ -102,7 +121,8 @@ CI Chromium проверяет часть этих условий, но не mob
 ## 7. Откат
 
 - При неудачной миграции оставить maintenance и проверить revision/финансовые fingerprints. Миграционный rollback транзакции проверен тестами, но не заменяет backup.
-- Schema 4 добавляет receipts и BIGINT. Не удалять таблицы и не сужать типы. Старые builds с exact schema 2/3 не запустятся на 4: заранее подготовить schema-4-совместимый rollback artifact или roll-forward hotfix. Не обещать безопасный простой откат на старый main.
+- Подготовленный безопасный аварийный режим — **тот же интеграционный SHA**, start `python -m app.maintenance`, health `/health`. Его запрет записи и отказ webhook с 503 проверены автоматически. Это остановка при ошибке для roll-forward, а не обещание работы старого интерфейса. Для него не нужно откатывать схему.
+- Schema 4 добавляет receipts и BIGINT. Не удалять таблицы и не сужать типы. Старые builds с exact schema 2/3 не запустятся на 4. Полный функциональный откат на прежний main не подтверждён: он потребует согласованного восстановления базы и отдельно проверенной защищённой старой сборки (S1), либо roll-forward hotfix. Не запускать автоматически старую небезопасную версию.
 - Восстановление полного backup выполнять сначала в новую БД, проверить и только затем согласованно переключить. Writers должны оставаться остановленными. Если после backup принимались денежные операции, нельзя просто восстановить старую копию: потеряются они и receipts. Нужен отдельный план сверки/переноса или roll-forward.
 - Render code rollback **не восстанавливает** БД/persistent disk. Сохранить настройки webhook current/previous и клиентский lookup/receipts при rollback. Не переключать на незащищённый старый webhook или /buy.
 

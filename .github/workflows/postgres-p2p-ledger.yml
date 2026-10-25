@@ -3,7 +3,7 @@ name: P2P journal PostgreSQL
 on:
   pull_request:
   push:
-    branches: [main, test/postgres-p2p-ledger, fix/post-audit-core-20261024, integration/post-audit-20261025]
+    branches: [main, test/postgres-p2p-ledger, fix/post-audit-core-20261024]
 
 permissions:
   contents: read

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { checkOrderIntent, completeOrderIntent, INTENT_EVENT, orderIntentKey, readOrderIntent, retryOrderIntent, UNKNOWN_RESULT } from '../api/orderIntent'
 import { formatTonFull } from '../lib/format'
 import type { OrderOut } from '../api/types'
+import { Button } from '../components/Button/Button'
+import styles from './OrderIntentRecovery.module.css'
 
 export function useHasOrderIntent(userId?: number): boolean {
   const snapshot = () => {
@@ -55,14 +57,15 @@ export function OrderIntentRecovery({userId, busy, onResolved}: {userId:number; 
     } catch { if (alive.current) setMessage(UNKNOWN_RESULT) }
     finally { if (alive.current) setChecking(false) }
   }
-  if (known) return <section role="status" aria-live="polite">
+  return <section className={styles.screen} role="status" aria-live="polite"><div className={styles.panel}>
+    {known ? <>
     <p>Результат операции подтверждён</p>
     <p>Событие #{known.market_id}{known.kind === 'legacy_buy' ? ' · ставка выполнена' : ' · коэффициент ' + known.odds}</p>
     <p>Исполнено: {formatTonFull(known.filled)} · осталось в предложении: {formatTonFull(known.remaining)} · возвращено: {formatTonFull(known.refunded)}</p>
-    <button type="button" onClick={() => { resolved.current(known); completeOrderIntent(userId,known) }}>Продолжить</button>
-  </section>
-  return <section role="status" aria-live="polite">
+    <Button fullWidth onClick={() => { resolved.current(known); completeOrderIntent(userId,known) }}>Продолжить</Button>
+  </> : <>
     <p>{busy ? 'Отправляем предложение…' : message}</p>
-    {!busy ? <button type="button" disabled={checking} onClick={() => { void retry() }}>{canRetry ? 'Повторить прежнее предложение' : 'Проверить результат'}</button> : null}
-  </section>
+    {!busy ? <Button fullWidth disabled={checking} onClick={() => { void retry() }}>{canRetry ? 'Повторить прежнее предложение' : 'Проверить результат'}</Button> : null}
+  </>}
+  </div></section>
 }

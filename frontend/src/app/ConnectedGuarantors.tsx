@@ -337,9 +337,11 @@ export function ConnectedNotifications({
 export function GuarantorAlerts({
   userId,
   onOpen,
+  paused = false,
 }: {
   userId?: number;
   onOpen: (id: number) => void;
+  paused?: boolean;
 }) {
   const qc = useQueryClient();
   const notices = useQuery({
@@ -370,7 +372,8 @@ export function GuarantorAlerts({
     };
   }, [userId]);
   const item = notices.data?.find((notice) => !notice.read && notice.market_id != null) ?? null;
-  if (!userId || !item) return null;
+  // Keep heartbeat/query active and notifications unread while monetary recovery owns the screen.
+  if (!userId || !item || paused) return null;
   return (
     <aside className={s.alert} aria-live="polite">
       <p>{item.text}</p>

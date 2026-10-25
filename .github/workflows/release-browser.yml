@@ -1,8 +1,6 @@
 name: Integration browser recovery
 on:
   pull_request:
-  push:
-    branches: [integration/post-audit-20261025]
 permissions:
   contents: read
 jobs:
