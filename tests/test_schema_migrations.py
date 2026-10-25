@@ -129,3 +129,40 @@ def test_revision_four_failure_preserves_revision_three_and_user(tmp_path,monkey
     monkeypatch.setattr(legacy_purchase_intents,'upgrade',original)
     with ThreadPoolExecutor(2) as pool: list(pool.map(lambda _:upgrade(db),range(2)))
     assert_schema_ready(db); db.dispose()
+
+
+@pytest.mark.skipif(engine.dialect.name != 'postgresql', reason='actual PostgreSQL migration rollback required')
+def test_pg_revision_four_rollback_and_parallel_upgrade_preserve_populated_revision_three(monkeypatch):
+    from app.migrations.baseline import upgrade as baseline
+    from app.migrations import event_intents, legacy_purchase_intents
+    schema='migration_f2_' + uuid.uuid4().hex
+    with engine.begin() as conn: conn.exec_driver_sql(f'CREATE SCHEMA {schema}')
+    isolated=create_engine(engine.url,connect_args={'options':'-c search_path='+schema})
+    try:
+        with isolated.begin() as conn:
+            baseline(conn)
+            conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance,balance_nano) VALUES(1,1234567000,'preserved_f2',1,1000000000)")
+            conn.exec_driver_sql('CREATE TABLE betton_schema_version(id INTEGER PRIMARY KEY, revision INTEGER NOT NULL)')
+            conn.exec_driver_sql('INSERT INTO betton_schema_version VALUES(1,3)')
+            conn.exec_driver_sql('ALTER TABLE users ALTER COLUMN telegram_id TYPE BIGINT USING telegram_id::bigint')
+            event_intents.upgrade(conn)
+            conn.exec_driver_sql("INSERT INTO event_creation_intents VALUES(1,'create_event','preserved-key','hash','{}')")
+        original=legacy_purchase_intents.upgrade
+        def failure(conn):
+            original(conn); raise RuntimeError('injected PostgreSQL migration failure')
+        monkeypatch.setattr(legacy_purchase_intents,'upgrade',failure)
+        with pytest.raises(RuntimeError,match='injected PostgreSQL migration failure'): upgrade(isolated)
+        with isolated.connect() as conn:
+            assert conn.exec_driver_sql('SELECT revision FROM betton_schema_version').scalar_one()==3
+            assert conn.exec_driver_sql('SELECT balance_nano FROM users').scalar_one()==1000000000
+            assert 'legacy_purchase_intents' not in inspect(conn).get_table_names()
+            assert conn.exec_driver_sql('SELECT response FROM event_creation_intents').scalar_one()=='{}'
+        monkeypatch.setattr(legacy_purchase_intents,'upgrade',original)
+        with ThreadPoolExecutor(2) as pool: list(pool.map(lambda _:upgrade(isolated),range(2)))
+        upgrade(isolated); assert_schema_ready(isolated)
+        with isolated.connect() as conn:
+            assert conn.exec_driver_sql('SELECT balance_nano FROM users').scalar_one()==1000000000
+            assert conn.exec_driver_sql('SELECT response FROM event_creation_intents').scalar_one()=='{}'
+    finally:
+        isolated.dispose()
+        with engine.begin() as conn: conn.exec_driver_sql(f'DROP SCHEMA {schema} CASCADE')
