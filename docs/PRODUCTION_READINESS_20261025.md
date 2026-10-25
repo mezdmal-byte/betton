@@ -45,7 +45,7 @@ npx playwright test --config playwright.release.config.ts
 
 `frontend/release-tests/recovery.spec.ts` запускается в Chromium с реальной production-сборкой и локальным API/HMAC-auth на синтетических данных: сервер принял POST, ответ потерян, страница закрыта/открыта; сеть недоступна, затем reload/lookup/явный повтор прежним ключом. Проверяются одна заявка и ровно одно уменьшение баланса. Два мобильных viewport/темы, screenshot recovery хранится в CI artifact. Intent специально создаётся тестовым fixture; сами формы отправки дополнительно покрыты unit/backend-тестами. Это браузерная интеграция, **не Telegram WebView** и не полный визуальный аудит.
 
-Результаты финального коммита и ссылки на CI фиксируются ниже после выполнения. Промежуточный PG run на `1b6baa9` дал 419 passed / 1 failed и выявил описанный выше deadlock; этот run не является успешной регрессией. После исправления: локально 397 passed, 25 PostgreSQL-only skipped; frontend 172 passed. PostgreSQL 16 CI на `dfd41c965dbe6b077be99c6d45c72fc15634b342`: **422 passed, 0 failed, 0 skipped**, включая настоящий полный backup/restore. Пропуски SQLite не являются подтверждением PostgreSQL.
+Успешные результаты кода интеграционного кандидата и ссылки на CI приведены в разделе 8. Промежуточный PG run на `1b6baa9` дал 419 passed / 1 failed и выявил описанный выше deadlock; этот run не является успешной регрессией. После исправления: локально 397 passed, 25 PostgreSQL-only skipped; frontend 172 passed. PostgreSQL 16 CI на `dfd41c965dbe6b077be99c6d45c72fc15634b342`: **422 passed, 0 failed, 0 skipped**, включая настоящий полный backup/restore. Пропуски SQLite не являются подтверждением PostgreSQL.
 
 ## 4. Что остаётся неподтверждённым
 
@@ -130,4 +130,31 @@ CI Chromium проверяет часть этих условий, но не mob
 
 ## 8. Итоговый CI
 
-Будет заполнен после проверок интеграционного коммита. До этого кандидат не объявляется готовым к выпуску.
+Все проверки последней редакции кода `c35213a4dcb5875a08655910ec332ba721fee40f` прошли:
+
+| Проверка | Результат | CI |
+|---|---|---|
+| Полный backend, PostgreSQL 16 | **422 passed, 0 failed, 0 skipped** | [run 40165676776](https://github.com/mezdmal-byte/betton/actions/runs/40165676776) |
+| SQLite CI | **397 passed, 13 PG-only skipped**, ещё 12 PG-тестов исключены только из SQLite job | тот же run |
+| Frontend | **172 passed**, production build успешен | [run 40165676817](https://github.com/mezdmal-byte/betton/actions/runs/40165676817) |
+| Chromium + реальный изолированный API | **4 passed**, две темы/viewport, потеря ответа и offline/reload/replay | [run 40165676784](https://github.com/mezdmal-byte/betton/actions/runs/40165676784) |
+| Полный локальный pytest | **397 passed, 25 PG-only skipped** | локальный независимый прогон; PG подтверждён отдельным CI выше |
+
+Тесты миграций, полный backup/restore rehearsal, rollback ошибки, разные request keys и финансовые инварианты входят в backend 422. Никакие упавшие финансовые тесты не исключались. Отдельный guard unkeyed /buy добавлен до денежных действий; legacy-тесты теперь передают ключи, сохраняя прежние денежные assertions.
+
+[Скриншоты recovery](https://github.com/mezdmal-byte/betton/actions/runs/40165676784/artifacts/12588785797) просмотрены: 390×844/light и 430×932/dark, кнопка не перекрыта, notification восстановлена без mark-read. Artifact хранится 7 дней. Это не проверка всех экранов и не Telegram WebView.
+
+Последний отчётный commit меняет только Markdown; **CI повторяется и на итоговом HEAD**, точные SHA/ссылки опубликованы в [PR #22](https://github.com/mezdmal-byte/betton/pull/22). Не подменять его прежним CI PR #20. Integration push не запускает дублирующие наборы: все три workflow срабатывают на обновление PR.
+
+| ID | Статус в интеграционном коде | Подтверждение / оставшееся условие |
+|---|---|---|
+| S1 | Реализовано, регрессия прошла | header/rotation/proxy/shutdown tests; реальная регистрация только после согласования |
+| S2 | Реализовано, регрессия прошла | BIGINT + populated/concurrent migration PG; реальная копия ещё не проверена |
+| S3 | Реализовано, регрессия прошла | стабильные ID/revocation/auth tests; реальные admin ID подтвердить приватно |
+| F1 | Реализовано, регрессия прошла | история отражает journal/rewards, несколько позиций/победителей; новых начислений не создавали |
+| F2 | Реализовано, регрессия прошла | persistent intent/lookup/replay/rollback/concurrency + Chromium; Telegram smoke остаётся |
+| F3 | Реализовано, регрессия прошла | SQLite FK init и отказ broken references; старые реальные строки проверить на копии |
+| A1 | Реализовано, регрессия прошла | explicit migrations, parallel/rollback/restore; выпуск отдельно в maintenance |
+| A4 | Реализовано, регрессия прошла | atomic event/invitation receipts, canonical conflict, restart/concurrency; schema 4 до запуска |
+
+**Вывод:** разработка обязательного набора и разрешение конфликтов завершены; кандидат готов к review и контролируемой процедуре выпуска. До включения production обязательны реальная изолированная копия/сверка, Telegram smoke и разрешение владельца на операции из раздела 5. Эти проверки не заявлены выполненными. Ни один из восьми пунктов ещё не развёрнут этой работой в production. Большой новый этап разработки не требуется при успешном прохождении этих операционных ворот; конкретная проблема в реальных данных может потребовать отдельного исправления.
