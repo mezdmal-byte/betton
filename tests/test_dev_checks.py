@@ -91,3 +91,29 @@ def test_skill_pin_survives_windows_checkout_line_endings(tmp_path):
         'hashKind':'skill-entry-sha256','normalization':'utf8-lf',
         'computedHash':hashlib.sha256(source).hexdigest()}}}))
     assert check_dev.validate_skills(tmp_path) == []
+
+
+def test_own_skill_inline_repo_path_is_validated_but_templates_are_not(tmp_path):
+    canonical = tmp_path/'.cursor/skills/impeccable/SKILL.md'
+    canonical.parent.mkdir(parents=True)
+    canonical.write_text('canonical')
+    command = tmp_path/'scripts/check_dev.py'
+    command.parent.mkdir()
+    command.write_text('helper')
+    (tmp_path/'app/migrations').mkdir(parents=True)
+    entry = tmp_path/'.agents/skills/betton-example/SKILL.md'
+    entry.parent.mkdir(parents=True)
+    entry.write_text('---\nname: betton-example\ndescription: Local work\n---\n'
+                     'Read `app/migrations/` and `app/missing.py`. '
+                     'Run `python scripts/check_dev.py --tests tests/test_<target>.py`.')
+    assert check_dev.validate_skills(tmp_path) == ['betton-example: missing repo reference app/missing.py']
+
+
+def test_upstream_skill_inline_project_examples_do_not_require_repo_files(tmp_path):
+    canonical = tmp_path/'.cursor/skills/impeccable/SKILL.md'
+    canonical.parent.mkdir(parents=True)
+    canonical.write_text('canonical')
+    entry = tmp_path/'.agents/skills/upstream-example/SKILL.md'
+    entry.parent.mkdir(parents=True)
+    entry.write_text('---\nname: upstream-example\ndescription: Generic projects\n---\nRead `app/example.py`.')
+    assert check_dev.validate_skills(tmp_path) == []

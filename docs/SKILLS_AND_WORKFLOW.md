@@ -81,7 +81,11 @@ migration, network request or deployment is a side effect. `--types` uses the in
 
 Keep `.github/workflows/postgres-p2p-ledger.yml`, `frontend-ci.yml`, `ui-screenshots.yml`. PR events already
 run the relevant backend, PostgreSQL, frontend and browser checks; a parallel replacement CI is unnecessary.
-The developer-check tests run in the existing backend jobs. The quick gate does not claim to replace the
+The developer-check tests run in the existing backend jobs. BetTON-authored skill inline repo references
+are checked as well as Markdown links: concrete paths must exist; named templates/globs are skipped.
+Upstream generic skills are excluded from this repo-specific check. Forward use caught the wrong
+`app/migrations.py` reference; it is corrected to the real `app/migrations/` package.
+The quick gate does not claim to replace the
 full PostgreSQL/recovery/browser suite or actual Telegram WebView testing.
 
 Behavioral verification uses isolated temporary Git repositories: staged secret retained despite a clean

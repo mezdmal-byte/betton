@@ -6,7 +6,7 @@ description: Investigate or change BetTON money, reserves, ledger, settlement, i
 # Financial work in BetTON
 
 Read the confirmed money sections of `docs/BETTON_BIBLE.md`, then the affected contracts in
-`app/services/p2p_service.py`, `app/services/p2p_ledger.py`, `app/money.py`, and `app/migrations.py`.
+`app/services/p2p_service.py`, `app/services/p2p_ledger.py`, `app/money.py`, and `app/migrations/`.
 `docs/p2p.md` contains historical float-era descriptions: verify current integer models before using them.
 
 Use nanoTON integers for money; frontend formatting must not become an accounting source.

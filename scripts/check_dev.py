@@ -64,6 +64,26 @@ def staged_findings(root):
     return result
 
 
+def own_skill_repo_references(source):
+    """Concrete repo paths in inline code, including commands with path arguments.
+
+    Apply only to BetTON-authored skills: upstream skills legitimately demonstrate
+    paths for projects that do not exist here. Explicit templates/globs are not files.
+    """
+    paths = set()
+    for snippet in re.findall(r'(?<!`)`([^`\n]+)`(?!`)', source):
+        if '://' in snippet:
+            continue
+        for token in re.split(r'[\s;,]+', snippet):
+            target = token.strip('\"\x27()[]').replace('\\', '/')
+            if any(marker in target for marker in ('<', '>', '{', '}', '*', '...')):
+                continue
+            if (re.match(r'^(?:\./)?(?:app|docs|scripts|tests|frontend|\.cursor|\.agents)/', target)
+                    or target in {'AGENTS.md', 'PRODUCT.md', 'DESIGN.md'}):
+                paths.add(target)
+    return sorted(paths)
+
+
 def validate_skills(root):
     issues = []
     skills = root / '.agents/skills'
@@ -93,6 +113,13 @@ def validate_skills(root):
                 continue
             if not (directory / target).exists():
                 issues.append(f'{directory.name}: missing reference {target}')
+        if directory.name.startswith('betton-'):
+            for target in own_skill_repo_references(source[frontmatter.end():]):
+                resolved = (root / target).resolve()
+                if not resolved.is_relative_to(root.resolve()):
+                    issues.append(f'{directory.name}: repo reference escapes root {target}')
+                elif not resolved.exists():
+                    issues.append(f'{directory.name}: missing repo reference {target}')
         recorded = lock.get('skills', {}).get(directory.name, {})
         # Existing npm-skills tree hashes are not hashes of one entry point.
         if recorded.get('hashKind') == 'skill-entry-sha256':

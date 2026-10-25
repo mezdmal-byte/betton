@@ -41,7 +41,7 @@
       "sourceType": "local",
       "skillPath": ".agents/skills/betton-financial-safety/SKILL.md",
       "hashKind": "skill-entry-sha256",
-      "computedHash": "49c23d3f4995fb374254c3c8ae4c1bb073acd08ba3b5201be4bb4500f29c1833",
+      "computedHash": "2beee163014b1b7352ab9c8ab779d80c7427f760cd8ae3879042e077651fd7da",
       "license": "project",
       "normalization": "utf8-lf"
     },
