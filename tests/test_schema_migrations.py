@@ -87,6 +87,7 @@ def test_revision_three_upgrade_failure_rolls_back_without_touching_users(tmp_pa
     upgrade(db)
     with db.begin() as conn:
         conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance,balance_nano) VALUES(1,123,'preserved',1,1000000000)")
+        conn.exec_driver_sql('DROP TABLE legacy_purchase_intents')
         conn.exec_driver_sql('DROP TABLE event_creation_intents')
         conn.exec_driver_sql('UPDATE betton_schema_version SET revision=2')
     original = event_intents.upgrade
@@ -106,3 +107,25 @@ def test_revision_three_upgrade_failure_rolls_back_without_touching_users(tmp_pa
     with db.connect() as conn:
         assert conn.exec_driver_sql('SELECT telegram_id FROM users WHERE id=1').scalar_one() == 123
     db.dispose()
+
+
+def test_revision_four_failure_preserves_revision_three_and_user(tmp_path,monkeypatch):
+    from app.migrations import legacy_purchase_intents
+    db=create_engine('sqlite:///' + str(tmp_path/'revision3.db'))
+    enforce_sqlite_foreign_keys(db); upgrade(db)
+    with db.begin() as conn:
+        conn.exec_driver_sql("INSERT INTO users(id,telegram_id,username,balance,balance_nano) VALUES(1,456,'kept',1,1000000000)")
+        conn.exec_driver_sql('DROP TABLE legacy_purchase_intents')
+        conn.exec_driver_sql('UPDATE betton_schema_version SET revision=3')
+    original=legacy_purchase_intents.upgrade
+    def failure(conn):
+        original(conn); raise RuntimeError('receipt migration failure')
+    monkeypatch.setattr(legacy_purchase_intents,'upgrade',failure)
+    with pytest.raises(RuntimeError,match='receipt migration failure'): upgrade(db)
+    with db.connect() as conn:
+        assert conn.exec_driver_sql('SELECT revision FROM betton_schema_version').scalar_one()==3
+        assert conn.exec_driver_sql('SELECT balance_nano FROM users WHERE id=1').scalar_one()==1000000000
+        assert 'legacy_purchase_intents' not in inspect(conn).get_table_names()
+    monkeypatch.setattr(legacy_purchase_intents,'upgrade',original)
+    with ThreadPoolExecutor(2) as pool: list(pool.map(lambda _:upgrade(db),range(2)))
+    assert_schema_ready(db); db.dispose()

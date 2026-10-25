@@ -140,6 +140,8 @@ class QuoteRequest(BaseModel):
 
 
 class BuySharesRequest(BaseModel):
+    request_id: str | None = Field(default=None, min_length=8, max_length=64)
+    expected_user_id: int | None = Field(default=None, gt=0)
     model_config = ConfigDict(extra="ignore")
     outcome: OutcomeRef
     money: float = Field(gt=0)
@@ -283,6 +285,7 @@ class OrderPreviewRequest(BaseModel):
 
 
 class OrderRequest(OrderPreviewRequest):
+    expected_user_id: int | None = Field(default=None, gt=0)
     request_id: str = Field(min_length=8, max_length=64)
 
 

@@ -143,6 +143,7 @@ export type OrderPreviewOut = {
 }
 
 export type OrderPlaceBody = {
+  expected_user_id?: number
   outcome: number
   money: string | number
   odds: string | number

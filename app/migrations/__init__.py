@@ -1,7 +1,7 @@
 """Explicit, serialized schema upgrades; HTTP startup only checks the revision."""
 from sqlalchemy import inspect, text
 
-CURRENT_REVISION = 3
+CURRENT_REVISION = 4
 LOCK_ID = 682031024
 
 
@@ -51,6 +51,9 @@ def upgrade(target_engine=None):
             if current < 3:
                 from .event_intents import upgrade as event_intents_upgrade
                 event_intents_upgrade(conn)
+            if current < 4:
+                from .legacy_purchase_intents import upgrade as purchase_upgrade
+                purchase_upgrade(conn)
             conn.execute(text('DELETE FROM betton_schema_version WHERE id=1'))
             conn.execute(text('INSERT INTO betton_schema_version (id, revision) VALUES (1, :revision)'), {'revision': CURRENT_REVISION})
             conn.commit()

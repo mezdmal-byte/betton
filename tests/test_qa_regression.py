@@ -72,6 +72,8 @@ def test_simple_bet_keeps_canonical_odds_and_places_ioc(tmp_path: Path):
         p2p
         + r"""
 let me = {id:2, balance:1000};
+const stored = new Map();
+const localStorage = {getItem:k=>stored.get(k)||null, setItem:(k,v)=>stored.set(k,v), removeItem:k=>stored.delete(k)};
 let authBlocked = false;
 const placed = [];
 async function api(path, options) {
@@ -83,7 +85,7 @@ async function api(path, options) {
     };
   }
   placed.push(body);
-  return {filled: 40, remaining: 0, refunded: 60, status: 'filled'};
+  return {market_id:7, request_id:body.request_id, filled: 40, remaining: 0, refunded: 60, status: 'filled'};
 }
 function requireLogin() {}
 function toast() {}

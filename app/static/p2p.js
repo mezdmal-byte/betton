@@ -587,8 +587,68 @@ async function p2pQuote(card) {
   }
 }
 
+const p2pIntentRunning = new Map();
+function p2pIntentKey(uid) { return "betton:order-intent:v1:" + uid; }
+function p2pReadIntent(uid) {
+  const raw = localStorage.getItem(p2pIntentKey(uid));
+  if (!raw) return null;
+  const intent = JSON.parse(raw);
+  if (intent.userId !== uid || typeof intent.requestId !== "string" || !Number.isSafeInteger(intent.marketId) || !Number.isFinite(intent.createdAt)) throw new Error("Не удалось определить результат. Проверьте историю перед повторной попыткой.");
+  if (Date.now() - intent.createdAt > 7*24*60*60*1000 && intent.body) {
+    delete intent.body;
+    localStorage.setItem(p2pIntentKey(uid), JSON.stringify(intent));
+  }
+  return intent;
+}
+async function p2pRecoverPending(retry = false) {
+  if (!me) return false;
+  const uid = me.id;
+  const intent = p2pReadIntent(uid);
+  if (!intent) return false;
+  let order;
+  try { order = await api("/users/"+uid+(intent.operation === "legacy_buy" ? "/purchases/by-request/" : "/orders/by-request/")+encodeURIComponent(intent.requestId)); }
+  catch (e) { if (e.status !== 404) throw e; }
+  if (!me || me.id !== uid) return true;
+  if (!order && retry && intent.body) order = await api("/markets/"+intent.marketId+(intent.operation === "legacy_buy" ? "/buy" : "/orders"), {method:"POST",body:JSON.stringify({...intent.body,request_id:intent.requestId,expected_user_id:uid})});
+  if (!me || me.id !== uid) return true;
+  if (order) {
+    if (order.request_id !== intent.requestId || order.market_id !== intent.marketId) throw new Error("Результат операции не подтверждён");
+    localStorage.removeItem(p2pIntentKey(uid));
+    toast(intent.operation === "legacy_buy" ? "Ставка выполнена: " + fmtP2P(order.paid) : p2pPlaceToast(order));
+    const banner = document.getElementById("p2p-intent-recovery"); if (banner) banner.remove();
+    return true;
+  }
+  throw new Error("Не удалось определить результат. Проверьте историю перед повторной попыткой.");
+}
+function p2pShowRecovery() {
+  if (!me || typeof document === "undefined") return;
+  let intent;
+  try { intent = p2pReadIntent(me.id); } catch { intent = {}; }
+  const previous = document.getElementById("p2p-intent-recovery"); if (previous) previous.remove();
+  if (!intent) return;
+  const banner = document.createElement("section"); banner.id = "p2p-intent-recovery"; banner.className = "card"; banner.setAttribute("role","status");
+  const label = document.createElement("p"); label.textContent = "Проверяем результат операции…";
+  const button = document.createElement("button"); button.textContent = "Проверить результат"; button.disabled = true;
+  banner.append(label,button); document.body.prepend(banner);
+  const run = async (retry) => {
+    button.disabled = true;
+    try { await p2pRecoverPending(retry); }
+    catch (e) { label.textContent = e.message; button.disabled = false; }
+    if (intent.body) button.textContent = "Повторить прежнее предложение: " + intent.body.money + " TON · событие #" + intent.marketId;
+  };
+  button.onclick = () => { void run(!!intent.body); };
+  void run(false);
+}
 async function p2pPlace(card, kind) {
   requireLogin();
+  const uid = me.id;
+  if (p2pIntentRunning.has(uid)) return p2pIntentRunning.get(uid);
+  const operation = p2pPlaceIntent(card,kind,uid).finally(() => p2pIntentRunning.delete(uid));
+  p2pIntentRunning.set(uid,operation);
+  return operation;
+}
+async function p2pPlaceIntent(card, kind, uid) {
+  if (p2pReadIntent(uid)) { await p2pRecoverPending(false); return; }
   const terms = p2pTerms(card);
   const payload = {outcome: Number(terms.outcome), money: terms.money, odds: Number(terms.odds)};
   if (Number(me.balance) < Number(terms.money)) {
@@ -603,16 +663,18 @@ async function p2pPlace(card, kind) {
     if (!sameSide || !sameOdds) throw new Error("Обновите предложение");
     payload.odds = card.availableQuote.odds;
   }
-  const fingerprint = JSON.stringify({...payload, kind});
-  if (card.orderFingerprint !== fingerprint) {
-    card.orderFingerprint = fingerprint;
-    card.orderRequestId = crypto.randomUUID();
+  const intent = {userId:uid,marketId:Number(card.dataset.id),createdAt:Date.now(),requestId:crypto.randomUUID(),body:{...payload,kind}};
+  localStorage.setItem(p2pIntentKey(uid),JSON.stringify(intent));
+  let result;
+  try {
+    result = await api("/markets/"+intent.marketId+(intent.operation === "legacy_buy" ? "/buy" : "/orders"), {method:"POST",body:JSON.stringify({...intent.body,request_id:intent.requestId,expected_user_id:uid})});
+    if (result.request_id !== intent.requestId || result.market_id !== intent.marketId) throw new Error("Результат операции не подтверждён");
+    localStorage.removeItem(p2pIntentKey(uid));
+  } catch (e) {
+    if ([400,422].includes(e.status)) localStorage.removeItem(p2pIntentKey(uid));
+    p2pShowRecovery(); throw e;
   }
-  const result = await api("/markets/"+card.dataset.id+"/orders", {method:"POST",
-    body:JSON.stringify({...payload, kind, request_id:card.orderRequestId})});
-  card.orderRequestId = null;
-  card.orderFingerprint = null;
-  toast(p2pPlaceToast(result));
+  if (me && me.id === uid) toast(p2pPlaceToast(result));
 }
 
 function orderStatusText(o) {
@@ -725,4 +787,21 @@ function paintModeration() {
   if (!root) return;
   const markets = (typeof moderationMarkets !== "undefined" && moderationMarkets) ? moderationMarkets : [];
   root.innerHTML = markets.length ? markets.map(marketCard).join("") : '<div class="empty-state">' + escapeHtml(tt("mod.empty", "Нет событий на проверке.")) + "</div>";
+}
+
+async function p2pLegacyBuy(card, outcome, money) {
+  requireLogin(); const uid = me.id;
+  if (p2pIntentRunning.has(uid)) return p2pIntentRunning.get(uid);
+  const run = async () => {
+    if (p2pReadIntent(uid)) { await p2pRecoverPending(false); return; }
+    const intent = {userId:uid,operation:'legacy_buy',marketId:Number(card.dataset.id),createdAt:Date.now(),requestId:crypto.randomUUID(),body:{kind:'legacy_buy',outcome:Number(outcome),money}};
+    localStorage.setItem(p2pIntentKey(uid),JSON.stringify(intent));
+    try {
+      const result = await api('/markets/'+intent.marketId+'/buy',{method:'POST',body:JSON.stringify({...intent.body,request_id:intent.requestId,expected_user_id:uid})});
+      if (result.request_id !== intent.requestId || result.market_id !== intent.marketId) throw new Error('Результат операции не подтверждён');
+      localStorage.removeItem(p2pIntentKey(uid));
+      if (me && me.id === uid) toast('Ставка выполнена: '+fmtP2P(result.paid));
+    } catch(e) { if ([400,422].includes(e.status)) localStorage.removeItem(p2pIntentKey(uid)); p2pShowRecovery(); throw e; }
+  };
+  const operation = run().finally(()=>p2pIntentRunning.delete(uid));p2pIntentRunning.set(uid,operation);return operation;
 }

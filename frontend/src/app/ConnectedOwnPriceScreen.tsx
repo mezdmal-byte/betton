@@ -1,11 +1,12 @@
+import { completeOrderIntent, submitOrderIntent } from '../api/orderIntent'
+import { OrderIntentRecovery, useHasOrderIntent } from './OrderIntentRecovery'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { mapMarketOut, mapOrderBookLevels, mapOrderPreview, mapTradesToRecent, moneyForOrder } from '../api/adapters'
 import { isApiError } from '../api/client'
 import { errorDetail, isInsufficientBalanceError } from '../api/errors'
-import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
 import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
-import { cancelOrder, placeOrder, previewOrder } from '../api/orders'
+import { cancelOrder, previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
 import { hapticNotification } from '../telegram/webapp'
@@ -41,7 +42,7 @@ export function ConnectedOwnPriceScreen({
   const t = useT()
   const { locale } = useI18n()
   const queryClient = useQueryClient()
-  const keys = useRef(new IdempotencyKeys())
+  const hasPendingIntent = useHasOrderIntent(userId)
   const [side, setSide] = useState<OutcomeSide>(initialSide)
   const [odds, setOdds] = useState(1.9)
   const [amount, setAmount] = useState(100)
@@ -105,32 +106,22 @@ export function ConnectedOwnPriceScreen({
   const insufficient = amount > availableTon
 
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({actorId}: {actorId:number}) => {
       if (previewSettling || guarantorCosts?.can_place === false) {
         throw new Error(guarantorCosts?.reason || 'Котировка требует обновления')
       }
-      const fingerprint = orderFingerprint({
-        marketId,
-        outcome,
-        money,
-        odds,
-        kind: 'limit',
-      })
-      const requestId = keys.current.forFingerprint(fingerprint)
-      const result = await placeOrder(
-        marketId,
-        { outcome, money, odds, kind: 'limit', request_id: requestId },
-        shareToken,
-      )
-      keys.current.clear(fingerprint)
-      return result
+      if (!actorId || actorId !== userId) throw new Error('Аккаунт изменился. Обновите приложение')
+      return submitOrderIntent(actorId, marketId, { outcome, money, odds: odds, kind: 'limit' })
     },
-    onSuccess: (order) => {
+    onSuccess: (order, {actorId}) => {
+      if (actorId !== userId) return
+      completeOrderIntent(actorId,order)
       invalidateAfterTrade(queryClient, { userId, marketId })
       hapticNotification('success')
       setPlacedOrder(order)
     },
-    onError: (error) => {
+    onError: (error, {actorId}) => {
+      if (actorId !== userId) return
       hapticNotification('error')
       if (isInsufficientBalanceError(error)) {
         setErrorMessage(t('err.fundsAvail', { amt: formatTonFull(availableTon) }))
@@ -156,6 +147,11 @@ export function ConnectedOwnPriceScreen({
       setErrorMessage(errorDetail(error))
     },
   })
+
+  if (hasPendingIntent && userId) return <OrderIntentRecovery key={userId} userId={userId} busy={mutation.isPending} onResolved={order => {
+    invalidateAfterTrade(queryClient, {userId, marketId:order.market_id})
+    if (order.market_id === marketId && order.kind === 'limit') { setPlacedOrder(order); setErrorMessage(null) }
+  }} />
 
   const forbidden = isApiError(marketQuery.error) && marketQuery.error.code === 'forbidden'
   if (marketQuery.isPending || !market || marketQuery.isError) {
@@ -242,7 +238,7 @@ export function ConnectedOwnPriceScreen({
       onSubmit={() => {
         setErrorMessage(null)
         if (insufficient || !tradable) return
-        void mutation.mutateAsync()
+        mutation.mutate({actorId: userId ?? 0})
       }}
     />
   )

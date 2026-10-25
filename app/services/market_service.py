@@ -693,7 +693,7 @@ def _get_or_create_position(db: Session, user_id: int, market_id: int, n: int) -
     return position
 
 
-def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float):
+def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float, *, commit: bool = True):
     market = _lock_market(db, market_id)
     if _maybe_auto_close(db, market):
         db.flush()
@@ -736,10 +736,14 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
         price_after=p[idx],
     )
     db.add(trade)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     user = get_user(db, user_id)
     db.refresh(market)
     return {
+        "trade_id": trade.id,
         "market": market,
         "user": user,
         "shares": shares,
