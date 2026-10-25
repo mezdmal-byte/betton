@@ -1,3 +1,4 @@
+from uuid import uuid4
 from tests.legacy_helpers import post_legacy_market
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
@@ -61,8 +62,8 @@ def test_auto_settle_pays_winners_without_claim(client: TestClient, monkeypatch)
         },
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=winner_h, json={"outcome": 0, "money": 25})
-    client.post(f"/markets/{mid}/buy", headers=loser_h, json={"outcome": 1, "money": 15})
+    client.post(f"/markets/{mid}/buy", headers=winner_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 25})
+    client.post(f"/markets/{mid}/buy", headers=loser_h, json={"request_id": str(uuid4()), "outcome": 1, "money": 15})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     before_w = client.get(f"/users/{winner['id']}", headers=winner_h).json()["balance"]
     before_l = client.get(f"/users/{loser['id']}", headers=loser_h).json()["balance"]
@@ -91,7 +92,7 @@ def test_winner_is_creator_tips_go_to_platform(client: TestClient, monkeypatch):
         json={"question": "Победитель создатель отдаёт чаевые платформе?", "lock_ton": 40, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=creator_h, json={"outcome": 0, "money": 30})
+    client.post(f"/markets/{mid}/buy", headers=creator_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 30})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     admin_before = client.get(f"/users/{admin['id']}", headers=admin_h).json()["balance"]
     client.post(f"/markets/{mid}/resolve", headers=admin_h, json={"winning_outcome": 0})
@@ -110,7 +111,7 @@ def test_creator_is_admin_merges_credits(client: TestClient, monkeypatch):
         json={"question": "Создатель и админ один счёт?", "lock_ton": 30, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 20})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 20})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     before = client.get(f"/users/{admin['id']}", headers=admin_h).json()["balance"]
     client.post(f"/markets/{mid}/resolve", headers=admin_h, json={"winning_outcome": 0})
@@ -128,8 +129,8 @@ def test_one_account_player_creator_admin(client: TestClient, monkeypatch):
         json={"question": "Один человек все роли?", "lock_ton": 40, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=admin_h, json={"outcome": 0, "money": 20})
-    client.post(f"/markets/{mid}/buy", headers=admin_h, json={"outcome": 1, "money": 10})
+    client.post(f"/markets/{mid}/buy", headers=admin_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 20})
+    client.post(f"/markets/{mid}/buy", headers=admin_h, json={"request_id": str(uuid4()), "outcome": 1, "money": 10})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     before = client.get(f"/users/{admin['id']}", headers=admin_h).json()["balance"]
     _, _, conserved_before = _balances()
@@ -152,8 +153,8 @@ def test_both_outcomes_no_profit_no_tip(client: TestClient, monkeypatch):
         json={"question": "Ставки на оба исхода без прибыли?", "lock_ton": 50, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 10})
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 1, "money": 80})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 10})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 1, "money": 80})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     client.post(f"/markets/{mid}/resolve", headers=admin_h, json={"winning_outcome": 0})
     hist = client.get(f"/users/{user['id']}/settlements", headers=user_h).json()[0]
@@ -172,7 +173,7 @@ def test_insufficient_pot_conflict_no_changes(client: TestClient, monkeypatch):
         json={"question": "Нехватка банка даёт 409?", "lock_ton": 20, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 15})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 15})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     db = SessionLocal()
     market = db.get(Market, mid)
@@ -203,7 +204,7 @@ def test_mid_credit_error_rolls_back(client: TestClient, monkeypatch):
         json={"question": "Ошибка начисления откатывает всё?", "lock_ton": 30, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 20})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 20})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     users_before, _, total_before = _balances()
     real = market_service._adjust_balance
@@ -234,7 +235,7 @@ def test_repeat_and_parallel_resolve(client: TestClient, monkeypatch):
         json={"question": "Повторный resolve не платит дважды?", "lock_ton": 40, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 20})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 20})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     first = client.post(f"/markets/{mid}/resolve", headers=admin_h, json={"winning_outcome": 0})
     assert first.status_code == 200
@@ -250,7 +251,7 @@ def test_repeat_and_parallel_resolve(client: TestClient, monkeypatch):
         json={"question": "Параллельный resolve?", "lock_ton": 40, "close_at": _close_at()},
     )
     mid2 = created2.json()["id"]
-    client.post(f"/markets/{mid2}/buy", headers=user_h, json={"outcome": 0, "money": 18})
+    client.post(f"/markets/{mid2}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 18})
     client.post(f"/markets/{mid2}/close", headers=admin_h, json={})
     before = client.get(f"/users/{user['id']}", headers=user_h).json()["balance"]
 
@@ -280,7 +281,7 @@ def test_parallel_buys_do_not_lose_balance(client: TestClient):
 
     def buy():
         with TestClient(client.app) as c:
-            return c.post(f"/markets/{mid}/buy", headers=headers, json={"outcome": 0, "money": 10})
+            return c.post(f"/markets/{mid}/buy", headers=headers, json={"request_id": str(uuid4()), "outcome": 0, "money": 10})
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = [fut.result() for fut in as_completed([pool.submit(buy), pool.submit(buy)])]
@@ -299,7 +300,7 @@ def test_legacy_claim_still_works_for_old_resolved(client: TestClient, monkeypat
         json={"question": "Старый расчёт ещё можно забрать?", "lock_ton": 30, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 20})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 20})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     db = SessionLocal()
     market = db.get(Market, mid)
@@ -327,7 +328,7 @@ def test_legacy_collect_residual_keeps_unpaid_liability(client: TestClient, monk
         json={"question": "Остаток не забирает долг победителю?", "lock_ton": 40, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 20})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 20})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     db = SessionLocal()
     market = db.get(Market, mid)
@@ -359,7 +360,7 @@ def test_history_survives_new_db_session(client: TestClient, monkeypatch):
         json={"question": "История живёт после новой сессии?", "lock_ton": 25, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 12})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 12})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     client.post(f"/markets/{mid}/resolve", headers=admin_h, json={"winning_outcome": 0})
     Session = sessionmaker(bind=SessionLocal().get_bind())
@@ -385,7 +386,7 @@ def test_stranger_cannot_read_settlements(client: TestClient, monkeypatch):
         json={"question": "Чужая история закрыта?", "lock_ton": 20, "close_at": _close_at()},
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": 0, "money": 10})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": 0, "money": 10})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     client.post(f"/markets/{mid}/resolve", headers=admin_h, json={"winning_outcome": 0})
     forbidden = client.get(f"/users/{user['id']}/settlements", headers=other_h)
@@ -406,7 +407,7 @@ def test_named_numeric_outcomes_use_name_not_index(client: TestClient, monkeypat
         },
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=user_h, json={"outcome": "1", "money": 15})
+    client.post(f"/markets/{mid}/buy", headers=user_h, json={"request_id": str(uuid4()), "outcome": "1", "money": 15})
     client.post(f"/markets/{mid}/close", headers=admin_h, json={})
     res = client.post(f"/markets/{mid}/resolve", headers=admin_h, json={"winning_outcome": "1"})
     assert res.status_code == 200, res.text
@@ -438,7 +439,7 @@ def test_stale_reader_cannot_overwrite_auto_settlement(client, monkeypatch, read
         "close_at": _close_at(),
     }).json()["id"]
     assert client.post(f"/markets/{mid}/buy", headers=player_h,
-                       json={"outcome": 0, "money": 10}).status_code == 200
+                       json={"request_id": str(uuid4()), "outcome": 0, "money": 10}).status_code == 200
     with SessionLocal() as db:
         market = db.get(Market, mid)
         market.close_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)

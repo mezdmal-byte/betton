@@ -7,6 +7,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -15,8 +16,14 @@ if str(ROOT) not in sys.path:
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import Command, CommandStart
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
+from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    MenuButtonWebApp,
+    Message,
+    WebAppInfo,
+)
 
 from app.config import settings
 
@@ -26,22 +33,100 @@ logger = logging.getLogger("betton.bot")
 dp = Dispatcher()
 bot: Bot | None = None
 
-START_TEXT = (
-    "<b>BetTON</b> — P2P-ставки без комиссии\n"
-    "Маркетмейкер LMSR, как у Polymarket.\n\n"
-    "• Комиссия за рынки и ставки — <b>0%</b>\n"
-    "• Чаевые победителя — до <b>1%</b> чистой прибыли\n\n"
-    "Откройте Mini App — оно ходит напрямую в наш бэкенд."
-)
+TEXTS = {
+    "ru": {
+        "start": (
+            "<b>BetTON</b> — P2P рынок прогнозов.\n\n"
+            "• Пользователи сами предлагают коэффициенты\n"
+            "• 0% за создание события и размещение заявки\n"
+            "• Сервисный сбор 1% только с чистой прибыли победителя\n"
+            "• Неисполненная заявка ждёт контрагента\n\n"
+            "Откройте Mini App."
+        ),
+        "help": (
+            "<b>Как устроен BetTON</b>\n\n"
+            "Коэффициенты задают сами пользователи лимитными заявками. "
+            "Исполнение зависит от встречной заявки: частичное исполнение возможно, "
+            "неисполненный остаток можно отменить. Гарантированной мгновенной "
+            "ликвидности нет.\n\n"
+            "• Лимитная заявка резервирует сумму и ждёт контрагента\n"
+            "• Встречная заявка исполняет пересекающиеся объёмы\n"
+            "• Частичное исполнение — нормальная ситуация, не ошибка\n"
+            "• Остаток заявки можно отменить — деньги вернутся на баланс\n"
+            "• После расчёта события выплаты зачисляются автоматически\n"
+            "• Сервисный сбор 1% только с чистой прибыли победителя\n\n"
+            "/start — открыть Mini App"
+        ),
+        "open": "Открыть BetTON",
+        "open_event": "Открыть событие",
+    },
+    "en": {
+        "start": (
+            "<b>BetTON</b> is a P2P prediction market.\n\n"
+            "• Users post their own odds\n"
+            "• 0% to create an event or place an order\n"
+            "• Service fee is 1% of the winner’s net profit only\n"
+            "• An unmatched order waits for a counterparty\n\n"
+            "Open the Mini App."
+        ),
+        "help": (
+            "<b>How BetTON works</b>\n\n"
+            "Users set odds with limit orders. Fills depend on a counterparty: "
+            "partial fills are possible, and unmatched remainder can be cancelled. "
+            "There is no guaranteed instant liquidity.\n\n"
+            "• A limit order reserves funds and waits for a counterparty\n"
+            "• A crossing order fills overlapping size\n"
+            "• A partial fill is normal, not an error\n"
+            "• You can cancel the remainder — funds return to your balance\n"
+            "• After settlement, payouts are credited automatically\n"
+            "• Service fee is 1% of the winner’s net profit only\n\n"
+            "/start — open the Mini App"
+        ),
+        "open": "Open BetTON",
+        "open_event": "Open event",
+    },
+    "zh": {
+        "start": (
+            "<b>BetTON</b> 是点对点预测市场。\n\n"
+            "• 用户自行报价\n"
+            "• 创建事件和下单均为 0%\n"
+            "• 服务费仅为获胜者净利润的 1%\n"
+            "• 未成交订单会等待对手盘\n\n"
+            "请打开 Mini App。"
+        ),
+        "help": (
+            "<b>BetTON 如何运作</b>\n\n"
+            "用户用限价单自行设定赔率。成交取决于对手盘：可能部分成交，"
+            "未成交余额可以取消。没有保证的即时流动性。\n\n"
+            "• 限价单会冻结金额并等待对手\n"
+            "• 交叉订单会成交重叠部分\n"
+            "• 部分成交是正常情况，不是错误\n"
+            "• 可以取消剩余部分，资金回到余额\n"
+            "• 结算后赔付自动入账\n"
+            "• 服务费仅为获胜者净利润的 1%\n\n"
+            "/start — 打开 Mini App"
+        ),
+        "open": "打开 BetTON",
+        "open_event": "打开事件",
+    },
+}
 
-HELP_TEXT = (
-    "<b>Как устроен BetTON</b>\n\n"
-    "Цены считает LMSR. Ликвидность всегда есть, коэффициенты двигаются "
-    "от покупок акций Да/Нет.\n\n"
-    "• Ставки и создание рынков — <b>0%</b>\n"
-    "• При выплате можно оставить чаевые до <b>1%</b> от чистой прибыли\n\n"
-    "/start — открыть Mini App"
-)
+START_TEXT = TEXTS["ru"]["start"]
+HELP_TEXT = TEXTS["ru"]["help"]
+
+
+def bot_lang(message: Message) -> str:
+    user = getattr(message, "from_user", None)
+    code = str(getattr(user, "language_code", "") or "").lower()
+    if code.startswith("ru"):
+        return "ru"
+    if code.startswith("zh"):
+        return "zh"
+    return "en"
+
+
+def bot_copy(message: Message) -> dict[str, str]:
+    return TEXTS.get(bot_lang(message)) or TEXTS["en"]
 
 
 def get_bot() -> Bot:
@@ -55,63 +140,91 @@ def get_bot() -> Bot:
 
 
 def mini_app_url() -> str:
-    configured = (settings.mini_app_url or "").strip().rstrip("/")
-    return (configured or settings.webapp_base()) + "/"
+    configured = (settings.mini_app_url or "").strip()
+    if not configured:
+        return settings.webapp_base().rstrip("/") + "/v2/"
+    parts = urlsplit(configured)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/") + "/", parts.query, parts.fragment))
+
+
+MENU_BUTTON_TEXT = "BetTON v2"
+
+
+async def sync_menu_button(bot: Bot) -> None:
+    """Point Telegram's persistent chat menu at the current Mini App /v2/ URL."""
+    url = mini_app_url()
+    menu = MenuButtonWebApp(text=MENU_BUTTON_TEXT, web_app=WebAppInfo(url=url))
+    try:
+        await bot.set_chat_menu_button(menu_button=menu)
+        logger.info("Telegram default menu button updated")
+    except Exception:
+        logger.warning("Could not sync default Telegram menu button")
+
+    admin_id = settings.admin_tg_id()
+    if admin_id is None:
+        return
+    try:
+        await bot.set_chat_menu_button(chat_id=admin_id, menu_button=menu)
+        logger.info("Telegram administrator menu button updated")
+    except Exception:
+        logger.warning("Could not sync administrator menu button")
+
+
+def share_webapp_url(token: str) -> str:
+    parts = urlsplit(mini_app_url())
+    query = [(key,value) for key,value in parse_qsl(parts.query,keep_blank_values=True) if key != 'share']
+    return urlunsplit((parts.scheme,parts.netloc,parts.path,urlencode(query + [('share',token)]),parts.fragment))
+
+
+def start_payload_token(payload: str | None) -> str | None:
+    text = (payload or "").strip()
+    if text.startswith("market_"):
+        token = text[7:].strip()
+        return token or None
+    return None
 
 
 def demo_url() -> str:
-    """Optional isolated preview; never changes the regular Mini App link."""
+    # Preserve main's optional, separately hosted demo. Never log its access URL.
     url = (os.getenv("BETTON_UX_V3_DEMO_URL") or "").strip()
     prefix = "https://betton-ux-v3-demo.onrender.com/demo-enter?key="
     return url if url.startswith(prefix) and len(url) > len(prefix) else ""
 
 
-def mini_app_keyboard() -> InlineKeyboardMarkup:
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                text="Открыть BetTON",
-                web_app=WebAppInfo(url=mini_app_url()),
-            )
-        ]
-    ]
+def mini_app_keyboard(url: str | None = None, label: str = "Открыть BetTON") -> InlineKeyboardMarkup:
+    keyboard = [[InlineKeyboardButton(text=label, web_app=WebAppInfo(url=url or mini_app_url()))]]
     if demo_url():
-        keyboard.append([
-            InlineKeyboardButton(
-                text="🧪 BetTON UX v3 · тестовая версия",
-                web_app=WebAppInfo(url=demo_url()),
-            )
-        ])
+        keyboard.append([InlineKeyboardButton(text="🧪 BetTON UX v3 · тестовая версия",web_app=WebAppInfo(url=demo_url()))])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
-
-
-@dp.message(CommandStart())
-async def cmd_start(message: Message) -> None:
-    await message.answer(START_TEXT, reply_markup=mini_app_keyboard())
-
-
-@dp.message(Command("help"))
-async def cmd_help(message: Message) -> None:
-    await message.answer(HELP_TEXT, reply_markup=mini_app_keyboard())
 
 
 @dp.message(Command("demo"))
 async def cmd_demo(message: Message) -> None:
-    """Launch the separately hosted fake-money UI with the existing BetTON bot."""
     if not demo_url():
         await message.answer("Тестовая версия временно недоступна.")
         return
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(
-            text="🧪 Открыть тестовый BetTON UX v3",
-            web_app=WebAppInfo(url=demo_url()),
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🧪 Открыть тестовый BetTON UX v3",web_app=WebAppInfo(url=demo_url()))]])
+    await message.answer("Тестовая версия UX v3: только демонстрационные пользователи и TON. Основное приложение не изменено.",reply_markup=keyboard)
+
+
+@dp.message(CommandStart())
+async def cmd_start(message: Message, command: CommandObject | None = None) -> None:
+    payload = command.args if command is not None else None
+    token = start_payload_token(payload)
+    copy = bot_copy(message)
+    if token:
+        await message.answer(
+            copy["start"],
+            reply_markup=mini_app_keyboard(share_webapp_url(token), copy["open_event"]),
         )
-    ]])
-    await message.answer(
-        "Тестовая версия UX v3: только демонстрационные пользователи и TON. "
-        "Основное приложение не изменено.",
-        reply_markup=keyboard,
-    )
+        return
+    await message.answer(copy["start"], reply_markup=mini_app_keyboard(label=copy["open"]))
+
+
+@dp.message(Command("help"))
+async def cmd_help(message: Message) -> None:
+    copy = bot_copy(message)
+    await message.answer(copy["help"], reply_markup=mini_app_keyboard(label=copy["open"]))
 
 
 def build_dispatcher() -> Dispatcher:
@@ -124,6 +237,7 @@ async def run_bot() -> None:
         await instance.delete_webhook(drop_pending_updates=False)
     except Exception:
         logger.warning("Не удалось снять webhook перед polling")
+    await sync_menu_button(instance)
     logger.info("Mini App URL: %s", mini_app_url())
     await dp.start_polling(instance)
 

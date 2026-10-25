@@ -1,17 +1,20 @@
+from decimal import ROUND_DOWN
+from app.money import to_nano, as_ton, tip_nano, adjust_balance_nano, add_pot_nano
 import math
 import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import text, update
+from sqlalchemy import func, or_, text, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import ADMIN_BANKROLL, TIP_CREATOR_SHARE, TIP_PLATFORM_SHARE, settings
 from app.lmsr import apply_buy, cost, max_tip, prices
 from app.models import Market, MarketStatus, Position, SettlementRecord, Trade, User
-from app.schemas import MarketOut, PositionOut, QuoteOut, SettlementOut
+from app.schemas import MarketActivityOut, MarketOut, PositionOut, QuoteOut, SettlementOut
 
-ALLOWED_CATEGORIES = ("sport", "politics", "unique")
+ALLOWED_CATEGORIES = ("sport", "esports", "politics", "crypto", "unique")
 MIN_LOCK_TON = 10.0
 MIN_OUTCOMES = 2
 MAX_OUTCOMES = 8
@@ -210,7 +213,7 @@ def _lock_users(db: Session, user_ids: list[int]) -> None:
         return
     if _is_sqlite(db):
         for uid in ids:
-            db.execute(text("UPDATE users SET balance = balance WHERE id = :id"), {"id": uid})
+            db.execute(text("UPDATE users SET balance_nano = balance_nano WHERE id = :id"), {"id": uid})
         return
     (
         db.query(User)
@@ -226,34 +229,11 @@ def _adjust_balance(
     user_id: int,
     delta: float,
     *,
+    nano: bool = False,
     require_funds: bool = False,
     funds_detail: str = "Недостаточно средств",
 ) -> None:
-    if not math.isfinite(delta) or abs(delta) <= SETTLEMENT_EPS:
-        return
-    if require_funds and delta < 0:
-        result = db.execute(
-            text(
-                "UPDATE users SET balance = balance + :delta "
-                "WHERE id = :id AND balance >= :need"
-            ),
-            {"delta": delta, "id": user_id, "need": -delta},
-        )
-        if result.rowcount != 1:
-            raise HTTPException(status_code=400, detail=funds_detail)
-        user = db.get(User, user_id)
-        if user is not None:
-            db.expire(user)
-        return
-    result = db.execute(
-        text("UPDATE users SET balance = balance + :delta WHERE id = :id"),
-        {"delta": delta, "id": user_id},
-    )
-    if result.rowcount != 1:
-        raise HTTPException(status_code=400, detail="Не удалось зачислить средства")
-    user = db.get(User, user_id)
-    if user is not None:
-        db.expire(user)
+    adjust_balance_nano(db, user_id, delta if nano else to_nano(delta), funds_detail)
 
 
 def _near_zero(value: float) -> bool:
@@ -314,7 +294,7 @@ def _probs_from_create(
     return [1.0 / n] * n
 
 
-def market_to_out(market: Market) -> MarketOut:
+def market_to_out(market: Market, best_offers=None, creator=None, activity=None, include_share_token=False) -> MarketOut:
     names = market_outcomes(market)
     q = _quantities(market)
     p = prices(q, market.b) if market.mechanism != "p2p" else []
@@ -352,6 +332,11 @@ def market_to_out(market: Market) -> MarketOut:
         cancelled_at=as_utc(market.cancelled_at),
         cancelled_by=market.cancelled_by,
         settlement_kind=market.settlement_kind,
+        best_offers=best_offers,
+        creator=creator,
+        activity=activity if activity is not None else MarketActivityOut(),
+        visibility=getattr(market, "visibility", None) or "public",
+        share_token=market.share_token if include_share_token else None,
     )
 
 
@@ -371,20 +356,95 @@ def create_user(db: Session, username: str, telegram_id: int | None = None) -> U
     return user
 
 
+def _clean_telegram_username(username: str | None) -> str | None:
+    if not isinstance(username, str):
+        return None
+    text = username.strip()
+    if text.startswith("@"):
+        text = text[1:].strip()
+    if not text or len(text) > 64:
+        return None
+    return text
+
+
+def _clean_display_name(first_name: str | None, last_name: str | None) -> str | None:
+    parts: list[str] = []
+    if isinstance(first_name, str) and first_name.strip():
+        parts.append(first_name.strip())
+    if isinstance(last_name, str) and last_name.strip():
+        parts.append(last_name.strip())
+    if not parts:
+        return None
+    return " ".join(parts)[:128]
+
+
+def _clean_photo_url(photo_url: str | None) -> str | None:
+    if not isinstance(photo_url, str):
+        return None
+    text = photo_url.strip()
+    if not text.startswith("https://") or len(text) > 1024:
+        return None
+    return text
+
+
+def apply_telegram_profile(
+    user: User,
+    *,
+    username: str | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
+    photo_url: str | None = None,
+) -> bool:
+    """Update non-financial public profile fields from verified Telegram initData."""
+    changed = False
+    tg_username = _clean_telegram_username(username)
+    if user.telegram_username != tg_username:
+        user.telegram_username = tg_username
+        changed = True
+    display = _clean_display_name(first_name, last_name)
+    if display is not None and user.display_name != display:
+        user.display_name = display
+        changed = True
+    photo = _clean_photo_url(photo_url)
+    if photo is not None and user.photo_url != photo:
+        user.photo_url = photo
+        changed = True
+    return changed
+
+
 def get_or_create_telegram_user(
     db: Session,
     telegram_id: int,
     username: str | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
+    photo_url: str | None = None,
 ) -> User:
     user = db.query(User).filter(User.telegram_id == telegram_id).one_or_none()
-    if user is not None:
-        return user
-    _ = username
-    uname = f"tg{telegram_id}"
-    # Never attach Telegram to an existing account by username match alone.
-    while db.query(User).filter(User.username == uname).one_or_none() is not None:
-        uname = f"tg{telegram_id}_{uuid.uuid4().hex[:8]}"
-    return create_user(db, username=uname, telegram_id=telegram_id)
+    if user is None:
+        uname = f"tg{telegram_id}"
+        # Never attach Telegram to an existing account by username match alone.
+        while db.query(User).filter(User.username == uname).one_or_none() is not None:
+            uname = f"tg{telegram_id}_{uuid.uuid4().hex[:8]}"
+        try:
+            user = create_user(db, username=uname, telegram_id=telegram_id)
+        except IntegrityError:
+            # Multiple frontend requests can authenticate the same Telegram user
+            # concurrently on a fresh preview DB. The first insert wins; reuse it.
+            db.rollback()
+            user = db.query(User).filter(User.telegram_id == telegram_id).one_or_none()
+            if user is None:
+                raise
+    if apply_telegram_profile(
+        user,
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        photo_url=photo_url,
+    ):
+        db.commit()
+        db.refresh(user)
+    return user
 
 
 def _normalize_category(category: str | None) -> str:
@@ -392,7 +452,7 @@ def _normalize_category(category: str | None) -> str:
     if cat not in ALLOWED_CATEGORIES:
         raise HTTPException(
             status_code=400,
-            detail="Категория должна быть sport, politics или unique",
+            detail="Категория должна быть sport, esports, politics, crypto или unique",
         )
     return cat
 
@@ -420,6 +480,8 @@ def create_market(
     if close_utc is None or close_utc <= utcnow():
         raise HTTPException(status_code=400, detail="Конец приёма не может быть в прошлом")
 
+    lock_atomic = to_nano(lock_ton)
+    lock_ton = as_ton(lock_atomic)
     n = len(names)
     probs = _probs_from_create(n, target_odds, target_probs)
     # With zero issued shares, worst-case subsidy is C(q0) - min(q0).
@@ -437,7 +499,8 @@ def create_market(
     _adjust_balance(
         db,
         creator.id,
-        -float(lock_ton),
+        -lock_atomic,
+        nano=True,
         require_funds=True,
         funds_detail="Недостаточно TON на залог",
     )
@@ -450,6 +513,8 @@ def create_market(
         outcomes=names,
         lock_ton=float(lock_ton),
         pot=float(lock_ton),
+        pot_nano=lock_atomic,
+        lock_nano=lock_atomic,
         close_at=_naive_utc(close_utc),
         lock_returned=False,
         status=MarketStatus.pending,
@@ -466,22 +531,142 @@ def list_markets(
     db: Session,
     category: str | None = None,
     status: MarketStatus | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
 ) -> list[Market]:
+    rows, _total = list_markets_page(
+        db, category=category, status=status, q=q, sort=sort, limit=limit, offset=offset
+    )
+    return rows
+
+
+def list_markets_page(
+    db: Session,
+    category: str | None = None,
+    status: MarketStatus | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
+) -> tuple[list[Market], int]:
+    from app.services import discovery
+
     query = db.query(Market).filter(
         Market.status.in_(
             [MarketStatus.open, MarketStatus.closed, MarketStatus.resolved, MarketStatus.cancelled]
         )
     )
+    if hasattr(Market, "visibility"):
+        query = query.filter(Market.visibility == "public")
     if category:
         query = query.filter(Market.category == _normalize_category(category))
+    needle = (q or "").strip()
+    sqlite_python_search = False
+    lowered_needle = ""
+    category_aliases = {
+        "sport": "sport",
+        "спорт": "sport",
+        "sports": "sport",
+        "esports": "esports",
+        "esport": "esports",
+        "киберспорт": "esports",
+        "кс2": "esports",
+        "cs2": "esports",
+        "politics": "politics",
+        "политика": "politics",
+        "полит": "politics",
+        "crypto": "crypto",
+        "крипто": "crypto",
+        "криптовалюта": "crypto",
+        "unique": "unique",
+        "другое": "unique",
+        "другие": "unique",
+        "уник": "unique",
+    }
+    category_labels = {
+        "sport": ("sport", "sports", "спорт"),
+        "esports": ("esports", "esport", "киберспорт", "кс2", "cs2", "counter-strike"),
+        "politics": ("politics", "политика"),
+        "crypto": ("crypto", "крипто", "криптовалюта"),
+        "unique": ("unique", "другое", "другие", "уникальное"),
+    }
+    if needle:
+        lowered_needle = needle.casefold().lstrip("@")
+        category_match = category_aliases.get(lowered_needle)
+        if db.get_bind().dialect.name == "sqlite":
+            # SQLite lower()/NOCASE only handles ASCII reliably. The preview runs
+            # on SQLite, so do the final user-facing Unicode match in Python.
+            sqlite_python_search = True
+        else:
+            lowered = f"%{lowered_needle}%"
+            query = query.join(User, Market.creator_id == User.id)
+            filters = [
+                func.lower(Market.question).like(lowered),
+                func.lower(func.coalesce(Market.description, "")).like(lowered),
+                func.lower(func.coalesce(Market.category, "")).like(lowered),
+                func.lower(func.coalesce(User.telegram_username, "")).like(lowered),
+                func.lower(func.coalesce(User.display_name, "")).like(lowered),
+                func.lower(func.coalesce(User.username, "")).like(lowered),
+            ]
+            if category_match:
+                filters.append(Market.category == category_match)
+            query = query.filter(or_(*filters))
     rows = query.order_by(Market.id.desc()).all()
+    if sqlite_python_search:
+        creators = {
+            user.id: user
+            for user in db.query(User).filter(User.id.in_({m.creator_id for m in rows})).all()
+        }
+        def matches_market_search(market: Market) -> bool:
+            creator = creators.get(market.creator_id)
+            values = [
+                market.question or "",
+                market.description or "",
+                market.category or "",
+            ]
+            values.extend(category_labels.get((market.category or "").casefold(), ()))
+            if creator is not None:
+                values.extend([
+                    creator.telegram_username or "",
+                    creator.display_name or "",
+                    creator.username or "",
+                ])
+            return any(lowered_needle in str(value).casefold().lstrip("@") for value in values)
+        rows = [market for market in rows if matches_market_search(market)]
     for market in rows:
         if _maybe_auto_close(db, market):
-            # Release this market's refund locks before moving to the next market.
             db.commit()
     if status is not None:
         rows = [m for m in rows if m.status == status]
-    return rows
+    mode = (sort or "new").strip().lower()
+    if mode == "closing":
+        upcoming = []
+        for market in rows:
+            close_at = as_utc(market.close_at)
+            if is_accepting_bets(market) and close_at is not None:
+                upcoming.append(market)
+        upcoming.sort(key=lambda m: (as_utc(m.close_at), m.id))
+        rows = upcoming
+    elif mode == "popular":
+        activity = discovery.market_activity_map(db, [m.id for m in rows])
+        rows.sort(
+            key=lambda m: (
+                -int(activity.get(m.id).volume_nano if activity.get(m.id) else 0),
+                -int(activity.get(m.id).unique_participants if activity.get(m.id) else 0),
+                -int(activity.get(m.id).fills if activity.get(m.id) else 0),
+                -(m.id or 0),
+            )
+        )
+    else:
+        rows.sort(key=lambda m: (as_utc(m.created_at) or utcnow(), m.id), reverse=True)
+    total = len(rows)
+    start = max(0, int(offset or 0))
+    if limit is not None:
+        cap = max(1, min(int(limit), 100))
+        rows = rows[start:start + cap]
+    return rows, total
 
 
 def get_market(db: Session, market_id: int) -> Market:
@@ -508,7 +693,7 @@ def _get_or_create_position(db: Session, user_id: int, market_id: int, n: int) -
     return position
 
 
-def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float):
+def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float, *, commit: bool = True):
     market = _lock_market(db, market_id)
     if _maybe_auto_close(db, market):
         db.flush()
@@ -519,14 +704,21 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
     if money <= 0:
         raise HTTPException(status_code=400, detail="Сумма ставки должна быть > 0")
 
+    money = as_ton(to_nano(money))
+    if money <= 0:
+        raise HTTPException(422, "Минимальная сумма — 1 nanoTON")
     names = market_outcomes(market)
     idx = parse_outcome(names, outcome)
     new_q, shares, paid = apply_buy(_quantities(market), market.b, idx, money)
 
-    _require_funded_buy(db, market, idx, shares, paid)
+    paid_atomic = to_nano(paid)
+    if paid_atomic <= 0:
+        raise HTTPException(422, "Минимальная сумма — 1 nanoTON")
+    paid = as_ton(paid_atomic)
+    _require_funded_buy(db, market, idx, shares, paid, user_id=user_id)
     _lock_users(db, [user_id])
-    _adjust_balance(db, user_id, -paid, require_funds=True)
-    market.pot = float(market.pot or 0.0) + paid
+    _adjust_balance(db, user_id, -paid_atomic, nano=True, require_funds=True)
+    add_pot_nano(market, paid_atomic)
     _set_quantities(market, new_q)
     position = _get_or_create_position(db, user_id, market.id, len(names))
     pos_shares, pos_costs = _pos_vectors(position, len(names))
@@ -544,10 +736,14 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
         price_after=p[idx],
     )
     db.add(trade)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     user = get_user(db, user_id)
     db.refresh(market)
     return {
+        "trade_id": trade.id,
         "market": market,
         "user": user,
         "shares": shares,
@@ -614,6 +810,11 @@ def close_market(db: Session, market_id: int, user_id: int) -> Market:
     actor = get_user(db, user_id)
     require_admin(actor, "Только админ может остановить приём ставок")
     market = _lock_market(db, market_id)
+    from app.models import EventConfigV3
+    config = db.get(EventConfigV3, market_id)
+    if config and config.event_type in ('private','guarantor'):
+        db.rollback()
+        raise HTTPException(403, 'Обычная модерация не управляет частным событием UX v3')
     _maybe_auto_close(db, market)
     if market.status == MarketStatus.resolved:
         raise HTTPException(status_code=400, detail="Рынок уже рассчитан")
@@ -629,94 +830,55 @@ def close_market(db: Session, market_id: int, user_id: int) -> Market:
 
 
 def _player_payout(shares: list[float], costs: list[float], names: list[str], win_idx: int) -> dict:
-    payout = float(shares[win_idx] if win_idx < len(shares) else 0.0)
-    stakes_total = float(sum(costs))
-    profit = max(0.0, payout - stakes_total)
-    tip = max_tip(profit, settings.tip_cap)
+    payout = to_nano(shares[win_idx] if win_idx < len(shares) else 0, rounding=ROUND_DOWN)
+    stakes = to_nano(sum(costs))
+    if min(payout, stakes) < 0:
+        raise HTTPException(409, "Некорректная позиция")
+    tip = tip_nano(payout - stakes, settings.tip_cap)
     credited = payout - tip
-    chosen = [names[i] for i, qty in enumerate(shares) if i < len(names) and qty > SETTLEMENT_EPS]
-    return {
-        "payout": payout,
-        "stakes_total": stakes_total,
-        "tip": tip,
-        "credited": credited,
-        "result": credited - stakes_total,
-        "chosen_outcomes": chosen,
-    }
+    return dict(payout=as_ton(payout), stakes_total=as_ton(stakes), tip=as_ton(tip),
+                credited=as_ton(credited), result=as_ton(credited-stakes),
+                payout_nano=payout, tip_nano=tip, credited_nano=credited,
+                chosen_outcomes=[names[i] for i, qty in enumerate(shares)
+                                 if i < len(names) and qty > SETTLEMENT_EPS])
 
 
 def _plan_auto_settlement(db: Session, market: Market, win_idx: int, names: list[str]) -> dict:
-    positions = (
-        db.query(Position)
-        .filter(Position.market_id == market.id)
-        .order_by(Position.id)
-        .all()
-    )
+    positions = db.query(Position).filter_by(market_id=market.id).order_by(Position.id).all()
     unpaid = [pos for pos in positions if not pos.claimed]
-    payouts_total = 0.0
-    player_rows: list[dict] = []
-    credits: dict[int, float] = {}
-    platform_tips = 0.0
-    creator_id = market.creator_id
-    creator = get_user(db, creator_id)
-
+    total = platform_tips = 0
+    rows, credits = [], {}
+    creator = get_user(db, market.creator_id)
+    def credit(uid, amount):
+        if amount:
+            credits[uid] = credits.get(uid, 0) + amount
     for pos in unpaid:
         shares, costs = _pos_vectors(pos, len(names))
         row = _player_payout(shares, costs, names, win_idx)
-        payouts_total += row["payout"]
-        player_rows.append({"position": pos, "user_id": pos.user_id, **row})
-        if row["credited"] > SETTLEMENT_EPS:
-            credits[pos.user_id] = credits.get(pos.user_id, 0.0) + row["credited"]
-        tip = row["tip"]
-        if tip <= SETTLEMENT_EPS:
-            continue
-        winner_id = pos.user_id
-        if winner_id == creator_id:
+        total += row['payout_nano']
+        rows.append(dict(position=pos, user_id=pos.user_id, **row))
+        credit(pos.user_id, row['credited_nano'])
+        tip = row['tip_nano']
+        if pos.user_id == creator.id:
             platform_tips += tip
         elif creator.is_admin:
-            credits[creator_id] = credits.get(creator_id, 0.0) + tip
+            credit(creator.id, tip)
         else:
-            credits[creator_id] = credits.get(creator_id, 0.0) + tip * TIP_CREATOR_SHARE
-            platform_tips += tip * TIP_PLATFORM_SHARE
-
-    pot = float(market.pot or 0.0)
-    if payouts_total > pot + SETTLEMENT_EPS:
-        raise HTTPException(
-            status_code=409,
-            detail="Недостаточно средств в банке для выплаты всех выигрышей",
-        )
-
-    leftover = pot - payouts_total
-    if leftover < -SETTLEMENT_EPS:
-        raise HTTPException(
-            status_code=409,
-            detail="Недостаточно средств в банке для выплаты всех выигрышей",
-        )
+            creator_tip = tip * 75 // 100
+            credit(creator.id, creator_tip)
+            platform_tips += tip - creator_tip
+    leftover = market.pot_nano - total
     if leftover < 0:
-        leftover = 0.0
-
-    admin = find_admin_user(db)
-    if platform_tips > SETTLEMENT_EPS:
+        raise HTTPException(409, "Недостаточно средств в банке для выплаты всех выигрышей")
+    if platform_tips:
+        admin = find_admin_user(db)
         if admin is None:
-            raise HTTPException(
-                status_code=409,
-                detail="Нет аккаунта платформы для зачисления чаевых",
-            )
-        credits[admin.id] = credits.get(admin.id, 0.0) + platform_tips
-
-    if leftover > SETTLEMENT_EPS:
-        credits[creator_id] = credits.get(creator_id, 0.0) + leftover
-    else:
-        leftover = 0.0
-
-    return {
-        "player_rows": player_rows,
-        "credits": credits,
-        "leftover": leftover,
-        "payouts_total": payouts_total,
-        "claimed_ids": {pos.id for pos in unpaid},
-        "all_positions": positions,
-    }
+            raise HTTPException(409, "Нет аккаунта платформы для зачисления чаевых")
+        credit(admin.id, platform_tips)
+    credit(creator.id, leftover)
+    return dict(player_rows=rows, credits=credits, leftover=as_ton(leftover),
+                payouts_total=as_ton(total), claimed_ids={p.id for p in unpaid},
+                all_positions=positions)
 
 
 def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -> Market:
@@ -724,6 +886,13 @@ def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -
     require_admin(actor)
     try:
         market = _lock_market(db, market_id)
+        from app.models import GuarantorCase
+        from app.models import EventConfigV3
+        config = db.get(EventConfigV3, market_id)
+        if config and config.event_type == 'private':
+            raise HTTPException(403, 'Результат этого события определяет создатель через протокол UX v3')
+        if db.get(GuarantorCase, market_id):
+            raise HTTPException(409, "Используйте решение гаранта или рассмотрение спора")
         if market.mechanism == "p2p" and market.status == MarketStatus.open and not is_accepting_bets(market):
             # Already locked. Settlement locks all recipients before refunding orders.
             market.status = MarketStatus.closed
@@ -746,7 +915,7 @@ def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -
         user_ids = sorted(set(plan["credits"]) | {market.creator_id} | {pos.user_id for pos in plan["all_positions"]})
         _lock_users(db, user_ids)
         for uid in sorted(plan["credits"]):
-            _adjust_balance(db, uid, plan["credits"][uid])
+            _adjust_balance(db, uid, plan["credits"][uid], nano=True)
 
         resolved_at = _naive_utc(utcnow())
         win_name = names[idx]
@@ -796,7 +965,7 @@ def resolve_market(db: Session, market_id: int, winning_outcome, user_id: int) -
         market.winning_outcome = win_name
         market.resolved_at = resolved_at
         market.settlement_kind = SETTLEMENT_AUTO
-        market.pot = 0.0
+        market.pot_nano = 0
         market.lock_returned = True
         db.commit()
         db.refresh(market)
@@ -821,26 +990,24 @@ def collect_residual(db: Session, market_id: int, user_id: int) -> dict:
     names = market_outcomes(market)
     win = winning_name(market)
     idx = parse_outcome(names, win) if win else 0
-    unpaid = 0.0
+    unpaid = 0
     for pos in db.query(Position).filter(Position.market_id == market.id).all():
         if pos.claimed:
             continue
         shares, _costs = _pos_vectors(pos, len(names))
-        unpaid += float(shares[idx] if win else 0.0)
-    leftover = float(market.pot or 0.0) - unpaid
-    if leftover <= SETTLEMENT_EPS:
+        unpaid += to_nano(shares[idx] if win else 0, rounding=ROUND_DOWN)
+    leftover = market.pot_nano - unpaid
+    if leftover <= 0:
         return {"returned": 0.0, "pot": float(market.pot or 0.0), "balance": get_user(db, market.creator_id).balance}
 
     try:
         _lock_users(db, [market.creator_id])
-        _adjust_balance(db, market.creator_id, leftover)
-        market.pot = float(market.pot or 0.0) - leftover
-        if _near_zero(market.pot):
-            market.pot = 0.0
+        _adjust_balance(db, market.creator_id, leftover, nano=True)
+        add_pot_nano(market, -leftover)
         market.lock_returned = True
         db.commit()
         creator = get_user(db, market.creator_id)
-        return {"returned": leftover, "pot": float(market.pot or 0.0), "balance": creator.balance}
+        return {"returned": as_ton(leftover), "pot": float(market.pot or 0.0), "balance": creator.balance}
     except HTTPException:
         db.rollback()
         raise
@@ -849,31 +1016,31 @@ def collect_residual(db: Session, market_id: int, user_id: int) -> dict:
         raise
 
 
-def _distribute_tip_legacy(db: Session, market: Market, winner: User, tip: float) -> None:
-    if tip <= SETTLEMENT_EPS:
+def _distribute_tip_legacy(db: Session, market: Market, winner: User, tip: int) -> None:
+    if tip <= 0:
         return
-    credits: dict[int, float] = {}
+    credits: dict[int, int] = {}
     creator = get_user(db, market.creator_id)
     admin = find_admin_user(db)
     if winner.id == creator.id:
         if admin is None:
             raise HTTPException(status_code=409, detail="Нет аккаунта платформы для зачисления чаевых")
-        credits[admin.id] = credits.get(admin.id, 0.0) + tip
+        credits[admin.id] = credits.get(admin.id, 0) + tip
     elif creator.is_admin:
-        credits[creator.id] = credits.get(creator.id, 0.0) + tip
+        credits[creator.id] = credits.get(creator.id, 0) + tip
     else:
-        credits[creator.id] = credits.get(creator.id, 0.0) + tip * TIP_CREATOR_SHARE
-        platform = tip * TIP_PLATFORM_SHARE
-        if platform > SETTLEMENT_EPS:
+        credits[creator.id] = credits.get(creator.id, 0) + tip * 75 // 100
+        platform = tip - tip * 75 // 100
+        if platform > 0:
             if admin is None:
                 raise HTTPException(
                     status_code=409,
                     detail="Нет аккаунта платформы для зачисления чаевых",
                 )
-            credits[admin.id] = credits.get(admin.id, 0.0) + platform
+            credits[admin.id] = credits.get(admin.id, 0) + platform
     _lock_users(db, list(credits))
     for uid in sorted(credits):
-        _adjust_balance(db, uid, credits[uid])
+        _adjust_balance(db, uid, credits[uid], nano=True)
 
 
 def claim_winnings(db: Session, market_id: int, user_id: int, tip_rate: float = 0.01):
@@ -901,18 +1068,16 @@ def claim_winnings(db: Session, market_id: int, user_id: int, tip_rate: float = 
     winning_shares = shares[idx]
     cost_basis = costs[idx]
 
-    payout = float(winning_shares)
-    available = max(0.0, float(market.pot or 0.0))
-    if payout > available:
-        payout = available
-    net_profit = payout - cost_basis
-    tip = max_tip(net_profit, settings.tip_cap)
+    payout = min(to_nano(winning_shares, rounding=ROUND_DOWN), market.pot_nano)
+    available = market.pot_nano
+    net_profit = payout - to_nano(cost_basis)
+    tip = tip_nano(net_profit, settings.tip_cap)
     credited = payout - tip
     admin = find_admin_user(db)
-    if tip > SETTLEMENT_EPS:
+    if tip > 0:
         creator = get_user(db, market.creator_id)
         needs_platform = user.id == creator.id or (
-            not creator.is_admin and tip * TIP_PLATFORM_SHARE > SETTLEMENT_EPS
+            not creator.is_admin and tip - tip * 75 // 100 > 0
         )
         if needs_platform and admin is None:
             raise HTTPException(status_code=409, detail="Нет аккаунта платформы для зачисления чаевых")
@@ -921,18 +1086,18 @@ def claim_winnings(db: Session, market_id: int, user_id: int, tip_rate: float = 
         lock_ids.append(admin.id)
     try:
         _lock_users(db, lock_ids)
-        _adjust_balance(db, user.id, credited)
+        _adjust_balance(db, user.id, credited, nano=True)
         _distribute_tip_legacy(db, market, user, tip)
-        market.pot = max(0.0, available - payout)
+        market.pot_nano = available - payout
         position.claimed = True
-        position.tip_paid = tip
+        position.tip_paid = as_ton(tip)
         db.commit()
         db.refresh(user)
         return {
-            "payout": payout,
-            "net_profit": net_profit,
-            "tip": tip,
-            "credited": credited,
+            "payout": as_ton(payout),
+            "net_profit": as_ton(net_profit),
+            "tip": as_ton(tip),
+            "credited": as_ton(credited),
             "balance": get_user(db, user.id).balance,
         }
     except HTTPException:
@@ -951,6 +1116,12 @@ def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
         .order_by(SettlementRecord.id.desc())
         .all()
     )
+    from app.models import P2PMoneyEntry
+    from app.services.p2p_ledger import OP_GUARANTOR_REWARD
+    rewards = dict(db.query(P2PMoneyEntry.market_id, func.sum(P2PMoneyEntry.amount))
+        .filter(P2PMoneyEntry.from_user_id == user_id,
+                P2PMoneyEntry.op_type == OP_GUARANTOR_REWARD)
+        .group_by(P2PMoneyEntry.market_id).all())
     out: list[SettlementOut] = []
     for row in rows:
         market = db.get(Market, row.market_id)
@@ -966,6 +1137,7 @@ def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
                 payout=float(row.payout or 0.0),
                 tip=float(row.tip or 0.0),
                 credited=float(row.credited or 0.0),
+                guarantor_reward=as_ton(int(rewards.get(row.market_id, 0))),
                 result=float(row.result or 0.0),
                 lock_ton=float(row.lock_ton or 0.0),
                 residual_returned=float(row.residual_returned or 0.0),
@@ -984,19 +1156,26 @@ def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
 
 
 
-def _require_funded_buy(db: Session, market: Market, idx: int, shares: float, paid: float) -> None:
-    """Existing markets keep their quotes and shares, but cannot issue unfunded payouts."""
+def _require_funded_buy(db: Session, market: Market, idx: int, shares: float, paid: float,
+                        user_id: int | None = None) -> None:
+    """Cover the same per-position, rounded-down liability used at settlement."""
     n = len(market_outcomes(market))
-    liabilities = [0.0] * n
+    liabilities = [0] * n
+    added = False
     for position in db.query(Position).filter_by(market_id=market.id, claimed=False):
         quantities, _ = _pos_vectors(position, n)
         for i, qty in enumerate(quantities):
-            liabilities[i] += qty
-    liabilities[idx] += shares
-    available = float(market.pot or 0.0) + paid
-    if (not math.isfinite(available) or any(not math.isfinite(x) for x in liabilities)
-            or max(liabilities) > available + SETTLEMENT_EPS):
-        raise HTTPException(status_code=409, detail="Банк не покрывает выплаты после этой ставки. Ставка не принята, баланс не списан")
+            if i == idx and position.user_id == user_id:
+                qty += shares
+                added = True
+            liabilities[i] += to_nano(qty, rounding=ROUND_DOWN)
+    if not added:
+        liabilities[idx] += to_nano(shares, rounding=ROUND_DOWN)
+        # An anonymous quote might join an existing position (one rounding carry).
+        if user_id is None:
+            liabilities[idx] += 1
+    if max(liabilities) > market.pot_nano + to_nano(paid):
+        raise HTTPException(409, "Банк не покрывает выплаты после этой ставки. Ставка не принята, баланс не списан")
 
 
 def list_created_markets(db: Session, user_id: int) -> list[Market]:
@@ -1019,24 +1198,38 @@ def moderate_market(db: Session, market_id: int, user_id: int, *, reason: str | 
         market = _lock_market(db, market_id)
         if market.status != MarketStatus.pending:
             raise HTTPException(status_code=409, detail="Событие уже прошло модерацию")
+        from app.models import EventConfigV3, EventRevisionV3, P2POrder, P2PFill
+        config = db.get(EventConfigV3, market_id)
+        if config and (config.event_type != 'public' or
+                db.query(P2POrder.id).filter_by(market_id=market_id).first() or
+                db.query(P2PFill.id).filter_by(market_id=market_id).first()):
+            raise HTTPException(409, 'Модерация доступна только до начала приёма ставок публичного события')
         if reason is None:
             close_at = as_utc(market.close_at)
             if close_at is None or close_at <= utcnow():
                 raise HTTPException(status_code=409, detail="Время приёма ставок истекло. Отклоните событие для возврата залога")
             market.status = MarketStatus.open
         else:
-            if market.mechanism == "lmsr" and (market.lock_returned or not math.isfinite(market.pot)
-                    or abs(market.pot - market.lock_ton) > SETTLEMENT_EPS
+            if market.mechanism == "lmsr" and (market.lock_returned or market.pot_nano != market.lock_nano
                     or db.query(Position).filter_by(market_id=market_id).first() is not None):
                 raise HTTPException(status_code=409, detail="Невозможно вернуть залог: состояние банка требует проверки")
             _lock_users(db, [market.creator_id])
-            _adjust_balance(db, market.creator_id, market.lock_ton)
-            market.pot = 0.0
+            _adjust_balance(db, market.creator_id, market.lock_nano, nano=True)
+            market.pot_nano = 0
             market.lock_returned = True
             market.rejection_reason = reason
             market.status = MarketStatus.rejected
         market.moderated_by = actor.id
         market.moderated_at = _naive_utc(utcnow())
+        if config:
+            db.add(EventRevisionV3(market_id=market.id, revision=config.revision,
+                actor_id=actor.id, kind='public_rejected' if reason is not None else 'public_published',
+                snapshot={**config.terms, 'creator_id': market.creator_id, 'reason': reason}))
+            from app.services.guarantors import notice
+            notice(db, market.creator_id, market.id,
+                f'Событие отклонено: {reason}' if reason is not None else
+                'Событие опубликовано с правками модератора. Авторство и вознаграждение сохранены.' if config.moderator_edited else
+                'Событие одобрено и опубликовано.')
         db.commit()
         db.refresh(market)
         return market

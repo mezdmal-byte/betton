@@ -1,4 +1,5 @@
 import uuid
+from types import SimpleNamespace
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
@@ -267,6 +268,55 @@ def test_settlement_failure_rolls_back_and_expiry_worker_refunds(client,monkeypa
     assert balance(client,a,ha)==pytest.approx(before+20)
 
 
+def _not_two_decimal(odds):
+    rounded = round(float(odds) * 100) / 100
+    return abs(float(odds) - rounded) > 1e-9
+
+
+def test_simple_ioc_non_2dp_effective_odds_yes_no_partial(client, monkeypatch):
+    """Maker @ 1.90 produces complementary odds like 2.11111... Simple IOC must still fill."""
+    admin, ah, a, ha, b, hb, mid = ready(client, monkeypatch)
+
+    yes_maker = submit(client, mid, ha, 0, 40, 1.90)
+    assert yes_maker.status_code == 200, yes_maker.text
+    book_no = client.get(f"/markets/{mid}/orderbook", headers=hb).json()
+    best_no = book_no["available_to_me"][1][0]
+    assert _not_two_decimal(best_no["odds"])
+    quote_no = client.post(
+        f"/markets/{mid}/orders/quote",
+        headers=hb,
+        json={"outcome": 1, "money": 100, "odds": best_no["odds"]},
+    )
+    assert quote_no.status_code == 200, quote_no.text
+    quoted_no = quote_no.json()
+    assert quoted_no["requested"]["matched"] == pytest.approx(best_no["available"], abs=0.001)
+    ioc_no = submit(client, mid, hb, 1, 100, best_no["odds"], kind="ioc")
+    assert ioc_no.status_code == 200, ioc_no.text
+    taken_no = ioc_no.json()
+    assert taken_no["filled"] == pytest.approx(best_no["available"], abs=0.001)
+    assert taken_no["remaining"] == 0
+    assert taken_no["refunded"] == pytest.approx(100 - best_no["available"], abs=0.001)
+    assert taken_no["status"] in ("filled", "cancelled")
+
+    c, hc = _login(client)
+    no_maker = submit(client, mid, ha, 1, 50, 1.90)
+    assert no_maker.status_code == 200, no_maker.text
+    book_yes = client.get(f"/markets/{mid}/orderbook", headers=hc).json()
+    best_yes = book_yes["available_to_me"][0][0]
+    assert _not_two_decimal(best_yes["odds"])
+    quote_yes = client.post(
+        f"/markets/{mid}/orders/quote",
+        headers=hc,
+        json={"outcome": 0, "money": 50, "odds": best_yes["odds"]},
+    )
+    assert quote_yes.status_code == 200, quote_yes.text
+    ioc_yes = submit(client, mid, hc, 0, 50, best_yes["odds"], kind="ioc")
+    assert ioc_yes.status_code == 200, ioc_yes.text
+    taken_yes = ioc_yes.json()
+    assert taken_yes["filled"] > 0
+    assert taken_yes["remaining"] == 0
+
+
 def test_existing_database_migration_preserves_lmsr(tmp_path,monkeypatch):
     from sqlalchemy import create_engine, text
     from app import database
@@ -285,3 +335,28 @@ def test_existing_database_migration_preserves_lmsr(tmp_path,monkeypatch):
         assert conn.execute(text('SELECT balance FROM users')).scalar_one()==950
         assert conn.execute(text('SELECT count(*) FROM p2p_orders')).scalar_one()==0
     old.dispose()
+
+
+
+def test_plan_matches_does_not_skip_better_price_for_nanoton_remainder():
+    # Reproduce the preview case: 109 TON for outcome A consumes exactly
+    # 108 TON at the best level (maker price 0.46), then almost 1 TON at
+    # the next level (maker price 0.45). Ten nanoTON remain. They cannot
+    # form one lot at the still-better 0.44 level, but *could* form lots at
+    # a worse 0.40 level. Price priority means we stop instead of jumping
+    # down the book and creating a microscopic worse-price fill.
+    best = SimpleNamespace(price=460_000, remaining=92_000_000_000)
+    second = SimpleNamespace(price=450_000, remaining=118_000_000_000)
+    third = SimpleNamespace(price=440_000, remaining=76_000_000_000)
+    worse_but_finer = SimpleNamespace(price=400_000, remaining=64_000_000_000)
+
+    plan, remaining = p2p.plan_matches(
+        [best, second, third, worse_but_finer],
+        109_000_000_000,
+        p2p.PRICE - 1,
+    )
+
+    assert [row[0].price for row in plan] == [460_000, 450_000]
+    assert plan[0][2] == 108_000_000_000
+    assert plan[1][2] == 999_999_990
+    assert remaining == 10

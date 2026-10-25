@@ -1,3 +1,4 @@
+from uuid import uuid4
 from tests.legacy_helpers import post_legacy_market
 from datetime import datetime, timedelta, timezone
 import uuid
@@ -80,13 +81,13 @@ def test_quote_and_resolve_only_admin(client: TestClient, monkeypatch):
     yes = client.post(
         f"/markets/{mid}/buy",
         headers=creator_headers,
-        json={"user_id": other["id"], "outcome": "yes", "money": 20},
+        json={"request_id": str(uuid4()), "user_id": other["id"], "outcome": "yes", "money": 20},
     )
     assert yes.status_code == 200, yes.text
     no = client.post(
         f"/markets/{mid}/buy",
         headers=other_headers,
-        json={"user_id": creator["id"], "outcome": "no", "money": 10},
+        json={"request_id": str(uuid4()), "user_id": creator["id"], "outcome": "no", "money": 10},
     )
     assert no.status_code == 200, no.text
     priced = client.get(f"/markets/{mid}").json()
@@ -173,7 +174,7 @@ def test_demo_admin_three_outcomes_tips(client: TestClient, monkeypatch):
     buy = client.post(
         f"/markets/{market['id']}/buy",
         headers=user_headers,
-        json={"user_id": admin["id"], "outcome": "Альфа", "money": 40},
+        json={"request_id": str(uuid4()), "user_id": admin["id"], "outcome": "Альфа", "money": 40},
     )
     assert buy.status_code == 200, buy.text
     user_after_bet = client.get(f"/users/{user['id']}", headers=user_headers).json()
@@ -192,7 +193,7 @@ def test_demo_admin_three_outcomes_tips(client: TestClient, monkeypatch):
     blocked = client.post(
         f"/markets/{market['id']}/buy",
         headers=user_headers,
-        json={"user_id": user["id"], "outcome": 1, "money": 5},
+        json={"request_id": str(uuid4()), "user_id": user["id"], "outcome": 1, "money": 5},
     )
     assert blocked.status_code == 400
     assert "закрыт" in blocked.json()["detail"].lower()
@@ -241,7 +242,7 @@ def test_tip_split_when_creator_is_not_admin(client: TestClient, monkeypatch):
     client.post(
         f"/markets/{mid}/buy",
         headers=winner_headers,
-        json={"user_id": creator["id"], "outcome": 0, "money": 30},
+        json={"request_id": str(uuid4()), "user_id": creator["id"], "outcome": 0, "money": 30},
     )
     closed = client.post(f"/markets/{mid}/close", headers=admin_headers, json={})
     assert closed.status_code == 200

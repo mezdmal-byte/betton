@@ -1,6 +1,10 @@
+from app.money import adjust_balance_nano, add_pot_nano
 """Binary, fully funded orders. Stakes use nanoTON integers; price ticks are 1e-6."""
 import math
+import json
+import secrets
 from collections import defaultdict
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation, ROUND_FLOOR
 
 from fastapi import HTTPException
@@ -39,13 +43,24 @@ def create_market(db, user_id, req):
         raise HTTPException(400, 'Вопрос должен содержать от 8 до 512 символов')
     if legacy.as_utc(req.close_at) <= legacy.utcnow():
         raise HTTPException(400, 'Конец приёма не может быть в прошлом')
+    visibility = getattr(req, "visibility", None) or "public"
+    if visibility not in ("public", "unlisted"):
+        raise HTTPException(400, "Тип события: public или unlisted")
+    unlisted = visibility == "unlisted"
     market = Market(question=req.question.strip(), description=req.description or '',
                     creator_id=user_id, category=req.category, outcomes=names,
                     mechanism='p2p', b=1, q=[0, 0], q_yes=0, q_no=0,
                     lock_ton=0, pot=0, lock_returned=True,
-                    close_at=legacy._naive_utc(req.close_at), status=MarketStatus.pending,
+                    close_at=legacy._naive_utc(req.close_at),
+                    status=MarketStatus.closed if unlisted else MarketStatus.pending,
+                    visibility=visibility,
+                    share_token=secrets.token_urlsafe(24) if unlisted else None,
                     p2p_journal_coverage=ledger.COVERAGE_FULL)
     db.add(market)
+    if unlisted:
+        from app.services.guarantors import create_case
+        db.flush()
+        create_case(db, market, req)
     db.commit()
     db.refresh(market)
     return market
@@ -79,31 +94,97 @@ def plan_matches(orders, amount, limit_price):
             break
         divisor = math.gcd(maker.price, PRICE)
         maker_lot, taker_lot = maker.price//divisor, (PRICE-maker.price)//divisor
-        lots = min(maker.remaining//maker_lot, remaining//taker_lot)
-        if not lots:
+        maker_lots = maker.remaining // maker_lot
+        taker_lots = remaining // taker_lot
+        if not maker_lots:
+            # An unmatchable maker dust remainder must not block the book.
             continue
+        if not taker_lots:
+            # Price priority: if the taker's remainder cannot form one atomic
+            # lot at the current best executable price, do not skip that price
+            # and execute the dust at a worse level. Leave/refund the remainder.
+            break
+        lots = min(maker_lots, taker_lots)
         maker_stake, taker_stake = lots*maker_lot, lots*taker_lot
         plan.append((maker, maker_stake, taker_stake))
         remaining -= taker_stake
     return plan, remaining
 
 
-def preview(db, market_id, user_id, outcome, amount, odds):
+def _guard_unlisted(db, market, user_id=None, share_token=None):
+    from app.services import market_access
+    viewer = db.get(User, user_id) if user_id is not None else None
+    market_access.require_unlisted_access(market, viewer=viewer, share_token=share_token)
+
+
+def odds_for_taker_tick(tick):
+    """Taker odds whose parse_terms tick is this complementary price."""
+    return Decimal(PRICE) / Decimal(tick)
+
+
+def json_odds_for_taker_tick(tick):
+    """Float odds that JSON-round-trip through parse_terms back to this tick."""
+    low = float(odds_for_taker_tick(tick + 1))
+    high = float(odds_for_taker_tick(tick))
+    for candidate in ((low + high) / 2, high, low, float(format(odds_for_taker_tick(tick), '.12f'))):
+        dumped = json.loads(json.dumps(candidate))
+        _atomic, got = parse_terms('1', dumped)
+        if got == tick:
+            return dumped
+    x = (low + high) / 2
+    for _ in range(64):
+        dumped = json.loads(json.dumps(x))
+        _atomic, got = parse_terms('1', dumped)
+        if got == tick:
+            return dumped
+        x = math.nextafter(x, 1.0 if got < tick else 10000.0)
+    return json.loads(json.dumps((low + high) / 2))
+
+
+def taker_odds_for_maker(maker_price):
+    return json_odds_for_taker_tick(PRICE - maker_price)
+
+
+def _fill_legs(plan):
+    legs = []
+    for maker, _maker_stake, taker_stake in plan:
+        tick = PRICE - maker.price
+        if legs and legs[-1][0] == tick:
+            legs[-1] = (tick, legs[-1][1] + taker_stake)
+        else:
+            legs.append((tick, taker_stake))
+    return [dict(odds=json_odds_for_taker_tick(tick), matched=stake / ATOM) for tick, stake in legs]
+
+
+def preview(db, market_id, user_id, outcome, amount, odds, share_token=None, kind='limit'):
+    if kind not in ('limit', 'ioc'):
+        raise HTTPException(400, 'Некорректный тип заявки')
     market = legacy.get_market(db, market_id)
     require_p2p(market)
+    _guard_unlisted(db, market, user_id, share_token)
     legacy.require_accepting(market)
+    from app.services.guarantors import trading_guard
+    trading_guard(db, market, user_id)
     idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
     atomic, tick = parse_terms(amount, odds)
     orders = candidates(db, market, idx, user_id)
+    # requested uses the same price limit as place() with these odds — preview is not a second policy.
     plan, remaining = plan_matches(orders, atomic, tick)
     best, best_remaining = plan_matches(orders, atomic, PRICE-1)
     def stats(plan, left):
         spent = atomic-left
         payout = sum(a+b for _, a, b in plan)
-        return dict(matched=spent/ATOM, remaining=left/ATOM,
+        result = dict(matched=spent/ATOM, remaining=left/ATOM,
                     payout=payout/ATOM, average_odds=payout/spent if spent else None,
-                    worst_odds=min((PRICE/(PRICE-m.price) for m, _, _ in plan), default=None))
-    return dict(limit_odds=PRICE/tick, requested=stats(plan, remaining), available=stats(best, best_remaining))
+                    worst_odds=min((taker_odds_for_maker(m.price) for m, _, _ in plan), default=None),
+                    fills=_fill_legs(plan))
+        from app.models import EventConfigV3, GuarantorCase
+        from app.services.guarantor_funding import enabled, quote_costs
+        config = db.get(EventConfigV3,market.id)
+        if enabled(config):
+            result['guarantor_costs'] = quote_costs(db,market,config,db.get(GuarantorCase,market.id),user_id,idx,plan)
+        return result
+    return dict(limit_odds=PRICE/tick, kind=kind, requested=stats(plan, remaining), available=stats(best, best_remaining))
 
 
 def _refund(db, order, status='cancelled', reason='cancel'):
@@ -122,7 +203,7 @@ def _finish_order(db, order):
         _refund(db, order, 'filled' if order.filled else 'cancelled', reason='remainder')
 
 
-def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
+def place(db, market_id, user_id, outcome, amount, odds, kind, request_id, share_token=None):
     atomic, tick = parse_terms(amount, odds)
     if kind not in ('limit', 'ioc') or not 8 <= len(request_id) <= 64:
         raise HTTPException(400, 'Некорректный тип или идентификатор заявки')
@@ -131,6 +212,7 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
     try:
         market = legacy._lock_market(db, market_id)
         require_p2p(market)
+        _guard_unlisted(db, market, user_id, share_token)
         idx = legacy.parse_outcome(legacy.market_outcomes(market), outcome)
         existing = db.query(P2POrder).filter_by(user_id=user_id, request_id=request_id).first()
         if existing:
@@ -138,6 +220,8 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
                 raise HTTPException(409, 'Идентификатор уже использован для другой заявки')
             return order_out(existing)
         legacy.require_accepting(market)
+        from app.services.guarantors import trading_guard
+        trading_guard(db, market, user_id, consent=True)
         orders = candidates(db, market, idx, user_id)
         plan, _ = plan_matches(orders, atomic, tick)
         legacy._lock_users(db, [user_id] + [m.user_id for m, _, _ in plan])
@@ -148,13 +232,16 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
         db.add(order)
         db.flush()
         ledger.record_reserve(db, order)
+        from app.models import EventConfigV3, GuarantorCase
+        from app.services.guarantor_funding import enabled, after_fills
+        config = db.get(EventConfigV3, market.id)
         for maker, maker_stake, taker_stake in plan:
             maker.remaining -= maker_stake
             maker.filled += maker_stake
             order.remaining -= taker_stake
             order.filled += taker_stake
             payout = maker_stake+taker_stake
-            market.pot += payout/ATOM
+            add_pot_nano(market, payout)
             fill = P2PFill(market_id=market_id, maker_order_id=maker.id, taker_order_id=order.id,
                           maker_user_id=maker.user_id, taker_user_id=user_id,
                           maker_outcome=maker.outcome, maker_stake=maker_stake,
@@ -170,6 +257,8 @@ def place(db, market_id, user_id, outcome, amount, odds, kind, request_id):
                 legacy._set_pos_vectors(pos, shares, costs)
                 # Subsequent matches must see a newly created position with autoflush=False.
                 db.flush()
+            if enabled(config):
+                after_fills(db, market, config, db.get(GuarantorCase, market.id))
             _finish_order(db, maker)
         if kind == 'ioc':
             _refund(db, order, 'filled' if order.filled else 'cancelled', reason='ioc')
@@ -212,9 +301,45 @@ def cancel_all(db, market):
 def void_market(db, market_id, user_id, reason):
     actor = legacy.get_user(db, user_id)
     legacy.require_admin(actor, 'Только админ может отменить событие')
+    return _void_transaction(db, market_id, actor, reason)
+
+
+def cancel_expired_v3(db, market_id):
+    # No public endpoint or fabricated administrator: authority is checked under the market lock.
+    return _void_transaction(db, market_id, None, 'Гарант не принял решение за 24 часа после окончания события')
+
+
+def cancel_creator_v3(db, market_id, actor, reason):
+    return _void_transaction(db, market_id, actor, reason, creator_v3=True)
+
+
+def cancel_guarantor_v3(db, market_id, actor, reason):
+    return _void_transaction(db, market_id, actor, reason, guarantor_v3=True)
+
+
+def cancel_unfunded_v3(db, market_id):
+    return _void_transaction(db, market_id, None, 'Достаточный фонд не сформирован к окончанию приёма ставок', funding_timeout=True)
+
+
+def _void_transaction(db, market_id, actor, reason, *, creator_v3=False, guarantor_v3=False, funding_timeout=False):
     reason = (reason or '').strip()
     try:
         market = legacy._lock_market(db, market_id)
+        from app.models import EventConfigV3, GuarantorCase, GuarantorProfile
+        config = db.get(EventConfigV3, market.id)
+        case = db.get(GuarantorCase, market.id)
+        if creator_v3 and (not config or config.event_type != 'private' or actor.id != market.creator_id or config.ends_at > legacy._naive_utc(legacy.utcnow())):
+            raise HTTPException(403, 'Отмена доступна создателю после окончания частного события')
+        if actor is None and (not config or config.event_type != 'guarantor' or
+                (market.close_at > legacy._naive_utc(legacy.utcnow()) if funding_timeout else config.ends_at + timedelta(hours=24) > legacy._naive_utc(legacy.utcnow()))):
+            raise HTTPException(403, 'Автоматическая отмена для этого события недоступна')
+        if guarantor_v3:
+            from app.services import guarantors as gs
+            profile = db.query(GuarantorProfile).filter_by(user_id=actor.id).with_for_update().populate_existing().first()
+            if (not config or config.event_type != 'guarantor' or not case or actor.id != case.guarantor_id
+                    or not profile or profile.status != 'approved' or gs.now() < config.ends_at
+                    or gs.now() >= config.ends_at + timedelta(hours=24)):
+                raise HTTPException(403, 'Отмена доступна назначенному гаранту в срок принятия решения')
         if market.mechanism != 'p2p':
             raise HTTPException(409, 'Этот рынок использует LMSR')
         if market.status == MarketStatus.cancelled:
@@ -227,6 +352,37 @@ def void_market(db, market_id, user_id, reason):
             raise HTTPException(400, 'Рассчитанное событие нельзя отменить')
         if market.status not in (MarketStatus.open, MarketStatus.closed):
             raise HTTPException(400, 'Отменить можно только открытое или закрытое событие')
+
+        from app.models import GuarantorCase
+        case = db.get(GuarantorCase, market.id)
+        from app.models import EventConfigV3
+        config = db.get(EventConfigV3, market.id)
+        if creator_v3:
+            if not config or config.event_type != 'private' or actor.id != market.creator_id or config.ends_at > legacy._naive_utc(legacy.utcnow()):
+                raise HTTPException(403, 'Отмена доступна создателю после окончания частного события')
+        elif actor is not None and not guarantor_v3 and config and config.event_type in ('private', 'guarantor'):
+            raise HTTPException(403, 'Результат частного события не пересматривается обычной модерацией')
+        if actor is None:
+            from app.models import EventConfigV3, EventRevisionV3
+            config = db.get(EventConfigV3, market.id)
+            when = legacy._naive_utc(legacy.utcnow())
+            from app.services.guarantor_funding import enabled
+            due = bool(case and ((funding_timeout and enabled(config) and case.state == 'collecting' and market.close_at <= when)
+                or (not funding_timeout and case.state == 'active' and config.ends_at + timedelta(hours=24) <= when)))
+            if not due:
+                raise HTTPException(403, 'Автоматическая отмена для этого события недоступна')
+            db.add(EventRevisionV3(market_id=market.id, revision=config.revision, actor_id=None,
+                                  kind='funding_timeout' if funding_timeout else 'system_timeout', snapshot={'reason':reason,'guarantor_id':case.guarantor_id}))
+        elif guarantor_v3:
+            if case.state not in ('active','collecting'):
+                raise HTTPException(409, 'Решение об отмене уже недоступно')
+            from app.models import EventRevisionV3
+            db.add(EventRevisionV3(market_id=market.id, revision=config.revision, actor_id=actor.id,
+                kind='guarantor_cancel', snapshot={'reason':reason,'reward_nano':'0'}))
+        elif case:
+            from app.services.guarantors import participant
+            if actor.id in (market.creator_id, case.guarantor_id) or participant(db, market.id, actor.id):
+                raise HTTPException(403, 'Нужен администратор, который не участвует в этом пари')
 
         orders = db.query(P2POrder).filter_by(market_id=market.id).all()
         fills = db.query(P2PFill).filter_by(market_id=market.id).all()
@@ -250,7 +406,7 @@ def void_market(db, market_id, user_id, reason):
             if filled_from_fills[order.id] != order.filled:
                 raise HTTPException(409, 'Несогласованность учёта сделок')
 
-        if abs(float(market.pot or 0) - bank / ATOM) > 1e-7:
+        if market.pot_nano != bank:
             raise HTTPException(409, 'Банк не соответствует обеспечению сделок')
 
         remainder = defaultdict(int)
@@ -292,12 +448,18 @@ def void_market(db, market_id, user_id, reason):
         for pos in db.query(Position).filter_by(market_id=market.id):
             pos.claimed = True
             pos.tip_paid = 0
+        if case:
+            from app.services.guarantors import log, broadcast
+            case.state = "cancelled"
+            if actor is not None:
+                log(db, case, actor.id, "cancel", reason)
+            broadcast(db, market, case, "Пари отменено. Средства возвращены")
         market.status = MarketStatus.cancelled
         market.settlement_kind = legacy.SETTLEMENT_VOID
         market.cancellation_reason = reason
         market.cancelled_at = when
-        market.cancelled_by = actor.id
-        market.pot = 0
+        market.cancelled_by = actor.id if actor is not None else None
+        market.pot_nano = 0
         market.lock_returned = True
         market.winning_outcome = None
         db.commit()
@@ -320,33 +482,130 @@ def list_orders(db, user_id):
     return result
 
 
-def book(db, market_id):
+def _accumulate_book(orders, accepting=True, exclude_user_id=None):
+    sides = [defaultdict(int), defaultdict(int)]
+    queued = [0, 0]
+    if accepting:
+        for o in orders:
+            if exclude_user_id is not None and o.user_id == exclude_user_id:
+                continue
+            divisor = math.gcd(o.price, PRICE)
+            lots = o.remaining // (o.price // divisor)
+            sides[1 - o.outcome][PRICE - o.price] += lots * ((PRICE - o.price) // divisor)
+            queued[o.outcome] += o.remaining
+    formatted = [
+        [dict(odds=PRICE / p, available=a / ATOM) for p, a in sorted(side.items()) if a]
+        for side in sides
+    ]
+    return formatted, [v / ATOM for v in queued]
+
+
+def top_of_book(levels):
+    return levels[0] if levels else None
+
+
+def best_offers_from_orders(orders, accepting=True):
+    if not accepting:
+        return None
+    sides, _queued = _accumulate_book(orders, accepting=True)
+    return [top_of_book(side) for side in sides]
+
+
+def best_offers_map(db, markets):
+    """Top-of-book for many P2P markets in one query. Closed/resolved/cancelled → None."""
+    result = {}
+    p2p_markets = [m for m in markets if getattr(m, 'mechanism', None) == 'p2p']
+    accepting = [m for m in p2p_markets if legacy.is_accepting_bets(m)]
+    for market in p2p_markets:
+        if market not in accepting:
+            result[market.id] = None
+    if not accepting:
+        return result
+    ids = [m.id for m in accepting]
+    orders = db.query(P2POrder).filter(
+        P2POrder.market_id.in_(ids),
+        P2POrder.status == 'open',
+        P2POrder.remaining > 0,
+    ).all()
+    by_market = defaultdict(list)
+    for order in orders:
+        by_market[order.market_id].append(order)
+    for market in accepting:
+        result[market.id] = best_offers_from_orders(by_market.get(market.id, []), accepting=True)
+    return result
+
+
+def book(db, market_id, viewer_id=None, share_token=None):
     market = legacy.get_market(db, market_id)
     require_p2p(market)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(404, 'Рынок не найден')
+    _guard_unlisted(db, market, viewer_id, share_token)
     orders = db.query(P2POrder).filter_by(market_id=market_id, status='open').all()
-    sides = [defaultdict(int), defaultdict(int)]
-    queued = [0, 0]
-    if legacy.is_accepting_bets(market):
-        for o in orders:
-            divisor = math.gcd(o.price, PRICE)
-            lots = o.remaining // (o.price//divisor)
-            sides[1-o.outcome][PRICE-o.price] += lots*((PRICE-o.price)//divisor)
-            queued[o.outcome] += o.remaining
+    accepting = legacy.is_accepting_bets(market)
+    sides, queued = _accumulate_book(orders, accepting=accepting)
     last = db.query(P2PFill).filter_by(market_id=market_id).order_by(P2PFill.id.desc()).first()
     last_prices = None
     if last:
         last_prices = [0, 0]
-        last_prices[last.maker_outcome] = last.price/PRICE
-        last_prices[1-last.maker_outcome] = (PRICE-last.price)/PRICE
-    return dict(sides=[[dict(odds=PRICE/p, available=a/ATOM) for p, a in sorted(side.items()) if a] for side in sides],
-                queued=[v/ATOM for v in queued], last_prices=last_prices,
-                forming=last is None and market.status == MarketStatus.open)
+        last_prices[last.maker_outcome] = last.price / PRICE
+        last_prices[1 - last.maker_outcome] = (PRICE - last.price) / PRICE
+    payload = dict(
+        sides=sides,
+        queued=queued,
+        last_prices=last_prices,
+        forming=last is None and market.status == MarketStatus.open,
+    )
+    if viewer_id is not None:
+        mine, _queued = _accumulate_book(orders, accepting=accepting, exclude_user_id=viewer_id)
+        payload['available_to_me'] = mine
+    return payload
+
+
+def _trade_out(fill: P2PFill) -> dict:
+    maker_tick = int(fill.price)
+    taker_tick = PRICE - maker_tick
+    maker_odds = (PRICE / maker_tick) if maker_tick else 0.0
+    taker_odds = (PRICE / taker_tick) if taker_tick else 0.0
+    created = fill.created_at
+    created_at = created.isoformat() if created is not None and hasattr(created, 'isoformat') else None
+    return dict(
+        id=fill.id,
+        created_at=created_at,
+        maker_outcome=int(fill.maker_outcome),
+        taker_outcome=1 - int(fill.maker_outcome),
+        maker_odds=maker_odds,
+        taker_odds=taker_odds,
+        maker_stake=fill.maker_stake / ATOM,
+        taker_stake=fill.taker_stake / ATOM,
+        maker_stake_nano=int(fill.maker_stake),
+        taker_stake_nano=int(fill.taker_stake),
+    )
+
+
+def list_trades(db, market_id, viewer_id=None, share_token=None, limit=100):
+    """Read-only executed fills. Does not change money, matching, or orders."""
+    market = legacy.get_market(db, market_id)
+    require_p2p(market)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(404, 'Рынок не найден')
+    _guard_unlisted(db, market, viewer_id, share_token)
+    cap = max(1, min(int(limit or 100), 200))
+    fills = (
+        db.query(P2PFill)
+        .filter_by(market_id=market_id)
+        .order_by(P2PFill.id.desc())
+        .limit(cap)
+        .all()
+    )
+    fills.reverse()
+    return [_trade_out(fill) for fill in fills]
 
 
 def settle(db, market, winning_outcome):
     """Called with the market locked, within legacy resolve's rollback boundary."""
+    if market.status in (MarketStatus.resolved, MarketStatus.cancelled):
+        raise HTTPException(409, 'Событие уже рассчитано или отменено')
     win = legacy.parse_outcome(legacy.market_outcomes(market), winning_outcome)
     fills = db.query(P2PFill).filter_by(market_id=market.id).all()
     rows = defaultdict(lambda: dict(cost=0, payout=0, chosen=set()))
@@ -360,16 +619,25 @@ def settle(db, market, winning_outcome):
             rows[uid]['chosen'].add(side)
             if side == win:
                 rows[uid]['payout'] += total
-    if abs(market.pot - bank/ATOM) > 1e-7:
+    if market.pot_nano != bank:
         raise HTTPException(409, 'Банк не соответствует обеспечению сделок')
+    from app.models import EventConfigV3, EventRevisionV3, GuarantorCase
+    from app.services.guarantor_funding import enabled, deductions
+    config = db.get(EventConfigV3, market.id)
+    case = db.get(GuarantorCase, market.id)
+    reward_charges, reward_total = deductions(db, market, config, case, win) if enabled(config) else ({}, 0)
     admin = legacy.find_admin_user(db)
     users = list(rows) + [market.creator_id]
     if admin:
         users.append(admin.id)
+    if reward_total:
+        users.append(case.guarantor_id)
     users += [o.user_id for o in db.query(P2POrder).filter_by(market_id=market.id, status='open')]
     legacy._lock_users(db, users)
     cancel_all(db, market)
     credits = defaultdict(int)
+    if reward_total:
+        credits[case.guarantor_id] += reward_total
     names = legacy.market_outcomes(market)
     when = legacy._naive_utc(legacy.utcnow())
     for uid, row in rows.items():
@@ -384,15 +652,28 @@ def settle(db, market, winning_outcome):
                 uid, market.creator_id, admin.id, tip
             ).items():
                 ledger.record_tip(db, market.id, uid, recipient, share)
-        net = row['payout']-tip
+        charge = reward_charges.get(uid, 0)
+        net = row['payout']-tip-charge
+        if charge:
+            ledger.record(db, entry_key=f'guarantor_reward:{market.id}:{uid}:{case.guarantor_id}',
+                op_type=ledger.OP_GUARANTOR_REWARD, market_id=market.id, amount=charge,
+                from_kind=ledger.KIND_POT, to_kind=ledger.KIND_BALANCE,
+                from_user_id=uid, to_user_id=case.guarantor_id,
+                origin_key=f'settlement:{market.id}', reason='guarantor_reward')
         credits[uid] += net
         if net:
             ledger.record_payout(db, market.id, uid, net)
         db.add(SettlementRecord(market_id=market.id, user_id=uid, question=market.question,
             winning_outcome=names[win], chosen_outcomes=[names[i] for i in sorted(row['chosen'])],
             stakes_total=row['cost']/ATOM, payout=row['payout']/ATOM, tip=tip/ATOM,
-            credited=(row['payout']-tip)/ATOM, result=(row['payout']-tip-row['cost'])/ATOM,
+            credited=net/ATOM, result=(net-row['cost'])/ATOM,
             lock_ton=0, residual_returned=0, resolved_at=when))
+    if sum(credits.values()) != bank:
+        raise HTTPException(409, 'Сумма выплат и сборов не соответствует банку события')
+    if enabled(config):
+        db.add(EventRevisionV3(market_id=market.id, revision=config.revision, actor_id=case.guarantor_id,
+            kind='reward_settlement', snapshot={'reward_nano':str(reward_total), 'tariff':config.reward,
+                'charges':{str(uid):str(charge) for uid,charge in reward_charges.items()}}))
     for uid in sorted(credits):
         adjust_atoms(db, uid, credits[uid])
     for pos in db.query(Position).filter_by(market_id=market.id):
@@ -404,23 +685,14 @@ def settle(db, market, winning_outcome):
     market.resolved_at = when
     market.settlement_kind = 'auto'
     market.lock_returned = True
-    market.pot = 0
+    market.pot_nano = 0
     db.commit()
     db.refresh(market)
     return market
 
 
 def adjust_atoms(db, user_id, atoms):
-    if not atoms:
-        return
-    delta = atoms/ATOM
-    result = db.execute(text("UPDATE users SET balance = balance + :delta WHERE id = :id AND balance >= :need"),
-                        dict(delta=delta, id=user_id, need=max(0, -delta)))
-    if result.rowcount != 1:
-        raise HTTPException(400, 'Недостаточно средств')
-    user = db.get(User, user_id)
-    if user:
-        db.expire(user)
+    adjust_balance_nano(db, user_id, atoms)
 
 
 def expire_due_orders():

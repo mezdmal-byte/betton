@@ -1,3 +1,4 @@
+from uuid import uuid4
 from tests.legacy_helpers import post_legacy_market
 import json
 import time
@@ -68,6 +69,33 @@ def test_signed_init_data_grants_access(client: TestClient):
     assert user["balance"] == pytest.approx(settings.starting_balance)
     assert user["is_admin"] is False
 
+def test_verified_username_does_not_grant_admin_access(client: TestClient, monkeypatch):
+    monkeypatch.setattr(settings, "admin_telegram_usernames", "@vasiliy395")
+    telegram_id = 88002
+    init_data = make_init_data(telegram_id, username="vasiliy395")
+    res = client.post("/auth/telegram", headers={"Authorization": f"tma {init_data}"})
+    assert res.status_code == 200, res.text
+    user = res.json()
+    assert user["telegram_id"] == telegram_id
+    assert user["is_admin"] is False
+
+
+def test_admin_username_never_grants_permissions(client: TestClient, monkeypatch):
+    monkeypatch.setattr(settings, "admin_telegram_usernames", "Vasiliy395, another_admin")
+    admin = client.post(
+        "/auth/telegram",
+        headers={"Authorization": f"tma {make_init_data(88003, username='vasiliy395')}"},
+    )
+    ordinary = client.post(
+        "/auth/telegram",
+        headers={"Authorization": f"tma {make_init_data(88004, username='vasiliy395_fake')}"},
+    )
+    assert admin.status_code == 200
+    assert admin.json()["is_admin"] is False
+    assert ordinary.status_code == 200
+    assert ordinary.json()["is_admin"] is False
+
+
 
 def test_relogin_keeps_account_and_balance(client: TestClient):
     user, headers = _login(client)
@@ -86,7 +114,7 @@ def test_relogin_keeps_account_and_balance(client: TestClient):
     buy = client.post(
         f"/markets/{mid}/buy",
         headers=headers,
-        json={"outcome": 0, "money": 15},
+        json={"request_id": str(uuid4()), "outcome": 0, "money": 15},
     )
     assert buy.status_code == 200, buy.text
     after = client.get(f"/users/{user['id']}", headers=headers).json()
@@ -139,6 +167,18 @@ def test_expired_auth_date_is_rejected(client: TestClient):
     init_data = make_init_data(92001, auth_date=int(time.time()) - 3601)
     res = client.post("/auth/telegram", headers={"Authorization": f"tma {init_data}"})
     _assert_unauthorized(res, init_data)
+
+
+def test_auth_ttl_remains_one_hour():
+    from app.telegram_auth import AUTH_MAX_AGE_SECONDS
+
+    assert AUTH_MAX_AGE_SECONDS == 3600
+
+
+def test_auth_date_within_ttl_is_accepted(client: TestClient):
+    init_data = make_init_data(92004, auth_date=int(time.time()) - 3599)
+    res = client.post("/auth/telegram", headers={"Authorization": f"tma {init_data}"})
+    assert res.status_code == 200, res.text
 
 
 def test_future_auth_date_is_rejected(client: TestClient):
@@ -269,7 +309,7 @@ def test_foreign_user_id_cannot_spend_create_or_read(client: TestClient):
     buy = client.post(
         f"/markets/{market['id']}/buy",
         headers=attacker_headers,
-        json={"user_id": victim["id"], "outcome": 0, "money": 20},
+        json={"request_id": str(uuid4()), "user_id": victim["id"], "outcome": 0, "money": 20},
     )
     assert buy.status_code == 200, buy.text
     assert _user_balance(victim["id"]) == pytest.approx(victim_start)
@@ -308,7 +348,7 @@ def test_regular_user_cannot_admin_even_with_admin_id_in_body(client: TestClient
     client.post(
         f"/markets/{mid}/buy",
         headers=user_headers,
-        json={"outcome": 0, "money": 10},
+        json={"request_id": str(uuid4()), "outcome": 0, "money": 10},
     )
     before_status = client.get(f"/markets/{mid}").json()["status"]
     before_q = client.get(f"/markets/{mid}").json()["q"]
@@ -370,7 +410,7 @@ def test_auth_failure_does_not_change_state(client: TestClient):
         },
     )
     mid = created.json()["id"]
-    client.post(f"/markets/{mid}/buy", headers=headers, json={"outcome": 0, "money": 12})
+    client.post(f"/markets/{mid}/buy", headers=headers, json={"request_id": str(uuid4()), "outcome": 0, "money": 12})
     snapshot = {
         "counts": _counts(),
         "balance": _user_balance(user["id"]),
@@ -380,7 +420,7 @@ def test_auth_failure_does_not_change_state(client: TestClient):
     res = client.post(
         f"/markets/{mid}/buy",
         headers={"Authorization": f"tma {bad}"},
-        json={"outcome": 1, "money": 8, "user_id": user["id"]},
+        json={"request_id": str(uuid4()), "outcome": 1, "money": 8, "user_id": user["id"]},
     )
     _assert_unauthorized(res, bad)
     assert _counts() == snapshot["counts"]

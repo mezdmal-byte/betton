@@ -1,0 +1,66 @@
+.panel {
+  display: flex;
+  gap: var(--space-12);
+  align-items: flex-start;
+  padding: var(--space-12);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-16);
+  background: var(--color-surface);
+}
+
+.icon {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: var(--radius-12);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+.copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.copy strong {
+  font-size: var(--text-callout);
+  line-height: var(--leading-tight);
+}
+
+.copy p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+  line-height: var(--leading-body);
+}
+
+.success {
+  border-color: color-mix(in srgb, var(--color-outcome-a-accent) 32%, var(--color-border-subtle));
+  background: var(--color-outcome-a-tint);
+}
+
+.success .icon {
+  background: var(--color-outcome-a-surface);
+  color: var(--color-outcome-a-text);
+}
+
+.danger {
+  border-color: color-mix(in srgb, var(--color-outcome-b-accent) 26%, var(--color-border-subtle));
+  background: var(--color-outcome-b-tint);
+}
+
+.danger .icon {
+  background: var(--color-outcome-b-surface);
+  color: var(--color-outcome-b-text);
+}
+
+.pending {
+  background: var(--color-surface-muted);
+}
+
+.neutral {
+  background: var(--color-surface-muted);
+}
