@@ -1,7 +1,7 @@
 import { completeOrderIntent, submitOrderIntent } from '../api/orderIntent'
 import { OrderIntentRecovery, useHasOrderIntent } from './OrderIntentRecovery'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   applyPersonalizedExecutableQuotes,
   classifyIocPlacement,
@@ -71,6 +71,10 @@ export function ConnectedQuickTradeSheet({
   const t = useT()
   const queryClient = useQueryClient()
   const hasPendingIntent = useHasOrderIntent(userId)
+  const mounted = useRef(false)
+  const currentActor = useRef(userId)
+  currentActor.current = userId
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const [state, setState] = useState<QuickTradeState>('normal')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [placeResult, setPlaceResult] = useState<IocPlacementResult | null>(null)
@@ -196,7 +200,7 @@ export function ConnectedQuickTradeSheet({
         throw new Error(live.requested.guarantor_costs.reason || 'Условия вознаграждения гаранта не обеспечены')
       }
       if (mapped.matchedTon <= 0) throw new Error(t('err.stale'))
-      if (!actorId || actorId !== userId) throw new Error('Аккаунт изменился. Обновите приложение')
+      if (!mounted.current || !actorId || actorId !== currentActor.current) throw new Error('Аккаунт изменился. Обновите приложение')
       return submitOrderIntent(actorId, marketId, { outcome, money, odds: acceptedOdds, kind: 'ioc' })
     },
     onMutate: () => {
@@ -205,7 +209,7 @@ export function ConnectedQuickTradeSheet({
       setPlaceResult(null)
     },
     onSuccess: (order, {actorId}) => {
-      if (actorId !== userId) return
+      if (!mounted.current || actorId !== currentActor.current) return
       completeOrderIntent(actorId,order)
       invalidateAfterTrade(queryClient, { userId, marketId })
       const placed = classifyIocPlacement(order)
@@ -223,7 +227,7 @@ export function ConnectedQuickTradeSheet({
       hapticNotification('success')
     },
     onError: (error, {actorId}) => {
-      if (actorId !== userId) return
+      if (!mounted.current || actorId !== currentActor.current) return
       hapticNotification('error')
       if (isInsufficientBalanceError(error)) {
         setState('insufficient-balance')

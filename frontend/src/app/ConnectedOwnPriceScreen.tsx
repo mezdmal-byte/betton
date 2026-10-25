@@ -43,6 +43,10 @@ export function ConnectedOwnPriceScreen({
   const { locale } = useI18n()
   const queryClient = useQueryClient()
   const hasPendingIntent = useHasOrderIntent(userId)
+  const mounted = useRef(false)
+  const currentActor = useRef(userId)
+  currentActor.current = userId
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const [side, setSide] = useState<OutcomeSide>(initialSide)
   const [odds, setOdds] = useState(1.9)
   const [amount, setAmount] = useState(100)
@@ -110,18 +114,18 @@ export function ConnectedOwnPriceScreen({
       if (previewSettling || guarantorCosts?.can_place === false) {
         throw new Error(guarantorCosts?.reason || 'Котировка требует обновления')
       }
-      if (!actorId || actorId !== userId) throw new Error('Аккаунт изменился. Обновите приложение')
+      if (!mounted.current || !actorId || actorId !== currentActor.current) throw new Error('Аккаунт изменился. Обновите приложение')
       return submitOrderIntent(actorId, marketId, { outcome, money, odds: odds, kind: 'limit' })
     },
     onSuccess: (order, {actorId}) => {
-      if (actorId !== userId) return
+      if (!mounted.current || actorId !== currentActor.current) return
       completeOrderIntent(actorId,order)
       invalidateAfterTrade(queryClient, { userId, marketId })
       hapticNotification('success')
       setPlacedOrder(order)
     },
     onError: (error, {actorId}) => {
-      if (actorId !== userId) return
+      if (!mounted.current || actorId !== currentActor.current) return
       hapticNotification('error')
       if (isInsufficientBalanceError(error)) {
         setErrorMessage(t('err.fundsAvail', { amt: formatTonFull(availableTon) }))
