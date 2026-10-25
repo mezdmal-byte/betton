@@ -1,3 +1,5 @@
+import { completeOrderIntent, submitOrderIntent } from '../api/orderIntent'
+import { OrderIntentRecovery, useHasOrderIntent } from './OrderIntentRecovery'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -10,9 +12,8 @@ import {
   type IocPlacementResult,
 } from '../api/adapters'
 import { errorDetail, isInsufficientBalanceError } from '../api/errors'
-import { IdempotencyKeys, orderFingerprint } from '../api/idempotency'
 import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
-import { placeOrder, previewOrder } from '../api/orders'
+import { previewOrder } from '../api/orders'
 import { queryKeys } from '../api/query'
 import { rememberShareToken, shareTokenFor } from '../api/share'
 import { QuickTradeSheet } from '../components/QuickTradeSheet/QuickTradeSheet'
@@ -69,7 +70,11 @@ export function ConnectedQuickTradeSheet({
 }: Props) {
   const t = useT()
   const queryClient = useQueryClient()
-  const keys = useRef(new IdempotencyKeys())
+  const hasPendingIntent = useHasOrderIntent(userId)
+  const mounted = useRef(false)
+  const currentActor = useRef(userId)
+  currentActor.current = userId
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const [state, setState] = useState<QuickTradeState>('normal')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [placeResult, setPlaceResult] = useState<IocPlacementResult | null>(null)
@@ -177,7 +182,7 @@ export function ConnectedQuickTradeSheet({
   ])
 
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({actorId}: {actorId:number}) => {
       if (debouncedMoney !== money || previewQuery.isFetching) {
         throw new Error(t('err.stale'))
       }
@@ -195,28 +200,17 @@ export function ConnectedQuickTradeSheet({
         throw new Error(live.requested.guarantor_costs.reason || 'Условия вознаграждения гаранта не обеспечены')
       }
       if (mapped.matchedTon <= 0) throw new Error(t('err.stale'))
-      const fingerprint = orderFingerprint({
-        marketId,
-        outcome,
-        money,
-        odds: acceptedOdds,
-        kind: 'ioc',
-      })
-      const requestId = keys.current.forFingerprint(fingerprint)
-      const result = await placeOrder(
-        marketId,
-        { outcome, money, odds: acceptedOdds, kind: 'ioc', request_id: requestId },
-        shareToken,
-      )
-      keys.current.clear(fingerprint)
-      return result
+      if (!mounted.current || !actorId || actorId !== currentActor.current) throw new Error('Аккаунт изменился. Обновите приложение')
+      return submitOrderIntent(actorId, marketId, { outcome, money, odds: acceptedOdds, kind: 'ioc' })
     },
     onMutate: () => {
       setState('processing')
       setErrorMessage(null)
       setPlaceResult(null)
     },
-    onSuccess: (order) => {
+    onSuccess: (order, {actorId}) => {
+      if (!mounted.current || actorId !== currentActor.current) return
+      completeOrderIntent(actorId,order)
       invalidateAfterTrade(queryClient, { userId, marketId })
       const placed = classifyIocPlacement(order)
       if (placed.kind === 'empty') {
@@ -232,7 +226,8 @@ export function ConnectedQuickTradeSheet({
       setState('success')
       hapticNotification('success')
     },
-    onError: (error) => {
+    onError: (error, {actorId}) => {
+      if (!mounted.current || actorId !== currentActor.current) return
       hapticNotification('error')
       if (isInsufficientBalanceError(error)) {
         setState('insufficient-balance')
@@ -247,6 +242,11 @@ export function ConnectedQuickTradeSheet({
       setErrorMessage(message)
     },
   })
+
+  if (hasPendingIntent && userId) return <OrderIntentRecovery key={userId} userId={userId} busy={mutation.isPending} onResolved={order => {
+    invalidateAfterTrade(queryClient, {userId, marketId:order.market_id})
+    if (order.market_id === marketId && order.kind === 'ioc') { setPlaceResult(classifyIocPlacement(order)); setState('success'); setErrorMessage(null) }
+  }} />
 
   return (
     <QuickTradeSheet
@@ -282,7 +282,7 @@ export function ConnectedQuickTradeSheet({
         void previewQuery.refetch()
       }}
       onPlace={() => {
-        void mutation.mutateAsync()
+        mutation.mutate({actorId: userId ?? 0})
       }}
     />
   )

@@ -183,6 +183,7 @@ async def seed_via_api(application) -> dict:
         )
         close = datetime.now(UTC) + timedelta(days=7)
         base = {
+            "request_id": str(uuid.uuid4()),
             "event_type": "public",
             "question": "Тест: кто победит в финальном матче?",
             "outcomes": ["Альфа", "Бета"],
@@ -222,7 +223,7 @@ async def seed_via_api(application) -> dict:
         pending = await request(
             "POST",
             "/ux-v3/events",
-            json={**base, "question": "Тест: заявка для проверки модератором"},
+            json={**base, "request_id": str(uuid.uuid4()), "question": "Тест: заявка для проверки модератором"},
         )
     return {
         "users": {actor: row["id"] for actor, row in users.items()},

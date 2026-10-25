@@ -693,7 +693,7 @@ def _get_or_create_position(db: Session, user_id: int, market_id: int, n: int) -
     return position
 
 
-def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float):
+def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float, *, commit: bool = True):
     market = _lock_market(db, market_id)
     if _maybe_auto_close(db, market):
         db.flush()
@@ -736,10 +736,14 @@ def buy_shares(db: Session, market_id: int, user_id: int, outcome, money: float)
         price_after=p[idx],
     )
     db.add(trade)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     user = get_user(db, user_id)
     db.refresh(market)
     return {
+        "trade_id": trade.id,
         "market": market,
         "user": user,
         "shares": shares,
@@ -1112,6 +1116,12 @@ def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
         .order_by(SettlementRecord.id.desc())
         .all()
     )
+    from app.models import P2PMoneyEntry
+    from app.services.p2p_ledger import OP_GUARANTOR_REWARD
+    rewards = dict(db.query(P2PMoneyEntry.market_id, func.sum(P2PMoneyEntry.amount))
+        .filter(P2PMoneyEntry.from_user_id == user_id,
+                P2PMoneyEntry.op_type == OP_GUARANTOR_REWARD)
+        .group_by(P2PMoneyEntry.market_id).all())
     out: list[SettlementOut] = []
     for row in rows:
         market = db.get(Market, row.market_id)
@@ -1127,6 +1137,7 @@ def list_settlements_out(db: Session, user_id: int) -> list[SettlementOut]:
                 payout=float(row.payout or 0.0),
                 tip=float(row.tip or 0.0),
                 credited=float(row.credited or 0.0),
+                guarantor_reward=as_ton(int(rewards.get(row.market_id, 0))),
                 result=float(row.result or 0.0),
                 lock_ton=float(row.lock_ton or 0.0),
                 residual_returned=float(row.residual_returned or 0.0),

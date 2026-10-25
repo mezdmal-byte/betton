@@ -1,4 +1,5 @@
 from datetime import timedelta
+from uuid import uuid4
 import pytest
 from app.database import SessionLocal
 from app.models import (
@@ -18,6 +19,7 @@ from tests.test_p2p import submit
 def payload(kind="public", guarantor_id=None):
     close = ms.utcnow() + timedelta(days=2)
     body = dict(
+        request_id=str(uuid4()),
         event_type=kind,
         question="Кто победит в проверяемом событии?",
         outcomes=["Альфа", "Бета"],

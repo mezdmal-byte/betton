@@ -86,6 +86,7 @@ def test_tariffs_actual_partial_fills_multiple_winners_atomic_settlement_and_jou
     assert call(client, mid, hc, "consent", revision=2).status_code == 200
     before = totals()
     with SessionLocal() as db:
+        history_initial = {u.id: u.balance_nano for u in db.query(User)}
         gua_before = db.get(User, g["id"]).balance_nano
     maker = submit(client, mid, ha, 0, 400, 4)
     assert maker.status_code == 200, maker.text
@@ -123,6 +124,8 @@ def test_tariffs_actual_partial_fills_multiple_winners_atomic_settlement_and_jou
         )
         assert db.get(Market, mid).pot_nano == 0
         assert db.query(P2POrder).filter_by(market_id=mid, status="open").count() == 0
+        from tests.test_guarantor_history import assert_history_matches_balance
+        assert_history_matches_balance(db, mid, history_initial)
         journal = ledger.reconcile(db, mid)
         assert journal["fully_verified"], journal["discrepancies"]
         assert journal["pot"]["guarantor_rewards_nano"] == rewards[outcome] * NANO
@@ -288,6 +291,7 @@ def test_two_concurrent_final_decisions_only_one_pays(client, monkeypatch):
     mid = event["id"]
     before = totals()
     with SessionLocal() as db:
+        history_initial = {u.id: u.balance_nano for u in db.query(User)}
         gua_before = db.get(User, g["id"]).balance_nano
 
     def decide(side):

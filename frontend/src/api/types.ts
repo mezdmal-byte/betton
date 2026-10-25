@@ -143,6 +143,7 @@ export type OrderPreviewOut = {
 }
 
 export type OrderPlaceBody = {
+  expected_user_id?: number
   outcome: number
   money: string | number
   odds: string | number
@@ -209,6 +210,7 @@ export type SettlementOut = {
   payout: number
   tip: number
   credited: number
+  guarantor_reward?: number
   result: number
   resolved_at?: string | null
   settlement_kind?: string | null

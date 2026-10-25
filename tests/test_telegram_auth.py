@@ -68,7 +68,7 @@ def test_signed_init_data_grants_access(client: TestClient):
     assert user["balance"] == pytest.approx(settings.starting_balance)
     assert user["is_admin"] is False
 
-def test_verified_admin_username_grants_admin_access(client: TestClient, monkeypatch):
+def test_verified_username_does_not_grant_admin_access(client: TestClient, monkeypatch):
     monkeypatch.setattr(settings, "admin_telegram_usernames", "@vasiliy395")
     telegram_id = 88002
     init_data = make_init_data(telegram_id, username="vasiliy395")
@@ -76,10 +76,10 @@ def test_verified_admin_username_grants_admin_access(client: TestClient, monkeyp
     assert res.status_code == 200, res.text
     user = res.json()
     assert user["telegram_id"] == telegram_id
-    assert user["is_admin"] is True
+    assert user["is_admin"] is False
 
 
-def test_admin_username_match_is_case_insensitive_and_exact(client: TestClient, monkeypatch):
+def test_admin_username_never_grants_permissions(client: TestClient, monkeypatch):
     monkeypatch.setattr(settings, "admin_telegram_usernames", "Vasiliy395, another_admin")
     admin = client.post(
         "/auth/telegram",
@@ -90,7 +90,7 @@ def test_admin_username_match_is_case_insensitive_and_exact(client: TestClient, 
         headers={"Authorization": f"tma {make_init_data(88004, username='vasiliy395_fake')}"},
     )
     assert admin.status_code == 200
-    assert admin.json()["is_admin"] is True
+    assert admin.json()["is_admin"] is False
     assert ordinary.status_code == 200
     assert ordinary.json()["is_admin"] is False
 

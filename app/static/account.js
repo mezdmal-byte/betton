@@ -29,6 +29,8 @@ function txLabel(type) {
     win: "tx.win",
     loss: "tx.loss",
     fee: "tx.fee",
+    guarantor_reward: "tx.guarantor_reward",
+    guarantor_fee: "tx.guarantor_fee",
     void: "tx.void",
     credit: "tx.credit",
     deposit: "tx.deposit",
@@ -42,6 +44,8 @@ function txLabel(type) {
     win: "Выигрыш",
     loss: "Проигрыш",
     fee: "Сервисный сбор",
+    guarantor_reward: "Доход гаранта",
+    guarantor_fee: "Удержано гаранту",
     void: "Возврат события",
     credit: "Зачисление",
     deposit: "Пополнение",
@@ -79,6 +83,7 @@ function txRow(row) {
     <div class="tx-icon">${txIcon(row.type)}</div>
     <div>
       <div>${escapeHtml(txLabel(row.type))}</div>
+      ${row.informational && ["fee", "guarantor_fee"].includes(row.type) ? `<div class="muted">${escapeHtml(tt("hist.included", "Уже учтено в начисленной выплате"))}</div>` : ""}
       <div class="muted">${escapeHtml(row.question || "")} · ${escapeHtml(formatTxDate(row.created_at))}</div>
     </div>
     <div class="tx-amt ${cls}">${amount ? (sign + Number(amount).toFixed(2) + " TON") : ""}</div>

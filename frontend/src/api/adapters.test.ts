@@ -14,6 +14,7 @@ import {
   mapPlaceResult,
   mapPositions,
   mapTransaction,
+  mapSettlement,
   mapUiCategoryToApi,
   mapUiSortToApi,
   mapUiStatusToApi,
@@ -572,5 +573,13 @@ describe('trade history adapter', () => {
     expect(mapTradesToRecent([fill], 0, 'ru', at)[0]?.timeAgo).toBe('30 мин')
     expect(mapTradesToRecent([fill], 0, 'en', at)[0]?.timeAgo).toBe('30 min')
     expect(mapTradesToRecent([fill], 0, 'zh', at)[0]?.timeAgo).toBe('30 分钟')
+  })
+})
+
+
+describe('ledger-backed settlement presentation', () => {
+  it('preserves net credit and both deductions supplied by the server', () => {
+    const row = mapSettlement({market_id: 1, question: 'Result', winning_outcome: 'Yes', chosen_outcomes: ['Yes'], stakes_total: 100, payout: 200, tip: 1, guarantor_reward: 5, credited: 194, result: 94})
+    expect([row.payoutTon, row.tipTon, row.guarantorRewardTon, row.creditedTon]).toEqual([200, 1, 5, 194])
   })
 })

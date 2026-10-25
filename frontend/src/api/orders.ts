@@ -1,4 +1,4 @@
-import { apiRequest } from './client'
+import { apiRequest, isApiError } from './client'
 import type {
   OrderKind,
   OrderOut,
@@ -53,4 +53,9 @@ export function iocOddsFromPreview(worstOdds: number | null | undefined, fallbac
 
 export function asOrderKind(kind: string | null | undefined): OrderKind {
   return kind === 'ioc' ? 'ioc' : 'limit'
+}
+
+export async function orderByRequest(userId: number, requestId: string, legacy = false): Promise<OrderOut | null> {
+  try { return (await apiRequest<OrderOut>(`/users/${userId}/${legacy ? 'purchases' : 'orders'}/by-request/${encodeURIComponent(requestId)}`)).data }
+  catch (error) { if (isApiError(error) && error.status === 404) return null; throw error }
 }

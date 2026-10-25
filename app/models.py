@@ -41,7 +41,7 @@ class User(Base):
     __table_args__ = (CheckConstraint('balance_nano IS NOT NULL AND balance_nano BETWEEN 0 AND 9223372036854775807'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True)
     username: Mapped[str] = mapped_column(String(64), unique=True)
     telegram_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
     display_name: Mapped[str | None] = mapped_column(String(128), nullable=True)

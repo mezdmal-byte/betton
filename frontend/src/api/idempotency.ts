@@ -2,7 +2,10 @@ export function newRequestId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
-  return `req-${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const n = Math.floor(Math.random() * 16)
+    return (c === 'x' ? n : (n & 3) | 8).toString(16)
+  })
 }
 
 export function orderFingerprint(input: {

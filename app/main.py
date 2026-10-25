@@ -1,3 +1,4 @@
+from app.webhook_security import require_webhook_secret, proxy_headers
 import asyncio
 from datetime import timedelta
 import logging
@@ -14,8 +15,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import ensure_schema, get_db, assert_money_ready
+from app.migrations import assert_schema_ready
 from app.models import Market, MarketStatus, User, P2POrder
-from sqlalchemy import func
+from sqlalchemy import func, text
+import hashlib
+import json
+from fastapi.encoders import jsonable_encoder
 from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
     AccountOut,
@@ -133,19 +138,8 @@ async def _cache_bot_username() -> None:
 
 
 async def setup_webhook_task():
-    await asyncio.sleep(1)
+    # Only resolve metadata; webhook registration is an explicit deployment step.
     await _cache_bot_username()
-    bot, _dp = _maybe_bot()
-    if bot is None or not settings.is_public_https():
-        print("Webhook пропущен: нужен BOT_TOKEN и публичный HTTPS (MINI_APP_URL / RENDER_EXTERNAL_URL).")
-        return
-    url = settings.webapp_base() + "/webhook"
-    await bot.set_webhook(url=url)
-    print(f"Вебхук Telegram: {url}")
-    print(f"Mini App: {settings.webapp_base()}/v2/")
-    from bot.main import sync_menu_button
-
-    await sync_menu_button(bot)
 
 
 async def expire_orders_task():
@@ -171,7 +165,8 @@ async def demo_guarantors_task():
 
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
-    ensure_schema()
+    settings.validate_admin_configuration()
+    assert_schema_ready()
     assert_money_ready()
     if settings.betton_preview_seed:
         from app.preview_seed import seed_preview_data
@@ -183,14 +178,10 @@ async def async_lifespan(app: FastAPI):
     task.cancel()
     expiry.cancel()
     demo_task.cancel()
-    await asyncio.gather(expiry, demo_task, return_exceptions=True)
+    await asyncio.gather(task, expiry, demo_task, return_exceptions=True)
     bot, _dp = _maybe_bot()
     if bot is not None:
-        try:
-            if settings.is_public_https():
-                await bot.delete_webhook()
-        except Exception:
-            pass
+        # Old replicas must never delete the replacement replica webhook.
         await bot.session.close()
 
 
@@ -275,6 +266,7 @@ def health():
 
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
+    require_webhook_secret(request)
     from aiogram import types
 
     payload = await request.json()
@@ -287,7 +279,7 @@ async def telegram_webhook(request: Request):
             import httpx
             try:
                 async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.post(proxy + "/webhook", json=payload)
+                    response = await client.post(proxy + "/webhook", json=payload, headers=proxy_headers())
             except httpx.HTTPError:
                 raise HTTPException(status_code=502, detail="Webhook proxy unavailable") from None
             if response.status_code >= 400:
@@ -728,25 +720,46 @@ def buy_shares_endpoint(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    market = market_service.get_market(db, market_id)
-    market_access.require_unlisted_access(
-        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
-    )
-    res = market_service.buy_shares(
-        db,
-        market_id=market_id,
-        user_id=current_user.id,
-        outcome=req.outcome,
-        money=req.money,
-    )
-    return {
-        "market": market_service.market_to_out(res["market"]),
-        "shares": res["shares"],
-        "paid": res["paid"],
-        "prices": res["prices"],
-        "balance": res["user"].balance,
-        "outcome": res["outcome"],
-    }
+    if req.expected_user_id is not None and req.expected_user_id != current_user.id:
+        raise HTTPException(409, "Аккаунт изменился. Обновите приложение")
+    try:
+        params = {"uid":current_user.id, "key":req.request_id}
+        if req.request_id:
+            digest = hashlib.sha256(json.dumps([market_id, req.outcome, market_service.to_nano(req.money)], sort_keys=True).encode()).hexdigest()
+            claim = db.execute(text("""INSERT INTO legacy_purchase_intents(user_id,request_id,payload_hash)
+                VALUES(:uid,:key,:digest) ON CONFLICT(user_id,request_id) DO NOTHING"""),{**params,"digest":digest})
+            if claim.rowcount == 0:
+                old = db.execute(text("SELECT payload_hash,response FROM legacy_purchase_intents WHERE user_id=:uid AND request_id=:key"),params).mappings().one()
+                if old['payload_hash'] != digest or not old['response']:
+                    raise HTTPException(409,"Идентификатор уже использован для другой операции")
+                result=json.loads(old['response']); db.rollback(); return result
+        market = market_service._lock_market(db, market_id)
+        market_access.require_unlisted_access(market, viewer=current_user, share_token=market_access.share_token_from_request(request))
+        res = market_service.buy_shares(db, market_id=market_id, user_id=current_user.id, outcome=req.outcome, money=req.money, commit=False)
+        result = jsonable_encoder({
+            "market":market_service.market_to_out(res['market']), "shares":res['shares'], "paid":res['paid'],
+            "prices":res['prices'], "balance":res['user'].balance, "outcome":res['outcome'],
+            "id":res['trade_id'], "market_id":market_id, "request_id":req.request_id,
+            "kind":"legacy_buy", "status":"filled", "amount":res['paid'], "filled":res['paid'],
+            "remaining":0, "refunded":0, "odds":res['shares']/res['paid'],
+        })
+        if req.request_id:
+            db.execute(text("UPDATE legacy_purchase_intents SET response=:response WHERE user_id=:uid AND request_id=:key"),{**params,"response":json.dumps(result)})
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise
+
+
+@app.get("/users/{user_id}/purchases/by-request/{request_id}")
+def purchase_by_request(user_id:int, request_id:str, current_user:User=Depends(get_current_user), db:Session=Depends(get_db)):
+    if user_id != current_user.id:
+        raise HTTPException(403,"Недостаточно прав")
+    response=db.execute(text("SELECT response FROM legacy_purchase_intents WHERE user_id=:uid AND request_id=:key"),{"uid":user_id,"key":request_id}).scalar_one_or_none()
+    if not response:
+        raise HTTPException(404,"Операция не найдена")
+    return json.loads(response)
 
 
 @app.post("/markets/{market_id}/close", response_model=MarketOut)
@@ -888,6 +901,8 @@ def place_order_endpoint(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if req.expected_user_id is not None and req.expected_user_id != current_user.id:
+        raise HTTPException(409, "Аккаунт изменился. Обновите приложение")
     return p2p_service.place(
         db,
         market_id,
@@ -904,6 +919,16 @@ def place_order_endpoint(
 @app.post("/orders/{order_id}/cancel")
 def cancel_order_endpoint(order_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return p2p_service.cancel(db, order_id, current_user.id)
+
+
+@app.get("/users/{user_id}/orders/by-request/{request_id}")
+def order_by_request(user_id: int, request_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if user_id != current_user.id:
+        raise HTTPException(403, "Недостаточно прав")
+    order = db.query(P2POrder).filter_by(user_id=current_user.id, request_id=request_id).one_or_none()
+    if order is None:
+        raise HTTPException(404, "Операция не найдена")
+    return p2p_service.order_out(order)
 
 
 @app.get("/users/{user_id}/orders")

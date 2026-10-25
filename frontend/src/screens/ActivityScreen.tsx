@@ -72,6 +72,7 @@ export function ActivityScreen({
               )}
             />
             <DetailRow label="Статус" value={detailStatus(selected)} />
+            {selected.informational && ["fee", "guarantor_fee"].includes(selected.actionKey ?? "") ? <p>{t("settlement.included")}</p> : null}
           </section>
         </main>
 

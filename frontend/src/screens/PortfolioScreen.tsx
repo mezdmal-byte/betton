@@ -437,8 +437,8 @@ export function PortfolioScreen({
                     {settlements[0].question}
                   </strong>
                   <span>
-                    Расчёт: {settlements[0].winningOutcome} · выплата{" "}
-                    {formatTonFull(settlements[0].payoutTon)}
+                    Расчёт: {settlements[0].winningOutcome} · {t("settlement.credited")}{" "}
+                    {formatTonFull(settlements[0].creditedTon)}
                   </span>
                 </button>
               ) : (
@@ -601,8 +601,11 @@ export function PortfolioScreen({
                           item.question}
                       </p>
                       <p className={styles.detail}>
-                        Расчёт: {item.winningOutcome} · выплата{" "}
-                        {formatTonFull(item.payoutTon)}
+                        Расчёт: {item.winningOutcome} · {t("settlement.credited")}{" "}
+                        {formatTonFull(item.creditedTon)}
+                      </p>
+                      <p className={styles.detail}>
+                        {t("settlement.gross")}: {formatTonFull(item.payoutTon)} · {t("tx.fee")}: {formatTonFull(item.tipTon)} · {t("tx.guarantor_fee")}: {formatTonFull(item.guarantorRewardTon ?? 0)}
                       </p>
                       {item.cancellationReason ? (
                         <p className={styles.detail}>
@@ -684,7 +687,10 @@ function historyAction(
   t: ReturnType<typeof useT>,
 ): string {
   const key = item.actionKey ? "tx." + item.actionKey : "";
-  if (key && isMessageKey(key)) return t(key);
+  if (key && isMessageKey(key)) {
+    const note = item.informational && ["fee", "guarantor_fee"].includes(item.actionKey ?? "");
+    return t(key) + (note ? " · " + t("settlement.included") : "");
+  }
   return item.action;
 }
 
