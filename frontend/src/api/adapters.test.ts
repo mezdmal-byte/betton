@@ -574,6 +574,14 @@ describe('trade history adapter', () => {
     expect(mapTradesToRecent([fill], 0, 'en', at)[0]?.timeAgo).toBe('30 min')
     expect(mapTradesToRecent([fill], 0, 'zh', at)[0]?.timeAgo).toBe('30 分钟')
   })
+  it('treats naive server fill timestamps as UTC rather than the Windows timezone', () => {
+    const naive = { ...fill, created_at: '2026-09-16T12:00:00' }
+    const zoned = { ...fill, created_at: '2026-09-16T19:00:00+07:00' }
+    const utc = Date.parse(fill.created_at)
+    expect(mapTradesToChartPoints([naive], 0)[0]?.t).toBe(utc)
+    expect(mapTradesToChartPoints([zoned], 0)[0]?.t).toBe(utc)
+    expect(mapTradesToRecent([naive], 0, 'ru', utc + 30 * 60000)[0]?.timeAgo).toBe('30 мин')
+  })
 })
 
 

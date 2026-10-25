@@ -64,7 +64,7 @@ def signed_init_data(actor: str, *, now: int | None = None) -> str:
     return urlencode(values)
 
 
-def prepare_state(state_dir: Path) -> tuple[Path, dict]:
+def prepare_state(state_dir: Path, database_name: str = DATABASE_NAME) -> tuple[Path, dict]:
     """Refuse arbitrary databases, symlink escapes and unmarked existing files."""
     state_dir = state_dir.absolute()
     if not state_dir.resolve().is_relative_to(SANDBOX_ROOT.resolve()):
@@ -74,7 +74,7 @@ def prepare_state(state_dir: Path) -> tuple[Path, dict]:
     if state_dir.is_symlink():
         raise RuntimeError("Sandbox directory may not be a symlink")
     state_dir.mkdir(parents=True, exist_ok=True)
-    database = state_dir / DATABASE_NAME
+    database = state_dir / database_name
     marker = state_dir / "ux-v3-sandbox.json"
     if any(path.is_symlink() for path in (database, marker)):
         raise RuntimeError("Sandbox database and marker may not be symlinks")
@@ -91,20 +91,20 @@ def prepare_state(state_dir: Path) -> tuple[Path, dict]:
             data = json.loads(marker.read_text(encoding="utf-8"))
         except (ValueError, OSError) as exc:
             raise RuntimeError("Invalid sandbox marker") from exc
-        if data.get("kind") != MARKER_KIND or data.get("database") != DATABASE_NAME:
+        if data.get("kind") != MARKER_KIND or data.get("database") != database_name:
             raise RuntimeError("Unrecognized sandbox marker")
         if data.get("seeded") and not database.is_file():
             raise RuntimeError(
                 "Sandbox database is missing; choose a fresh sandbox directory"
             )
     else:
-        data = {"kind": MARKER_KIND, "database": DATABASE_NAME, "seeded": False}
+        data = {"kind": MARKER_KIND, "database": database_name, "seeded": False}
         with marker.open("x", encoding="utf-8") as stream:
             json.dump(data, stream)
     return state_dir, data
 
 
-def configure_process(state_dir: Path) -> None:
+def configure_process(state_dir: Path, *, full_demo: bool = False, database_name: str = DATABASE_NAME) -> None:
     if "app.config" in sys.modules or "app.database" in sys.modules:
         raise RuntimeError(
             "Run the sandbox in a separate process before importing app modules"
@@ -112,7 +112,7 @@ def configure_process(state_dir: Path) -> None:
     # Explicitly override every application setting, including secrets/proxies.
     # Changing cwd prevents Settings(env_file='.env') from discovering repo .env.
     overrides = {
-        "DATABASE_URL": "sqlite:///" + (state_dir / DATABASE_NAME).as_posix(),
+        "DATABASE_URL": "sqlite:///" + (state_dir / database_name).as_posix(),
         "BOT_TOKEN": LOCAL_TOKEN,
         "TELEGRAM_BOT_USERNAME": "",
         "MINI_APP_URL": "http://127.0.0.1:8877",
@@ -127,6 +127,14 @@ def configure_process(state_dir: Path) -> None:
         "TELEGRAM_WEBHOOK_PROXY_URL": "",
         "PREVIEW_ROOT_TO_V2": "false",
         "PANDASCORE_TOKEN": "",
+        "ADMIN_TELEGRAM_IDS": "",
+        "ADMIN_TELEGRAM_REVOKED_IDS": "",
+        "TELEGRAM_WEBHOOK_SECRET": "sandbox_only_synthetic_secret_not_a_real_webhook_123",
+        "TELEGRAM_WEBHOOK_PREVIOUS_SECRET": "",
+        "TELEGRAM_WEBHOOK_PROXY_SECRET": "",
+        "BETTON_ENVIRONMENT": "test",
+        "BETTON_DEMO_AUTOMATION": "true" if full_demo else "false",
+        "ALLOW_UNKEYED_LEGACY_BUY": "false",
     }
     # Windows environment names are case-insensitive; Linux may contain both.
     for key in list(os.environ):
@@ -232,9 +240,12 @@ async def seed_via_api(application) -> dict:
     }
 
 
-def create_preview(state_dir: Path | None = None):
-    state_dir, marker_data = prepare_state(state_dir or SANDBOX_ROOT)
-    configure_process(state_dir)
+def create_preview(state_dir: Path | None = None, *, full_demo: bool = False):
+    database_name = 'betton-test-simulation.sqlite' if full_demo else DATABASE_NAME
+    state_dir, marker_data = prepare_state(state_dir or SANDBOX_ROOT, database_name)
+    configure_process(state_dir, full_demo=full_demo, database_name=database_name)
+    if marker_data.get('seeded') and bool(marker_data.get('full_demo')) != full_demo:
+        raise RuntimeError('Choose a fresh state directory for the requested demo mode; existing data was not changed')
     from fastapi import FastAPI, HTTPException, Request
     from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
@@ -253,18 +264,29 @@ def create_preview(state_dir: Path | None = None):
                     raise RuntimeError(
                         "Incomplete sandbox seed; choose a fresh .ux-preview/ subdirectory, not an existing database"
                     )
+            if full_demo:
+                from app.services.demo_guarantors import initialize_empty_database
+                with SessionLocal() as db:
+                    initialize_empty_database(db)
             result = await seed_via_api(backend)
-            marker_data.update(result, seeded=True)
+            if full_demo:
+                from scripts.seed_demo_markets import seed_scenarios
+                result.update(await seed_scenarios(backend, result))
+            marker_data.update(result, seeded=True, full_demo=full_demo)
             (state_dir / "ux-v3-sandbox.json").write_text(
                 json.dumps(marker_data, ensure_ascii=False, indent=2), encoding="utf-8"
             )
         # Run only the local deadline worker, never the production lifecycle.
         expiry = asyncio.create_task(expire_orders_task())
+        from app.main import demo_guarantors_task
+        automation = asyncio.create_task(demo_guarantors_task()) if full_demo else None
         try:
             yield
         finally:
             expiry.cancel()
-            await asyncio.gather(expiry, return_exceptions=True)
+            if automation:
+                automation.cancel()
+            await asyncio.gather(expiry, *([automation] if automation else []), return_exceptions=True)
 
     application = FastAPI(title="BetTON local isolated UX sandbox", lifespan=lifespan)
 
@@ -314,6 +336,18 @@ def create_preview(state_dir: Path | None = None):
         if actor not in ACTORS:
             raise HTTPException(404, "Unknown local test actor")
         return actor
+
+    @application.get('/sandbox/scenarios')
+    def scenario_map():
+        if not full_demo:
+            raise HTTPException(404, 'Start a full demo to use the scenario map')
+        return HTMLResponse((ROOT / 'scripts' / 'sandbox_scenarios.html').read_text(encoding='utf-8'))
+
+    @application.get('/sandbox/scenarios.js')
+    def scenario_map_script():
+        if not full_demo:
+            raise HTTPException(404, 'Full demo only')
+        return Response((ROOT / 'scripts' / 'sandbox_scenarios.js').read_text(encoding='utf-8'), media_type='text/javascript')
 
     @application.get("/sandbox/session")
     def sandbox_session(actor: str = "creator"):
@@ -384,6 +418,7 @@ def create_preview(state_dir: Path | None = None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--full-demo', action='store_true', help='Curated scenarios and guarded automatic demo guarantors; use a NEW state directory')
     parser.add_argument(
         "--state-dir",
         type=Path,
@@ -396,7 +431,7 @@ def main():
         help="Initialize isolated database and verify real auth/feed; exit",
     )
     args = parser.parse_args()
-    application = create_preview(args.state_dir)
+    application = create_preview(args.state_dir, full_demo=args.full_demo)
     if args.smoke:
 
         async def smoke():

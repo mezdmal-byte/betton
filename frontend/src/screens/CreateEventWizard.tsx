@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Guarantor } from "../api/guarantors";
 import {
-  EMPTY_EVENT_DRAFT,
   validateEventStep,
   type CreationStep,
   type DraftErrors,
@@ -16,6 +15,8 @@ import { useI18n } from "../i18n";
 import { eventCopy } from "../api/eventsV3Copy";
 import { EventTypeInfo } from "./EventTypeInfo";
 import styles from "./CreateEventWizard.module.css";
+import { creationDraftKey, readCreationDraft, saveCreationDraft } from './creationDrafts';
+export { creationDraftKey } from './creationDrafts';
 
 const TYPES: { id: EventType; title: string; description: string }[] = [
   {
@@ -68,46 +69,6 @@ type TextKey = Exclude<
   keyof EventDraft,
   "eventType" | "category" | "guarantorId"
 >;
-export const creationDraftKey = (userId?: number) =>
-  `betton.create.ux-v3.${userId ?? "guest"}`;
-
-function readDraft(key: string): { draft: EventDraft; step: CreationStep } {
-  try {
-    const saved = JSON.parse(sessionStorage.getItem(key) || "null");
-    if (!saved || typeof saved !== "object")
-      return { draft: { ...EMPTY_EVENT_DRAFT }, step: "type" };
-    const next = { ...EMPTY_EVENT_DRAFT };
-    for (const name of Object.keys(next) as (keyof EventDraft)[]) {
-      if (
-        name !== "eventType" &&
-        name !== "guarantorId" &&
-        name !== "category" &&
-        typeof saved.draft?.[name] === "string"
-      )
-        next[name] = saved.draft[name];
-    }
-    if (TYPES.some((t) => t.id === saved.draft?.eventType))
-      next.eventType = saved.draft.eventType;
-    if (
-      ["sport", "esports", "politics", "crypto", "unique"].includes(
-        saved.draft?.category,
-      )
-    )
-      next.category = saved.draft.category;
-    if (
-      Number.isInteger(saved.draft?.guarantorId) &&
-      saved.draft.guarantorId > 0
-    )
-      next.guarantorId = saved.draft.guarantorId;
-    return {
-      draft: next,
-      step: STEPS.includes(saved.step) && next.eventType ? saved.step : "type",
-    };
-  } catch {
-    return { draft: { ...EMPTY_EVENT_DRAFT }, step: "type" };
-  }
-}
-
 export function CreateEventWizard({
   userId,
   onBack,
@@ -134,7 +95,7 @@ export function CreateEventWizard({
   const { locale } = useI18n();
   const c = (source: string | undefined) => eventCopy(locale, source);
   const key = creationDraftKey(userId);
-  const [initial] = useState(() => readDraft(key));
+  const [initial] = useState(() => readCreationDraft(userId));
   const [draft, setDraft] = useState(initial.draft);
   const [step, setStep] = useState<CreationStep>(initial.step);
   const [info, setInfo] = useState<EventType | null>(null);
@@ -147,7 +108,7 @@ export function CreateEventWizard({
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(key, JSON.stringify({ draft, step }));
+      saveCreationDraft(userId, draft, step);
     } catch {
       /* Draft persistence is optional when browser storage is blocked. */
     }
@@ -179,6 +140,12 @@ export function CreateEventWizard({
     name: K,
     value: EventDraft[K],
   ) => {
+    if (name === 'eventType' && value !== draft.eventType) {
+      const restored = readCreationDraft(userId, value as EventType);
+      setDraft(restored.draft);
+      setErrors({});
+      return;
+    }
     const next = { ...draft, [name]: value };
     setDraft(next);
     if (errors[name])
@@ -330,7 +297,9 @@ export function CreateEventWizard({
           <button type="button" onClick={back} disabled={submitting}>
             {step === "type" ? c("← События") : c("← Назад")}
           </button>
-          <span>BetTON</span>
+          <button type="button" onClick={onBack} disabled={submitting}>
+            {c('Сохранить и выйти')}
+          </button>
         </div>
         <h1>{profile ? c("Профиль гаранта") : c(TITLES[step])}</h1>
         <p>

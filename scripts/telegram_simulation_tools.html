@@ -1,0 +1,21 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BetTON · Telegram simulation</title><script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/simulation/tools.js" defer></script><style>
+body{font:16px/1.5 system-ui,sans-serif;max-width:850px;margin:24px auto;padding:0 18px;background:#fafaf8;color:#202326}
+h1{font-size:26px;line-height:1.2}h2{font-size:20px;margin-top:30px}a{color:#174dc5;text-underline-offset:3px}
+li{margin:12px 0}select,button{font:inherit;padding:10px;margin:6px 0;max-width:100%}label{display:block;margin-top:12px}
+fieldset{border:1px solid #bbb;padding:14px}button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #174dc5;outline-offset:3px}
+</style></head><body><h1>BetTON · тестовая платформа</h1>
+<p>Отдельная база, синтетические TON. Вход через настоящий Telegram; подставных ролей здесь нет. Webhook существующего бота не меняется.</p>
+<p><a href="/v2/">Открыть приложение BetTON →</a></p>
+<h2>Сценарии рынков</h2><p>Публичные события найдите по названию в ленте, завершённые — через историю автора. Частные доступны по ссылке.</p><ol id="scenarios"></ol>
+<h2>Автоматический тестовый гарант</h2>
+<p>Создайте своё частное событие с гарантом «ТЕСТ», затем вернитесь через кнопку меню и разрешите сценарий именно для этого пари. Ваши подтверждения и ставки гарант не выполняет.</p>
+<fieldset><legend>Одно тестовое пари</legend><button id="refresh">Обновить мои пари</button>
+<label for="event">Событие</label><select id="event"></select>
+<label for="scenario">Ответ гаранта</label><select id="scenario"><option value="negotiate">Переговоры</option>
+<option value="decline">Отказ</option><option value="no_response">Без ответа</option><option value="agreement_error">Ошибка согласования</option>
+<option value="winner_0">Первый исход после срока</option><option value="winner_1">Второй исход после срока</option>
+<option value="cancel">Отмена после срока</option><option value="timeout">Пропуск срока результата</option></select>
+<button id="enable">Включить сценарий для выбранного пари</button></fieldset>
+<p id="status" role="status"></p><p><a href="/v2/">Вернуться в приложение</a></p></body></html>

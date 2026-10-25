@@ -1,0 +1,152 @@
+import { test, expect, type Page } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
+
+async function auth(page: Page, role='creator') {
+  const s=await (await page.request.get('/sandbox/session?actor='+role)).json()
+  return { s, headers: { Authorization: 'tma '+s.init_data } }
+}
+async function api(page: Page, path: string, role='creator', body?: object) {
+  const {headers}=await auth(page,role)
+  const r=body ? await page.request.post(path,{headers,data:body}) : await page.request.get(path,{headers})
+  expect(r.status(),await r.text()).toBe(200)
+  return r.json()
+}
+async function open(page: Page, role='creator', share?: string) {
+  await page.addInitScript(()=>{localStorage.setItem('betton.onboarding.v1','done');localStorage.setItem('betton.locale','ru')})
+  await page.goto('/sandbox/?actor='+role+(share?'&share='+share:''))
+  await expect(page.getByRole('button',{name:'Создать',exact:true}).first()).toBeVisible()
+}
+async function createUI(page: Page, kind: 'public'|'guarantor', title: string, seconds=86400) {
+  await page.getByRole('button',{name:'Создать',exact:true}).click()
+  await page.getByRole('radio',{name:kind==='public'?/^Публичное событие/:/^Частное с гарантом/}).click()
+  await page.getByRole('button',{name:'Продолжить',exact:true}).click()
+  await page.locator('#event-question').fill(title)
+  await page.locator('#event-outcomeA').fill('Да');await page.locator('#event-outcomeB').fill('Нет')
+  await page.getByRole('button',{name:'Далее',exact:true}).click()
+  await page.locator('#event-rules').fill('Проверить итоговый протокол; при отсутствии данных отменить событие')
+  await page.locator('#event-method').fill('Сопоставить протокол с каждым из двух исходов')
+  const end=new Date(Date.now()+seconds*1000).toISOString().slice(0,16)
+  await page.locator('#event-closeAt').fill(end);await page.locator('#event-endsAt').fill(end)
+  if(kind==='public') {
+    await page.locator('#event-criterionA').fill('В протоколе указан первый исход')
+    await page.locator('#event-criterionB').fill('В протоколе указан второй исход')
+    await page.locator('#event-unverifiable').fill('Отмена и возврат')
+    await page.locator('#event-sourceName').fill('Официальный протокол')
+    await page.locator('#event-sourceUrl').fill('https://example.com/result')
+    await page.locator('#event-backupName').fill('Необязательный резерв без ссылки')
+    await expect(page.locator('#event-backupUrl')).toHaveValue('')
+  }
+  await page.getByRole('button',{name:'Проверить событие',exact:true}).click()
+  if(kind==='guarantor') {
+    await page.getByRole('button',{name:'Выбрать гаранта',exact:true}).click()
+    await page.locator('button[aria-pressed]').filter({hasText:'ТЕСТ · Фикс'}).click()
+  }
+  const response=page.waitForResponse(r=>r.url().endsWith('/ux-v3/events')&&r.request().method()==='POST')
+  await page.getByRole('button',{name:kind==='public'?'Отправить на модерацию':'Пригласить гаранта',exact:true}).click()
+  const r=await response;expect(r.status(),await r.text()).toBe(200);return r.json()
+}
+
+test('A: real chart, three executable levels, UI placement, weighted execution and portfolio',async({page},info)=>{
+  await open(page,'participant')
+  const {s}=await auth(page,'participant');expect(s.sandbox.full_demo).toBe(true)
+  const history=s.sandbox.scenarios.history
+  const trades=await api(page,`/markets/${history.id}/trades`,'participant')
+  expect(new Set(trades.map((t:any)=>t.maker_odds)).size).toBeGreaterThanOrEqual(4)
+  const fixture=s.sandbox.scenarios.book_levels
+  await page.getByText(fixture.question,{exact:true}).first().click()
+  await page.getByRole('button',{name:'Свой коэффициент',exact:true}).click()
+  await page.getByLabel('Желаемый коэффициент',{exact:true}).fill('1.49')
+  await page.getByLabel(/^Сумма предложения/).fill('60')
+  await page.getByLabel('Желаемый коэффициент',{exact:true}).blur()
+  const quote=await api(page,`/markets/${fixture.id}/orders/quote`,'participant',{outcome:0,money:'60',odds:1.49,kind:'limit'})
+  expect(quote.requested.fills.length).toBe(3)
+  expect(quote.requested.average_odds).toBeCloseTo(quote.requested.payout/quote.requested.matched,7)
+  const before=await api(page,`/users/${s.sandbox.users.participant}`,'participant')
+  await page.getByRole('button',{name:'Предпросмотр',exact:true}).click()
+  await expect(page.getByText(/Средний коэффициент исполнения/)).toBeVisible()
+  await page.getByRole('button',{name:'Разместить предложение',exact:true}).click()
+  const response=page.waitForResponse(r=>r.url().endsWith(`/markets/${fixture.id}/orders`)&&r.request().method()==='POST')
+  await page.getByRole('button',{name:'Подтвердить размещение',exact:true}).click()
+  const r=await response;expect(r.status()).toBe(200);const order=await r.json()
+  expect(order.filled).toBeCloseTo(quote.requested.matched,7)
+  const after=await api(page,`/users/${s.sandbox.users.participant}`,'participant')
+  expect(before.balance-after.balance).toBeCloseTo(order.amount-order.refunded,6)
+  const {headers}=await auth(page,'participant')
+  expect((await page.request.post(`/markets/${fixture.id}/orders`,{headers,data:{outcome:0,money:'60',odds:1.49,kind:'limit',request_id:order.request_id}})).status()).toBe(200)
+  expect((await api(page,`/users/${s.sandbox.users.participant}`,'participant')).balance).toBe(after.balance)
+  await page.screenshot({path:info.outputPath('market-executed.png')})
+  const check=await api(page,`/markets/${fixture.id}/p2p-reconciliation`,'moderator');expect(check.fully_verified).toBe(true)
+  await page.getByRole('button',{name:'К событию',exact:true}).click()
+  await page.getByRole('button',{name:'Мои ставки',exact:true}).click()
+  await expect(page.getByRole('button').filter({hasText:fixture.question}).first()).toBeVisible()
+})
+
+test('B: create private bet, select automatic guarantor, agree reward, fund and settle after actual deadline',async({page,context},info)=>{
+  await open(page)
+  const market=await createUI(page,'guarantor','Браузерное пари: проверка настоящего тестового расчёта '+randomUUID().slice(0,6)+'?',150)
+  const controls=await context.newPage();await controls.goto('/sandbox/scenarios')
+  await controls.locator('#event').selectOption(String(market.id));await controls.locator('#scenario').selectOption('winner_0')
+  await controls.getByRole('button',{name:'Включить сценарий для выбранного пари'}).click()
+  await expect(controls.getByRole('status')).toContainText('Сценарий включён')
+  await expect.poll(async()=> (await api(page,`/markets/${market.id}/guarantor`)).reward?.mode,{timeout:30000}).toBe('fixed')
+  await open(page,'creator',market.share_token)
+  await page.getByRole('button',{name:'Вознаграждение',exact:true}).click()
+  await page.getByRole('button',{name:'Принять предложение',exact:true}).click()
+  await expect(page.getByRole('dialog')).toContainText('Чат согласования')
+  await page.getByRole('button',{name:'← К событию',exact:true}).click()
+  await page.getByRole('button',{name:'Подтвердить условия',exact:true}).click()
+  await expect.poll(async()=> (await api(page,`/markets/${market.id}/guarantor`)).state,{timeout:25000}).toBe('collecting')
+  const caseData=await api(page,`/markets/${market.id}/guarantor`)
+  for(const role of ['creator','participant']) {
+    const {headers}=await auth(page,role);const secured={...headers,'X-Market-Share-Token':market.share_token}
+    expect((await page.request.post(`/markets/${market.id}/guarantor`,{headers:secured,data:{action:'consent',revision:caseData.revision}})).status()).toBe(200)
+    expect((await page.request.post(`/markets/${market.id}/orders`,{headers:secured,data:{outcome:role==='creator'?0:1,money:'100',odds:2,kind:'limit',request_id:randomUUID()}})).status()).toBe(200)
+  }
+  expect((await api(page,`/markets/${market.id}/guarantor`)).state).toBe('active')
+  await page.reload();await page.screenshot({path:info.outputPath('private-funded.png')})
+  await expect.poll(async()=> (await api(page,`/markets/${market.id}/guarantor`)).state,{timeout:160000,intervals:[2000]}).toBe('settled')
+  const audit=await api(page,`/markets/${market.id}/p2p-reconciliation`,'moderator');expect(audit.fully_verified).toBe(true)
+})
+
+test('C: optional reserve URL, public moderation and navigation survive reload',async({page,context},info)=>{
+  await open(page)
+  const market=await createUI(page,'public','Браузерное публичное событие '+randomUUID().slice(0,6)+'?')
+  expect(market.status).toBe('pending')
+  const terms=await api(page,`/ux-v3/events/${market.id}/terms`);expect(terms.backup_source).toBeNull()
+  await api(page,`/markets/${market.id}/approve`,'moderator',{})
+  const creator=await auth(page)
+  expect((await api(page,`/users/${creator.s.sandbox.users.creator}/markets`)).filter((m:any)=>m.question===market.question)).toHaveLength(1)
+  await page.getByRole('button',{name:'К моим событиям',exact:true}).click()
+  await page.getByRole('button',{name:'Создать',exact:true}).click()
+  await expect(page.getByRole('radio',{name:/^Публичное событие/})).toBeVisible()
+  await page.setViewportSize({width:320,height:700})
+  await page.getByRole('radio',{name:/^Частное по ссылке/}).click();await page.getByRole('button',{name:'Продолжить',exact:true}).click()
+  await page.locator('#event-question').fill('Черновик только частного события')
+  await page.reload();await page.getByRole('button',{name:'Создать',exact:true}).click()
+  await expect(page.locator('#event-question')).toHaveValue('Черновик только частного события')
+  await expect(page.getByRole('button',{name:'Сохранить и выйти'})).toBeVisible()
+  await page.screenshot({path:info.outputPath('private-draft-320.png')})
+  await page.getByRole('button',{name:'← Назад',exact:true}).click()
+  await page.getByRole('radio',{name:/^Публичное событие/}).click();await page.getByRole('button',{name:'Продолжить',exact:true}).click()
+  await expect(page.locator('#event-question')).toHaveValue('')
+  await page.getByRole('button',{name:'Сохранить и выйти'}).click()
+  await expect(page.getByRole('button',{name:'Создать',exact:true})).toBeVisible()
+})
+
+test('history uses saved fills while an empty market has no invented graph',async({page},info)=>{
+  await open(page,'participant')
+  const {s}=await auth(page,'participant')
+  await page.getByText(s.sandbox.scenarios.history.question,{exact:true}).first().click()
+  const chart=page.getByRole('img',{name:/История коэффициента|Коэффициент по сделкам/}).first()
+  await expect(chart).toBeVisible()
+  await expect(chart.locator('rect')).toHaveCount(4)
+  const path=await chart.locator('path').last().getAttribute('d')
+  expect((path?.match(/L /g)??[]).length).toBe(3)
+  await expect(page.getByText(/Последняя сделка:/).first()).not.toContainText(/7 ч/)
+  await page.screenshot({path:info.outputPath('real-history-chart.png')})
+  await open(page,'participant')
+  await page.getByText(s.sandbox.scenarios.empty.question,{exact:true}).first().click()
+  await expect(page.getByRole('img',{name:/История коэффициента|Коэффициент по сделкам/})).toHaveCount(0)
+  await expect(page.getByText(/Исполненных сделок пока нет|Рынок формируется/).first()).toBeVisible()
+  await page.screenshot({path:info.outputPath('empty-market.png')})
+})

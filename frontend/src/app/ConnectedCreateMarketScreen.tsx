@@ -1,6 +1,6 @@
 import { pendingEventIntent, submitEventIntent } from "../api/eventCreationIntent";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { buildEventBody, type EventDraft } from "../api/eventsV3";
 import { errorDetail } from "../api/errors";
 import { guarantors } from "../api/guarantors";
@@ -9,8 +9,9 @@ import type { MarketOut } from "../api/types";
 import type { NavId } from "../components/BottomNavigation/BottomNavigation";
 import {
   CreateEventWizard,
-  creationDraftKey,
 } from "../screens/CreateEventWizard";
+import { clearCreationDraft } from '../screens/creationDrafts';
+import type { EventType } from '../api/eventsV3';
 import { hapticNotification } from "../telegram/webapp";
 
 export type ConnectedCreateMarketScreenProps = {
@@ -30,6 +31,7 @@ export function ConnectedCreateMarketScreen({
 }: ConnectedCreateMarketScreenProps) {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const submittedType = useRef<EventType | null>(null);
   const directory = useQuery({
     queryKey: ["guarantors"],
     queryFn: guarantors,
@@ -39,13 +41,14 @@ export function ConnectedCreateMarketScreen({
   const mutation = useMutation({
     mutationFn: (draft: EventDraft | undefined) => {
       if (!userId) throw new Error("Откройте приложение через Telegram.");
+      submittedType.current = draft?.eventType ?? pendingEventIntent(userId)?.body.event_type ?? null;
       return submitEventIntent(userId, draft ? buildEventBody(draft) : undefined);
     },
     retry: false,
     onSuccess: (market) => {
       if (market.share_token) rememberShareToken(market.id, market.share_token);
       try {
-        sessionStorage.removeItem(creationDraftKey(userId));
+        clearCreationDraft(userId, submittedType.current);
       } catch {
         /* Optional browser storage. */
       }

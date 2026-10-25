@@ -168,7 +168,7 @@ export function validateEventStep(
       errors.sourceUrl = "Укажите ссылку на основной источник";
     else if (!isHttpSource(draft.sourceUrl))
       errors.sourceUrl = "Введите ссылку, начинающуюся с https:// или http://";
-    if (draft.backupName.trim() || draft.backupUrl.trim()) {
+    if (draft.backupUrl.trim()) {
       if (!draft.backupName.trim())
         errors.backupName = "Укажите название резервного источника";
       else if (draft.backupName.trim().length > 200)

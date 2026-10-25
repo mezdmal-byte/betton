@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_FLOOR
@@ -129,7 +130,9 @@ def backup_sqlite(url: str, backup_dir: str) -> Path | None:
     dest_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     dest = dest_dir / f"{src.stem}-{stamp}{src.suffix or '.db'}"
-    shutil.copy2(src, dest)
+    with sqlite3.connect(src.resolve().as_uri() + '?mode=ro', uri=True) as original:
+        with sqlite3.connect(dest) as backup:
+            original.backup(backup)
     return dest
 
 
@@ -299,13 +302,9 @@ def _is_demo_telegram(telegram_id: int | None) -> bool:
 def _place(db, market_id, user_id, outcome, amount, odds, request_id):
     from app.services import p2p_service
 
-    try:
-        return p2p_service.place(
-            db, market_id, user_id, outcome, amount, odds, "limit", request_id[:64]
-        )
-    except Exception:
-        db.rollback()
-        return None
+    return p2p_service.place(
+        db, market_id, user_id, outcome, amount, odds, "limit", request_id[:64]
+    )
 
 
 def _apply_book(db, market, traders, index, tag, scenario):
@@ -385,6 +384,7 @@ def seed_markets(db, *, count: int = 100, rng_seed: int = 42, demo_tag: str = "v
     )
     makers = []
     for index, (username, name) in enumerate(CREATORS):
+        already_exists = db.query(User.id).filter_by(telegram_id=DEMO_CREATOR_TG0 + index).first() is not None
         user = market_service.get_or_create_telegram_user(
             db,
             telegram_id=DEMO_CREATOR_TG0 + index,
@@ -392,15 +392,16 @@ def seed_markets(db, *, count: int = 100, rng_seed: int = 42, demo_tag: str = "v
             first_name=name.split()[0],
             last_name=" ".join(name.split()[1:]) or None,
         )
-        if _is_demo_telegram(user.telegram_id):
+        if not already_exists and _is_demo_telegram(user.telegram_id):
             user.balance = 2_000_000
         makers.append(user)
     traders = []
     for index in range(8):
+        already_exists = db.query(User.id).filter_by(telegram_id=DEMO_TRADER_TG0 + index).first() is not None
         user = market_service.get_or_create_telegram_user(
             db, telegram_id=DEMO_TRADER_TG0 + index, username=f"trader{index}", first_name=f"Trader{index}"
         )
-        if _is_demo_telegram(user.telegram_id):
+        if not already_exists and _is_demo_telegram(user.telegram_id):
             user.balance = 2_000_000
         traders.append(user)
     db.commit()
@@ -520,6 +521,149 @@ def main(argv: list[str] | None = None) -> int:
         f"(open public={summary['public_open']}, unlisted={summary['unlisted']}, pending={summary['pending']})."
     )
     return 0
+
+
+async def seed_scenarios(application, core):
+    from scripts.ux_v3_preview import signed_init_data
+    import asyncio
+    import httpx
+    from uuid import uuid4
+    from app.database import SessionLocal
+    from app.models import User, Market, P2POrder
+    from app.services import demo_guarantors as demo, market_service as ms, p2p_service as p2p
+
+    with SessionLocal() as db:
+        demo.require_demo(db)
+        makers=[]
+        for i in range(6):
+            name=f'__betton_simulation_maker_{i}'
+            if db.query(User.id).filter_by(username=name).first():
+                raise RuntimeError('Partial simulation seed exists. Restore a snapshot or reset into a new directory.')
+            actor=User(username=name,display_name=f'ТЕСТ · Поставщик ликвидности {i+1}',
+                       telegram_id=None,balance_nano=20_000*10**9,balance_legacy=20_000)
+            db.add(actor);db.flush();makers.append(actor.id)
+        db.commit()
+        initial_funding = (sum(u.balance_nano for u in db.query(User))
+            + sum(m.pot_nano for m in db.query(Market)) + sum(o.remaining for o in db.query(P2POrder)))
+    manifest={}
+    transport=httpx.ASGITransport(app=application,client=('127.0.0.1',12345))
+    async with httpx.AsyncClient(transport=transport,base_url='http://127.0.0.1:8877') as client:
+        async def request(method,path,actor='creator',body=None):
+            response=await client.request(method,path,json=body,
+                headers={'Authorization':'tma '+signed_init_data(actor)})
+            if response.status_code!=200:
+                raise RuntimeError(f'Simulation fixture {method} {path}: {response.status_code} {response.text}')
+            return response.json()
+
+        async def event(key,title,kind='public',guarantor=None):
+            now=datetime.now(timezone.utc)
+            body={'request_id':str(uuid4()),'event_type':kind,'question':title,
+                'outcomes':['Да','Нет'],'category':'unique',
+                'description':'DEMO[simulation-v1] · '+key+' · Только синтетические средства.',
+                'rules':'Сравнить итоговый протокол с указанным условием. При отсутствии достоверных данных — отмена.',
+                'criteria':['В протоколе подтверждён первый исход','В протоколе подтверждён второй исход'],
+                'resolution_method':'Сопоставить итоговый протокол и критерии каждого исхода',
+                'unverifiable':'Отмена события и возврат средств',
+                'primary_source':{'name':'Тестовый протокол','url':'https://example.com/simulation'},
+                'close_at':(now+timedelta(days=7)).isoformat(),
+                'ends_at':(now+timedelta(days=7,hours=1)).isoformat()}
+            if guarantor:body['guarantor_id']=guarantor
+            market=await request('POST','/ux-v3/events',body=body)
+            if kind=='public' and key!='pending':
+                await request('POST',f"/markets/{market['id']}/approve",'moderator')
+            manifest[key]={'id':market['id'],'question':title,'share_token':market.get('share_token'),'type':kind}
+            return market['id']
+
+        def place(mid,maker,outcome,money,odds=2):
+            with SessionLocal() as db:
+                return _place(db,mid,maker,outcome,money,odds,str(uuid4()))
+
+        await event('empty','Снег выпадет до конца недели? · пустой рынок')
+        mid=await event('yes_only','Команда Альфа выиграет финал? · предложения на Да')
+        place(mid,makers[0],0,75,2.5)
+        mid=await event('no_only','Команда Бета пройдёт отбор? · предложения на Нет')
+        place(mid,makers[1],1,90,1.8)
+        for key,title in [('book_levels','Спутник выйдет на орбиту? · три уровня цены'),
+                          ('multi_fill','Релиз состоится в срок? · исполнение по трём ценам')]:
+            mid=await event(key,title)
+            for maker,money,odds in zip(makers,[15,25,40],[2,2.5,3]):place(mid,maker,1,money,odds)
+            place(mid,makers[4],0,35,4)
+            if key=='multi_fill':
+                order=await request('POST',f'/markets/{mid}/orders','participant',
+                    {'outcome':0,'money':'60','odds':1.49,'kind':'ioc','request_id':str(uuid4())})
+                manifest[key]['order_id']=order['id']
+        mid=await event('partial','Выставка откроется в субботу? · частичное исполнение')
+        place(mid,makers[0],0,100,2)
+        place(mid,makers[1],1,25,2)
+        mid=await event('cancel_remainder','Матч завершится без овертайма? · отменён остаток')
+        order=place(mid,makers[0],0,100,2)
+        place(mid,makers[1],1,25,2)
+        with SessionLocal() as db:p2p.cancel(db,order['id'],makers[0])
+        for key,title,volume in [('low_liquidity','Музей откроет новый зал? · низкая ликвидность',3),
+                                 ('high_liquidity','Индекс закроет месяц выше? · высокая ликвидность',5000),
+                                 ('full_fill','Поезд прибудет вовремя? · полное исполнение',40)]:
+            mid=await event(key,title);place(mid,makers[0],0,volume,2);place(mid,makers[1],1,volume,2)
+            if key!='full_fill':place(mid,makers[2],1,volume,2.5)
+        mid=await event('history','Курс закроет день выше порога? · история реальных исполнений')
+        for odds in [2,2.5,4,1.25]:
+            place(mid,makers[0],1,10,odds)
+            await request('POST',f'/markets/{mid}/orders','participant',
+                {'outcome':0,'money':str(Decimal(str(odds-1))*10),'odds':complement_odds(odds),
+                 'kind':'ioc','request_id':str(uuid4())})
+            await asyncio.sleep(1.05)  # Actual distinct execution times, never backdated fills.
+        for key,title in [('closed','Турнир завершён? · приём остановлен'),
+                          ('resolved_yes','Фестиваль состоялся? · расчёт Да'),
+                          ('resolved_no','Мост открыт? · расчёт Нет'),
+                          ('cancelled','Премьера состоялась? · отмена с возвратом')]:
+            mid=await event(key,title)
+            place(mid,makers[0],0,20,2);place(mid,makers[1],1,20,2);place(mid,makers[2],0,10,3)
+            with SessionLocal() as db:
+                if key=='cancelled':p2p.void_market(db,mid,core['users']['moderator'],'Тест: мероприятие отменено')
+                else:
+                    ms.close_market(db,mid,core['users']['moderator'])
+                    if key.startswith('resolved_'):ms.resolve_market(db,mid,0 if key.endswith('yes') else 1,core['users']['moderator'])
+        await event('pending','Будет опубликован итоговый отчёт? · ожидает модерации')
+        await event('private','Частное пари: команда завершит задачу к пятнице?',kind='private')
+        # Preserve the legacy dispute contract separately from v3's final decision.
+        now=datetime.now(timezone.utc)
+        legacy=await request('POST','/markets',body={
+            'question':'Legacy: частное пари с открытым спором?',
+            'description':'DEMO[simulation-v1] · legacy_dispute · Только тестовые средства.',
+            'outcomes':['Да','Нет'],'visibility':'unlisted',
+            'guarantor_id':core['users']['guarantor'],
+            'resolution_criteria':'Проверить протокол; противоречивые доказательства передать независимому модератору',
+            'resolution_source':'Тестовый протокол https://example.com/legacy',
+            'close_at':(now+timedelta(seconds=2)).isoformat(),
+            'result_due_at':(now+timedelta(hours=24)).isoformat()})
+        mid=legacy['id']
+        await request('POST',f'/markets/{mid}/guarantor','guarantor',{'action':'acknowledge'})
+        await request('POST',f'/markets/{mid}/guarantor','guarantor',{'action':'accept','revision':1})
+        for role,outcome in [('creator',0),('participant',1)]:
+            # Each role uses its real sandbox signature and explicit unlisted token.
+            headers={'Authorization':'tma '+signed_init_data(role),'X-Market-Share-Token':legacy['share_token']}
+            consent=await client.post(f'/markets/{mid}/guarantor',headers=headers,json={'action':'consent','revision':1})
+            if consent.status_code!=200:raise RuntimeError('Legacy consent fixture failed')
+            placed=await client.post(f'/markets/{mid}/orders',headers=headers,
+                json={'outcome':outcome,'money':'10','odds':2,'kind':'limit','request_id':str(uuid4())})
+            if placed.status_code!=200:raise RuntimeError('Legacy matched order fixture failed')
+        await asyncio.sleep(max(0,(now+timedelta(seconds=2.2)-datetime.now(timezone.utc)).total_seconds()))
+        await request('POST',f'/markets/{mid}/guarantor','guarantor',
+            {'action':'propose','revision':1,'outcome':0,'text':'ТЕСТ: предложен первый исход по протоколу'})
+        disputed=await client.post(f'/markets/{mid}/guarantor',
+            headers={'Authorization':'tma '+signed_init_data('participant'),'X-Market-Share-Token':legacy['share_token']},
+            json={'action':'dispute','revision':1,'text':'ТЕСТ: участник приложил противоречащие доказательства'})
+        if disputed.status_code!=200:raise RuntimeError('Legacy dispute fixture failed')
+        manifest['legacy_dispute']={'id':mid,'question':legacy['question'],'share_token':legacy['share_token'],'type':'legacy_guarantor'}
+        actors=await request('POST','/demo/guarantors/install','moderator')
+        for actor in actors:
+            mid=await event('guarantor_'+actor['strategy'],
+                'Частное пари: проверка гаранта '+actor['strategy']+'?',kind='guarantor',guarantor=actor['user_id'])
+            await request('PUT',f'/demo/guarantors/events/{mid}','moderator',{'scenario':'negotiate','enabled':True})
+        for key,scenario in [('decline','decline'),('no_response','no_response'),('controlled_error','agreement_error')]:
+            mid=await event(key,'Частное пари: сценарий '+key+'?',kind='guarantor',guarantor=actors[0]['user_id'])
+            await request('PUT',f'/demo/guarantors/events/{mid}','moderator',{'scenario':scenario,'enabled':True})
+    return {'scenario_version':1,'scenarios':manifest,'automatic_guarantors':actors,'liquidity_makers':makers,
+            'initial_test_total_nano':str(initial_funding)}
 
 
 if __name__ == "__main__":

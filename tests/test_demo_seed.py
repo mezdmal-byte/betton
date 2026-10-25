@@ -88,7 +88,12 @@ def test_seed_is_idempotent_for_the_same_demo_tag(client: TestClient, monkeypatc
         db.commit()
         planted_id = planted.id
         first = seed.seed_markets(db, count=16, demo_tag="idemp")
+        from app.models import P2PMoneyEntry, P2POrder, P2PFill
+        balances = {u.id: u.balance_nano for u in db.query(User)}
+        counts = [db.query(model).count() for model in (P2PMoneyEntry, P2POrder, P2PFill)]
         second = seed.seed_markets(db, count=16, demo_tag="idemp")
+        assert {u.id: u.balance_nano for u in db.query(User)} == balances
+        assert [db.query(model).count() for model in (P2PMoneyEntry, P2POrder, P2PFill)] == counts
         tagged = db.query(Market).filter(Market.description.like("%DEMO[idemp]%")).count()
         still = db.get(User, planted_id)
     assert first["created"] == 16
