@@ -4,6 +4,7 @@ Real Telegram HMAC; no sandbox/session endpoints and no synthetic role login.
 The financial dataset is copied only from a freshly bootstrapped full sandbox.
 """
 import asyncio
+import hashlib
 import json
 import logging
 import msvcrt
@@ -92,12 +93,34 @@ async def run():
         from app.services import demo_guarantors as demo,market_service as ms
         from app.telegram_auth import get_current_user
         from fastapi import Depends,HTTPException
-        from fastapi.responses import HTMLResponse,Response
-        from app.models import User
+        from fastapi.responses import HTMLResponse,Response,RedirectResponse
+        from app.models import User,DemoGuarantorActor,GuarantorProfile
+        from app.guarantor_routes import profile_out
         from app.database import get_db
         from sqlalchemy.orm import Session
         assert_schema_ready();assert_money_ready()
         with SessionLocal() as db:demo.require_demo(db)
+        identity_key=hashlib.sha256(str(state.resolve()).encode()).hexdigest()[:16]
+        frontend_index=ROOT/'frontend/dist/index.html'
+        frontend_sha256=hashlib.sha256(frontend_index.read_bytes()).hexdigest()
+        # A fresh entry URL prevents Telegram from reusing the ordinary TEST view.
+        # /start and the global ordinary menu deliberately remain separate.
+        entry_path='/simulation/app?instance='+secrets.token_hex(8)
+        @app.get('/simulation/app')
+        def enter_app():
+            return RedirectResponse('/v2/?betton_sim='+identity_key,
+                headers={'Cache-Control':'no-store'})
+        @app.get('/simulation/status')
+        def simulation_status(user:User=Depends(get_current_user),db:Session=Depends(get_db)):
+            ms.require_admin(user);demo.require_demo(db)
+            actors=db.query(DemoGuarantorActor).all()
+            profiles=[db.get(GuarantorProfile,actor.user_id) for actor in actors]
+            synthetic=all(db.get(User,actor.user_id).telegram_id is None for actor in actors)
+            return {'identity':identity_key,'actors':len(actors) if synthetic else 0,
+                'actor_ids':[actor.user_id for actor in actors],
+                'approved_profiles':sum(bool(p and p.status=='approved') for p in profiles),
+                'available_actors':sum(bool(p and profile_out(db,p)['available']) for p in profiles),
+                'frontend_sha256':hashlib.sha256(frontend_index.read_bytes()).hexdigest()}
         @app.middleware('http')
         async def no_webhook(request,call_next):
             if request.url.path=='/webhook':return Response(status_code=503)
@@ -118,13 +141,14 @@ async def run():
         async def controls():
             nonlocal previous_menu,menu_changed,ready
             import httpx
+            from scripts.telegram_simulation_checks import signed_owner_headers,verify_runtime
             try:
                 async with httpx.AsyncClient(timeout=8) as client:
                     deadline=time.monotonic()+120
                     while time.monotonic()<deadline and not STOP.exists():
                         try:
-                            ready=await client.get(public+'/ready')
-                            if ready.status_code==200 and ready.json().get('schema_revision')==4:break
+                            await verify_runtime(client,public,signed_owner_headers(token,owner),identity_key,frontend_sha256)
+                            break
                         except Exception:pass
                         await asyncio.sleep(2)
                     else:raise RuntimeError('Public readiness timeout')
@@ -138,18 +162,20 @@ async def run():
                         menu_class={'web_app':MenuButtonWebApp,'commands':MenuButtonCommands,'default':MenuButtonDefault}[saved['menu']['type']]
                         previous_menu=menu_class.model_validate(saved['menu'])
                 backup={'owner_id':owner,'menu':previous_menu.model_dump(mode='json'),'original_webhook':original_webhook,
-                        'demo_menu_url':public+'/simulation/'}
+                        'demo_menu_url':public+entry_path}
                 (RUNTIME/'menu-backup.json').write_text(json.dumps(backup,indent=2))
                 menu_changed=True  # Also restore after an uncertain/lost Bot API response.
                 await asyncio.wait_for(bot.set_chat_menu_button(chat_id=owner,menu_button=MenuButtonWebApp(
-                    text='BetTON SIM',web_app=WebAppInfo(url=public+'/simulation/'))),45)
+                    text='BetTON SIM',web_app=WebAppInfo(url=public+entry_path))),45)
                 ready=True
-                report={'test_bot':me.username,'url':public+'/simulation/','api':public,
+                report={'test_bot':me.username,'url':public+entry_path,'api':public,
                     'database':str(state/'betton-test-simulation.sqlite'),'schema_revision':4,
                     'webhook_unchanged':(await asyncio.wait_for(bot.get_webhook_info(),45)).url==original_webhook,
-                    'menu_scope':'verified_owner_chat_only','real_telegram_webview_verified':False}
+                    'menu_scope':'verified_owner_chat_only','real_telegram_webview_verified':False,
+                    'identity':identity_key,'frontend_sha256':frontend_sha256,
+                    'directory_verified_before_menu':True,'available_demo_guarantors':6}
                 (RUNTIME/'verification.json').write_text(json.dumps(report,indent=2))
-                status('TELEGRAM SIM READY: @'+me.username+' -> personal menu BetTON SIM; '+public+'/simulation/')
+                status('TELEGRAM SIM READY: @'+me.username+' -> personal menu BetTON SIM; '+public+entry_path)
                 while not STOP.exists() and tunnel.poll() is None and not server.should_exit:await asyncio.sleep(.5)
             except Exception as exc:status('Telegram demo setup stopped: '+type(exc).__name__+'. No automatic restart.')
             finally:server.should_exit=True
@@ -161,7 +187,7 @@ async def run():
         if menu_changed and previous_menu:
             try:
                 current=await asyncio.wait_for(bot.get_chat_menu_button(chat_id=owner),20)
-                if getattr(getattr(current,'web_app',None),'url',None)==public+'/simulation/':
+                if getattr(getattr(current,'web_app',None),'url',None)==public+entry_path:
                     await asyncio.wait_for(bot.set_chat_menu_button(chat_id=owner,menu_button=previous_menu),20)
                     status('Previous personal test-bot menu restored. Webhook never modified.')
             except Exception:status('Menu restore pending: network unavailable. Saved menu-backup.json preserved.')
@@ -188,7 +214,13 @@ def main():
         if os.fstat(lock.fileno()).st_size==0:lock.write(b'0');lock.flush()
         lock.seek(0)
         try:msvcrt.locking(lock.fileno(),msvcrt.LK_NBLCK,1)
-        except OSError:status('Telegram simulation already running.');return 3
+        except OSError:
+            status('Telegram simulation already running. No duplicate process started.')
+            record=RUNTIME/'verification.json'
+            if record.exists():
+                try:status('Last verified BetTON SIM entry: '+json.loads(record.read_text())['url'])
+                except (ValueError,KeyError):status('Entry is not ready; see launcher.log.')
+            return 3
         if action=='reset':
             active=RUNTIME/'active.json'
             if active.exists():

@@ -7,6 +7,8 @@ import sys
 from dotenv import dotenv_values
 from aiogram import Bot
 import httpx
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from scripts.telegram_simulation_checks import signed_owner_headers,verify_runtime
 
 ROOT=Path(__file__).resolve().parents[1]
 runtime=ROOT/'.ux-preview/telegram-simulation-runtime'
@@ -32,6 +34,11 @@ async def main():
         return
     public=record['api']
     async with httpx.AsyncClient(timeout=20) as client:
+        info=await verify_runtime(client,public,signed_owner_headers(cfg['BOT_TOKEN'],int(cfg['ADMIN_TELEGRAM_IDS'])),
+            record['identity'],record['frontend_sha256'])
+        entry=await client.get(record['url'],follow_redirects=True)
+        assert entry.status_code==200 and entry.url.path=='/v2/'
+        assert entry.url.params['betton_sim']==record['identity']
         ready=await client.get(public+'/ready')
         assert ready.status_code==200 and ready.json()['schema_revision']==4
         statuses={path:(await client.get(public+path)).status_code
@@ -44,7 +51,9 @@ async def main():
         assert db.execute('select count(*) from users u join demo_guarantor_actors a on a.user_id=u.id where u.telegram_id is not null').fetchone()[0]==0
     finally:db.close()
     record.update(public_http=statuses,existing_webhook_verified_unchanged=True,global_menu_verified_unchanged=True,
-        personal_menu_verified=True,no_fake_auth_routes=True,automatic_demo_guarantors=6)
+        personal_menu_verified=True,no_fake_auth_routes=True,automatic_demo_guarantors=6,
+        authenticated_directory_verified=True,available_demo_guarantors=info['available_actors'],
+        direct_frontend_entry_verified=True)
     (runtime/'verification.json').write_text(json.dumps(record,indent=2))
     print(json.dumps({key:value for key,value in record.items() if key!='database'}))
 
