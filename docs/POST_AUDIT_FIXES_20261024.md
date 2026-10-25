@@ -21,7 +21,7 @@
 | S1 | Исправлен UX v3; отдельная совместимая ветка main | 39 security/auth тестов UX; 30 main | Не развёрнуто |
 | S3 | Права только по стабильному ID, отзыв через конфигурацию | В составе 39: смена username, отзыв ID, запрет proxy escalation, fail closed | Не развёрнуто |
 | F1 | Исправлена серверная проекция и React/legacy отображение | 366 backend passed, 12 PG skipped; frontend см. ниже | Не развёрнуто |
-| F2 | Не реализован | Не выполнена | Без изменений |
+| F2 | Реализован для React/legacy денежных форм; schema 4 | PostgreSQL 412 passed; frontend 172 passed + build | Не развёрнуто |
 | F3 | Включён FK на соединениях; preflight существующих ссылок | 369 backend passed, 12 PG skipped; два новых FK-теста | Не развёрнуто |
 | S2 | Реализован BIGINT и версия миграции 2 | PostgreSQL миграция заполненной схемы + auth >2³¹; 395 passed | Не развёрнуто |
 | A1 | Реализованы явные версии и startup без DDL | PostgreSQL startup/concurrent migration проверки пройдены; 395 passed | Не развёрнуто |
@@ -246,3 +246,48 @@ F2 реализован и проверен локально. **До резул�
 Коммит `4eae7d5d843afb28c51b3bdbe0a1f5e15968fdf0`, [run 40145769805](https://github.com/mezdmal-byte/betton/actions/runs/40145769805): **410 passed, 1 failed**, без skipped. Все новые F2 и миграционные сценарии прошли. Падение существующего race test `test_pg_settle_against_settle_or_cancel[cancel]`: корректный HTTP 400 `Рассчитанное событие нельзя отменить` из `p2p_service.py` отсутствовал в списке допустимых terminal-error сообщений. Добавлен точный существующий текст. Статусы не расширялись; conservation/reconcile, уникальность settlements, нулевой pot и обязательный успешный победитель гонки сохранены. Денежный код для этого не менялся. Нужен повтор полного CI на актуальном коммите.
 
 Добавлена отдельная PostgreSQL-only репетиция миграции 3→4: заполненная собственная schema, пользователь с nano-балансом и сохранённый A4 receipt; ошибка после CREATE TABLE, подтверждение rollback DDL/номера версии, затем два мигратора и повтор upgrade с сохранением данных. Это дополняет SQLite rollback тест и прежнюю PostgreSQL проверку полного baseline→current. Результат ожидается в CI; локально этот PostgreSQL-only тест не исполнялся.
+
+## Итог F2 — подтверждённый результат, 25 октября
+
+Проверенная редакция: `2404c1a7e6bd16a1a7b6c2723618f9f76de2af0f`.
+
+- [Полный backend CI PostgreSQL 16 — run 40146016563](https://github.com/mezdmal-byte/betton/actions/runs/40146016563), job 121027394103: **412 passed, 0 failed, 0 skipped**, 6 deprecation warnings, 70.93 s. Включены все прежние проверки, A4, F2 P2P/legacy, конкурентные деньги, rollback и PostgreSQL-репетиция миграции 3→4.
+- Тот же CI, SQLite job 121027393819: **387 passed / 13 skipped**, 44.22 s; 12 штатных PG tests исключены прежней командой SQLite job, 13 оставшихся PG-only scenarios skipped. Это не заменяет PostgreSQL; они фактически исполнились в отдельном PostgreSQL job без пропусков.
+- [Frontend CI — run 40146016611](https://github.com/mezdmal-byte/betton/actions/runs/40146016611), job 121027394135: **172 passed**, 29 test files; production build success, 3.32 s. Размер JS/Vite warning не исправлялся в этой задаче.
+- Полная локальная проверка реализации: **387 backend passed / 24 PG skipped**; после добавления новой PG-only миграционной репетиции целевой migration suite — 4 passed / 2 skipped. PostgreSQL для этой проверки был в GitHub Actions, не локально.
+
+Все восемь исходных дефектов исправлены **в проверенной рабочей ветке**, не в production:
+
+| ID | Реализация / проверка | Осталось до production |
+|---|---|---|
+| S1 | Secret header до dispatch, безопасное сравнение, lifecycle; security tests в полном CI | Согласовать секрет, ротацию и регистрацию; main patch #21 либо итоговый кандидат |
+| S2 | BIGINT; заполненная PG-схема, большой ID, FK/unique/rollback; full CI | Проверить миграцию копии реальной базы |
+| S3 | Роли/отзыв по стабильному ID; auth/proxy/account regression | Приватно проверить IDs и синхронно обновить все replicas/workers |
+| F1 | Ledger-backed net payout/удержания/доход гаранта; все тарифы, несколько позиций, balance reconciliation | Проверить отображение в реальном Telegram WebView |
+| F2 | Durable order intent + owned lookup, frozen replay, actor guard; IOC/limit/legacy/reload/failure/parallel tests | Проверить Telegram WebView storage lifecycle; исключить старые кешированные формы; manual reconciliation неизвестного истёкшего/corrupt intent |
+| F3 | FK на всех SQLite connections, orphan preflight; regression | FK-check на копии действующей SQLite-базы, если она используется |
+| A1 | Explicit revisions, startup без DDL, serialized migrations, concurrent startup; PG CI | Backup/restore rehearsal и отдельный maintenance upgrade |
+| A4 | Atomic receipt/event/invitation; конфликт payload; real-process restart и concurrent PG tests | Обновить API/client согласованно, не удалять receipts |
+
+Это не обещание автоматического восстановления после удаления/порчи browser storage или поддержки старого клиента, который вообще не передаёт request ID. В новых денежных формах ключ обязателен до отправки. Legacy `/buy` без ключа сохранён для обратной совместимости API и не имеет replay-гарантии; такие старые клиенты должны быть выведены из обращения перед выпуском. Повторять неизвестную истёкшую операцию новым ключом автоматически запрещено.
+
+### Коммиты F2
+
+- `4eae7d5d843afb28c51b3bdbe0a1f5e15968fdf0` — основная реализация, owned lookup, persistent UI и legacy receipts/миграция 4, тесты.
+- `87df3978613906d5159359fcc276419620d4f477` — сохранение intent при уходе со страницы/смене аккаунта.
+- `47d0ee27740cb08492384fb571080b430f653f07` — точный terminal-error ответ существующей гонки расчёт/отмена; финансовые инварианты не ослаблены.
+- `2404c1a7e6bd16a1a7b6c2723618f9f76de2af0f` — PostgreSQL rollback/parallel migration 3→4 на заполненной собственной schema.
+- A4 остаётся отдельным коммитом `cc49fcfc9df44dc168774834f1c39e36153e5b29` и зелёным прежним CI 403 tests. Его тесты вошли и в финальные 412.
+
+### План безопасной интеграции
+
+1. **Review PR #20 → UX v3.** Ветка `fix/post-audit-core-20261024` основана на актуальном `feature/ux-v3-full-integration`; ancestor check прошёл. Без прямых изменений main/UX. Audit и demo ветки целиком не сливать, Admin Center не подключать.
+2. **Отдельный кандидат main.** Read-only `git merge-tree --write-tree HEAD origin/main` на проверенной редакции выявил четыре конфликтующих файла: `README.md`, `app/main.py`, `bot/main.py`, `docs/HANDOFF.md`. Ни одна ветка этим не изменена. В кандидате сохранить новое API/auth/schema-check/workers/S1 lifecycle; выборочно перенести актуальные настройки URL Mini App и нужные существующие кнопки из main. Не возвращать старую автоматическую регистрацию webhook. Поэтому «готово к review/integration UX» не означает «можно сейчас merge в main без работы».
+3. **Копия и восстановление.** Зафиксировать SHA всех выпускных веток и схему работающей базы, не печатая секреты/ID. Остановить записи или сделать согласованный consistent backup (SQLite online backup/WAL; PostgreSQL pg_dump custom). Восстановить в новую изолированную базу, сравнить пользователей, события, positions/orders/fills, резервы, nano-суммы и ledger.reconcile. Реальные данные этой задачей не читались; rehearsal копии production ещё не выполнен.
+4. **Schema 4 явно.** На восстановленной копии выполнить `python -m app.migrations upgrade`, затем `python -m app.migrations check` и money readiness. Начальная integer-money миграция для совсем старой схемы остаётся отдельным согласованным этапом. В release window один maintenance job применяет upgrade после backup и остановки старых writers/workers; сервер не мигрирует схему при старте. Не удалять receipts/users ради прохождения проверки.
+5. **Auth/config.** Приватно подтвердить admin IDs; убрать deprecated username config. Treasury ID не менять при отзыве роли. Для demo automation сохранять production guards, отдельную demo DB не смешивать с рабочей.
+6. **Webhook и существующий бот.** Только после отдельного разрешения: вывести старые автоматически регистрирующие/удаляющие webhook replicas, установить защищённые env settings, зарегистрировать secret явной командой S1, проверить безопасную доставку /start и /help; не сбрасывать pending updates, не менять BOT_TOKEN, не создавать второго бота. URL/menu существующего бота проверить отдельно. Ротация current/previous — по инструкции S1 выше.
+7. **Client rollout и smoke.** Обновить React и legacy assets одновременно с API; проверить cache refresh, запрет старых форм без request ID. На staging проверить /start, auth, старого пользователя, private share link, три типа событий, четыре тарифа, два режима заявки и восстановление после отключения сети/reload/focus/смены аккаунта. На production сначала только открытие, auth и read-only history/lookup; диагностические деньги — исключительно в тестовой базе. Фактические мобильные Telegram-сессии этим Work не тестировались.
+8. **Rollback.** Не откатывать схему удалением receipt-таблиц и не сужать BIGINT. Старые builds с exact schema check 2/3 не запустятся на версии 4: заранее подготовить и испытать совместимый schema-4 rollback build либо roll-forward hotfix. Восстановление backup — только при остановленных записях и с учётом всех новых операций после backup; без этого можно потерять финансовую историю. Автоматического destructive downgrade/deploy не выполнять.
+
+**Готовность:** A4/F2 и остальные обязательные исправления готовы к review и следующему этапу интеграции. Production deployment, прямое объединение main, реальные миграции, webhook, Render и Admin Center не выполнялись. Перед выпуском остаются перечисленные интеграционные/операционные проверки; новый аудит для продолжения не нужен.
