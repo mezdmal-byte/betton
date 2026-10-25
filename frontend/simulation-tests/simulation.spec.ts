@@ -16,7 +16,7 @@ async function open(page: Page, role='creator', share?: string) {
   await page.goto('/sandbox/?actor='+role+(share?'&share='+share:''))
   await expect(page.getByRole('button',{name:'Создать',exact:true}).first()).toBeVisible()
 }
-async function createUI(page: Page, kind: 'public'|'guarantor', title: string, seconds=86400) {
+async function createUI(page: Page, kind: 'public'|'guarantor', title: string, seconds=86400, label='Фикс') {
   await page.getByRole('button',{name:'Создать',exact:true}).click()
   await page.getByRole('radio',{name:kind==='public'?/^Публичное событие/:/^Частное с гарантом/}).click()
   await page.getByRole('button',{name:'Продолжить',exact:true}).click()
@@ -39,7 +39,7 @@ async function createUI(page: Page, kind: 'public'|'guarantor', title: string, s
   await page.getByRole('button',{name:'Проверить событие',exact:true}).click()
   if(kind==='guarantor') {
     await page.getByRole('button',{name:'Выбрать гаранта',exact:true}).click()
-    await page.locator('button[aria-pressed]').filter({hasText:'ТЕСТ · Фикс'}).click()
+    await page.locator('button[aria-pressed]').filter({has:page.getByText('ТЕСТ · '+label,{exact:true})}).click()
   }
   const response=page.waitForResponse(r=>r.url().endsWith('/ux-v3/events')&&r.request().method()==='POST')
   await page.getByRole('button',{name:kind==='public'?'Отправить на модерацию':'Пригласить гаранта',exact:true}).click()
@@ -84,11 +84,7 @@ test('A: real chart, three executable levels, UI placement, weighted execution a
 test('B: create private bet, select automatic guarantor, agree reward, fund and settle after actual deadline',async({page,context},info)=>{
   await open(page)
   const market=await createUI(page,'guarantor','Браузерное пари: проверка настоящего тестового расчёта '+randomUUID().slice(0,6)+'?',150)
-  const controls=await context.newPage();await controls.goto('/sandbox/scenarios')
-  await controls.locator('#event').selectOption(String(market.id));await controls.locator('#scenario').selectOption('winner_0')
-  await controls.getByRole('button',{name:'Включить сценарий для выбранного пари'}).click()
-  await expect(controls.getByRole('status')).toContainText('Сценарий включён')
-  await expect.poll(async()=> (await api(page,`/markets/${market.id}/guarantor`)).reward?.mode,{timeout:30000}).toBe('fixed')
+  await expect.poll(async()=> (await api(page,`/markets/${market.id}/guarantor`)).reward?.accepted_by?.length,{timeout:30000}).toBe(1)
   await open(page,'creator',market.share_token)
   await page.getByRole('button',{name:'Вознаграждение',exact:true}).click()
   await page.getByRole('button',{name:'Принять предложение',exact:true}).click()
@@ -106,6 +102,43 @@ test('B: create private bet, select automatic guarantor, agree reward, fund and 
   await page.reload();await page.screenshot({path:info.outputPath('private-funded.png')})
   await expect.poll(async()=> (await api(page,`/markets/${market.id}/guarantor`)).state,{timeout:160000,intervals:[2000]}).toBe('settled')
   const audit=await api(page,`/markets/${market.id}/p2p-reconciliation`,'moderator');expect(audit.fully_verified).toBe(true)
+})
+
+for (const [label,mode,fixed,percent] of [
+  ['Фикс','fixed','5','0'],['Процент','percent','0','3'],
+  ['Процент + фикс','combined','2','3'],['Процент с минимумом','percent_minimum','20','3'],
+  ['Переговорщик','percent','0','4'],['Гибкий','percent','0','1.5'],
+]) test(`AUTO: ${label} answers without QA panel, survives reload and creation replay`,async({page})=>{
+  await open(page)
+  let requestBody: any
+  page.on('request',request=>{
+    if(request.url().endsWith('/ux-v3/events') && request.method()==='POST')requestBody=request.postDataJSON()
+  })
+  const started=Date.now()
+  const market=await createUI(page,'guarantor','Автоматический гарант '+label+' '+randomUUID().slice(0,6)+'?',86400,label)
+  const {headers}=await auth(page)
+  const replay=await page.request.post('/ux-v3/events',{headers,data:requestBody})
+  expect(replay.status()).toBe(200);expect((await replay.json()).id).toBe(market.id)
+  await expect.poll(async()=> (await api(page,`/markets/${market.id}/guarantor`)).state,{timeout:45000}).toBe('review')
+  expect(Date.now()-started).toBeLessThan(60000)
+  await page.reload()
+  await open(page,'creator',market.share_token)
+  if(label==='Переговорщик') {
+    await expect.poll(async()=> JSON.stringify(await api(page,`/markets/${market.id}/guarantor`)),{timeout:30000}).toContain('уточните')
+    const before=await api(page,`/markets/${market.id}/guarantor`)
+    expect(before.reward?.accepted_by??[]).toHaveLength(0)
+    await api(page,`/markets/${market.id}/guarantor`,'creator',{action:'message',text:'Итоговый протокол подтверждает исходы; проверяем указанный источник.'})
+  }
+  await expect.poll(async()=> (await api(page,`/markets/${market.id}/guarantor`)).reward?.accepted_by?.length,{timeout:35000}).toBe(1)
+  const result=await api(page,`/markets/${market.id}/guarantor`)
+  expect(result.reward.mode).toBe(mode);expect(result.reward.fixed_ton).toBe(fixed);expect(result.reward.percent).toBe(percent)
+  expect(result.state).toBe('review')
+  expect(result.reward.accepted_by).not.toContain((await auth(page)).s.sandbox.users.creator)
+  const counts=result.messages.filter((m:any)=>m.kind==='reward').length
+  await page.reload()
+  const reloaded=await api(page,`/markets/${market.id}/guarantor`)
+  expect(reloaded.messages.filter((m:any)=>m.kind==='reward')).toHaveLength(counts)
+  expect((await page.request.put(`/demo/guarantors/events/${market.id}`,{headers,data:{scenario:'cancel'}})).status()).toBe(403)
 })
 
 test('C: optional reserve URL, public moderation and navigation survive reload',async({page,context},info)=>{

@@ -10,12 +10,13 @@ fieldset{border:1px solid #bbb;padding:14px}button:focus-visible,a:focus-visible
 <p><a href="/v2/">Открыть приложение BetTON →</a></p>
 <h2>Сценарии рынков</h2><p>Публичные события найдите по названию в ленте, завершённые — через историю автора. Частные доступны по ссылке.</p><ol id="scenarios"></ol>
 <h2>Автоматический тестовый гарант</h2>
-<p>Создайте своё частное событие с гарантом «ТЕСТ», затем вернитесь через кнопку меню и разрешите сценарий именно для этого пари. Ваши подтверждения и ставки гарант не выполняет.</p>
+<p>Создайте частное пари и выберите «ТЕСТ» — гарант ответит автоматически в течение минуты. Возвращаться на эту страницу не нужно. Фикс — 5 TON; Процент — 3% с торгом; Процент + фикс — 3% + 2 TON; Процент с минимумом — 3%, минимум 20 TON; Переговорщик — вопросы, затем 4%; Гибкий — 1,5% или 2% + 2 TON для сложных правил. Вы сами принимаете тариф, подтверждаете условия и делаете ставки. После настоящего срока стандартный демонстрационный результат — первый исход с пометкой ТЕСТ.</p>
+<details><summary>Дополнительные настройки тестирования · только тестовый администратор</summary>
 <fieldset><legend>Одно тестовое пари</legend><button id="refresh">Обновить мои пари</button>
 <label for="event">Событие</label><select id="event"></select>
 <label for="scenario">Ответ гаранта</label><select id="scenario"><option value="negotiate">Переговоры</option>
 <option value="decline">Отказ</option><option value="no_response">Без ответа</option><option value="agreement_error">Ошибка согласования</option>
 <option value="winner_0">Первый исход после срока</option><option value="winner_1">Второй исход после срока</option>
 <option value="cancel">Отмена после срока</option><option value="timeout">Пропуск срока результата</option></select>
-<button id="enable">Включить сценарий для выбранного пари</button></fieldset>
+<button id="enable">Включить сценарий для выбранного пари</button></fieldset></details>
 <p id="status" role="status"></p><p><a href="/v2/">Вернуться в приложение</a></p></body></html>

@@ -65,18 +65,22 @@ def test_six_strategies_negotiate_real_revisions_and_open_only_on_creator_confir
     enable(monkeypatch)
     actors = client.post('/demo/guarantors/install', headers=ah).json()
     actor = next(row for row in actors if row['strategy'] == strategy)
-    mid = create(client, ch, payload('guarantor', actor['user_id']))['id']
+    body = payload('guarantor', actor['user_id'])
+    event = create(client, ch, body)
+    mid = event['id']
+    assert create(client, ch, body) == event  # same intent never registers twice
     assert client.put(f'/demo/guarantors/events/{mid}', headers=ch, json={}).status_code == 403
-    # No allowlist => no automatic action even with the environment enabled.
-    advance(monkeypatch)
     with SessionLocal() as db:
-        assert db.get(GuarantorCase, mid).state == 'invited'
-    result = client.put(f'/demo/guarantors/events/{mid}', headers=ah, json={})
-    assert result.status_code == 200, result.text
-    with SessionLocal() as db:
+        run = db.get(DemoGuarantorRun, mid)
+        assert run.enabled and run.scenario == 'winner_0'
+        assert (run.next_at - gs.now()).total_seconds() < 14
         demo.tick(db)
-        assert db.get(GuarantorCase, mid).state == 'invited'  # controlled delay
+        assert db.get(GuarantorCase, mid).state == 'invited'
     advance(monkeypatch)
+    # Reload/re-auth uses normal HMAC and does not reset the run or deadline.
+    reloaded, reloaded_headers = _login(client, creator['telegram_id'])
+    assert reloaded['id'] == creator['id']
+    assert client.get(f'/markets/{mid}/guarantor', headers=reloaded_headers).status_code == 200
     advance(monkeypatch)
     if strategy == 'negotiator':
         with SessionLocal() as db:
@@ -88,6 +92,11 @@ def test_six_strategies_negotiate_real_revisions_and_open_only_on_creator_confir
         assert case.state == 'review'
         assert config.reward['mode'] == demo.STRATEGIES[strategy][1]
         assert config.reward['accepted_by'] == [actor['user_id']]
+        assert db.query(DemoGuarantorRun).filter_by(market_id=mid).count() == 1
+        expected = {'fixed': ('5', '0'), 'percent': ('0', '3'),
+                    'combined': ('2', '3'), 'percent_minimum': ('20', '3'),
+                    'negotiator': ('0', '4'), 'flexible': ('0', '1.5')}
+        assert (config.reward['fixed_ton'], config.reward['percent']) == expected[strategy]
         revision = case.revision
         assert db.query(GuarantorMessage).filter_by(market_id=mid, kind='reward').count() == 1
     # The robot never confirms on behalf of the creator.
@@ -154,6 +163,8 @@ def test_live_actor_and_legacy_events_cannot_be_adopted(client, monkeypatch):
     admin, ah, creator, ch, g, gh, b, bh, legacy = setup_case(client, monkeypatch)
     enable(monkeypatch)
     for mid in [legacy['id'], create(client, ch, payload('guarantor', g['id']))['id']]:
+        with SessionLocal() as db:
+            assert db.get(DemoGuarantorRun, mid) is None
         response = client.put(f'/demo/guarantors/events/{mid}', headers=ah, json={})
         assert response.status_code == 409, response.text
 
@@ -175,7 +186,7 @@ def test_bootstrap_refuses_populated_database(client, monkeypatch):
         assert error.value.status_code == 403
 
 
-@pytest.mark.parametrize('scenario', ['winner_0', 'winner_1', 'cancel', 'timeout'])
+@pytest.mark.parametrize('scenario', ['winner_0', 'winner_1', 'cancel', 'timeout', 'default'])
 def test_automated_final_actions_use_real_funds_and_reconciled_journal(client, monkeypatch, scenario):
     from tests.test_p2p import submit
     from app.services import p2p_ledger as ledger
@@ -188,8 +199,9 @@ def test_automated_final_actions_use_real_funds_and_reconciled_journal(client, m
     event = create(client, ch, payload('guarantor', actor['user_id']))
     mid = event['id']
     bh = {**bh, 'X-Market-Share-Token': event['share_token']}
-    assert client.put(f'/demo/guarantors/events/{mid}', headers=ah,
-        json={'scenario': scenario}).status_code == 200
+    if scenario != 'default':
+        assert client.put(f'/demo/guarantors/events/{mid}', headers=ah,
+            json={'scenario': scenario}).status_code == 200
     advance(monkeypatch)
     advance(monkeypatch)
     assert call(client, mid, ch, 'confirm', revision=2).status_code == 200
@@ -210,13 +222,15 @@ def test_automated_final_actions_use_real_funds_and_reconciled_journal(client, m
         demo.tick(db)
     with SessionLocal() as db:
         case, market = db.get(GuarantorCase, mid), db.get(Market, mid)
-        won = scenario.startswith('winner')
+        won = scenario.startswith('winner') or scenario == 'default'
         assert case.state == ('settled' if won else 'cancelled')
         assert market.pot_nano == 0
         assert db.get(User, actor['user_id']).balance_nano == before + (5 * 10**9 if won else 0)
         reconciliation = ledger.reconcile(db, mid)
         assert reconciliation['fully_verified'], reconciliation['discrepancies']
         assert not db.get(DemoGuarantorRun, mid).enabled
+        if scenario == 'default':
+            assert 'ТЕСТ' in case.decision_reason and 'не результат реального' in case.decision_reason
 
 
 def test_worker_failure_rolls_back_action_and_cursor_together(client, monkeypatch):
@@ -238,7 +252,7 @@ def test_worker_failure_rolls_back_action_and_cursor_together(client, monkeypatc
         assert db.get(GuarantorCase, mid).state == 'invited'
         assert db.query(GuarantorMessage).filter_by(market_id=mid, kind='acknowledge').count() == 0
         run = db.get(DemoGuarantorRun, mid)
-        assert not run.enabled and run.progress == {'_generation': 1}
+        assert not run.enabled and run.progress == {'_generation': 2}
 
 
 def test_two_workers_only_one_negotiation_step(client, monkeypatch):
@@ -262,3 +276,96 @@ def test_two_workers_only_one_negotiation_step(client, monkeypatch):
     with SessionLocal() as db:
         assert db.query(GuarantorMessage).filter_by(market_id=mid, kind='message', user_id=actor['user_id']).count() == 1
         assert db.get(DemoGuarantorRun, mid).progress['asked']
+
+
+@pytest.mark.parametrize('gate', ['production', 'switch', 'database_name', 'marker', 'telegram_actor'])
+def test_auto_registration_fails_closed_and_rolls_back_intent(client, monkeypatch, gate):
+    from app.models import Market
+    from sqlalchemy import text
+    admin, ah = _admin(client, monkeypatch)
+    creator, ch = _login(client)
+    enable(monkeypatch)
+    actor = client.post('/demo/guarantors/install', headers=ah).json()[0]
+    body = payload('guarantor', actor['user_id'])
+    if gate == 'production':
+        monkeypatch.setattr(settings, 'betton_environment', 'production')
+    elif gate == 'switch':
+        monkeypatch.setattr(settings, 'betton_demo_automation', False)
+    elif gate == 'database_name':
+        monkeypatch.setattr(settings, 'database_url', 'sqlite:///betton.db')
+    with SessionLocal() as db:
+        if gate == 'marker':
+            db.delete(db.get(DemoEnvironment, 1))
+        if gate == 'telegram_actor':
+            db.get(User, actor['user_id']).telegram_id = 999999999999
+        before = db.query(Market).count()
+        db.commit()
+    try:
+        response = client.post('/ux-v3/events', headers=ch, json=body)
+        assert response.status_code == 403, response.text
+        with SessionLocal() as db:
+            assert db.query(Market).count() == before
+            assert db.execute(text('SELECT COUNT(*) FROM event_creation_intents WHERE user_id=:uid AND request_id=:key'),
+                              {'uid':creator['id'], 'key':body['request_id']}).scalar() == 0
+    finally:
+        with SessionLocal() as db:
+            if gate == 'marker':
+                db.add(DemoEnvironment(id=1, version=1))
+            if gate == 'telegram_actor':
+                db.get(User, actor['user_id']).telegram_id = None
+            db.commit()
+
+
+def test_overrides_preserve_progress_and_cannot_rewind_or_restart(client, monkeypatch):
+    admin, ah = _admin(client, monkeypatch)
+    creator, ch = _login(client)
+    enable(monkeypatch)
+    actor = next(a for a in client.post('/demo/guarantors/install', headers=ah).json() if a['strategy'] == 'negotiator')
+    mid = create(client, ch, payload('guarantor', actor['user_id']))['id']
+    advance(monkeypatch)
+    advance(monkeypatch)
+    assert client.put(f'/demo/guarantors/events/{mid}', headers=ch, json={'scenario':'cancel'}).status_code == 403
+    assert client.put(f'/demo/guarantors/events/{mid}', headers=ah, json={'scenario':'no_response'}).status_code == 409
+    assert client.put(f'/demo/guarantors/events/{mid}', headers=ah, json={'scenario':'winner_1'}).status_code == 200
+    advance(monkeypatch)
+    with SessionLocal() as db:
+        assert db.get(DemoGuarantorRun, mid).progress['asked']
+        assert db.query(GuarantorMessage).filter_by(market_id=mid, kind='message', user_id=actor['user_id']).count() == 1
+        assert not db.get(EventConfigV3, mid).reward  # no user clarification => wait
+
+
+def test_default_deadline_is_not_bypassed(client, monkeypatch):
+    admin, ah = _admin(client, monkeypatch)
+    creator, ch = _login(client)
+    enable(monkeypatch)
+    actor = client.post('/demo/guarantors/install', headers=ah).json()[0]
+    mid = create(client, ch, payload('guarantor', actor['user_id']))['id']
+    advance(monkeypatch, 61)  # worker was unavailable for the whole invitation
+    with SessionLocal() as db:
+        assert db.get(GuarantorCase, mid).state == 'needs_guarantor'
+        assert not db.get(DemoGuarantorRun, mid).enabled
+        assert not db.query(GuarantorMessage).filter_by(market_id=mid, kind='acknowledge').count()
+    assert client.put(f'/demo/guarantors/events/{mid}', headers=ah, json={}).status_code == 409
+
+
+def test_concurrent_creation_and_flexible_complex_conditions(client, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from app.models import EventRevisionV3
+    admin, ah = _admin(client, monkeypatch)
+    creator, ch = _login(client)
+    enable(monkeypatch)
+    actor = next(a for a in client.post('/demo/guarantors/install', headers=ah).json() if a['strategy'] == 'flexible')
+    body = payload('guarantor', actor['user_id'])
+    body['rules'] = 'Подробные проверяемые условия. ' * 20
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: client.post('/ux-v3/events', headers=ch, json=body), range(2)))
+    assert [r.status_code for r in results] == [200, 200]
+    assert results[0].json() == results[1].json()
+    mid = results[0].json()['id']
+    advance(monkeypatch)
+    advance(monkeypatch)
+    with SessionLocal() as db:
+        assert db.query(DemoGuarantorRun).filter_by(market_id=mid).count() == 1
+        assert db.query(EventRevisionV3).filter_by(market_id=mid, kind='demo_default').count() == 1
+        reward = db.get(EventConfigV3, mid).reward
+        assert (reward['mode'], reward['fixed_ton'], reward['percent']) == ('combined', '2', '2')

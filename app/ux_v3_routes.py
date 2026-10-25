@@ -240,6 +240,9 @@ def create_event(
                     result_due_at=req.ends_at + timedelta(hours=24),
                 ),
             )
+            db.flush()
+            from app.services import demo_guarantors
+            demo_guarantors.register_created_event(db, market, config, db.get(GuarantorCase, market.id))
         db.flush()
         result = jsonable_encoder(discovery.attach_market_views(db, [market], include_share_token=True)[0])
         db.execute(text("""UPDATE event_creation_intents SET response=:response
