@@ -1,0 +1,188 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.outcomes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.inputCard {
+  position: relative;
+  display: flex;
+  min-height: 88px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: var(--color-input-background);
+}
+
+.inputCard > label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.inputCard input {
+  width: 100%;
+  padding: 0 42px 0 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 30px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 38px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clearOdds {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.clearOdds:active {
+  background: var(--color-surface-muted);
+}
+
+.quoteRows,
+.details {
+  display: flex;
+  flex-direction: column;
+}
+
+.quoteRow {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.quoteRow span {
+  min-width: 0;
+  flex: 1;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.quoteRow strong {
+  flex: 0 0 auto;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  text-align: right;
+}
+
+.accent {
+  color: var(--color-outcome-1) !important;
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.primaryMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 0;
+}
+
+.primaryMetric strong {
+  color: var(--color-accent-mint);
+  font-size: 38px;
+  font-weight: var(--font-weight-extrabold);
+  line-height: normal;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.primaryMetric span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.dataRow,
+.dataRowAccent {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.dataRowAccent {
+  color: var(--color-accent-mint);
+}
+
+.information {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-surface-raised);
+}
+
+.information strong {
+  color: var(--color-accent-mint);
+  font-size: 10px;
+  line-height: normal;
+}
+
+.information p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-status-danger);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.amountInput { gap:8px; padding:14px 16px; border:1px solid var(--color-border-subtle); border-radius:12px; background:var(--color-input-background); }
+.amountInput > label { font-size:12px; line-height:16px; font-weight:var(--font-weight-regular); }
+.amountInput > div { min-height:38px; padding:0; border:0; border-radius:0; background:transparent; }
+.amountInput input { font-size:30px; line-height:38px; outline:none; }
+.amountInput > div > span { color:var(--color-text-primary); font-size:20px; }
+.outcomes > button { min-height:62px; gap:4px; padding:8px; }
+.outcomes > button > span:first-child { line-height:17px; }
+.outcomes > button > span:nth-child(2) { line-height:27px; }
+.root > button { min-height:48px; font-size:14px; white-space:normal; }

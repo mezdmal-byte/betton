@@ -68,6 +68,33 @@ def test_signed_init_data_grants_access(client: TestClient):
     assert user["balance"] == pytest.approx(settings.starting_balance)
     assert user["is_admin"] is False
 
+def test_verified_username_does_not_grant_admin_access(client: TestClient, monkeypatch):
+    monkeypatch.setattr(settings, "admin_telegram_usernames", "@vasiliy395")
+    telegram_id = 88002
+    init_data = make_init_data(telegram_id, username="vasiliy395")
+    res = client.post("/auth/telegram", headers={"Authorization": f"tma {init_data}"})
+    assert res.status_code == 200, res.text
+    user = res.json()
+    assert user["telegram_id"] == telegram_id
+    assert user["is_admin"] is False
+
+
+def test_admin_username_never_grants_permissions(client: TestClient, monkeypatch):
+    monkeypatch.setattr(settings, "admin_telegram_usernames", "Vasiliy395, another_admin")
+    admin = client.post(
+        "/auth/telegram",
+        headers={"Authorization": f"tma {make_init_data(88003, username='vasiliy395')}"},
+    )
+    ordinary = client.post(
+        "/auth/telegram",
+        headers={"Authorization": f"tma {make_init_data(88004, username='vasiliy395_fake')}"},
+    )
+    assert admin.status_code == 200
+    assert admin.json()["is_admin"] is False
+    assert ordinary.status_code == 200
+    assert ordinary.json()["is_admin"] is False
+
+
 
 def test_relogin_keeps_account_and_balance(client: TestClient):
     user, headers = _login(client)
@@ -139,6 +166,18 @@ def test_expired_auth_date_is_rejected(client: TestClient):
     init_data = make_init_data(92001, auth_date=int(time.time()) - 3601)
     res = client.post("/auth/telegram", headers={"Authorization": f"tma {init_data}"})
     _assert_unauthorized(res, init_data)
+
+
+def test_auth_ttl_remains_one_hour():
+    from app.telegram_auth import AUTH_MAX_AGE_SECONDS
+
+    assert AUTH_MAX_AGE_SECONDS == 3600
+
+
+def test_auth_date_within_ttl_is_accepted(client: TestClient):
+    init_data = make_init_data(92004, auth_date=int(time.time()) - 3599)
+    res = client.post("/auth/telegram", headers={"Authorization": f"tma {init_data}"})
+    assert res.status_code == 200, res.text
 
 
 def test_future_auth_date_is_rejected(client: TestClient):

@@ -1,0 +1,8 @@
+.root { min-width: 0; border-top: 1px solid var(--color-border-subtle); padding-top: 12px; }
+.heading { color: var(--color-text-primary); font-size: 13px; line-height: 18px; }
+.rows { margin: 8px 0; }
+.rows > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: 12px; padding: 8px 0; }
+.rows dt { color: var(--color-text-secondary); font-size: 12px; line-height: 17px; }
+.rows dd { margin: 0; max-width: 150px; overflow-wrap: anywhere; text-align: right; color: var(--color-text-primary); font-size: 13px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.total { border-top: 1px solid var(--color-border-subtle); font-weight: 600; }
+.root p { margin: 8px 0 0; color: var(--color-text-secondary); font-size: 12px; line-height: 17px; overflow-wrap: anywhere; }

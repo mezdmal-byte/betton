@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     BigInteger,
     DateTime,
     Enum,
@@ -37,11 +38,16 @@ class Outcome(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (CheckConstraint('balance_nano IS NOT NULL AND balance_nano BETWEEN 0 AND 9223372036854775807'),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True)
     username: Mapped[str] = mapped_column(String(64), unique=True)
-    balance: Mapped[float] = mapped_column(Float, default=0.0)
+    telegram_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    display_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    balance_legacy: Mapped[float] = mapped_column('balance', Float, default=0.0)
+    balance_nano: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     markets: Mapped[list["Market"]] = relationship(back_populates="creator")
@@ -50,12 +56,28 @@ class User(Base):
     settlements: Mapped[list["SettlementRecord"]] = relationship(back_populates="user")
 
     @property
+    def balance(self):
+        from app.money import as_ton
+        return as_ton(self.balance_nano)
+
+    @balance.setter
+    def balance(self, value):
+        from app.money import nonnegative_nano
+        self.balance_nano = nonnegative_nano(value)
+        if self.balance_legacy is None:
+            self.balance_legacy = float(value)
+
+    @property
     def is_admin(self) -> bool:
-        return settings.is_admin_telegram(self.telegram_id)
+        return settings.is_admin_telegram_identity(self.telegram_id, self.telegram_username)
 
 
 class Market(Base):
     __tablename__ = "markets"
+    __table_args__ = (
+        CheckConstraint('pot_nano IS NOT NULL AND pot_nano BETWEEN 0 AND 9223372036854775807'),
+        CheckConstraint('lock_nano IS NOT NULL AND lock_nano BETWEEN 0 AND 9223372036854775807'),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     question: Mapped[str] = mapped_column(String(512))
@@ -68,8 +90,10 @@ class Market(Base):
     q_no: Mapped[float] = mapped_column(Float, default=0.0)
     outcomes: Mapped[list] = mapped_column(JSON, default=list)
     q: Mapped[list] = mapped_column(JSON, default=list)
-    lock_ton: Mapped[float] = mapped_column(Float, default=0.0)
-    pot: Mapped[float] = mapped_column(Float, default=0.0)
+    lock_ton_legacy: Mapped[float] = mapped_column('lock_ton', Float, default=0.0)
+    pot_legacy: Mapped[float] = mapped_column('pot', Float, default=0.0)
+    pot_nano: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    lock_nano: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     close_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     lock_returned: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[MarketStatus] = mapped_column(
@@ -86,6 +110,8 @@ class Market(Base):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     settlement_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(16), default="public", server_default="public")
+    share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     # full = journal from market creation; incomplete = existed before the journal.
     p2p_journal_coverage: Mapped[str] = mapped_column(
         String(16), default="not_applicable", server_default="not_applicable"
@@ -95,6 +121,30 @@ class Market(Base):
     positions: Mapped[list["Position"]] = relationship(back_populates="market")
     trades: Mapped[list["Trade"]] = relationship(back_populates="market")
     settlements: Mapped[list["SettlementRecord"]] = relationship(back_populates="market")
+
+    @property
+    def pot(self):
+        from app.money import as_ton
+        return as_ton(self.pot_nano)
+
+    @pot.setter
+    def pot(self, value):
+        from app.money import nonnegative_nano
+        self.pot_nano = nonnegative_nano(value)
+        if self.pot_legacy is None:
+            self.pot_legacy = float(value)
+
+    @property
+    def lock_ton(self):
+        from app.money import as_ton
+        return as_ton(self.lock_nano)
+
+    @lock_ton.setter
+    def lock_ton(self, value):
+        from app.money import nonnegative_nano
+        self.lock_nano = nonnegative_nano(value)
+        if self.lock_ton_legacy is None:
+            self.lock_ton_legacy = float(value)
 
 
 class Position(Base):
@@ -211,3 +261,159 @@ class P2PMoneyEntry(Base):
     origin_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
     reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class ChatMessage(Base):
+    """Lobby or market discussion message. market_id=None means the global lobby."""
+
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    market_id: Mapped[int | None] = mapped_column(
+        ForeignKey("markets.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    text: Mapped[str] = mapped_column(Text, default="")
+    reply_to_id: Mapped[int | None] = mapped_column(
+        ForeignKey("chat_messages.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    attached_market_id: Mapped[int | None] = mapped_column(
+        ForeignKey("markets.id", ondelete="SET NULL"), nullable=True
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+    author: Mapped[User] = relationship(foreign_keys=[user_id])
+    reply_to: Mapped["ChatMessage | None"] = relationship(
+        remote_side="ChatMessage.id", foreign_keys=[reply_to_id]
+    )
+    attached_market: Mapped[Market | None] = relationship(foreign_keys=[attached_market_id])
+
+
+class ChatReadState(Base):
+    """Last seen message id per user and chat scope; only replies use this for badges."""
+
+    __tablename__ = "chat_read_states"
+    __table_args__ = (UniqueConstraint("user_id", "scope_key", name="uq_chat_read_scope"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    scope_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_read_message_id: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class GuarantorProfile(Base):
+    __tablename__ = 'guarantor_profiles'
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), default='pending')
+    bio: Mapped[str] = mapped_column(String(1000), default='')
+    topics: Mapped[str] = mapped_column(String(300), default='')
+    available_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class GuarantorCase(Base):
+    __tablename__ = 'guarantor_cases'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    guarantor_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    state: Mapped[str] = mapped_column(String(24), default='invited')
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    creator_confirmed: Mapped[int] = mapped_column(Integer, default=1)
+    criteria: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(Text)
+    result_due_at: Mapped[datetime] = mapped_column(DateTime)
+    deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    extension_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    proposed_outcome: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class GuarantorMessage(Base):
+    __tablename__ = 'guarantor_messages'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    kind: Mapped[str] = mapped_column(String(24))
+    text: Mapped[str] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class GuarantorReview(Base):
+    __tablename__ = 'guarantor_reviews'
+    __table_args__ = (UniqueConstraint('market_id', 'user_id'), CheckConstraint('rating BETWEEN 1 AND 5'))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'))
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    guarantor_id: Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(String(1000))
+
+
+class PrivateTermsConsent(Base):
+    __tablename__ = 'private_terms_consents'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer)
+
+
+class AppNotification(Base):
+    __tablename__ = 'app_notifications'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), index=True)
+    market_id: Mapped[int | None] = mapped_column(ForeignKey('markets.id'), nullable=True)
+    text: Mapped[str] = mapped_column(String(1000))
+    read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class EventConfigV3(Base):
+    """Versioned UX metadata; legacy events keep their original protocol unchanged."""
+    __tablename__ = 'event_config_v3'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(16))
+    ends_at: Mapped[datetime] = mapped_column(DateTime)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    terms: Mapped[dict] = mapped_column(JSON)
+    moderator_edited: Mapped[bool] = mapped_column(Boolean, default=False)
+    reward: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class EventRevisionV3(Base):
+    __tablename__ = 'event_revisions_v3'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), index=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey('users.id'), nullable=True)
+    kind: Mapped[str] = mapped_column(String(32))
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class DemoEnvironment(Base):
+    """Created only by explicit bootstrap of an empty isolated database."""
+    __tablename__ = 'demo_environment'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    version: Mapped[int] = mapped_column(Integer)
+
+
+class DemoGuarantorActor(Base):
+    """Explicit internal actors, never Telegram accounts or an auth override."""
+    __tablename__ = 'demo_guarantor_actors'
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    strategy: Mapped[str] = mapped_column(String(24), unique=True)
+
+
+class DemoGuarantorRun(Base):
+    """Admin-opted-in event allowlist for isolated demo automation."""
+    __tablename__ = 'demo_guarantor_runs'
+    market_id: Mapped[int] = mapped_column(ForeignKey('markets.id'), primary_key=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey('demo_guarantor_actors.user_id'))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    scenario: Mapped[str] = mapped_column(String(24), default='negotiate')
+    next_at: Mapped[datetime] = mapped_column(DateTime)
+    progress: Mapped[dict] = mapped_column(JSON, default=dict)
+    last_error: Mapped[str | None] = mapped_column(String(300), nullable=True)

@@ -5,8 +5,43 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import MarketStatus
 
-MarketCategory = Literal["sport", "politics", "unique"]
+MarketCategory = Literal["sport", "esports", "politics", "crypto", "unique"]
 OutcomeRef = Union[str, int]
+
+
+
+
+class EsportsTeamOut(BaseModel):
+    id: int
+    name: str
+    acronym: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class Cs2MatchOut(BaseModel):
+    id: int
+    scheduled_at: datetime
+    status: str
+    team_a: EsportsTeamOut
+    team_b: EsportsTeamOut
+    league_name: str = ""
+    serie_name: str = ""
+    tournament_name: str = ""
+    best_of: Optional[int] = None
+    provider: str = "pandascore"
+
+
+class Cs2MatchesOut(BaseModel):
+    configured: bool
+    provider: str = "pandascore"
+    items: list[Cs2MatchOut] = Field(default_factory=list)
+
+
+class Cs2ImportOut(BaseModel):
+    available: int = 0
+    created: int = 0
+    skipped: int = 0
+    created_market_ids: list[int] = Field(default_factory=list)
 
 
 class UserCreate(BaseModel):
@@ -27,9 +62,58 @@ class UserOut(BaseModel):
     telegram_id: Optional[int]
     balance: float
     is_admin: bool = False
+    telegram_username: Optional[str] = None
+    display_name: Optional[str] = None
+    photo_url: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class CreatorBriefOut(BaseModel):
+    id: int
+    display_name: str
+    telegram_username: Optional[str] = None
+
+
+class MarketActivityOut(BaseModel):
+    volume: float = 0.0
+    volume_nano: int = 0
+    fills: int = 0
+    unique_participants: int = 0
+
+
+class AccountOut(BaseModel):
+    id: int
+    username: str
+    telegram_id: Optional[int] = None
+    telegram_username: Optional[str] = None
+    display_name: Optional[str] = None
+    photo_url: Optional[str] = None
+    is_admin: bool = False
+    balance: float
+    balance_nano: int
+    reserved: float
+    reserved_nano: int
+    in_positions: float
+    in_positions_nano: int
+    creator_earnings: float = 0.0
+    creator_earnings_nano: int = 0
+
+
+class CreatorStatsOut(BaseModel):
+    id: int
+    display_name: str
+    telegram_username: Optional[str] = None
+    photo_url: Optional[str] = None
+    rank: Optional[int] = None
+    markets_created: int = 0
+    volume: float = 0.0
+    volume_nano: int = 0
+    fills: int = 0
+    unique_participants: int = 0
+    active_markets: int = 0
+    completed_markets: int = 0
 
 
 class MarketCreate(BaseModel):
@@ -43,6 +127,11 @@ class MarketCreate(BaseModel):
     close_at: datetime
     target_odds: Optional[list[float]] = None
     target_probs: Optional[list[float]] = None
+    visibility: Literal["public", "unlisted"] = "public"
+    guarantor_id: int | None = Field(default=None, gt=0)
+    resolution_criteria: str | None = Field(default=None, max_length=4000)
+    resolution_source: str | None = Field(default=None, max_length=2000)
+    result_due_at: datetime | None = None
 
 
 class QuoteRequest(BaseModel):
@@ -51,6 +140,8 @@ class QuoteRequest(BaseModel):
 
 
 class BuySharesRequest(BaseModel):
+    request_id: str | None = Field(default=None, min_length=8, max_length=64)
+    expected_user_id: int | None = Field(default=None, gt=0)
     model_config = ConfigDict(extra="ignore")
     outcome: OutcomeRef
     money: float = Field(gt=0)
@@ -90,6 +181,11 @@ class QuoteOut(BaseModel):
     outcome_index: int
 
 
+class BestOfferOut(BaseModel):
+    odds: float
+    available: float
+
+
 class MarketOut(BaseModel):
     id: int
     question: str
@@ -121,6 +217,11 @@ class MarketOut(BaseModel):
     cancelled_by: Optional[int] = None
     mechanism: str = "lmsr"
     settlement_kind: Optional[str] = None
+    best_offers: Optional[list[Optional[BestOfferOut]]] = None
+    creator: Optional[CreatorBriefOut] = None
+    activity: Optional[MarketActivityOut] = None
+    visibility: str = "public"
+    share_token: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -139,6 +240,19 @@ class PositionOut(BaseModel):
     market: MarketOut
 
 
+class TransactionOut(BaseModel):
+    id: str
+    type: str
+    market_id: Optional[int] = None
+    question: str = ""
+    created_at: Optional[datetime] = None
+    amount_nano: int
+    amount: float
+    display_nano: int
+    display_amount: float
+    informational: bool = False
+
+
 class SettlementOut(BaseModel):
     market_id: int
     question: str
@@ -148,6 +262,7 @@ class SettlementOut(BaseModel):
     payout: float
     tip: float
     credited: float
+    guarantor_reward: float = 0.0
     result: float
     lock_ton: float = 0.0
     residual_returned: float = 0.0
@@ -164,10 +279,13 @@ class OrderPreviewRequest(BaseModel):
     outcome: int = Field(ge=0, le=1)
     money: Decimal
     odds: Decimal
+    # Same matching limit as place(): odds is the minimum acceptable coefficient.
+    # Quick Trade sends kind=ioc with the protocol floor so preview and IOC walk the same book.
+    kind: Literal["limit", "ioc"] = "limit"
 
 
 class OrderRequest(OrderPreviewRequest):
-    kind: Literal["limit", "ioc"] = "limit"
+    expected_user_id: int | None = Field(default=None, gt=0)
     request_id: str = Field(min_length=8, max_length=64)
 
 
@@ -190,6 +308,21 @@ class P2PMoneyEntryOut(BaseModel):
     created_at: Optional[datetime] = None
 
 
+class MarketTradeOut(BaseModel):
+    """Read-only executed P2P fill. Odds come from the stored fill price tick."""
+
+    id: int
+    created_at: Optional[str] = None
+    maker_outcome: int
+    taker_outcome: int
+    maker_odds: float
+    taker_odds: float
+    maker_stake: float
+    taker_stake: float
+    maker_stake_nano: int
+    taker_stake_nano: int
+
+
 class P2PReconciliationOut(BaseModel):
     market_id: int
     status: str
@@ -205,3 +338,54 @@ class P2PReconciliationOut(BaseModel):
     coverage_gaps: list[dict]
     discrepancies: list[dict]
     entries: list[P2PMoneyEntryOut]
+
+
+class ChatMessageCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    text: str = Field(min_length=1, max_length=1000)
+    reply_to_id: Optional[int] = None
+    attached_market_id: Optional[int] = None
+
+
+class ChatAuthorOut(BaseModel):
+    id: int
+    display_name: str
+    telegram_username: Optional[str] = None
+    photo_url: Optional[str] = None
+    is_admin: bool = False
+
+
+class ChatReplyPreviewOut(BaseModel):
+    id: int
+    author_name: str
+    text: str
+    deleted: bool = False
+
+
+class ChatMarketBriefOut(BaseModel):
+    id: int
+    question: str
+    status: str
+
+
+class ChatMessageOut(BaseModel):
+    id: int
+    author: ChatAuthorOut
+    market_id: Optional[int] = None
+    text: str
+    reply_to: Optional[ChatReplyPreviewOut] = None
+    attached_market: Optional[ChatMarketBriefOut] = None
+    deleted: bool = False
+    created_at: Optional[datetime] = None
+
+
+class ChatMessagesPage(BaseModel):
+    items: list[ChatMessageOut]
+    has_more: bool = False
+    next_before_id: Optional[int] = None
+
+
+class ChatUnreadOut(BaseModel):
+    lobby: int = 0
+    markets: dict[str, int] = Field(default_factory=dict)
+    total: int = 0

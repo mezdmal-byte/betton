@@ -1,27 +1,44 @@
+from app.webhook_security import require_webhook_secret, proxy_headers
 import asyncio
+from datetime import timedelta
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
-from app.database import ensure_schema, get_db
-from app.models import MarketStatus, User
-from app.telegram_auth import get_current_user
+from app.database import ensure_schema, get_db, assert_money_ready
+from app.migrations import assert_schema_ready
+from app.models import Market, MarketStatus, User, P2POrder
+from sqlalchemy import func, text
+import hashlib
+import json
+from fastapi.encoders import jsonable_encoder
+from app.telegram_auth import get_current_user, get_optional_user
 from app.schemas import (
+    AccountOut,
+    ChatMessageCreate,
+    ChatMessageOut,
+    ChatMessagesPage,
+    ChatUnreadOut,
+    Cs2MatchesOut,
+    Cs2ImportOut,
     BuySharesRequest,
     ClaimWinningsRequest,
     CloseMarketRequest,
     CollectResidualRequest,
+    CreatorStatsOut,
     CancelMarketRequest,
     MarketCreate,
     MarketOut,
+    MarketTradeOut,
     PositionOut,
     QuoteOut,
     QuoteRequest,
@@ -31,12 +48,66 @@ from app.schemas import (
     OrderPreviewRequest,
     P2PReconciliationOut,
     SettlementOut,
+    TransactionOut,
     UserOut,
 )
-from app.services import market_service, p2p_service
+from app.services import chat_service, discovery, history, market_access, market_service, p2p_service, sports_provider
 from app.services import p2p_ledger
+from app.ux_v3_routes import router as ux_v3_router
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+REACT_DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+_bot_username_resolved = ""
+
+
+def _configured_bot_username() -> str:
+    return (settings.telegram_bot_username or "").lstrip("@").strip()
+
+
+def public_bot_username() -> str:
+    return _configured_bot_username() or _bot_username_resolved
+
+
+class ReactPreviewStatic(StaticFiles):
+    """Serve the Vite production build under /v2/ without replacing legacy /."""
+
+    @staticmethod
+    def _apply_cache_headers(response):
+        # Never cache HTML across deploys: Vite asset filenames are content-hashed,
+        # so a stale index.html would point at assets that no longer exist.
+        if getattr(response, "media_type", None) == "text/html":
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
+    async def get_response(self, path: str, scope):
+        try:
+            response = await super().get_response(path, scope)
+            return self._apply_cache_headers(response)
+        except StarletteHTTPException as exc:
+            if exc.status_code == 404 and not Path(path).suffix:
+                response = await super().get_response("index.html", scope)
+                return self._apply_cache_headers(response)
+            raise
+
+
+def mount_react_preview(application: FastAPI, dist_dir: Path | None = None) -> None:
+    """Host frontend/dist at /v2/. Does not mount over /, /static/, or API routes."""
+    root = REACT_DIST_DIR if dist_dir is None else dist_dir
+    index = root / "index.html"
+    if not index.is_file():
+        @application.get("/v2", include_in_schema=False)
+        @application.get("/v2/", include_in_schema=False)
+        @application.get("/v2/{rest:path}", include_in_schema=False)
+        def react_preview_unbuilt(rest: str = ""):
+            _ = rest
+            raise HTTPException(
+                status_code=503,
+                detail="React preview is not built. From frontend/ run: npm run build",
+            )
+        return
+    application.mount("/v2", ReactPreviewStatic(directory=str(root), html=True), name="v2")
 
 
 def _maybe_bot():
@@ -48,56 +119,69 @@ def _maybe_bot():
         return None, None
 
 
+async def _cache_bot_username() -> None:
+    global _bot_username_resolved
+    configured = _configured_bot_username()
+    if configured:
+        _bot_username_resolved = configured
+        return
+    if not settings.is_public_https():
+        return
+    bot, _dp = _maybe_bot()
+    if bot is None:
+        return
+    try:
+        me = await bot.get_me()
+        _bot_username_resolved = (getattr(me, "username", None) or "").lstrip("@")
+    except Exception:
+        logging.getLogger(__name__).warning("Could not resolve Telegram bot username from getMe")
+
+
 async def setup_webhook_task():
-    """Register Telegram webhook, report failures, and retry network errors."""
-    logger = logging.getLogger("betton.webhook")
-    await asyncio.sleep(1)
-    while True:
-        try:
-            bot, _dp = _maybe_bot()
-            if bot is None:
-                logger.error("Telegram webhook disabled: BOT_TOKEN is missing")
-                return
-            if not settings.is_public_https():
-                logger.error("Telegram webhook disabled: public HTTPS URL is required")
-                return
-            url = settings.webapp_base() + "/webhook"
-            await asyncio.wait_for(bot.set_webhook(url=url, max_connections=1), timeout=20)
-            info = await asyncio.wait_for(bot.get_webhook_info(), timeout=20)
-            logger.info(
-                "Telegram webhook configured: requested=%s current=%s pending=%s last_error=%s",
-                url, info.url, info.pending_update_count, info.last_error_message,
-            )
-            return
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            logger.exception("Telegram webhook setup failed; retrying in 30 seconds")
-            await asyncio.sleep(30)
+    # Only resolve metadata; webhook registration is an explicit deployment step.
+    await _cache_bot_username()
 
 
 async def expire_orders_task():
     while True:
         try:
             await asyncio.to_thread(p2p_service.expire_due_orders)
+            from app.services.guarantors import process_due
+            await asyncio.to_thread(process_due)
         except Exception:
             logging.getLogger(__name__).exception("P2P expiration failed")
         await asyncio.sleep(15)
 
 
+async def demo_guarantors_task():
+    while True:
+        try:
+            from app.services.demo_guarantors import process_due
+            await asyncio.to_thread(process_due)
+        except Exception:
+            logging.getLogger(__name__).exception("Isolated demo guarantor worker failed")
+        await asyncio.sleep(2)
+
+
 @asynccontextmanager
 async def async_lifespan(app: FastAPI):
-    ensure_schema()
+    settings.validate_admin_configuration()
+    assert_schema_ready()
+    assert_money_ready()
+    if settings.betton_preview_seed:
+        from app.preview_seed import seed_preview_data
+        seed_preview_data()
     task = asyncio.create_task(setup_webhook_task())
     expiry = asyncio.create_task(expire_orders_task())
+    demo_task = asyncio.create_task(demo_guarantors_task())
     yield
     task.cancel()
     expiry.cancel()
-    await asyncio.gather(task, expiry, return_exceptions=True)
+    demo_task.cancel()
+    await asyncio.gather(task, expiry, demo_task, return_exceptions=True)
     bot, _dp = _maybe_bot()
     if bot is not None:
-        # Do not delete the Telegram webhook during Render rolling shutdown:
-        # the replacement instance may already have installed the same webhook.
+        # Old replicas must never delete the replacement replica webhook.
         await bot.session.close()
 
 
@@ -166,22 +250,43 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.get("/", include_in_schema=False)
 def mini_app():
+    if settings.preview_root_to_v2:
+        return RedirectResponse(url="/v2/", status_code=307)
     return FileResponse(STATIC_DIR / "miniapp.html")
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "webapp": settings.webapp_base()}
+    return {
+        "status": "ok",
+        "webapp": settings.webapp_base(),
+        "bot_username": public_bot_username(),
+    }
 
 
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
+    require_webhook_secret(request)
     from aiogram import types
 
+    payload = await request.json()
     bot, dp = _maybe_bot()
     if bot is None or dp is None:
+        proxy = (settings.telegram_webhook_proxy_url or "").strip().rstrip("/")
+        if proxy:
+            if not proxy.startswith("https://"):
+                raise HTTPException(status_code=503, detail="Webhook proxy is invalid")
+            import httpx
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(proxy + "/webhook", json=payload, headers=proxy_headers())
+            except httpx.HTTPError:
+                raise HTTPException(status_code=502, detail="Webhook proxy unavailable") from None
+            if response.status_code >= 400:
+                raise HTTPException(status_code=502, detail="Webhook proxy rejected update")
+            return {"status": "proxied"}
         return {"status": "bot_disabled"}
-    update = types.Update.model_validate(await request.json(), context={"bot": bot})
+    update = types.Update.model_validate(payload, context={"bot": bot})
     await dp.feed_update(bot, update)
     return {"status": "ok"}
 
@@ -201,6 +306,41 @@ def get_user_endpoint(user_id: int, current_user: User = Depends(get_current_use
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
     return current_user
+
+
+@app.get("/users/{user_id}/account", response_model=AccountOut)
+def get_account_endpoint(
+    user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return discovery.account_summary(db, current_user)
+
+
+@app.get("/users/{user_id}/transactions", response_model=list[TransactionOut])
+def list_transactions_endpoint(
+    user_id: int,
+    kind: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    return history.list_transactions(db, user_id, kind=kind)
+
+
+@app.get("/creators/top", response_model=list[CreatorStatsOut])
+def top_creators_endpoint(limit: int = 10, db: Session = Depends(get_db)):
+    return discovery.list_top_creators(db, limit=limit)
+
+
+@app.get("/creators/{user_id}")
+def creator_profile_endpoint(user_id: int, db: Session = Depends(get_db)):
+    stats, markets = discovery.get_creator_profile(db, user_id)
+    return {
+        "creator": stats,
+        "markets": discovery.attach_market_views(db, markets),
+    }
 
 
 @app.get("/users/{user_id}/positions", response_model=list[PositionOut])
@@ -227,12 +367,12 @@ def list_created_markets_endpoint(
 ):
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Недостаточно прав")
-    return [market_service.market_to_out(m) for m in market_service.list_created_markets(db, user_id)]
+    return discovery.attach_market_views(db, market_service.list_created_markets(db, user_id), include_share_token=True)
 
 
 @app.get("/moderation/markets", response_model=list[MarketOut])
 def moderation_queue_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return [market_service.market_to_out(m) for m in market_service.list_pending_markets(db, current_user)]
+    return discovery.attach_market_views(db, market_service.list_pending_markets(db, current_user))
 
 
 @app.post("/markets/{market_id}/approve", response_model=MarketOut)
@@ -245,6 +385,99 @@ def reject_market_endpoint(market_id: int, req: RejectMarketRequest, current_use
     return market_service.market_to_out(market_service.moderate_market(db, market_id, current_user.id, reason=req.reason))
 
 
+@app.get("/sports/cs2/matches/upcoming", response_model=Cs2MatchesOut)
+async def cs2_upcoming_matches_endpoint(
+    limit: int = 40,
+    current_user: User = Depends(get_current_user),
+):
+    _ = current_user
+    try:
+        return await sports_provider.upcoming_cs2_matches(limit=limit)
+    except sports_provider.SportsProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/sports/cs2/import-upcoming", response_model=Cs2ImportOut)
+async def cs2_import_upcoming_endpoint(
+    limit: int = 40,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market_service.require_admin(current_user, "Только админ может массово загружать матчи CS2")
+    try:
+        payload = await sports_provider.upcoming_cs2_matches(limit=limit)
+    except sports_provider.SportsProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    items = payload.get("items", [])
+    created_ids: list[int] = []
+    skipped = 0
+    now = market_service.utcnow()
+
+    for match in items:
+        match_id = int(match["id"])
+        marker = f"PandaScore API · CS2 match #{match_id}"
+        duplicate = (
+            db.query(Market)
+            .filter(Market.category == "esports", Market.description.contains(marker))
+            .first()
+        )
+        if duplicate is not None:
+            skipped += 1
+            continue
+
+        scheduled_at = match["scheduled_at"]
+        close_at = scheduled_at - timedelta(minutes=1)
+        if close_at <= now:
+            skipped += 1
+            continue
+
+        team_a = match["team_a"]["name"]
+        team_b = match["team_b"]["name"]
+        context = " · ".join(
+            value
+            for value in (
+                match.get("league_name") or "",
+                match.get("serie_name") or "",
+                match.get("tournament_name") or "",
+            )
+            if value
+        )
+        description_parts = ["Матч Counter-Strike 2."]
+        if context:
+            description_parts.append(f"Турнир: {context}.")
+        description_parts.extend(
+            [
+                (
+                    "Критерии результата: победившим считается исход, соответствующий "
+                    "команде-победителю матча по итоговому результату PandaScore. "
+                    "При отмене матча рынок отменяется модератором."
+                ),
+                f"Основной источник: {marker}",
+            ]
+        )
+
+        req = MarketCreate(
+            mechanism="p2p",
+            question=f"{team_a} — {team_b}: кто победит?",
+            description="\n\n".join(description_parts),
+            category="esports",
+            outcomes=[team_a, team_b],
+            close_at=close_at,
+            visibility="public",
+        )
+        created = p2p_service.create_market(db, current_user.id, req)
+        created = market_service.moderate_market(db, created.id, current_user.id)
+        created_ids.append(created.id)
+
+    return {
+        "available": len(items),
+        "created": len(created_ids),
+        "skipped": skipped,
+        "created_market_ids": created_ids,
+    }
+
+
 @app.post("/markets", response_model=MarketOut)
 def create_market_endpoint(
     market_in: MarketCreate,
@@ -252,7 +485,8 @@ def create_market_endpoint(
     db: Session = Depends(get_db),
 ):
     if market_in.mechanism == "p2p":
-        return market_service.market_to_out(p2p_service.create_market(db, current_user.id, market_in))
+        created = p2p_service.create_market(db, current_user.id, market_in)
+        return discovery.attach_market_views(db, [created], include_share_token=True)[0]
     market = market_service.create_market(
         db,
         creator_id=current_user.id,
@@ -268,29 +502,213 @@ def create_market_endpoint(
     return market_service.market_to_out(market)
 
 
+def _markets_to_out(db: Session, markets) -> list[MarketOut]:
+    return discovery.attach_market_views(db, markets)
+
+
 @app.get("/markets", response_model=list[MarketOut])
 def list_markets_endpoint(
+    response: Response,
     category: str | None = None,
     status: MarketStatus | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
     db: Session = Depends(get_db),
 ):
     cat = (category or "").strip() or None
-    return [
-        market_service.market_to_out(m)
-        for m in market_service.list_markets(db, category=cat, status=status)
-    ]
+    query = (q or "").strip() or None
+    rows, total = market_service.list_markets_page(
+        db, category=cat, status=status, q=query, sort=sort, limit=limit, offset=offset
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return _markets_to_out(db, rows)
+
+
+@app.get("/feed/stats")
+def feed_stats(db: Session = Depends(get_db)):
+    """Funded, unfilled live offers. Never invoke expiration or reconstruct payouts."""
+    total = db.query(func.coalesce(func.sum(P2POrder.remaining), 0)).join(
+        Market, Market.id == P2POrder.market_id
+    ).filter(
+        Market.mechanism == "p2p", Market.status == MarketStatus.open,
+        Market.close_at > market_service._naive_utc(market_service.utcnow()),
+        P2POrder.status == "open", P2POrder.remaining > 0,
+    ).scalar()
+    return {"active_offers_nano": str(int(total)), "scope": "all_active_events"}
+
+
+@app.get("/markets/share/{share_token}", response_model=MarketOut)
+def resolve_share_market(
+    share_token: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = current_user
+    token = (share_token or "").strip()
+    if not token or len(token) < 8:
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market = db.query(Market).filter(Market.share_token == token).one_or_none()
+    if market is None or market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    if market_service._maybe_auto_close(db, market):
+        db.commit()
+        db.refresh(market)
+    return discovery.attach_market_views(db, [market], include_share_token=True)[0]
 
 
 @app.get("/markets/{market_id}", response_model=MarketOut)
-def get_market_endpoint(market_id: int, db: Session = Depends(get_db)):
+def get_market_endpoint(
+    market_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
     market = market_service.get_market(db, market_id)
     if market.status in (MarketStatus.pending, MarketStatus.rejected):
         raise HTTPException(status_code=404, detail="Рынок не найден")
-    return market_service.market_to_out(market)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    return discovery.attach_market_views(db, [market], include_share_token=True)[0]
+
+
+@app.get("/chat/lobby", response_model=ChatMessagesPage)
+def lobby_chat_messages(
+    limit: int = 100,
+    before_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = current_user
+    return chat_service.list_messages(db, market_id=None, limit=limit, before_id=before_id)
+
+
+@app.post("/chat/lobby", response_model=ChatMessageOut)
+def create_lobby_chat_message(
+    payload: ChatMessageCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        return chat_service.create_message(
+            db,
+            user=current_user,
+            market_id=None,
+            text=payload.text,
+            reply_to_id=payload.reply_to_id,
+            attached_market_id=payload.attached_market_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/markets/{market_id}/chat", response_model=ChatMessagesPage)
+def market_chat_messages(
+    market_id: int,
+    request: Request,
+    limit: int = 50,
+    before_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    return chat_service.list_messages(db, market_id=market_id, limit=limit, before_id=before_id)
+
+
+@app.post("/markets/{market_id}/chat", response_model=ChatMessageOut)
+def create_market_chat_message(
+    market_id: int,
+    payload: ChatMessageCreate,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    if market.status in (MarketStatus.pending, MarketStatus.rejected):
+        raise HTTPException(status_code=404, detail="Рынок не найден")
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    try:
+        return chat_service.create_message(
+            db,
+            user=current_user,
+            market_id=market_id,
+            text=payload.text,
+            reply_to_id=payload.reply_to_id,
+            attached_market_id=payload.attached_market_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/chat/messages/{message_id}", response_model=ChatMessageOut)
+def delete_chat_message(
+    message_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        return chat_service.delete_message(db, user=current_user, message_id=message_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@app.get("/chat/unread-replies", response_model=ChatUnreadOut)
+def unread_chat_replies(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return chat_service.unread_replies(db, user_id=current_user.id)
+
+
+@app.post("/chat/lobby/read")
+def mark_lobby_chat_read(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return {"last_read_message_id": chat_service.mark_read(db, user_id=current_user.id, market_id=None)}
+
+
+@app.post("/markets/{market_id}/chat/read")
+def mark_market_chat_read(
+    market_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    market = market_service.get_market(db, market_id)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
+    return {
+        "last_read_message_id": chat_service.mark_read(
+            db, user_id=current_user.id, market_id=market_id
+        )
+    }
 
 
 @app.post("/markets/{market_id}/quote", response_model=QuoteOut)
-def quote_endpoint(market_id: int, req: QuoteRequest, db: Session = Depends(get_db)):
+def quote_endpoint(
+    market_id: int,
+    req: QuoteRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    market = market_service.get_market(db, market_id)
+    market_access.require_unlisted_access(
+        market, viewer=current_user, share_token=market_access.share_token_from_request(request)
+    )
     return market_service.quote_buy(db, market_id, req.outcome, req.money)
 
 
@@ -298,24 +716,50 @@ def quote_endpoint(market_id: int, req: QuoteRequest, db: Session = Depends(get_
 def buy_shares_endpoint(
     market_id: int,
     req: BuySharesRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    res = market_service.buy_shares(
-        db,
-        market_id=market_id,
-        user_id=current_user.id,
-        outcome=req.outcome,
-        money=req.money,
-    )
-    return {
-        "market": market_service.market_to_out(res["market"]),
-        "shares": res["shares"],
-        "paid": res["paid"],
-        "prices": res["prices"],
-        "balance": res["user"].balance,
-        "outcome": res["outcome"],
-    }
+    if req.expected_user_id is not None and req.expected_user_id != current_user.id:
+        raise HTTPException(409, "Аккаунт изменился. Обновите приложение")
+    try:
+        params = {"uid":current_user.id, "key":req.request_id}
+        if req.request_id:
+            digest = hashlib.sha256(json.dumps([market_id, req.outcome, market_service.to_nano(req.money)], sort_keys=True).encode()).hexdigest()
+            claim = db.execute(text("""INSERT INTO legacy_purchase_intents(user_id,request_id,payload_hash)
+                VALUES(:uid,:key,:digest) ON CONFLICT(user_id,request_id) DO NOTHING"""),{**params,"digest":digest})
+            if claim.rowcount == 0:
+                old = db.execute(text("SELECT payload_hash,response FROM legacy_purchase_intents WHERE user_id=:uid AND request_id=:key"),params).mappings().one()
+                if old['payload_hash'] != digest or not old['response']:
+                    raise HTTPException(409,"Идентификатор уже использован для другой операции")
+                result=json.loads(old['response']); db.rollback(); return result
+        market = market_service._lock_market(db, market_id)
+        market_access.require_unlisted_access(market, viewer=current_user, share_token=market_access.share_token_from_request(request))
+        res = market_service.buy_shares(db, market_id=market_id, user_id=current_user.id, outcome=req.outcome, money=req.money, commit=False)
+        result = jsonable_encoder({
+            "market":market_service.market_to_out(res['market']), "shares":res['shares'], "paid":res['paid'],
+            "prices":res['prices'], "balance":res['user'].balance, "outcome":res['outcome'],
+            "id":res['trade_id'], "market_id":market_id, "request_id":req.request_id,
+            "kind":"legacy_buy", "status":"filled", "amount":res['paid'], "filled":res['paid'],
+            "remaining":0, "refunded":0, "odds":res['shares']/res['paid'],
+        })
+        if req.request_id:
+            db.execute(text("UPDATE legacy_purchase_intents SET response=:response WHERE user_id=:uid AND request_id=:key"),{**params,"response":json.dumps(result)})
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise
+
+
+@app.get("/users/{user_id}/purchases/by-request/{request_id}")
+def purchase_by_request(user_id:int, request_id:str, current_user:User=Depends(get_current_user), db:Session=Depends(get_db)):
+    if user_id != current_user.id:
+        raise HTTPException(403,"Недостаточно прав")
+    response=db.execute(text("SELECT response FROM legacy_purchase_intents WHERE user_id=:uid AND request_id=:key"),{"uid":user_id,"key":request_id}).scalar_one_or_none()
+    if not response:
+        raise HTTPException(404,"Операция не найдена")
+    return json.loads(response)
 
 
 @app.post("/markets/{market_id}/close", response_model=MarketOut)
@@ -395,20 +839,81 @@ def p2p_reconciliation_endpoint(
 
 
 @app.get("/markets/{market_id}/orderbook")
-def orderbook_endpoint(market_id: int, db: Session = Depends(get_db)):
-    return p2p_service.book(db, market_id)
+def orderbook_endpoint(
+    market_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    viewer_id = current_user.id if current_user is not None else None
+    return p2p_service.book(
+        db,
+        market_id,
+        viewer_id=viewer_id,
+        share_token=market_access.share_token_from_request(request),
+    )
+
+
+@app.get("/markets/{market_id}/trades", response_model=list[MarketTradeOut])
+def market_trades_endpoint(
+    market_id: int,
+    request: Request,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    """Read-only completed P2P fills for the trade-history chart. No money side effects."""
+    viewer_id = current_user.id if current_user is not None else None
+    return p2p_service.list_trades(
+        db,
+        market_id,
+        viewer_id=viewer_id,
+        share_token=market_access.share_token_from_request(request),
+        limit=limit,
+    )
 
 
 @app.post("/markets/{market_id}/orders/quote")
-def order_quote_endpoint(market_id: int, req: OrderPreviewRequest,
-                         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return p2p_service.preview(db, market_id, current_user.id, req.outcome, req.money, req.odds)
+def order_quote_endpoint(
+    market_id: int,
+    req: OrderPreviewRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return p2p_service.preview(
+        db,
+        market_id,
+        current_user.id,
+        req.outcome,
+        req.money,
+        req.odds,
+        share_token=market_access.share_token_from_request(request),
+        kind=req.kind,
+    )
 
 
 @app.post("/markets/{market_id}/orders")
-def place_order_endpoint(market_id: int, req: OrderRequest,
-                         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return p2p_service.place(db, market_id, current_user.id, req.outcome, req.money, req.odds, req.kind, req.request_id)
+def place_order_endpoint(
+    market_id: int,
+    req: OrderRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if req.expected_user_id is not None and req.expected_user_id != current_user.id:
+        raise HTTPException(409, "Аккаунт изменился. Обновите приложение")
+    return p2p_service.place(
+        db,
+        market_id,
+        current_user.id,
+        req.outcome,
+        req.money,
+        req.odds,
+        req.kind,
+        req.request_id,
+        share_token=market_access.share_token_from_request(request),
+    )
 
 
 @app.post("/orders/{order_id}/cancel")
@@ -416,8 +921,28 @@ def cancel_order_endpoint(order_id: int, current_user: User = Depends(get_curren
     return p2p_service.cancel(db, order_id, current_user.id)
 
 
+@app.get("/users/{user_id}/orders/by-request/{request_id}")
+def order_by_request(user_id: int, request_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if user_id != current_user.id:
+        raise HTTPException(403, "Недостаточно прав")
+    order = db.query(P2POrder).filter_by(user_id=current_user.id, request_id=request_id).one_or_none()
+    if order is None:
+        raise HTTPException(404, "Операция не найдена")
+    return p2p_service.order_out(order)
+
+
 @app.get("/users/{user_id}/orders")
 def list_orders_endpoint(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if user_id != current_user.id:
         raise HTTPException(403, "Недостаточно прав")
     return p2p_service.list_orders(db, user_id)
+
+
+mount_react_preview(app)
+
+
+from app.guarantor_routes import router as guarantor_router
+app.include_router(guarantor_router)
+app.include_router(ux_v3_router)
+from app.demo_routes import router as demo_router
+app.include_router(demo_router)

@@ -75,7 +75,34 @@ let confirmText = "";
 try { confirmText = p2pCancelConfirmText("Источник не подтвердился"); } catch (e) { confirmText = e.message; }
 let emptyReason = "";
 try { p2pCancelPayload("  "); } catch (e) { emptyReason = e.message; }
-const data = { autoCard, legacyCard, loss, creator, adminOpen, cancelledCard, userOpen, refund, confirmText, emptyReason };
+const feedWait = feedCard({
+  id: 21, question: "Будет дождь?", category: "unique", status: "open",
+  mechanism: "p2p", pot: 0, outcomes: ["Да", "Нет"], accepting_bets: true,
+  close_at: "2026-09-12T12:00:00"
+});
+const feedLive = feedCard({
+  id: 22, question: "Будет дождь?", category: "unique", status: "open",
+  mechanism: "p2p", pot: 40, outcomes: ["Да", "Нет"], accepting_bets: true,
+  close_at: "2026-09-12T12:00:00"
+});
+const feedClosed = feedCard({
+  id: 23, question: "Будет дождь?", category: "unique", status: "closed",
+  mechanism: "p2p", pot: 40, outcomes: ["Да", "Нет"], accepting_bets: false,
+  close_at: "2026-09-12T12:00:00"
+});
+const previewWait = p2pPreviewLines(
+  {requested: {matched: 0, remaining: 10, payout: null}, available: {matched: 0}},
+  {money: 10, odds: 2, outcomeName: "Да"},
+  80
+);
+const previewPartial = p2pPreviewLines(
+  {requested: {matched: 4, remaining: 6, payout: 8, average_odds: 2}, available: {matched: 4, average_odds: 2}},
+  {money: 10, odds: 2, outcomeName: "Нет"},
+  80
+);
+const placePartial = p2pPlaceToast({filled: 4, remaining: 6, refunded: 0});
+const placeFilled = p2pPlaceToast({filled: 10, remaining: 0, refunded: 0});
+const data = { autoCard, legacyCard, loss, creator, adminOpen, cancelledCard, userOpen, refund, confirmText, emptyReason, feedWait, feedLive, feedClosed, previewWait, previewPartial, placePartial, placeFilled };
 if (typeof window !== "undefined") window.__SETTLEMENT_UI__ = data;
 if (typeof document !== "undefined") {
   const out = document.getElementById("out");
@@ -105,15 +132,14 @@ def _browser_bin() -> Path | None:
 
 
 def _run_ui_js(tmp_path: Path) -> dict:
-    node = shutil.which("node")
-    if node:
-        proc = subprocess.run(
-            [node, "-e", _harness_html().split("<script>", 1)[1].rsplit("</script>", 1)[0]],
-            check=False,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-        )
+    from tests.node_harness import run_node_script
+
+    proc = run_node_script(
+        _harness_html().split("<script>", 1)[1].rsplit("</script>", 1)[0],
+        tmp_path,
+        name="settlement_ui.js",
+    )
+    if proc is not None:
         assert proc.returncode == 0, proc.stderr
         return json.loads(proc.stdout)
     browser = _browser_bin()
@@ -146,38 +172,66 @@ def test_settlement_ui_js_hides_auto_claim_and_shows_loss(tmp_path: Path):
     assert "Проигрыш" in data["loss"]
     assert "Выигрыш получен" not in data["loss"]
     assert "Кто победит?" in data["loss"]
+    assert "-15.00 TON" in data["loss"]
+    assert "Ваш исход" in data["loss"]
+    assert "Победивший исход" in data["loss"]
     assert "залог 50.00 TON" in data["creator"]
     assert "возврат остатка 12.50 TON" in data["creator"]
     assert "Отменить событие" in data["adminOpen"]
-    assert "Оставить заявку" in data["adminOpen"]
+    assert "Выставить свой коэффициент" in data["adminOpen"]
     assert "Отменить событие" not in data["userOpen"]
-    assert "Отменено" in data["cancelledCard"]
+    assert "Отменено" in data["cancelledCard"] or "Событие отменено" in data["cancelledCard"]
     assert "Источник не подтвердился" in data["cancelledCard"]
     assert "Оставить заявку" not in data["cancelledCard"]
+    assert "Разместить заявку" not in data["cancelledCard"]
     assert "Принять доступное" not in data["cancelledCard"]
     assert "Рассчитать:" not in data["cancelledCard"]
     assert "Отменить событие" not in data["cancelledCard"]
     assert "Забрать выигрыш" not in data["cancelledCard"]
-    assert "возврат исполненной ставки 41.67 TON" in data["refund"]
-    assert "освобождённый остаток заявки 58.33 TON" in data["refund"]
-    assert "всего возвращено 100.00 TON" in data["refund"]
-    assert "Все ставки по событию будут возвращены. Чаевые не удерживаются" in data["confirmText"]
+    assert "Событие отменено · средства возвращены" in data["refund"]
+    assert "Проигрыш" not in data["refund"]
+    assert "Возврат 100.00 TON" in data["refund"]
+    assert "41.67 TON" in data["refund"]
+    assert "58.33 TON" in data["refund"]
+    assert "Все ставки по событию будут возвращены. Сервисный сбор не удерживается" in data["confirmText"]
     assert "Причина: Источник не подтвердился" in data["confirmText"]
     assert data["emptyReason"] == "Укажите причину отмены"
+    assert "data-open-market=" in data["feedWait"]
+    assert "Нет встречных заявок" not in data["feedWait"]
+    assert "Да" in data["feedWait"] and "Нет" in data["feedWait"]
+    assert "40.00 TON" in data["feedLive"]
+    assert "Есть сделки" not in data["feedLive"]
+    assert "Нет встречных заявок" not in data["feedLive"]
+    assert "Приём завершён" in data["feedClosed"]
+    assert "nano" not in data["feedLive"].lower()
+    assert any("Сейчас встречного предложения нет" in line for line in data["previewWait"])
+    assert any("ждать другого пользователя" in line for line in data["previewWait"])
+    assert any("Ваша сумма" in line for line in data["previewWait"])
+    assert any("Исполнится сейчас" in line for line in data["previewWait"])
+    assert any("Останется заявкой" in line for line in data["previewPartial"])
+    assert any("Исполнится сейчас" in line for line in data["previewPartial"])
+    assert any("исполненной части" in line or "две части" in line for line in data["previewPartial"])
+    assert "частично исполнена" in data["placePartial"].lower()
+    assert "полностью исполнена" in data["placeFilled"].lower()
+    assert "nano" not in data["placePartial"].lower()
+    assert "Выставить свой коэффициент" in data["adminOpen"]
+    assert "p2p-simple" in data["adminOpen"]
+    assert "Ваша заявка" not in data["cancelledCard"]
 
 
 @pytest.mark.parametrize("unauthorized", [None, "/users/1", "/users/1/positions", "/users/1/settlements"])
-def test_load_mine_refreshes_balance_and_keeps_legacy_results(unauthorized):
-    node = shutil.which("node")
-    if not node:
+def test_load_mine_refreshes_balance_and_keeps_legacy_results(unauthorized, tmp_path):
+    from tests.node_harness import node_bin, run_node_script
+
+    if not node_bin():
         pytest.skip("Node.js required to execute async loadMine regression")
     html = HTML.read_text(encoding="utf-8")
-    load_mine = html[html.index("async function loadMine()") : html.index("async function previewQuote")]
+    load_mine = html[html.index("function paintMineFromCache") : html.index("async function previewQuote")]
     script = r'''
 const assert = require('node:assert/strict');
 const CAT_LABEL = {unique: "Уникальное"};
 const AUTH_REOPEN = "AUTH_REOPEN", OPEN_IN_TG = "OPEN_IN_TG", inTelegram = true;
-let authBlocked = false, me = {id: 1, balance: 900}, myPositions = {};
+    let authBlocked = false, authReady = true, me = {id: 1, balance: 900}, myPositions = {};
 const nodes = {};
 const document = {getElementById(id) {
   return nodes[id] ||= {innerHTML: '', textContent: '', querySelectorAll() {return []}, addEventListener() {}};
@@ -206,7 +260,7 @@ async function fetch(path) {
     script += "\nconst unauthorized = " + json.dumps(unauthorized) + ";\n" + _chunk() + load_mine
     script += "\nfunction onCardClick() {}\n" + html[
         html.index('    document.getElementById("markets").onclick'):
-        html.index('    document.getElementById("markets").addEventListener')
+        html.index('    document.getElementById("event-back").onclick')
     ]
     script += r'''
 (async () => {
@@ -215,7 +269,7 @@ async function fetch(path) {
     await assert.rejects(loadMine(), {message: AUTH_REOPEN});
     assert.equal(me, null);
     assert.deepEqual(myPositions, {});
-    assert.equal(document.getElementById('balance').textContent, '—');
+    assert.equal(document.getElementById('balance').textContent, '');
     assert.equal(document.getElementById('create').disabled, true);
     assert.equal(document.getElementById('error').textContent, AUTH_REOPEN);
     assert.equal(calls.includes('/auth/telegram'), false);
@@ -223,16 +277,19 @@ async function fetch(path) {
   } else {
     await loadMine();
     assert.equal(calls[0], '/users/1');
-    assert.equal(document.getElementById('balance').textContent, '1049.50 TON');
+        assert.equal(document.getElementById('balance').textContent, '1 049.50 TON');
     const results = document.getElementById('mine-results').innerHTML;
     for (const id of [7,8,9]) assert.ok(results.includes('legacy-' + id));
     assert.equal(results.includes('legacy-10'), false);
     assert.equal((results.match(/data-act="claim"/g) || []).length, 1);
     assert.ok(results.includes('Выигрыш уже получен'));
     assert.ok(results.includes('Проигрыш'));
+    assert.ok(document.getElementById('mine-orders').innerHTML.includes('Нет активных заявок'));
+    assert.ok(document.getElementById('mine-bets').innerHTML.includes('Нет позиций'));
     assert.equal(document.getElementById('mine-bets').innerHTML.includes('legacy-'), false);
   }
 })().catch(error => {console.error(error); process.exitCode = 1});
 '''
-    proc = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=20)
+    proc = run_node_script(script, tmp_path, name="load_mine.js")
+    assert proc is not None
     assert proc.returncode == 0, proc.stderr
