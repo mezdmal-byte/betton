@@ -47,6 +47,11 @@ node tests/admin_snapshot_browser.mjs
 
 Последняя команда требует предварительно запущенного snapshot viewer на 8885 и имеющегося
 Node Playwright проекта. Это настоящий локальный desktop browser, не Telegram WebView.
+Дополнительный integration-прогон snapshot-адаптера: **2 passed**. В полном PostgreSQL
+suite роль владельца fixtures не передаётся Admin Center: строки реальных P2P-операций
+копируются в отдельный SQLite test snapshot, после чего выполняются те же assertions.
+Это сохраняет запрет подключения через owner/superuser и не подменяет отдельную проверку
+настоящей SELECT-only PostgreSQL-роли, для которой нужен соответствующий локальный сервер.
 Ниже сохранена инструкция исходной ветки для ручного SELECT-only подключения.
 
 Отдельное приложение для компьютера. Не запускает `app.main`, Telegram-бота, Mini App, миграции, matching, обработку истечения заявок или settlement. Основной BetTON продолжает работать независимо.
