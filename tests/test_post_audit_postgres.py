@@ -154,6 +154,7 @@ def test_pg_settle_against_settle_or_cancel(client,monkeypatch,other):
                 'Рынок уже рассчитан', 'Событие отменено',
                 'Отменить можно только открытое или закрытое событие',
                 'Событие уже рассчитано или отменено',
+                'Рассчитанное событие нельзя отменить',
             }, response.text
     verify(mid,conserved)
     with SessionLocal() as db:
