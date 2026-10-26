@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import sqlite3
 from pathlib import Path
 import subprocess
 import sys
@@ -80,3 +81,18 @@ def test_internal_worker_cannot_adopt_foreign_configuration(unsafe):
     assert process.returncode == 2
     assert json.loads(process.stdout)['status'] == 'blocked'
     assert database.read_bytes() == before
+
+
+def test_rehearsal_blocks_proven_money_corruption_without_fixing_source(tmp_path):
+    source = tmp_path / 'corrupt.sqlite'
+    fixture_database(source)
+    with sqlite3.connect(source) as db:
+        db.execute('PRAGMA ignore_check_constraints=ON')
+        db.execute('UPDATE users SET balance_nano=-1')
+        db.commit()
+    before = source.read_bytes()
+    destination = ALLOWED / ('release-corrupt-' + uuid4().hex)
+    assert rehearse(source, destination)['status'] == 'blocked'
+    assert source.read_bytes() == before
+    with sqlite3.connect(destination / 'betton-test-release.sqlite') as db:
+        assert db.execute('SELECT revision FROM betton_schema_version').fetchone()[0] == 3

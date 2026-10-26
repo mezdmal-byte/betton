@@ -38,6 +38,7 @@ def _worker(directory):
     from app.database import enforce_sqlite_foreign_keys, assert_money_ready
     from app.migrations import upgrade, revision, assert_schema_ready
     from app.money_migrate import fingerprint, verified_backup
+    from app.financial_diagnostics import inspect_database
 
     def preserved_rows(engine, names):
         # All existing tables, including intents/users/positions, not only balances.
@@ -67,6 +68,9 @@ def _worker(directory):
             full_before = fingerprint(conn)
         before = preserved_rows(engine, names)
         assert_money_ready()  # Controlled child environment points only to this copy.
+        financial = inspect_database(database)
+        if financial['exit_code'] == 1:
+            raise ValueError('Critical structural money anomaly; no schema rehearsal allowed')
         backup = directory / 'schema-before.backup'
         with verified_backup(engine.url, backup) as digest:
             if digest != full_before:
@@ -98,6 +102,7 @@ def _worker(directory):
                 'existing_rows_sha256': before, 'backup_restored': True,
                 'existing_rows_preserved': True, 'repeat_upgrade_unchanged': True,
                 'rollback_restored': True, 'restored_copy_upgrade_ready': True,
+                'financial_status': financial['status'], 'release_authorized': False,
                 'scope': 'SQLite copy; no production rollout or Telegram smoke'}
     finally:
         engine.dispose()
@@ -121,7 +126,7 @@ def rehearse(source, destination):
     environment = {key: value for key, value in os.environ.items()
                    if not key.upper().startswith(('DATABASE_', 'BOT_', 'TELEGRAM_', 'ADMIN_', 'BETTON_', 'RENDER_', 'PANDASCORE_'))}
     environment.update(DATABASE_URL='sqlite:///' + database.as_posix(),
-                       BOT_TOKEN='123456:LOCAL_REHEARSAL_ONLY', ADMIN_TELEGRAM_ID='',
+                       BOT_TOKEN='123456:TEST_REHEARSAL_ONLY', ADMIN_TELEGRAM_ID='',
                        ADMIN_TELEGRAM_IDS='', ADMIN_TELEGRAM_USERNAMES='',
                        PUBLIC_BASE_URL='http://127.0.0.1', MINI_APP_URL='http://127.0.0.1/v2/',
                        BETTON_ENVIRONMENT='test', BETTON_DEMO_AUTOMATION='false', PYTHONUTF8='1')

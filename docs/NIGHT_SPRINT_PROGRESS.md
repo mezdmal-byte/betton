@@ -47,3 +47,13 @@ No nightly tests or deployments claimed yet. Preserve exact commands, counts, co
 - Legacy snapshot findings: 263 markets / 217 orders / 73 fills / 564 journal rows / 26 settlements; 36 float pot mismatches versus internally consistent nano/journal facts. Storage authority remains unknown because version/migration markers are missing. No corrective postings or migration performed.
 - Product Guardian reviewed isolated onboarding flow: **compatible**, with explicit examples, IOC/limit distinction, 1%/75:25, private-link rules and final guarantor decisions. Art Director now builds three separate live directions; actual onboarding untouched.
 - In progress: full combined SQLite run; native PG admin role regression; separate prototype mobile/theme/language/motion checks. Never substitute previous counts for these pending results.
+
+## Checkpoint 3 — resumed after account limit, 26 October
+
+- At resume, root HEAD was `7c22a15`; remote PR #24 still `a8ca059`. Two uncommitted root files were preserved/reviewed: release rehearsal financial gate and its corruption regression.
+- `7c22a15` adds the actual PostgreSQL SELECT-only role regression. Native full PG run completed: **505 passed, 0 skipped**, `.ux-preview/night-postgres-full.log`; temporary database `betton_test_night_20261026_0132`, localhost55432 only.
+- Earlier combined SQLite run: **478 passed, 25 PG-only skipped**; it began before the extra native-PG/corruption tests were collected. Do not label it the final HEAD suite.
+- Release financial gate: **7 passed**; proven money corruption blocks rehearsal without repairing source. A real SIM snapshot rehearsal also passed, retained all pre-existing rows, restored backup/rollback and kept release authorization false.
+- Frontend: **175 passed / 30 files**, TypeScript/Vite build success; existing >500kB bundle warning retained.
+- Onboarding agent worktree contains uncommitted, working three-direction implementation and isolated tests/config/docs; not overwritten. Its first matrix: **73 passed**, separate typecheck/build passed. Independent Impeccable A/B critique and one bounded fix/confirm were interrupted by account limit and resumed. No design direction selected or production onboarding changed.
+- Next: commit/push reviewed root gate, complete A/B review and prototype handoff, integrate checked prototype commit, run final combined checks and update PR/report. Preserve all agent trees until their work is committed/integrated.
