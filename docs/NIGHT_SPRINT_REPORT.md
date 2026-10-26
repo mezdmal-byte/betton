@@ -17,6 +17,15 @@
 | F — onboarding | Три полноразмерных React-направления, пять экранов + три пояснения типов, RU/EN/ZH, light/dark, 320/360/390/430, reduced motion, keyboard/Back | 74 Playwright passed; отдельные TypeScript/Vite build; независимые A/B и один batch/confirm |
 | G/H — UX и Windows | Recovery запускается на отдельном порту и отдельной базе, не останавливает SIM; исправлены доказанные prototype UX-дефекты | 6 новых launcher-регрессий + 10 developer tests; 4 recovery scenarios в двух темах |
 
+Проверенный итоговый source commit: `0aa0dad1ede1a65d9d64995d0ed3149bb6128926`.
+На нём GitHub CI подтвердил **485 SQLite passed / 14 PG-only skipped** (ещё 12 PG-only
+тестов исключены только из SQLite job), **511 PostgreSQL passed / 0 skipped**,
+**4 recovery + 74 prototype browser passed**. Никакие упавшие финансовые проверки не исключались.
+[Backend CI](https://github.com/mezdmal-byte/betton/actions/runs/40265878774),
+[browser CI](https://github.com/mezdmal-byte/betton/actions/runs/40265878761),
+[frontend CI](https://github.com/mezdmal-byte/betton/actions/runs/40265878760).
+Последующая отчётная редакция меняет только Markdown; фактический статус её повторного CI — в PR.
+
 Существующий frontend: **175 tests passed / 30 files**, production TypeScript/Vite build успешен.
 Предупреждение о bundle >500kB осталось; проверки им не отключались.
 Последние CI-проверки точного HEAD и ссылки на runs публикуются в PR #24: прежний зелёный

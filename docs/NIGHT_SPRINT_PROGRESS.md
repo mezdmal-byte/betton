@@ -77,3 +77,13 @@ At checkpoint 0 no nightly tests or deployments were claimed. Later checkpoints 
 - Final report: `docs/NIGHT_SPRINT_REPORT.md`. Current local baseline full results remain 479 SQLite / 505 PostgreSQL; six additional launcher cases passed separately after that baseline. Exact latest CI counts/links belong to PR #24's HEAD, not an older run.
 - Native test PostgreSQL stopped cleanly; Admin snapshot viewer8885 and requested prototype8886 retained. Existing SIM processes/data not restarted during night sprint.
 - Remaining operational/human gates: choose a direction, real mobile Telegram smoke, resolve historical storage authority with evidence, separate production permissions. None silently treated as passed.
+
+## Checkpoint 6 — final verified source and handoff
+
+- Verified source HEAD: `0aa0dad1ede1a65d9d64995d0ed3149bb6128926`, all three GitHub workflows successful.
+- Backend run [40265878774](https://github.com/mezdmal-byte/betton/actions/runs/40265878774): **485 SQLite passed / 14 skipped**, 12 additional native-PG cases intentionally outside SQLite job; **511 PostgreSQL passed / 0 skipped**.
+- Browser run [40265878761](https://github.com/mezdmal-byte/betton/actions/runs/40265878761): **4 recovery + 74 prototype passed**. Frontend run [40265878760](https://github.com/mezdmal-byte/betton/actions/runs/40265878760): successful, tests/build.
+- Entire PR diff additionally checked against actual local test-bot/admin credential values (without printing them): none present. No runtime databases/backups/logs in tracked diff. Worktree clean and remote synchronized before this report-only checkpoint.
+- Completion report: `docs/NIGHT_SPRINT_REPORT.md`; launchers and preview URLs documented there. Keep onboarding agent tree while it serves8886; do not archive it under the running preview.
+- This checkpoint changes Markdown only. Subsequent exact report HEAD and its repeated CI state are recorded in PR #24 rather than rewriting a circular self-SHA in this file.
+- Next session: human design selection and mobile Telegram smoke; historical storage-authority evidence before any legacy money migration. There is no authorized production/Render/main/webhook action to perform automatically.
