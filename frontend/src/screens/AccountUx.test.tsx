@@ -19,7 +19,7 @@ describe("account UX boundaries", () => {
     expect(html).toContain("Мои предложения");
     expect(html).toContain("Завершённые");
     expect(html).not.toContain("BTC выше");
-    expect(html).not.toContain("Портфель");
+    expect(html).toContain("Портфель");
   });
   it("displays a navigation unread indicator only when a real count is supplied", () => {
     const empty = renderToStaticMarkup(<BottomNavigation active="markets" />);

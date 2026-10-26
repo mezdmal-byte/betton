@@ -76,7 +76,7 @@ export function OutcomeQuote({
           {resolvedState === 'winner' ? <span className={styles.winnerMark}>{t('market.winner')}</span> : null}
           {showMetrics ? (
             <>
-              <span className={styles.odds}>{formatOdds(resolvedState === 'no-liquidity' ? null : odds)}×</span>
+              <span className={styles.odds}>{resolvedState === 'no-liquidity' ? '—' : formatOdds(odds) + '×'}</span>
               {showLiquidity ? (
                 <span className={styles.liquidity}>
                   {resolvedState === 'no-liquidity' ? t('market.noLiq') : formatTon(liquidity)}

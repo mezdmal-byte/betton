@@ -4,6 +4,7 @@ import App from './App'
 import './styles/tokens.css'
 import './styles/reset.css'
 import './styles/global.css'
+import './styles/pocket.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,10 +1,7 @@
-import { useContext, type CSSProperties } from "react";
-import { useT } from "../../i18n";
+import { useContext } from "react";
+import { useT, useI18n } from "../../i18n";
+import { LayoutList, BriefcaseBusiness, Bell, CircleUserRound } from "lucide-react";
 import { cx } from "../../lib/cx";
-import eventsIcon from "../../assets/navigation-events.svg";
-import ticketsIcon from "../../assets/navigation-tickets.svg";
-import bellIcon from "../../assets/navigation-bell.svg";
-import profileIcon from "../../assets/navigation-profile.svg";
 import { NotificationBadgeContext } from "./NotificationBadgeContext";
 import styles from "./BottomNavigation.module.css";
 
@@ -21,21 +18,23 @@ export type BottomNavigationProps = {
 
 export function BottomNavigation({ active, onChange }: BottomNavigationProps) {
   const t = useT();
+  const {locale} = useI18n();
+  const portfolioLabel = {ru:"Портфель",en:"Portfolio",zh:"投资组合"}[locale];
   const unreadCount = Math.max(0, useContext(NotificationBadgeContext));
   const items = [
-    { id: "markets" as const, label: t("nav.feed"), icon: eventsIcon },
-    { id: "portfolio" as const, label: t("nav.mine"), icon: ticketsIcon },
+    { id: "markets" as const, label: t("nav.feed"), icon: LayoutList },
+    { id: "portfolio" as const, label: portfolioLabel, icon: BriefcaseBusiness },
     { id: "create" as const, label: t("nav.create"), icon: null },
     {
       id: "notifications" as const,
       label: t("nav.notifications"),
-      icon: bellIcon,
+      icon: Bell,
     },
-    { id: "profile" as const, label: t("nav.profile"), icon: profileIcon },
+    { id: "profile" as const, label: t("nav.profile"), icon: CircleUserRound },
   ];
   return (
     <nav className={styles.root} aria-label={t("nav.main")}>
-      {items.map(({ id, label, icon }) => (
+      {items.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
           type="button"
@@ -59,10 +58,7 @@ export function BottomNavigation({ active, onChange }: BottomNavigationProps) {
             </span>
           ) : (
             <span className={styles.iconSlot} aria-hidden="true">
-              <span
-                className={styles.icon}
-                style={{ "--nav-icon": `url("${icon}")` } as CSSProperties}
-              />
+              {Icon ? <Icon size={22} strokeWidth={1.8}/> : null}
               {id === "notifications" && unreadCount > 0 ? (
                 <span
                   className={styles.unread}

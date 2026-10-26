@@ -5,6 +5,7 @@ import type { MarketFixture, OutcomeSide } from '../../types/market'
 import { cx } from '../../lib/cx'
 import { OutcomeQuote } from '../OutcomeQuote/OutcomeQuote'
 import styles from './MarketCard.module.css'
+import { ArrowUpRight } from 'lucide-react'
 
 export type MarketCardProps = {
   market: MarketFixture
@@ -27,6 +28,7 @@ export function MarketCard({
   selectedSide = null,
   onSelectOutcome,
   onOpen,
+  onCreatorClick,
 }: MarketCardProps) {
   const t = useT()
   const locked = marketIsLocked(market)
@@ -41,20 +43,17 @@ export function MarketCard({
 
   return (
     <article className={styles.card} data-status={market.status}>
-      <header className={styles.meta} onClick={onOpen}>
+      <header className={styles.meta}>
         <span className={styles.category}>{categoryLabel(market, t)}</span>
         {badge ? (
           <span className={cx(styles.badge, market.status === 'cancelled' && styles.cancelled)}>{badge}</span>
         ) : null}
       </header>
 
-      <h2 className={styles.question} onClick={onOpen}>
-        {market.question}
-      </h2>
-
-      <p className={styles.marketMeta} onClick={onOpen}>
-        {t('market.volume')} {formatTonFull(market.volumeTon)} · {market.closeLabel}
-      </p>
+      <button type="button" className={styles.open} onClick={onOpen}>
+        <h2 className={styles.question}>{market.question}</h2>
+        <ArrowUpRight size={20} aria-hidden="true" />
+      </button>
 
       <div className={styles.outcomes}>
         <OutcomeQuote
@@ -63,7 +62,7 @@ export function MarketCard({
           liquidity={market.outcomeA.liquidityTon}
           side="a"
           state={marketOutcomeQuoteState(market, 'a', selectedSide)}
-          showLiquidity={false}
+          showLiquidity
           density="feed"
           onClick={() => {
             if (!locked) onSelectOutcome?.('a')
@@ -75,13 +74,18 @@ export function MarketCard({
           liquidity={market.outcomeB.liquidityTon}
           side="b"
           state={marketOutcomeQuoteState(market, 'b', selectedSide)}
-          showLiquidity={false}
+          showLiquidity
           density="feed"
           onClick={() => {
             if (!locked) onSelectOutcome?.('b')
           }}
         />
       </div>
+      <footer className={styles.marketMeta}>
+        <span>{market.closeLabel}</span>
+        {onCreatorClick ? <button type="button" onClick={onCreatorClick}>@{market.creator.handle}</button> : null}
+        <span>{t('market.volume')} {formatTonFull(market.volumeTon)}</span>
+      </footer>
     </article>
   )
 }

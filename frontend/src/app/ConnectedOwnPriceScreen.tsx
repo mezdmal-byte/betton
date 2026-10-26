@@ -49,7 +49,7 @@ export function ConnectedOwnPriceScreen({
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const [side, setSide] = useState<OutcomeSide>(initialSide)
   const [odds, setOdds] = useState(1.9)
-  const [amount, setAmount] = useState(100)
+  const [amount, setAmount] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [placedOrder, setPlacedOrder] = useState<OrderOut | null>(null)
   const initializedOdds = useRef(false)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { NavId } from "../BottomNavigation/BottomNavigation";
 import { BottomNavigation } from "../BottomNavigation/BottomNavigation";
 import { AmountInput } from "../AmountInput/AmountInput";
@@ -22,6 +22,9 @@ import type {
 import styles from "./QuickTradeSheet.module.css";
 import type { GuarantorTradeCosts as GuarantorCosts } from "../../api/types";
 import { GuarantorTradeCosts } from "../GuarantorTradeCosts/GuarantorTradeCosts";
+import { QuoteMeaning } from "../QuoteMeaning/QuoteMeaning";
+import { ArrowLeft } from "lucide-react";
+import { syncTelegramBackButton } from "../../telegram/webapp";
 
 export type QuickTradeState =
   | "normal"
@@ -122,6 +125,18 @@ export function QuickTradeSheet({
   const [editingAfterInsufficient, setEditingAfterInsufficient] =
     useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  useEffect(() => {
+    if (!confirming) return;
+    return syncTelegramBackButton(true, () => setConfirming(false));
+  }, [confirming]);
+  const screenRef = useRef<HTMLElement>(null);
+  const focusPhase = state === "normal" || state === "partial" ? "entry" : state;
+  useLayoutEffect(() => {
+    const heading=screenRef.current?.querySelector<HTMLElement>("h1");
+    if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true})}
+    const body=screenRef.current?.querySelector<HTMLElement>("main");
+    if(body)body.scrollTop=0;
+  },[focusPhase,confirming]);
 
   useEffect(() => {
     setAmountDraft(amountInputValue(amount));
@@ -310,7 +325,7 @@ export function QuickTradeSheet({
     }
 
     return (
-      <section className={styles.screen} aria-label={t("market.quickTrade")}>
+      <section className={styles.screen} aria-label={t("market.quickTrade")} ref={screenRef}>
         <header className={styles.header}>
           <strong className={styles.marketQuestion}>{market.question}</strong>
           <div className={styles.titleRow}>
@@ -374,277 +389,51 @@ export function QuickTradeSheet({
     );
   }
 
-  if (state === "partial" && showPreview && !confirming) {
-    return (
-      <section className={styles.screen} aria-label={t("market.quickTrade")}>
-        <header className={styles.header}>
-          <strong className={styles.marketQuestion}>{market.question}</strong>
-          <div className={styles.titleRow}>
-            <button
-              type="button"
-              className={styles.backButton}
-              onClick={onClose}
-              aria-label={t("back")}
-            >
-              ←
-            </button>
-            <h1>Частичное исполнение</h1>
-          </div>
-        </header>
-        <main className={styles.body}>
-          <section className={styles.stateMetric}>
-            <strong>{formatTonFull(matched ?? 0)}</strong>
-            <span>исполнится из {formatTonFull(amount)}</span>
-          </section>
-
-          <div className={styles.stateRows}>
-            {(previewFills ?? []).map((leg, index) => (
-              <div key={String(leg.odds) + "-" + index}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <p>
-                  {formatTonFull(leg.matchedTon)} @ {formatOdds(leg.odds)}×
-                </p>
-              </div>
-            ))}
-            <div>
-              <span>
-                {String((previewFills?.length ?? 0) + 1).padStart(2, "0")}
-              </span>
-              <p>Не исполнится · {formatTonFull(rest ?? 0)}</p>
-            </div>
-            <div>
-              <span>
-                {String((previewFills?.length ?? 0) + 2).padStart(2, "0")}
-              </span>
-              <p>Возврат остатка · {formatTonFull(rest ?? 0)}</p>
-            </div>
-          </div>
-
-          <section className={styles.stateNotice}>
-            <strong>ВАЖНО</strong>
-            <p>
-              Неисполненный остаток вернётся на баланс и не будет ожидать
-              встречной ставки.
-            </p>
-          </section>
-
-          {guarantorCosts ? <GuarantorTradeCosts costs={guarantorCosts} /> : null}
-
-          <Button fullWidth disabled={!canPlace} onClick={onPlace}>
-            Подтвердить ставку
-          </Button>
-          <Button variant="secondary" fullWidth onClick={onClose}>
-            К событию
-          </Button>
-        </main>
-        <BottomNavigation active="markets" onChange={onNavChange} />
-      </section>
-    );
-  }
-
   return (
-    <section className={styles.screen} aria-label={t("market.quickTrade")}>
+    <section className={styles.screen} aria-label={t("market.quickTrade")} ref={screenRef}>
       <header className={styles.header}>
-        <strong className={styles.marketQuestion}>{market.question}</strong>
         <div className={styles.titleRow}>
-          <h1>Сделать ставку</h1>
+          <button type="button" className={styles.backButton} onClick={confirming?()=>setConfirming(false):onClose} aria-label={t("back")}><ArrowLeft size={22}/></button>
+          <h1>{confirming ? "Проверьте ставку" : "Сумма ставки"}</h1>
         </div>
+        <p className={styles.marketContext}>{market.question}</p>
       </header>
-
       <main className={styles.body}>
-        <div className={styles.outcomes}>
-          <OutcomeQuote
-            label={market.outcomeA.label}
-            odds={market.outcomeA.odds}
-            liquidity={market.outcomeA.liquidityTon}
-            side="a"
-            density="compact"
-            showLiquidity={false}
-            state={
-              quotesLoading
-                ? "loading"
-                : selectedSide === "a"
-                  ? "selected"
-                  : "default"
-            }
-            onClick={() => onSelectSide?.("a")}
-          />
-          <OutcomeQuote
-            label={market.outcomeB.label}
-            odds={market.outcomeB.odds}
-            liquidity={market.outcomeB.liquidityTon}
-            side="b"
-            density="compact"
-            showLiquidity={false}
-            state={
-              quotesLoading
-                ? "loading"
-                : selectedSide === "b"
-                  ? "selected"
-                  : "default"
-            }
-            onClick={() => onSelectSide?.("b")}
-          />
-        </div>
-
-        <AmountInput
-          className={styles.amountInput}
-          value={amountDraft}
-          placeholder="0"
-          label={
-            availableTon == null
-              ? "Сумма ставки"
-              : "Сумма ставки · баланс " + formatTonFull(availableTon)
-          }
-          onChange={(value) => {
-            let normalized = value.replace(",", ".");
-            if (normalized.startsWith(".")) normalized = "0" + normalized;
-            if (!/^\d*(?:\.\d{0,9})?$/.test(normalized)) return;
-            setAmountDraft(normalized);
-            setConfirming(false);
-            onAmountChange?.(Number(normalized) || 0);
-          }}
-          error={
-            insufficient
-              ? t("err.fundsAvail", { amt: formatTonFull(availableTon) })
-              : undefined
-          }
-        />
-
-        <div className={styles.quote}>
-          <QuoteRow
-            label="Лучший коэффициент"
-            value={quotesLoading ? "…" : formatOdds(selected.odds) + "×"}
-          />
-          <QuoteRow
-            label="Доступно по лучшему"
-            value={quotesLoading ? "…" : formatTon(selected.liquidityTon)}
-          />
-          <QuoteRow
-            label="Всего доступно сейчас"
-            value={quotesLoading ? "…" : formatTon(totalNow)}
-          />
-
-          <QuoteRow
-            label="Средний коэффициент исполнения"
-            value={showPreview ? quoteValue(previewAverageOdds) + "×" : "—"}
-          />
-          <QuoteRow
-            label="Худший коэффициент исполнения"
-            value={showPreview ? formatOdds(previewWorstOdds) + "×" : "—"}
-          />
-          <QuoteRow
-            label="Исполнится сейчас"
-            value={showPreview ? formatTon(matched) : "—"}
-          />
-          {!guarantorCosts ? <QuoteRow
-            label="Выплата до сервисного сбора"
-            value={showPreview ? formatTon(previewPayoutTon) : "—"}
-          /> : null}
-          {showPreview && rest != null && rest > 0 ? (
-            <QuoteRow label="Вернётся на баланс" value={formatTon(rest)} />
-          ) : null}
-        </div>
-
-        {guarantorCosts ? <GuarantorTradeCosts costs={guarantorCosts} /> : null}
-
-        <button
-          type="button"
-          className={styles.historyToggle}
-          aria-expanded={historyOpen}
-          onClick={() => setHistoryOpen((open) => !open)}
-        >
-          <span>
-            История коэффициента
-            <small>Фактические сделки · {selected.label}</small>
-          </span>
-          <strong>{historyOpen ? "Скрыть ↑" : "Показать ›"}</strong>
-        </button>
-
-        {historyOpen ? (
-          <div className={styles.historyPanel}>
-            {historyLoading ? (
-              <div className={styles.historyEmpty}>
-                Загружаем историю сделок…
-              </div>
-            ) : historyError ? (
-              <div className={styles.historyEmpty}>
-                Не удалось загрузить историю сделок.
-              </div>
-            ) : historySeries.length > 0 ? (
-              <MarketChart
-                series={historySeries}
-                currentOdds={historyCurrentOdds}
-                outcomeLabel={selected.label}
-                volumeTon={historyVolumeTon}
-                title={"История коэффициента · " + selected.label}
-                demo={historyDemo}
-              />
-            ) : (
-              <div className={styles.historyEmpty}>
-                Сделок по этому исходу пока нет.
-              </div>
-            )}
+        {!confirming ? <>
+          <AmountInput className={styles.amountInput} value={amountDraft} placeholder="0" label={availableTon==null?"Сумма, TON":"Сумма, TON · доступно "+formatTonFull(availableTon)}
+            onChange={value=>{let normalized=value.replace(",", ".");if(normalized.startsWith("."))normalized="0"+normalized;if(!/^\d*(?:\.\d{0,9})?$/.test(normalized))return;setAmountDraft(normalized);setConfirming(false);onAmountChange?.(Number(normalized)||0)}}
+            error={insufficient?t("err.fundsAvail",{amt:formatTonFull(availableTon)}):undefined}/>
+          <div className={styles.outcomes} aria-label="Исход ставки">
+            <OutcomeQuote label={market.outcomeA.label} odds={market.outcomeA.odds} liquidity={market.outcomeA.liquidityTon} side="a" density="compact" showLiquidity={false} state={quotesLoading?"loading":selectedSide==="a"?"selected":"default"} onClick={()=>onSelectSide?.("a")}/>
+            <OutcomeQuote label={market.outcomeB.label} odds={market.outcomeB.odds} liquidity={market.outcomeB.liquidityTon} side="b" density="compact" showLiquidity={false} state={quotesLoading?"loading":selectedSide==="b"?"selected":"default"} onClick={()=>onSelectSide?.("b")}/>
           </div>
-        ) : null}
-
-        {previewFills && previewFills.length > 1 ? (
-          <div className={styles.fillBreakdown}>
-            {previewFills.map((leg, index) => (
-              <span key={String(leg.odds) + "-" + index}>
-                {formatTon(leg.matchedTon)} по {formatOdds(leg.odds)}×
-              </span>
-            ))}
-          </div>
-        ) : null}
-
-        <p className={styles.note}>
-          Доступная часть исполнится сразу. Неисполненный остаток вернётся на
-          баланс. Сервисный сбор — 1% только с чистой прибыли победителя.
-        </p>
-
-        {confirming && showPreview ? (
-          <div className={styles.confirmation}>
-            <strong>Проверьте ставку</strong>
-            <span>
-              {selected.label} · {formatTon(amount)} · средний коэффициент{" "}
-              {quoteValue(previewAverageOdds)}×
-            </span>
-          </div>
-        ) : null}
-
-        <Button
-          fullWidth
-          disabled={primaryDisabled}
-          onClick={
-            demoMode
-              ? undefined
-              : primaryIsOwnPrice
-                ? onOwnPrice
-                : confirming
-                  ? onPlace
-                  : () => setConfirming(true)
-          }
-        >
-          {primaryLabel}
-        </Button>
-
-        <div className={styles.destinations}>
-          <Button
-            variant="secondary"
-            fullWidth
-            disabled={demoMode}
-            onClick={demoMode ? undefined : onOwnPrice}
-          >
-            Свой коэффициент
-          </Button>
-          <Button variant="secondary" fullWidth onClick={onClose}>
-            К событию
-          </Button>
+        </> : <section className={styles.confirmation}><strong>{selected.label} · {formatTonFull(amount)}</strong><span>Quick Trade · IOC</span><span>Котировка сервера. Изменившееся предложение потребует новой проверки.</span></section>}
+        <div className={styles.execution} aria-live="polite">
+          <QuoteRow label="Исполнится сейчас" value={showPreview?formatTonFull(matched):quotesLoading?"…":"—"}/>
+          <QuoteRow label="Вернётся на баланс" value={showPreview?formatTonFull(rest):"—"}/>
+          <QuoteRow label="Не хуже коэффициента" value={showPreview&&previewWorstOdds!=null?String(previewWorstOdds)+"×":"—"}/>
+          {!guarantorCosts?<QuoteRow label="Выплата до сервисного сбора" value={showPreview?formatTonFull(previewPayoutTon):"—"}/>:null}
         </div>
+        {guarantorCosts?<GuarantorTradeCosts costs={guarantorCosts}/>:null}
+        {previewFills&&previewFills.length>1?<div className={styles.fillBreakdown}>{previewFills.map((leg,index)=><span key={String(leg.odds)+"-"+index}>{formatTon(leg.matchedTon)} по {formatOdds(leg.odds)}×</span>)}</div>:null}
+        <p className={styles.note}>Исполним доступную часть. Неисполненный остаток сразу вернётся и не останется заявкой. Сервисный сбор — 1% только с чистой прибыли победителя.</p>
+        <details className={styles.advanced} open={confirming}>
+          <summary>Предложения и детали исполнения</summary>
+          <div className={styles.quote}>
+            <QuoteRow label="Лучший коэффициент" value={quotesLoading?"…":formatOdds(selected.odds)+"×"}/>
+            <QuoteRow label="Доступно по лучшему" value={quotesLoading?"…":formatTon(selected.liquidityTon)}/>
+            <QuoteRow label="Всего доступно сейчас" value={quotesLoading?"…":formatTon(totalNow)}/>
+            <QuoteRow label="Средний коэффициент исполнения" value={showPreview?quoteValue(previewAverageOdds)+"×":"—"}/>
+          </div>
+        </details>
+        <QuoteMeaning/>
+        <button type="button" className={styles.historyToggle} aria-expanded={historyOpen} onClick={()=>setHistoryOpen(open=>!open)}><span>История коэффициента<small>Фактические сделки · {selected.label}</small></span><strong>{historyOpen?"Скрыть":"Показать"}</strong></button>
+        {historyOpen?<div className={styles.historyPanel}>{historyLoading?<div className={styles.historyEmpty}>Загружаем историю сделок…</div>:historyError?<div className={styles.historyEmpty}>Не удалось загрузить историю сделок.</div>:historySeries.length>0?<MarketChart series={historySeries} currentOdds={historyCurrentOdds} outcomeLabel={selected.label} volumeTon={historyVolumeTon} title={"История коэффициента · "+selected.label} demo={historyDemo}/>:<div className={styles.historyEmpty}>Сделок по этому исходу пока нет.</div>}</div>:null}
       </main>
-
-      <BottomNavigation active="markets" onChange={onNavChange} />
+      <footer className={styles.actionBar}>
+        <Button fullWidth disabled={primaryDisabled} onClick={demoMode?undefined:primaryIsOwnPrice?onOwnPrice:confirming?onPlace:()=>setConfirming(true)}>{primaryLabel}</Button>
+        <button type="button" className={styles.modeLink} disabled={demoMode} onClick={confirming?()=>setConfirming(false):onOwnPrice}>{confirming?"Изменить сумму":"Своя цена · лимитная заявка"}</button>
+      </footer>
     </section>
   );
 }
