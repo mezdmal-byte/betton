@@ -64,7 +64,7 @@ def setup_case(client, monkeypatch):
 
 
 def open_case(client, ch, gh, mid):
-    assert call(client, mid, gh, "acknowledge").status_code == 200
+    assert call(client, mid, gh, "acknowledge", revision=1).status_code == 200
     r = call(client, mid, gh, "accept", revision=1)
     assert r.status_code == 200, r.text
     assert r.json()["state"] == "active"
@@ -78,8 +78,8 @@ def test_terms_review_permissions_and_no_creation_money(client, monkeypatch):
     assert client.get(f"/users/{creator['id']}", headers=ch).json()["balance"] == 1000
     assert client.get(f"/markets/{mid}", headers=gh).status_code == 200
     assert submit(client, mid, ch).status_code == 400
-    assert call(client, mid, ch, "acknowledge").status_code == 403
-    assert call(client, mid, gh, "acknowledge").json()["state"] == "review"
+    assert call(client, mid, ch, "acknowledge", revision=1).status_code == 403
+    assert call(client, mid, gh, "acknowledge", revision=1).json()["state"] == "review"
     assert (
         call(
             client,
@@ -123,22 +123,23 @@ def test_invitation_expiry_extension_and_reinvite(client, monkeypatch):
     with SessionLocal() as db:
         db.get(GuarantorCase, mid).deadline = gs.now() - timedelta(seconds=1)
         db.commit()
-    assert call(client, mid, gh, "acknowledge").status_code == 409
+    assert call(client, mid, gh, "acknowledge", revision=1).status_code == 409
     # Expiry must work in action as well as in worker.
     assert (
-        call(client, mid, ch, "invite", guarantor_id=m["creator_id"]).status_code == 422
+        call(client, mid, ch, "invite", revision=1, guarantor_id=m["creator_id"]).status_code == 422
     )
     gs.process_due()
     with SessionLocal() as db:
         case = db.get(GuarantorCase, mid)
         gid = case.guarantor_id
         assert case.state == "needs_guarantor"
-    assert call(client, mid, ch, "invite", guarantor_id=gid).status_code == 200
-    assert call(client, mid, gh, "acknowledge").status_code == 200
-    first = call(client, mid, ch, "extend").json()
-    second = call(client, mid, ch, "extend").json()
+    assert call(client, mid, ch, "invite", revision=1, guarantor_id=gid).status_code == 200
+    assert call(client, mid, gh, "acknowledge", revision=2).status_code == 200
+    deadline = client.get(f"/markets/{mid}/guarantor", headers=ch).json()["deadline"]
+    first = call(client, mid, ch, "extend", revision=2, expected_deadline=deadline).json()
+    second = call(client, mid, ch, "extend", revision=2, expected_deadline=deadline).json()
     assert first["deadline"] == second["deadline"]
-    assert call(client, mid, gh, "extend").json()["extension_by"] is None
+    assert call(client, mid, gh, "extend", revision=2, expected_deadline=deadline).json()["extension_by"] is None
 
 
 def make_filled(client, ch, gh, bh, mid):

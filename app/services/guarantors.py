@@ -285,6 +285,11 @@ def transition(db, mid, user, req, token=None):
             fail("Действие доступно создателю", 403)
         if action in ("admin_resolve", "admin_cancel") and not user.is_admin:
             fail("Действие доступно администратору", 403)
+        # Compare the caller's observed version under the market lock. Missing
+        # versions fail closed; never upgrade an old request to today's invitation.
+        if action in ("acknowledge", "decline", "invite", "extend"):
+            if req.revision != case.revision:
+                fail("Редакция изменилась. Обновите условия")
         if action == "acknowledge":
             if case.state != "invited":
                 fail("Приглашение уже недоступно")
@@ -300,6 +305,8 @@ def transition(db, mid, user, req, token=None):
             if case.state != "needs_guarantor":
                 fail("Сначала дождитесь ответа или завершения приглашения")
             available(db, req.guarantor_id, user.id)
+            case.revision += 1
+            case.extension_by = None
             case.guarantor_id = req.guarantor_id
             case.state = "invited"
             case.deadline = current + timedelta(minutes=1)
@@ -360,6 +367,7 @@ def transition(db, mid, user, req, token=None):
                 fail("Проверьте сроки приёма и проверки", 422)
             case.revision += 1
             case.creator_confirmed = 0
+            case.extension_by = None
             log(db, case, user.id, "terms", snapshot(market, case))
             notice(db, case.guarantor_id, mid, "Создатель обновил условия пари")
         elif action == "confirm":
@@ -371,8 +379,13 @@ def transition(db, mid, user, req, token=None):
                 fail("Продление доступно создателю и гаранту", 403)
             if case.state != "review":
                 fail("Обсуждение уже завершено")
+            # A completed extension changes deadline, not the signed terms.
+            # Bind votes to that deadline so a delayed vote cannot start a new round.
+            if req.expected_deadline is None or ms._naive_utc(req.expected_deadline) != case.deadline:
+                fail("Срок согласования изменился. Обновите условия")
             if case.extension_by and case.extension_by != user.id:
-                case.deadline = current + timedelta(minutes=5)
+                case.deadline = max(current + timedelta(minutes=5),
+                                    case.deadline + timedelta(microseconds=1))
                 case.extension_by = None
                 broadcast(
                     db,

@@ -173,7 +173,7 @@ def _step(db, run, actor, market, case, config):
     if run.scenario in ('no_response', 'invite_expiry'):
         return progress
     if case.state == 'invited':
-        _act(db, market, user, 'decline' if run.scenario == 'decline' else 'acknowledge')
+        _act(db, market, user, 'decline' if run.scenario == 'decline' else 'acknowledge', revision=case.revision)
         return progress
     if case.state == 'review':
         if run.scenario == 'agreement_error':

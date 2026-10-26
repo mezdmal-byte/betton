@@ -558,6 +558,7 @@ def edit_guarantor_terms(
         config.revision += 1
         case.revision = config.revision
         case.creator_confirmed = 0
+        case.extension_by = None
         config.reward = {}
         record_revision(db, market, config, user.id, "creator_edit")
         gs.log(db, case, user.id, "terms", gs.snapshot(market, case))
@@ -632,6 +633,7 @@ def negotiate_reward(
             config.revision += 1
             case.revision = config.revision
             case.creator_confirmed = 0
+            case.extension_by = None
             reward = {
                 "mode": req.mode,
                 "fixed_ton": str(fixed),

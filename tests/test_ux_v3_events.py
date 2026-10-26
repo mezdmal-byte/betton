@@ -52,7 +52,7 @@ def v3_case(client, monkeypatch):
     event = create(client, ch, payload("guarantor", g["id"]))
     mid = event["id"]
     bh = {**bh, "X-Market-Share-Token": event["share_token"]}
-    assert call(client, mid, gh, "acknowledge").status_code == 200
+    assert call(client, mid, gh, "acknowledge", revision=1).status_code == 200
     assert call(client, mid, gh, "accept", revision=1).status_code == 200
     assert call(client, mid, ch, "consent", revision=1).status_code == 200
     assert call(client, mid, bh, "consent", revision=1).status_code == 200
@@ -299,7 +299,7 @@ def test_reinvite_clears_old_reward_and_invalidates_old_revision(client, monkeyp
     _, ah, a, ha, g, gh, b, hb, _ = setup_case(client, monkeypatch)
     event = create(client, ha, payload("guarantor", g["id"]))
     mid = event["id"]
-    assert call(client, mid, gh, "acknowledge").status_code == 200
+    assert call(client, mid, gh, "acknowledge", revision=1).status_code == 200
     assert (
         client.post(
             f"/ux-v3/events/{mid}/reward",
@@ -308,7 +308,7 @@ def test_reinvite_clears_old_reward_and_invalidates_old_revision(client, monkeyp
         ).status_code
         == 200
     )
-    assert call(client, mid, gh, "decline", text="Не могу проверить").status_code == 200
+    assert call(client, mid, gh, "decline", revision=2, text="Не могу проверить").status_code == 200
     replacement, rh = _login(client)
     assert (
         client.put(
@@ -336,15 +336,15 @@ def test_reinvite_clears_old_reward_and_invalidates_old_revision(client, monkeyp
         ).status_code
         == 200
     )
-    invited = call(client, mid, ha, "invite", guarantor_id=replacement["id"])
+    invited = call(client, mid, ha, "invite", revision=2, guarantor_id=replacement["id"])
     assert invited.status_code == 200, invited.text
     with SessionLocal() as db:
         cfg = db.get(EventConfigV3, mid)
         case = db.get(GuarantorCase, mid)
         assert cfg.terms["guarantor_id"] == replacement["id"]
         assert cfg.reward == {} and cfg.revision == case.revision == 3
-    assert call(client, mid, gh, "acknowledge").status_code in (403, 404)
-    assert call(client, mid, rh, "acknowledge").status_code == 200
+    assert call(client, mid, gh, "acknowledge", revision=1).status_code in (403, 404)
+    assert call(client, mid, rh, "acknowledge", revision=3).status_code == 200
     assert call(client, mid, rh, "accept", revision=1).status_code == 409
 
 
@@ -352,7 +352,7 @@ def test_paid_reward_is_not_falsely_activated(client, monkeypatch):
     _, _, a, ha, g, gh, b, hb, _ = setup_case(client, monkeypatch)
     event = create(client, ha, payload("guarantor", g["id"]))
     mid = event["id"]
-    call(client, mid, gh, "acknowledge")
+    call(client, mid, gh, "acknowledge", revision=1)
     assert (
         client.post(
             f"/ux-v3/events/{mid}/reward",

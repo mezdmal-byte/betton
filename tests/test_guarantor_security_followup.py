@@ -1,4 +1,4 @@
-"""PR24 independent API checks. Known-defect tests assert observed unsafe behaviour."""
+"""Independent API security regressions, including stale invitation protection."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 import json
@@ -15,14 +15,14 @@ from tests.test_markets_api import _login
 def review(client,monkeypatch):
     _,_,a,ha,g,hg,b,hb,_=setup_case(client,monkeypatch)
     e=create(client,ha,payload('guarantor',g['id']))
-    assert call(client,e['id'],hg,'acknowledge').status_code==200
+    assert call(client,e['id'],hg,'acknowledge',revision=1).status_code==200
     return a,ha,g,hg,b,hb,e
 
 
 def snap(mid):
     with SessionLocal() as db:
         m=db.get(Market,mid);c=db.get(GuarantorCase,mid);f=db.get(EventConfigV3,mid)
-        return (tuple(db.query(User.id,User.balance_nano).order_by(User.id)),m.status.value,m.pot_nano,c.state,c.revision,c.creator_confirmed,json.dumps(f.reward,sort_keys=True),tuple(db.query(P2POrder.id,P2POrder.remaining,P2POrder.status).filter_by(market_id=mid).order_by(P2POrder.id)),db.query(P2PMoneyEntry).filter_by(market_id=mid).count(),db.query(SettlementRecord).filter_by(market_id=mid).count())
+        return (tuple(db.query(User.id,User.balance_nano).order_by(User.id)),m.status.value,m.pot_nano,c.state,c.revision,c.creator_confirmed,json.dumps(f.reward if f else None,sort_keys=True),tuple(db.query(P2POrder.id,P2POrder.remaining,P2POrder.status).filter_by(market_id=mid).order_by(P2POrder.id)),db.query(P2PMoneyEntry).filter_by(market_id=mid).count(),db.query(SettlementRecord).filter_by(market_id=mid).count())
 
 
 @pytest.mark.parametrize('field,value',[('fixed_ton','NaN'),('fixed_ton','Infinity'),('fixed_ton','-0.000000001'),('fixed_ton','0.0000000001'),('percent','100.01'),('percent','0.001')])
@@ -94,19 +94,17 @@ def test_share_link_does_not_grant_private_negotiation_access(client,monkeypatch
 
 
 @pytest.mark.parametrize('action',['acknowledge','decline'])
-def test_known_defect_stale_invitation_action_mutates_new_invitation(client,monkeypatch,action):
-    """G1 reproducer: observed 200; desired contract 409/no mutation. NOT a security pass."""
+def test_stale_invitation_action_cannot_mutate_new_invitation(client,monkeypatch,action):
+    """G1 regression: r1 must not control a new invitation to the same user."""
     _,ha,g,hg,_,_,e=review(client,monkeypatch);mid=e['id']
     assert call(client,mid,hg,'decline',revision=1).status_code==200
-    assert call(client,mid,ha,'invite',guarantor_id=g['id']).status_code==200
+    assert call(client,mid,ha,'invite',revision=1,guarantor_id=g['id']).status_code==200
     with SessionLocal() as db: assert db.get(GuarantorCase,mid).revision==2
     before=snap(mid)
     r=call(client,mid,hg,action,revision=1)
-    assert r.status_code==200,r.text
-    after=snap(mid)
-    assert after[3]==('review' if action=='acknowledge' else 'needs_guarantor')
-    assert after!=before
-    for i in [0,2,7,8,9]:assert after[i]==before[i]
+    assert r.status_code==409,r.text
+    assert snap(mid)==before
+    assert call(client,mid,hg,action,revision=2).status_code==200
 
 
 @pytest.mark.parametrize('actor',['creator','guarantor'])
