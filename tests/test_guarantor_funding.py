@@ -32,7 +32,7 @@ def paid_case(client, monkeypatch, mode="fixed", fixed="100", percent="0"):
     event = create(client, ha, payload("guarantor", g["id"]))
     mid = event["id"]
     hb = {**hb, "X-Market-Share-Token": event["share_token"]}
-    assert call(client, mid, hg, "acknowledge").status_code == 200
+    assert call(client, mid, hg, "acknowledge", revision=1).status_code == 200
     offer = client.post(
         f"/ux-v3/events/{mid}/reward",
         headers=ha,

@@ -636,7 +636,7 @@ async def seed_scenarios(application, core):
             'close_at':(now+timedelta(seconds=2)).isoformat(),
             'result_due_at':(now+timedelta(hours=24)).isoformat()})
         mid=legacy['id']
-        await request('POST',f'/markets/{mid}/guarantor','guarantor',{'action':'acknowledge'})
+        await request('POST',f'/markets/{mid}/guarantor','guarantor',{'action':'acknowledge','revision':1})
         await request('POST',f'/markets/{mid}/guarantor','guarantor',{'action':'accept','revision':1})
         for role,outcome in [('creator',0),('participant',1)]:
             # Each role uses its real sandbox signature and explicit unlisted token.

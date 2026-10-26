@@ -53,7 +53,9 @@ class CaseAction(BaseModel):
         "admin_cancel",
         "review",
     ]
-    revision: int | None = None
+    # Required by version-sensitive transitions; omitted values fail closed (409).
+    revision: int | None = Field(default=None, ge=1)
+    expected_deadline: datetime | None = None
     guarantor_id: int | None = None
     text: str = Field(default="", max_length=4000)
     question: str | None = Field(default=None, min_length=8, max_length=512)

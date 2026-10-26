@@ -25,7 +25,7 @@ export function GuarantorV3Panel({event,userId}: {event:GuarantorCase;userId:num
   const creator=event.creator_id===userId,gua=event.guarantor_id===userId,party=creator||gua,review=event.state==='review'
   useEffect(()=>{if(!gua||event.state!=='active')return;const timer=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(timer)},[gua,event.state])
   const refresh=()=>{setText('');void qc.invalidateQueries()}
-  const mutation=useMutation({mutationFn:({action,extra={}}:{action:string;extra?:Record<string,unknown>})=>caseAction(mid,{action,revision:event.revision,text,...extra}),onSuccess:(_data,variables)=>{refresh();if(['propose','cancel','accept'].includes(variables.action))setView('summary')}})
+  const mutation=useMutation({mutationFn:({action,extra={}}:{action:string;extra?:Record<string,unknown>})=>caseAction(mid,{action,revision:event.revision,expected_deadline:event.deadline,text,...extra}),onSuccess:(_data,variables)=>{refresh();if(['propose','cancel','accept'].includes(variables.action))setView('summary')}})
   const update=useMutation({mutationFn:({path,body,method}:{path:string;body:unknown;method?:string})=>eventV3Action(mid,path,body,method),onSuccess:()=>{refresh();setView(current=>current==='reward'||current==='edit'?'chat':current)}})
   const backFromOverlay=()=>setView(view==='cancel-confirm'?'cancel':'summary')
   useEffect(()=>{if(view==='summary')return;return syncTelegramBackButton(true,backFromOverlay)},[view])

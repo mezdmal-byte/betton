@@ -30,11 +30,14 @@ def transition_v3(db, market, case, config, user, req):
             raise HTTPException(403, "Другого гаранта приглашает создатель")
         if case.state != "needs_guarantor":
             raise HTTPException(409, "Дождитесь завершения предыдущего приглашения")
+        if req.revision != case.revision:
+            raise HTTPException(409, "Редакция изменилась. Обновите условия")
         gs.available(db, req.guarantor_id, user.id)
         config.revision += 1
         config.terms = {**config.terms, "guarantor_id": req.guarantor_id}
         config.reward = {}
         case.guarantor_id, case.revision = req.guarantor_id, config.revision
+        case.extension_by = None
         case.creator_confirmed = case.revision
         case.state, case.deadline = "invited", gs.now() + timedelta(minutes=1)
         gs.log(db, case, user.id, "invite", "Создатель выбрал нового гаранта")

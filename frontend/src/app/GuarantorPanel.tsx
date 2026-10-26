@@ -82,7 +82,7 @@ export function GuarantorPanel({
   const discussing = ["invited", "review"].includes(c.state);
   const timedOut = discussing && !!c.deadline && remainingSeconds(c.deadline, clock) === 0;
   const action = (name: string, extra: Record<string, unknown> = {}) =>
-    mutation.mutate({ action: name, revision: c.revision, text, ...extra });
+    mutation.mutate({ action: name, revision: c.revision, expected_deadline: c.deadline, text, ...extra });
   const button = (
     name: string,
     label: string,
