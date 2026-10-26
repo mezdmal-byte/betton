@@ -57,3 +57,13 @@ No nightly tests or deployments claimed yet. Preserve exact commands, counts, co
 - Frontend: **175 passed / 30 files**, TypeScript/Vite build success; existing >500kB bundle warning retained.
 - Onboarding agent worktree contains uncommitted, working three-direction implementation and isolated tests/config/docs; not overwritten. Its first matrix: **73 passed**, separate typecheck/build passed. Independent Impeccable A/B critique and one bounded fix/confirm were interrupted by account limit and resumed. No design direction selected or production onboarding changed.
 - Next: commit/push reviewed root gate, complete A/B review and prototype handoff, integrate checked prototype commit, run final combined checks and update PR/report. Preserve all agent trees until their work is committed/integrated.
+
+## Checkpoint 4 — recovery UX without stopping running SIM
+
+- Root gate committed/pushed as `747dd64`; its GitHub PostgreSQL/SQLite and integration-browser workflows passed.
+- Final combined local SQLite at that stage: **479 passed, 26 PG-only skipped**; local native PostgreSQL **505 passed, 0 skipped**. Temporary PostgreSQL stopped cleanly after completion; retained test databases not deleted.
+- Added separate `scripts/recovery_preview.py` launcher and `BETTON_RELEASE_PORT` to recovery Playwright config. Default config remains 8877; each test port gets its own state directory. Port validation happens before state creation. No host/tunnel/auth relaxation.
+- Initial direct-port approach had 11 passing tests and 4 recovery checks, but was replaced before commit by the safer separate launcher. Final new regression/recovery results are recorded below when complete. Existing browser 8877 and Telegram 8882 simulators not restarted.
+- Auto-review rejected a proposed generic HMAC-expression exception in the staged secret detector; it was NOT applied. Detector, original sandbox HMAC source and public synthetic token remain unchanged. Separate launcher needs no credential derivation or detector exception.
+- Prototype A/B review completed independently: A26/36 with hidden Learn results/false completion/tiny targets/deadline copy; B actual static detect0, live tiny-text finding and contrast measurements. One combined correction batch + one confirm in progress. Inter inherited from project tokens, not replaced on detector's generic overused-font warning.
+- Remaining: integrate prototype commit, add its type/build/mobile matrix to existing browser workflow, final source/secret/CI review and concise user handoff. On-device Telegram and choosing a design remain human gates.
