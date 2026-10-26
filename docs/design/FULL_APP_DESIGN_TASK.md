@@ -1,5 +1,9 @@
 # FULL APP DESIGN TASK — Rail direction
 
+> Historical task. The owner's UX/UI REINVENTION decision of26 October2026 replaces
+> its Rail/palette/Figma/human-stop requirements for the isolated reinvention branch.
+> Current scope and unchanged financial boundaries: `UX_REINVENTION_BRIEF.md`.
+
 ## Mission
 
 Expand the **selected Rail live-feed visual structure** into a coherent, complete BetTON product prototype.

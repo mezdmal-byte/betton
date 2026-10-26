@@ -63,7 +63,9 @@ describe('server guarantor trade costs', () => {
       state="partial" previewMatchedTon={2} previewRestTon={1} onPlace={()=>{}}
       guarantorCosts={{...costs,can_place:false}} />)
     expect(html).toContain('Ваша общая выплата по событию после сборов')
-    expect(html).toContain('Подтвердить ставку')
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*><span[^>]*>Подтвердить ставку/)
+    // Pocket has one explicit review before submission, including partial quotes.
+    // A server prohibition prevents even advancing to that review.
+    expect(html).toContain('Проверить ставку')
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*><span[^>]*>Проверить ставку/)
   })
 })

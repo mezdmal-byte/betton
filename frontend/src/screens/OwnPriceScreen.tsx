@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { NavId } from "../components/BottomNavigation/BottomNavigation";
 import { BottomNavigation } from "../components/BottomNavigation/BottomNavigation";
 import { Button } from "../components/Button/Button";
@@ -23,6 +23,7 @@ import type {
 } from "../types/market";
 import styles from "./OwnPriceScreen.module.css";
 import type { GuarantorTradeCosts } from "../api/types";
+import { syncTelegramBackButton } from "../telegram/webapp";
 
 export type OwnPriceScreenProps = {
   market?: MarketFixture;
@@ -109,9 +110,13 @@ export function OwnPriceScreen({
   const [localOdds, setLocalOdds] = useState(
     odds ?? market.outcomeA.odds ?? 1.82,
   );
-  const [localAmount, setLocalAmount] = useState(amount ?? 100);
+  const [localAmount, setLocalAmount] = useState(amount ?? 0);
   const [stage, setStage] = useState<OwnPriceStage>("entry");
   const [cancelConfirm, setCancelConfirm] = useState(false);
+  useEffect(() => {
+    if (stage === "entry" || placedOrder) return;
+    return syncTelegramBackButton(true, () => setStage("entry"));
+  }, [stage, placedOrder]);
   const activeSide = onSelectSide ? (selectedSide ?? side) : side;
   const activeOdds = onOddsChange ? (odds ?? localOdds) : localOdds;
   const activeAmount = onAmountChange ? (amount ?? localAmount) : localAmount;
@@ -149,11 +154,15 @@ export function OwnPriceScreen({
           <strong className={styles.marketQuestion}>{market.question}</strong>
         ) : null}
         <div className={styles.titleRow}>
-          {placedOrder || stage !== "entry" ? (
+          {onBack ? (
             <button
               type="button"
               className={styles.backButton}
-              onClick={onBack}
+              onClick={() => {
+                if (cancelConfirm) setCancelConfirm(false);
+                else if (stage !== "entry" && !placedOrder) setStage("entry");
+                else onBack?.();
+              }}
               aria-label={t("back")}
             >
               ←

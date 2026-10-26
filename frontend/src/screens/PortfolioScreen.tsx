@@ -73,6 +73,7 @@ export function PortfolioScreen({
 }: PortfolioScreenProps) {
   const t = useT();
   const { locale } = useI18n();
+  const portfolioLabel = {ru:"Портфель",en:"Portfolio",zh:"投资组合"}[locale];
   const [view, setInternalView] = useState<PortfolioView>(
     variant === "history" ? "history" : (initialView ?? tab ?? "positions"),
   );
@@ -156,7 +157,7 @@ export function PortfolioScreen({
                       : view === "overview"
                         ? "Средства"
                         : ["positions", "orders", "settled"].includes(view)
-                          ? "Мои ставки"
+                          ? portfolioLabel
                           : viewLabel(view, t)}
               </h1>
             </div>
@@ -170,6 +171,10 @@ export function PortfolioScreen({
       <main className={styles.body}>
         {!hideNav && !selectedPosition && !selectedOrder && !cancelOrder ? (
           <>
+            {view !== "overview" ? <section className={styles.walletSummary} aria-label={t("account.available")}>
+              <div><span>{t("account.available")}</span><strong>{accountState === "ready" ? formatTonFull(account.availableTon) : "—"}</strong></div>
+              <dl><div><dt>{t("portfolio.positions")}</dt><dd>{accountState === "ready" ? formatTonFull(account.inPositionsTon) : "—"}</dd></div><div><dt>{t("portfolio.orders")}</dt><dd>{accountState === "ready" ? formatTonFull(account.inOrdersTon) : "—"}</dd></div></dl>
+            </section> : null}
             <div
               className={styles.viewTabs}
               role="tablist"

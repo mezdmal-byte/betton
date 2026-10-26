@@ -21,6 +21,8 @@ import type {
   RecentTrade,
 } from "../types/market";
 import styles from "./MarketDetailScreen.module.css";
+import { QuoteMeaning } from "../components/QuoteMeaning/QuoteMeaning";
+import { ArrowLeft, MoreHorizontal } from "lucide-react";
 
 export type MarketDetailViewState =
   | "ready"
@@ -205,44 +207,22 @@ export function MarketDetailScreen({
     <div className={styles.screen}>
       <header className={styles.header}>
         <div className={styles.titleRow}>
-          {showInternalBack ? (
-            <button type="button" className={styles.back} onClick={onBack}>
-              ‹
-            </button>
-          ) : null}
-          <h1>
-            {activePane === "book" ? "Предложения участников" : market.question}
-          </h1>
-          {shareAvailable && onShare ? (
-            <button
-              type="button"
-              className={styles.more}
-              aria-label={t("share")}
-              onClick={() => setPane("share")}
-            >
-              •••
-            </button>
-          ) : null}
+          <button type="button" className={styles.back} onClick={onBack} aria-label={t("back")}><ArrowLeft size={22}/></button>
+          <strong>{activePane === "book" ? "Предложения участников" : t("event.title")}</strong>
+          {shareAvailable && onShare ? <button type="button" className={styles.more} aria-label={t("share")} onClick={()=>setPane("share")}><MoreHorizontal size={22}/></button>:<span className={styles.morePlaceholder}/>}
         </div>
-        <button
-          type="button"
-          className={styles.marketMeta}
-          onClick={onCreatorClick}
-          disabled={!onCreatorClick}
-        >
-          {activePane === "book"
-            ? market.question
-            : `@${market.creator.handle} · ${categoryLabel(market, t)} · ${market.closeLabel}`}
-        </button>
       </header>
 
       <main className={styles.scroll}>
         <div className={styles.body}>
           {banner}
+          <h1 className={styles.question}>{market.question}</h1>
+          <button type="button" className={styles.marketMeta} onClick={onCreatorClick} disabled={!onCreatorClick}>@{market.creator.handle} · {categoryLabel(market,t)} · {market.closeLabel}</button>
+          {activePane === "chart" ? <section className={styles.termsPreview}><h2>Условия расчёта</h2><p>{criteriaText || market.resolution || "Условия результата не указаны."}</p><button type="button" onClick={()=>setPane("criteria")}>Прочитать условия и источники</button></section> : null}
 
           <section className={styles.section}>
             {activePane !== "book" ? (
-              <span className={styles.eyebrow}>ТЕКУЩИЕ ПРЕДЛОЖЕНИЯ</span>
+              <h2>Встречные предложения</h2>
             ) : null}
             <div className={styles.outcomes}>
               <OutcomeQuote
@@ -275,6 +255,8 @@ export function MarketDetailScreen({
               />
             </div>
           </section>
+
+          {activePane === "chart" ? <QuoteMeaning/> : null}
 
           {activePane === "book" ? (
             <section className={styles.section}>
@@ -550,48 +532,16 @@ export function MarketDetailScreen({
 
               <MarketStatusPanel market={market} />
 
-              <div className={styles.buyActions}>
-                <button
-                  type="button"
-                  className={styles.buyA}
-                  disabled={actionsOff || !onPlace}
-                  onClick={() => buy("a")}
-                >
-                  Ставка на «{market.outcomeA.label}»
-                </button>
-                <button
-                  type="button"
-                  className={styles.buyB}
-                  disabled={actionsOff || !onPlace}
-                  onClick={() => buy("b")}
-                >
-                  Ставка на «{market.outcomeB.label}»
-                </button>
-              </div>
-
-              <div className={styles.destinations}>
-                <Button
-                  variant="secondary"
-                  fullWidth
-                  onClick={() => setPane("book")}
-                >
-                  Предложения
-                </Button>
-                <Button
-                  variant="secondary"
-                  fullWidth
-                  disabled={actionsOff || !onOwnPrice}
-                  onClick={onOwnPrice}
-                >
-                  Свой коэффициент
-                </Button>
-              </div>
 
               {extra}
             </>
           )}
         </div>
       </main>
+      {activePane === "chart" ? <footer className={styles.actionDock}>
+        <button type="button" className={styles.primaryAction} disabled={actionsOff || !onPlace} onClick={()=>buy(activeSide)}>Ставка на «{selected.label}»</button>
+        <div className={styles.secondaryActions}><button type="button" onClick={()=>setPane("book")}>Предложения</button><button type="button" disabled={actionsOff||!onOwnPrice} onClick={onOwnPrice}>Своя цена</button></div>
+      </footer>:null}
       {onNavChange ? (
         <BottomNavigation active="markets" onChange={onNavChange} />
       ) : null}

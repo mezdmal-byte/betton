@@ -30,11 +30,23 @@ jobs:
       - name: Onboarding directions mobile, language and interaction matrix
         run: npx --no-install playwright test --config playwright.prototypes.config.ts
         working-directory: frontend
+      - name: Typecheck and build three isolated core journeys
+        run: npx --no-install tsc -p tsconfig.core.json && npx --no-install vite build --config vite.core.config.ts
+        working-directory: frontend
+      - name: Core journeys, receipt integrity and mobile interaction matrix
+        run: npx --no-install playwright test --config playwright.core.config.ts
+        working-directory: frontend
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-browser-results
           path: frontend/test-results/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ux-core-journey-evidence
+          path: docs/design/ux-reinvention/evidence/directions/
           retention-days: 7
       - uses: actions/upload-artifact@v4
         if: always()

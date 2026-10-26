@@ -327,7 +327,7 @@ export function OwnPricePanel({
 
       <AmountInput
         className={styles.amountInput}
-        value={String(amount)}
+        value={amount > 0 ? String(amount) : ""}
         label={
           availableTon == null
             ? "Сумма предложения"
@@ -362,9 +362,9 @@ export function OwnPricePanel({
       <Button
         fullWidth
         disabled={disabled || amount <= 0 || odds <= 1 || !quoteReady}
-        onClick={() => onStageChange?.("preview")}
+        onClick={() => onStageChange?.("confirm")}
       >
-        Предпросмотр
+        Проверить предложение
       </Button>
     </div>
   );

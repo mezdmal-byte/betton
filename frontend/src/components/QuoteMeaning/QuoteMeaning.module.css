@@ -1,0 +1,3 @@
+.root { color: var(--color-text-secondary); font-size: 12px; line-height: 1.65; }
+.root summary { min-height: 44px; align-content: center; cursor: pointer; color: var(--color-text-primary); font-weight: 650; }
+.root p { margin: 4px 0 12px; }
