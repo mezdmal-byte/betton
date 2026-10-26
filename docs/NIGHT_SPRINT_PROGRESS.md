@@ -18,7 +18,7 @@
 4. Skills/workflow: isolated branch/worktree, installed-source inventory, six scoped project skills, instructions and verification.
 5. After foundations: isolated three-direction onboarding prototype using required design skills, browser screenshots and mobile checks; never replace live onboarding.
 
-No nightly tests or deployments claimed yet. Preserve exact commands, counts, commit SHAs and remaining work at each checkpoint.
+At checkpoint 0 no nightly tests or deployments were claimed. Later checkpoints record exact evidence and remaining work.
 
 ## Checkpoint 1 — bounded audit / release copy tooling
 
@@ -67,3 +67,13 @@ No nightly tests or deployments claimed yet. Preserve exact commands, counts, co
 - Auto-review rejected a proposed generic HMAC-expression exception in the staged secret detector; it was NOT applied. Detector, original sandbox HMAC source and public synthetic token remain unchanged. Separate launcher needs no credential derivation or detector exception.
 - Prototype A/B review completed independently: A26/36 with hidden Learn results/false completion/tiny targets/deadline copy; B actual static detect0, live tiny-text finding and contrast measurements. One combined correction batch + one confirm in progress. Inter inherited from project tokens, not replaced on detector's generic overused-font warning.
 - Remaining: integrate prototype commit, add its type/build/mobile matrix to existing browser workflow, final source/secret/CI review and concise user handoff. On-device Telegram and choosing a design remain human gates.
+
+## Checkpoint 5 — prototype handoff and final source review
+
+- Separate safe recovery launcher committed/pushed `d4ff4ec`: **16 passed** (6 new launcher + 10 developer regressions), and final actual Chromium recovery run **4 passed** on fresh 8888. Original sandbox source and detector unchanged; no test origin/host/client guards removed.
+- Prototype source `0c2c9dc` cherry-picked as `c982316`: **74 passed**, standalone TypeScript/Vite passed again in night tree. Five confirm captures inspected by root after agent's single confirm round. No further visual-polish loop.
+- A/B evidence remains ignored in `betton-night-onboarding/.ux-preview/`; summaries and Before/After are committed in `docs/ONBOARDING_PROTOTYPES.md`.
+- Browser workflow now also typechecks/builds the isolated prototype and runs its matrix; upload scope is only synthetic prototype screenshots/results/build, never raw databases or whole runtime directories.
+- Final report: `docs/NIGHT_SPRINT_REPORT.md`. Current local baseline full results remain 479 SQLite / 505 PostgreSQL; six additional launcher cases passed separately after that baseline. Exact latest CI counts/links belong to PR #24's HEAD, not an older run.
+- Native test PostgreSQL stopped cleanly; Admin snapshot viewer8885 and requested prototype8886 retained. Existing SIM processes/data not restarted during night sprint.
+- Remaining operational/human gates: choose a direction, real mobile Telegram smoke, resolve historical storage authority with evidence, separate production permissions. None silently treated as passed.
