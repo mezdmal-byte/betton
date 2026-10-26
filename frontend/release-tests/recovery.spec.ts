@@ -45,7 +45,8 @@ test('committed POST with lost response survives closing/reopening the page with
   await expect(reopened.getByRole('complementary')).toHaveCount(0)
   await reopened.screenshot({path:info.outputPath('recovered.png')})
   await reopened.getByRole('button',{name:'Продолжить',exact:true}).click()
-  await expect(reopened.getByRole('complementary')).toBeVisible()
+  // Notices remain in the badge/list; recovery no longer releases a blocking popup.
+  await expect(reopened.getByRole('complementary')).toHaveCount(0)
   const remainingNotices=await (await reopened.request.get('/notifications',{headers})).json()
   expect(remainingNotices.find((n:{id:number})=>n.id===notice.id).read).toBe(false)
   expect(await reopened.evaluate(uid=>localStorage.getItem(`betton:order-intent:v1:${uid}`),userId)).toBeNull()

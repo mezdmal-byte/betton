@@ -164,6 +164,17 @@ them; neither this observation nor reading a file is reported as a `$skill` call
 Prototype remains absent from that child's catalog and uses the documented manual
 fallback. No session restart or owner action blocks the implementation stage.
 
+Official documentation checked after the practical trial:
+[Build skills](https://learn.chatgpt.com/docs/build-skills) confirms repository
+`.agents/skills` discovery, progressive metadata loading, automatic change detection,
+and explicit invocation for `allow_implicit_invocation:false`. It also notes that
+large skill sets can omit entries from the initial context list. Therefore an
+absent catalog entry alone is not diagnosed as a broken installation. This session
+exposes no slash-command execution API; no fictitious `/skills` command was run.
+The successful file/hash gate, a fresh child catalog and actual executed workflow
+are recorded separately. A restart is a fallback for a missing update, not a step
+we claim to have performed or a requirement that blocks the app work.
+
 ## Executed checks
 
 - `check_dev.py --skills --tests tests/test_dev_checks.py`: 10 passed; skill files,

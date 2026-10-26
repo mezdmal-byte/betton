@@ -23,7 +23,6 @@ import type { FeedViewState } from './ConnectedMarketsScreen'
 import { ConnectedModerationScreen } from './ConnectedModerationScreen'
 import { ConnectedMyMarketsScreen } from './ConnectedMyMarketsScreen'
 import { ConnectedOwnPriceScreen } from './ConnectedOwnPriceScreen'
-import { useHasOrderIntent } from './OrderIntentRecovery'
 import { ConnectedPortfolioScreen } from './ConnectedPortfolioScreen'
 import { ConnectedProfileScreen } from './ConnectedProfileScreen'
 import { ConnectedPublicProfileScreen } from './ConnectedPublicProfileScreen'
@@ -31,7 +30,8 @@ import { CreateMarketResult } from './CreateMarketResult'
 import { AuthExpiredScreen } from '../screens/AuthExpiredScreen'
 import { HelpScreen } from '../screens/HelpScreen'
 import { MarketDetailScreen, type MarketDetailPane } from '../screens/MarketDetailScreen'
-import { ConnectedGuarantors, GuarantorAlerts } from './ConnectedGuarantors'
+import { ConnectedGuarantors } from './ConnectedGuarantors'
+import { useGuarantorPresence } from './useGuarantorPresence'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { SystemStateScreen } from '../screens/SystemStateScreen'
 import { WalletScreen } from '../screens/WalletScreen'
@@ -67,7 +67,7 @@ export function ConnectedApp() {
     try { return window.localStorage.getItem('betton.onboarding.v1') !== 'done' } catch { return true }
   })
   const session = useSession(hasInitData)
-  const hasPendingMoneyIntent = useHasOrderIntent(session.user?.id)
+  useGuarantorPresence(session.user?.id)
   const authExpired = useAuthExpired()
   const accountQuery = useAccount(session.user?.id)
   const healthQuery = useQuery({ queryKey: queryKeys.health, queryFn: getHealth })
@@ -223,7 +223,6 @@ export function ConnectedApp() {
       {route.name === 'markets' ? <ConnectedMarketsScreen account={account} accountState={accountState} personalized={hasInitData} userId={session.user?.id} availableTon={availableTon} feedView={feedView} onFeedViewChange={setFeedView} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={openMarket} onCreatorClick={(market) => openCreator(market.creator.id ?? market.creatorId)} onTopCreatorClick={openCreator} onOwnPrice={(marketId, side) => push({ name: 'own-price', marketId, side })} chatUnreadReplies={chatUnread.lobby} onChatClick={session.user ? () => push({ name: 'chat-lobby' }) : undefined} /> : null}
       {route.name === 'create' ? <ConnectedCreateMarketScreen userId={session.user?.id} isAdmin={isAdmin} enabled={accountState === 'ready'} onBack={() => goTab('markets')} onNavChange={goTab} onCreated={(market) => { tabStacksRef.current.create = [{ name: 'create' }]; setStack([{ name: 'create-result', market }]) }} /> : null}
       {route.name === 'create-result' ? <CreateMarketResult market={route.market} shareLink={marketShareUrl({ shareToken: route.market.share_token, botUsername, webapp })} onOpen={() => { if (route.market.share_token) rememberShareToken(route.market.id, route.market.share_token); if (route.market.status === 'pending' || route.market.status === 'rejected') push({ name: 'my-markets' }); else push({ name: 'detail', marketId: route.market.id }) }} onBack={back} onToFeed={() => goTab('markets')} onNavChange={goTab} /> : null}
-      <GuarantorAlerts userId={session.user?.id} paused={route.name === 'create' || (hasPendingMoneyIntent && (route.name === 'quick-trade' || route.name === 'own-price'))} onOpen={(marketId) => push({ name: 'detail', marketId })} />
       {route.name === 'notifications' ? <ConnectedNotificationsScreen userId={session.user?.id} onOpen={(marketId) => push({ name: 'detail', marketId })} onNavChange={goTab} /> : null}
       {route.name === 'portfolio' ? <ConnectedPortfolioScreen userId={session.user?.id} mappedAccount={mappedAccount} accountState={accountState} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={(marketId) => push({ name: 'detail', marketId })} onDeposit={() => push({ name: 'wallet', tab: 'deposit' })} onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })} /> : null}
       {route.name === 'profile' ? <ConnectedProfileScreen account={mappedAccount ?? GUEST_ACCOUNT} accountState={accountState === 'ready' ? 'ready' : 'unauthenticated'} userId={session.user?.id} onBack={back} onNavChange={goTab} onLogin={openTelegramLogin} onMenu={(id) => { if (id === 'guarantors') push({ name: 'guarantors' }); else if (id === 'events') push({ name: 'my-markets' }); else if (id === 'moderation' && isAdmin) push({ name: 'moderation' }); else if (id === 'settings') push({ name: 'profile-settings' }); else if (id === 'help') push({ name: 'help' }); else if (id === 'history') push({ name: 'history' }); else if (id === 'public' && session.user?.id) openCreator(session.user.id) }} /> : null}
