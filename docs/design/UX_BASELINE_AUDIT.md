@@ -57,26 +57,102 @@ the original body/key. Only definitive400/422 rejections clear immediately.
 `eventCreationIntent.ts` likewise persists and replays the same creation payload.
 `share.ts` remembers per-market tokens; protected detail/trade/case calls reuse them.
 
-## Browser evidence scope
+## Executed browser audit
 
-Baseline browser inspection is pending the new isolated loopback runtime on8890.
-No claim of a completed browser walkthrough is made in this checkpoint. The audit
-will use synthetic actors and a fresh marked demonstration database, never the
-running Telegram simulation or production. Only synthetic viewport images belong
-in `ux-reinvention/evidence/baseline/`.
+Fresh full-demo runtime: `http://127.0.0.1:8890/sandbox/?actor=creator`.
+Database: root experiment's `.ux-preview/reinvention-baseline-20261026/betton-test-simulation.sqlite`.
+No live Telegram/production database was used. Playwright Chromium captured
+390×844 light-theme viewports; additional search, notification, history and
+guarantor conversation checks used the in-app browser at desktop width. This is
+browser Telegram-host simulation, not a real Telegram/device test.
 
-## Proposed improvement tests, pending browser confirmation
+Counts below include deliberate taps/clicks and text-field edits from the named
+starting point; scrolling and waiting are reported separately. These are observed
+paths, not statistically measured task-completion times or user-study results.
 
-1. Group price explanation with execution and liquidity rather than teaching a
-   detached financial vocabulary before the user sees a market.
-2. Show quote amount, matched amount, average/worst bound, refunded/resting amount
-   and fee scope beside the confirming action; avoid a generic success label.
-3. Keep the detail/trade/portfolio relationship visible, and make returning from
-   an order or a notice preserve the user's previous context.
-4. Split creation by type before revealing irrelevant public/private fields.
-   Keep validation local to its field and make final review materially useful.
-5. Present guarantor state, current revision, required actor action and actual
-   deadline together; distinguish negotiation, funding and active execution.
+| Task | Actual path and count | Observation / improvement |
+|---|---|---|
+|1 Find event|Feed → search icon → type `Индекс` → one matching event:2actions; opening adds1.|Search works, but its entry is an unlabeled visual icon until opened. Put persistent search affordance near the market list.|
+|2 Understand odds|Feed → history market:1tap; detail shows executable1.33× and last traded5.00×.|The distinction is financially valid but visually weak. Explain current offer vs last execution together; do not imply last trade is executable.|
+|3 Opposing liquidity|Same detail:15TON executable onYes, No says no liquidity. Empty Snow market → Own Price:2taps.|Detail is honest; feed instead shows `—×` with no explanation. Show absence as words and offer a clear own-order path.|
+|4 Quick Trade|History event →Yes →amount30 →confirm:4actions from feed on partial branch, plus initial quote wait.|Real POST completed.30requested,15filled,15refunded, no resting order. Keep fresh quote and explicit confirmation; improve vertical distance between amount and CTA.|
+|5 Own Price|Snow detail →Own Price →odds2 →amount7 →preview →place →confirm:6actions from detail (7fromfeed).|Real7TON limit rested with0filled. Three successive preview/confirmation pages repeat nearly identical economics. Consolidate review without dropping explicit confirmation. Entry defaults to100TON and1.90×, a risky unrequested amount.|
+|6 Partial fill|IOC result showed15filled of30,15returned, no remainder order. Portfolio→active position:1tap.|Result clearly distinguishes refund from a limit remainder. Preserve this semantic clarity; show the next portfolio action directly.|
+|7 Open positions|Navigation→My Bets:1tap. Orders tab adds1; Snow order detail adds1.|Real15TON position and7TON open order visible. Position/order split is good; available vs reserved funds are hidden under a separate Funds action.|
+|8 Public creation|Create→public→continue→3question/outcome edits→next→9required-condition/source/date edits→review→submit:18actions plus long form scroll.|Review and POST were exercised. The screenshot captured the pending-request banner before the response; final public approval/result is **not** claimed. Avoid transient unknown-result language during a normal in-flight request.|
+|9 Private creation|Create→private→continue→3question/outcome edits→next→4condition/date edits→review→create:13actions plus scroll.|Actual `Событие создано` result, correct creator-result authority and invite-participants action. Keep per-type fields; make timezone and close/end distinction clearer.|
+|10 Guarantor|Guaranteed creation adds directory→selectFlexible→invite to private-length path:15actions; result→case→chat→type→send→confirm adds5.|Six available demo profiles plus original unavailable sandbox guarantor rendered. Actual worker accepted, proposed1.5% tariff at revision2, replied to a synthetic chat message; creator confirmed current revision, then case showedFund formation. No funding/settlement claim.|
+|11 Notice→event|Notifications→specific agreement notice→Open event:3taps.|Unread2→1 and target#32 were verified; case reopened inFund formation. Intermediate detail uses genericEvent#32 rather than question. New-message overlay can interrupt this flow.|
+|12 Result/history|My Bets→History:2taps from other tab.|Real−7limit reserve and IOC−30reserve/+15refund/−15execution entries rendered, plus seeded creator credits. Heading saysCompleted although history includes open-order activity. Label history distinctly and make informational execution rows unmistakable. Settlement execution itself was not run in this bounded audit.|
 
-These are hypotheses to test against the browser baseline, not findings from
-screenshots and not permission to change a server contract.
+### Screenshot evidence
+
+All images under `ux-reinvention/evidence/baseline/` are synthetic viewport captures.
+The initial four committed images preserve the before state. Later images cover
+actual partial result, portfolio, limit entry/review/confirmation/order detail,
+all three creation conditions/reviews, directory and creation results.
+
+- `01-feed-notice.png`: unsolicited old-notice overlay obscures the feed header.
+- `02-feed.png`, `03-detail.png`, `04-trade.png`: same390px main journey before changes.
+- `05-partial-preview.png`: **despite the historical filename this is a captured
+  quote-validation error, not a valid partial preview**. It briefly reported the
+  amount/odds validation range while the quote flow updated. No backend cause is
+  established by this UX observation.
+- `06-partial-result.png`: authoritative15filled/15refunded response.
+- `07-portfolio.png`, `08-limit-entry.png`…`12-orders.png`: position, default amount,
+  successive reviews and saved open order. `11-limit-result.png` is the portfolio
+  order detail after placement, not a separate placement success screen.
+- `13-create-type.png`, `14-*-conditions.png`, `15-*-review.png`,
+  `16-guarantor-directory.png`: actual existing forms and six available demo actors.
+- `17-private-result.png`: confirmed creation; `17-public-result.png` is **submitting**,
+  not a completed result. `18-guarantor-result.png`: confirmed invitation creation.
+
+The notification, chat and current-revision consent follow-up was inspected in the
+browser but not committed as a390px screenshot. CUA image-file saving outside its
+writable scope failed; no image was fabricated to fill the gap.
+
+## Ranked improvement map
+
+1. **Keep interruptions out of ordinary discovery and trade.** Initial seed had30
+   unread notices. Hiding one marks it read and immediately displays the next;
+  29successive hide clicks were required after the first manual dismissal. Use a
+   compact badge/list and a dismiss/snooze behavior with honest read semantics.
+2. **Let the market question lead.** A9-decimal global active-offers metric dominates
+   the feed while individual liquidity is absent until detail. Reduce summary
+   prominence and show concise, truthful per-outcome availability.
+3. **Put trading terms beside the action.** Existing trade entry shows seven
+   financial rows before amount entry has produced a quote, including duplicate
+  15TON best/total values. Detail's chart competes with trade actions below the
+   first viewport. Group decisive values, then progressively disclose history.
+4. **Make the amount deliberate.** Own Price opens at100TON without input. Prefer
+   an empty/explicitly selected amount; preserve decimal precision and server
+   validation. Keep quote amount/outcome/bound inseparable from confirmation.
+5. **Reduce repeated review pages.** Own Price has entry→preview→confirm with
+   overlapping values. Preserve the actual confirmation while removing redundant
+   presentation; retain complete amount/filled/resting/reserve information.
+6. **Show state and next action together.** During guarantor review the footer said
+   `Приём завершён` although close time was five days away. It should explain
+   negotiation/funding gating. Chat duplicates the full reward/funding/consent
+   block behind and inside its panel, making the next action hard to reach.
+7. **Keep history understandable.** `Completed` is the history heading even for a
+   newly open limit. Distinguish reservation, execution and refund so users do
+   not sum informational rows as new debits. Do not alter financial accounting.
+8. **Preserve successful existing behaviors.** Actual partial-result copy, separate
+   orders/positions, by-type creation, source criteria, available guarantors,
+   revision labels, fee source and explicit funding insufficiency are valuable.
+
+## Safety and coverage limits
+
+No backend, money/auth code, live SIM launcher, production, Render or webhook was
+changed. Fresh demo history remains; no reset/delete was performed. This audit
+created one30TON synthetic IOC, one7TON resting limit, private/public creation
+attempts and one guaranteed event with a synthetic chat/consent. It did not run
+real funds, chain operations, settlement, cancellation of existing data or a
+complete guaranteed funding cycle. Time, seed notices and worker replies change
+between captures; counts are not performance measurements.
+
+PR28's guarantor409/unknown-result work is separate. It was neither modified nor
+cherry-picked here. The fresh current-revision happy path passed; stale revision,
+409 and lost-response guarantor actions are **not** proven safe by this audit.
+Any integration must read the then-current contract and refetch authoritative
+case state after conflict/uncertainty instead of blindly retrying a stale action.
