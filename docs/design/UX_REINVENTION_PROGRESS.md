@@ -31,3 +31,46 @@
   core journeys, obtain independent critique, integrate the selected React direction.
 - Owner repair brief reiterates autonomous experiment selection. PR28 and PR26 are
   outside scope; no cherry-pick or mutation of either is planned.
+
+## Tools, references and first core prototypes
+
+- Integrated pinned Apple Design, Find Skills and targeted UI UX Pro Max from
+  reviewed source commits. See SKILLS_APPLICATION_REPORT.md for exact SHA/licenses,
+  real searches and the distinction between installed files and session discovery.
+- Eight inspected reference excerpts and an annotated visual board are in
+  ux-reinvention/references/. Inaccessible sources are recorded honestly.
+- Three separate React core journeys now exist: Exchange, Folio, Pocket. They are
+  full-size synthetic prototypes, not backend integration. Each includes feed,
+  event, amount/mode, review, result and portfolio, with the official picker.
+- First Chromium run:27 passed, one picker test failed because it sent the key
+  before the effect was ready. Test now awaits the visible ready picker; rerun due.
+- Actual PNG captures exist for18 screens. These are pre-critique evidence, not a
+  visual acceptance claim. Independent Assessment A and B are running separately.
+- Next: apply one correction batch from the reviews, rerun browser checks, publish
+  comparison, choose experimentally and implement the real API core screens.
+
+## C/D — Core alternatives reviewed and corrected
+
+-30 Chromium tests passed on final prototype source.175 existing frontend tests
+  and build passed.18 settled390px screenshots show the six core states of each
+  direction. Original defective Pocket images are preserved in evidence/problems.
+- Independent A and B found real defects despite zero static detector findings.
+  Corrected immutable demo receipts, IOC refund/account balance, zero-fill limit
+  classification, accepted odds/freshness in review, narrow navigation, focus,
+  dock clearance, dark error contrast and contextual Pocket dialog. Folio now has
+  a separate amount-first trading composition. Scoped verdicts are in both reports.
+- **Selected experimental direction: Pocket.** Both reviews recommend it for
+  beginner mobile usage: clear conditions, full-width targets, readable amount,
+  thumb-oriented navigation and a contextual action. Exchange/Folio remain intact.
+  This selects the next branch implementation, not a production visual direction.
+- New `useGuarantorPresence` retains the existing heartbeat while the main app
+  uses unread navigation badges/list instead of successive blocking alert popups.
+  No notice is automatically marked read. No guarantor negotiation API changed.
+- Added core journeys and synthetic evidence to existing browser CI workflow.
+- **E in progress:** an isolated UI engineer is implementing the four primary real
+  API surfaces on `codex/ux-pocket-api-20261026`, using its own fresh8892 database.
+  Real controllers/intents/HMAC/access/settlement remain unchanged. No integration
+  success is claimed before its source is tested and brought into PR25.
+- Next exact task: integrate tested Pocket core implementation, run real API
+  journeys in root8890 while preserving its data, inspect language/theme/viewport
+  states, fix named findings and publish the finished main-screen evidence.

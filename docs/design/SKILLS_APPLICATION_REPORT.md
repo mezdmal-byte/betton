@@ -118,6 +118,52 @@ stage; a generator result alone is not visual evidence or a finished feed.
 Update this table with component paths, screenshots and test evidence **after**
 those stages actually occur. No financial, auth, backend or live SIM file changed.
 
+## Core-journey application: executed, not installation intent
+
+- **Prototype manual workflow:** full SKILL.md and PICKER.md were read; three
+  separate React surfaces in `frontend/prototypes/core/{Exchange,Folio,Pocket}.tsx`
+  implement feed→detail→trade→review→result→portfolio. Exact shared picker CSS,
+  keyboard exclusions, URL persistence and remount are exercised by Chromium.
+  This is manual execution of its explicitly requested workflow, not a claim that
+  `$prototype` dynamically ran. The implicit-invocation policy remains false.
+- **Impeccable:** root ran `impeccable.cmd context --target
+  docs/design/UX_REINVENTION_BRIEF.md` once and direction seed760c3b8e. Operate,
+  shape/new-work/craft-floor and critique playbooks informed the work. Independent
+  Assessment A completed before B entered synthesis. B actually ran
+  `detect --json frontend/prototypes/core`: exit0, `[]`. The clean detector did
+  not prevent receipt, clipping and focus defects; browser review found them.
+  See UX_CORE_CRITIQUE_A.md and UX_CORE_CRITIQUE_B.md for original and scoped verdicts.
+- **Apple Design:** Pocket changed from a replacement page to a contextual dialog
+  over its market, with an always-visible action, explicit close, focus trap,
+  Escape and return to the launch control. Input is not locked during entrance.
+ 44px controls, immediate press response and static reduced motion are implemented.
+  No gesture tracking, spring physics or native Telegram validation is claimed.
+- **Emil design engineering:** no repeated list reveal; one210ms ease-out panel
+  entrance, transform/opacity only, immediate press feedback. Evidence initially
+  caught a transitional frame; settled screenshots now disable capture animations.
+- **Taste:** three different feed structures and trading rituals replace the old
+  blue odds rows. Folio uses reading-led amount-first composition, Exchange keeps
+  aligned quote context, Pocket uses a scoped dialog. The Pro Max marketing hero,
+  logo carousel and scroll-reveal recommendation were concretely rejected.
+- **Pro Max targeted QA:** its focus-not-obscured guidance contributed a measured
+  action hit-target check, and return-focus guidance became a browser assertion.
+  Error text contrast was corrected in dark mode; B measured7.87:1.
+- **React quality review:** existing Vite/React/CSS Modules remain. UI components
+  are top-level, event listeners clean up, receipts are immutable, and no prototype
+  imports enter the real application's money controllers. No new UI dependency.
+
+Evidence:18 settled390px synthetic PNGs under `evidence/directions`, two preserved
+pre-fix problem images,30 Chromium tests across320/360/390/430 and both themes,
+plus175 existing frontend tests and successful builds. These prove the prototype
+scope only; integrated API, EN/ZH and native host checks remain a separate stage.
+
+**Discovery update:** the fresh Assessment A child turn reports that its actual
+session catalog now includes Apple Design, Find Skills and UI UX Pro Max. This
+confirms discovery there after installation. Root's earlier catalog did not list
+them; neither this observation nor reading a file is reported as a `$skill` call.
+Prototype remains absent from that child's catalog and uses the documented manual
+fallback. No session restart or owner action blocks the implementation stage.
+
 ## Executed checks
 
 - `check_dev.py --skills --tests tests/test_dev_checks.py`: 10 passed; skill files,
