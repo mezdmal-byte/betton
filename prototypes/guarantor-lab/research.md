@@ -44,3 +44,7 @@ EXPERIMENT. Самостоятельный HTML/CSS/JS прототип, не pr
 ## Дальнейшая интеграция — только отдельно
 
 Ничего не cherry-pick в PR #25 без решения владельца. Отдельно сравнить подходы; перенести только выбранные UX-паттерны в React/TS с текущими contracts: reward POST expected_revision, confirmation revision, owned state refresh. Все суммы/дедлайны/allowed actions получать с backend, не из этой JS-модели. Показать diff новой редакции, сохранить draft, применить существующую auth и durable intents. Полные формы, разрешение отмены и distributed retry требуют API fixtures; нельзя просто подключить кнопки прототипа к деньгам. При реальной интеграции нужны backend-contract tests, accessibility и Telegram QA.
+
+## Первый визуальный pass
+
+Chromium CI 40297193303: 10 passed. Скриншот 390/light просмотрен: демонстрационные controls занимали слишком много первого экрана. Одним пакетом исправлений controls свернуты, добавлен просмотр профиля до приглашения, финансовое предупреждение вынесено из details перед подтверждением; screenshots теперь сравнивают одинаковое состояние review во всех концепциях. Confirm CI и итоговые screenshots — в описании PR #26.
