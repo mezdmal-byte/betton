@@ -74,3 +74,19 @@
 - Next exact task: integrate tested Pocket core implementation, run real API
   journeys in root8890 while preserving its data, inspect language/theme/viewport
   states, fix named findings and publish the finished main-screen evidence.
+
+## E1 — Integrated source, before final app matrix
+
+- Integrated engineer commit aeb5d248 as8bdce6d: real feed, detail, Quick Trade,
+  Own Price and portfolio now use Pocket composition on existing controllers.
+  The backend/API/intent mechanisms are unchanged.175 frontend tests and build pass.
+- Engineer's fresh8892 runtime verified actual IOC30→15filled/15refunded with15
+  account debit, plus limit7TON→0filled/7resting and an actual portfolio order.
+  Draft7TON survives simulated Telegram Back from confirmation. No page errors.
+- Root built and visually opened the real API feed on retained8890 data. It no
+  longer displays the automatic blocking notice chain. Full root matrix is pending.
+- CI for b94ac69 passed browser recovery, PostgreSQL, SQLite and frontend jobs.
+  This is not yet CI evidence for the subsequent integrated source.
+- Current follow-up: compact genuine event conditions, translate critical new
+  first-four-screen labels, supporting profile/notifications/help, independent
+  contract review and root's actual API/state/viewport/locale evidence.
