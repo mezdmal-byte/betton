@@ -26,7 +26,9 @@ UI не имеет права переписывать механику ради
 - Не менять production DB.
 - Не merge PR #15 без явного разрешения.
 - Не deploy production без явного разрешения.
-- Рабочая ветка: `feature/react-full-preview`. Это Draft PR #15, не `main` и не production.
+- Актуальный интеграционный кандидат: PR #22 `integration/post-audit-20261025`; локальная симуляция: PR #23 `codex/restore-demo-simulation`.
+- Ночная разработка ведётся отдельно от актуального HEAD PR #23: `codex/night-sprint-20261026` (и изолированные ветки задач). Перед работой сверять реальные HEAD и status; чужие изменения не перезаписывать.
+- История: `feature/react-full-preview` / Draft PR #15 были прежней рабочей точкой. Это не указание переключаться на неё сейчас; запрет автоматического merge сохраняется.
 - Текущий React visual style не финальный.
 - Figma sprint Tape / Issue / Instrument от 2026-09-22 — отвергнутый exploration, не направление для продолжения и не источник визуальной истины.
 
@@ -104,3 +106,20 @@ BetTON — product UI. Для ключевых рабочих экранов р�
 Пока не просят, не удалять и не изменять локальные untracked QA и скрипты: `frontend/qa-pass11/`, локальные launcher/fix-скрипты в корне и `bot/main.py.before-v2-start-fix.bak`.
 
 Project design skills under `.agents/` and `.cursor/` are part of the harness and may be changed only by an explicit harness/design-skill task.
+
+## Проектные навыки и проверки
+
+Codex discovery: `.agents/skills/*/SKILL.md`. Impeccable adapter читает канонический
+`.cursor/skills/impeccable/SKILL.md`; hook `.cursor/hooks.json` сохраняется.
+
+- `betton-financial-safety` — денежные изменения, сверка, миграции и replay.
+- `betton-debugging` — воспроизведение конкретной ошибки на фактическом runtime.
+- `betton-telegram-miniapp` — HMAC, WebView, Back и origin тестового приложения.
+- `betton-ui-quality` — функциональная и визуальная проверка без подмены backend.
+- `betton-simulation` — маркированные тестовые базы, worker, сохранение истории.
+- `betton-release` — проверяемый кандидат и границы восстановления; не deployment.
+
+Быстрый локальный gate: `python scripts/check_dev.py --skills`; `--tests <paths>`
+добавляет явно выбранные pytest, `--frontend` — существующие frontend tests + build.
+По умолчанию секреты/артефакты проверяются только в staged index, не в `.env` или чужих файлах.
+Это дополнение к review и существующему SQLite/PostgreSQL/Chromium CI, а не его замена.

@@ -6,6 +6,89 @@
       "sourceType": "github",
       "skillPath": "skills/taste-skill/SKILL.md",
       "computedHash": "899b84384f74f540ea5284d9b2e9234e050998b42eacc805410b518d4226c0b3"
+    },
+    "emil-design-eng": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "sourceCommit": "2d228630ba1446365f614a108cb8252f1feda202",
+      "skillPath": ".agents/skills/emil-design-eng/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "ffbe68e6007fb42cb8149f089b400a1ca007d59ba23e8948e2be4476f3175939",
+      "license": "MIT",
+      "normalization": "utf8-lf"
+    },
+    "prototype": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "sourceCommit": "2d228630ba1446365f614a108cb8252f1feda202",
+      "skillPath": ".agents/skills/prototype/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "2a3dacac8c34e852bc10e4f53f3cc087a5465faec2fc11cabfe9d2e64172229b",
+      "license": "MIT",
+      "normalization": "utf8-lf"
+    },
+    "impeccable": {
+      "source": "project",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "17f04a2175785fabafeca3e527cf14fe5ab66ac33160088c602514812692f76a",
+      "license": "project",
+      "normalization": "utf8-lf"
+    },
+    "betton-financial-safety": {
+      "source": "project",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/betton-financial-safety/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "2beee163014b1b7352ab9c8ab779d80c7427f760cd8ae3879042e077651fd7da",
+      "license": "project",
+      "normalization": "utf8-lf"
+    },
+    "betton-debugging": {
+      "source": "project",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/betton-debugging/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "8ffcf0df71845eebcd548a18f644fb33c8cba3d6d4d3590a24e89cc548892f01",
+      "license": "project",
+      "normalization": "utf8-lf"
+    },
+    "betton-telegram-miniapp": {
+      "source": "project",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/betton-telegram-miniapp/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "25c8d6896a4edac239477b16151935da695420d60e3a13ba97a30f0f0b487352",
+      "license": "project",
+      "normalization": "utf8-lf"
+    },
+    "betton-ui-quality": {
+      "source": "project",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/betton-ui-quality/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "b5837ebd5b6caef0e3bab52fc9fb0c7f1a1631ce845a5ac29df50b97a781734e",
+      "license": "project",
+      "normalization": "utf8-lf"
+    },
+    "betton-simulation": {
+      "source": "project",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/betton-simulation/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "ca0d9a381fbf7409e405bf35d781805c9430f7c016245f9daba07cc31fb5ceab",
+      "license": "project",
+      "normalization": "utf8-lf"
+    },
+    "betton-release": {
+      "source": "project",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/betton-release/SKILL.md",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "ba5e5539b093e3a558cd20ce8704e2fda9c97ea09807194920595e475a9b0710",
+      "license": "project",
+      "normalization": "utf8-lf"
     }
   }
 }

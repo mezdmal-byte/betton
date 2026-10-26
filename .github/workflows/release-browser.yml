@@ -24,9 +24,25 @@ jobs:
         working-directory: frontend
       - run: npx playwright test --config playwright.release.config.ts
         working-directory: frontend
+      - name: Typecheck and build isolated onboarding prototypes
+        run: npx --no-install tsc -p tsconfig.prototypes.json && npx --no-install vite build --config vite.prototypes.config.ts
+        working-directory: frontend
+      - name: Onboarding directions mobile, language and interaction matrix
+        run: npx --no-install playwright test --config playwright.prototypes.config.ts
+        working-directory: frontend
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-browser-results
           path: frontend/test-results/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: onboarding-prototype-evidence
+          path: |
+            .ux-preview/onboarding-screenshots/
+            .ux-preview/onboarding-test-results/
+            .ux-preview/onboarding-build/
+          include-hidden-files: true
           retention-days: 7
