@@ -1,0 +1,2 @@
+const {defineConfig}=require('../../frontend/node_modules/@playwright/test');
+module.exports=defineConfig({testDir:'.',testMatch:'lab.spec.cjs',workers:1,timeout:30000,use:{baseURL:'http://127.0.0.1:8989',browserName:'chromium'},webServer:{command:'python -m http.server 8989 --bind 127.0.0.1 --directory prototypes/guarantor-lab',url:'http://127.0.0.1:8989',cwd:require('path').resolve(__dirname,'../..')}});
