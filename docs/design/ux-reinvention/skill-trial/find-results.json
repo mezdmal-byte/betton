@@ -1,0 +1,206 @@
+[
+  {
+    "query": "mobile ux",
+    "count": 20,
+    "top": [
+      {
+        "name": "ui-ux-pro-max",
+        "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+        "installs": 414560,
+        "id": "nextlevelbuilder/ui-ux-pro-max-skill/ui-ux-pro-max"
+      },
+      {
+        "name": "ios-design",
+        "source": "uizze.sh",
+        "installs": 414429,
+        "id": "uizze.sh/ios-design"
+      },
+      {
+        "name": "penpot-uiux-design",
+        "source": "github/awesome-copilot",
+        "installs": 12795,
+        "id": "github/awesome-copilot/penpot-uiux-design"
+      }
+    ]
+  },
+  {
+    "query": "navigation design",
+    "count": 20,
+    "top": [
+      {
+        "name": "frontend-design",
+        "source": "anthropics/skills",
+        "installs": 1032335,
+        "id": "anthropics/skills/frontend-design"
+      },
+      {
+        "name": "ios-design",
+        "source": "uizze.sh",
+        "installs": 414429,
+        "id": "uizze.sh/ios-design"
+      },
+      {
+        "name": "site-architecture",
+        "source": "coreyhaines31/marketingskills",
+        "installs": 122623,
+        "id": "coreyhaines31/marketingskills/site-architecture"
+      }
+    ]
+  },
+  {
+    "query": "accessible forms",
+    "count": 20,
+    "top": [
+      {
+        "name": "ui-styling",
+        "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+        "installs": 32431,
+        "id": "nextlevelbuilder/ui-ux-pro-max-skill/ckmui-styling"
+      },
+      {
+        "name": "better-accessibility",
+        "source": "jakubkrehel/skills",
+        "installs": 29523,
+        "id": "jakubkrehel/skills/better-accessibility"
+      },
+      {
+        "name": "shadcn-ui",
+        "source": "giuseppe-trisciuoglio/developer-kit",
+        "installs": 22328,
+        "id": "giuseppe-trisciuoglio/developer-kit/shadcn-ui"
+      }
+    ]
+  },
+  {
+    "query": "financial application ui",
+    "count": 1,
+    "top": [
+      {
+        "name": "igniteui-blazor-components",
+        "source": "igniteui/igniteui-blazor",
+        "installs": 9,
+        "id": "igniteui/igniteui-blazor/igniteui-blazor-components"
+      }
+    ]
+  },
+  {
+    "query": "interaction design",
+    "count": 20,
+    "top": [
+      {
+        "name": "ui-ux-pro-max",
+        "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+        "installs": 414560,
+        "id": "nextlevelbuilder/ui-ux-pro-max-skill/ui-ux-pro-max"
+      },
+      {
+        "name": "uizze-ui",
+        "source": "uizze/uizze",
+        "installs": 143963,
+        "id": "uizze/uizze/uizze-ui"
+      },
+      {
+        "name": "interaction-design",
+        "source": "wshobson/agents",
+        "installs": 16245,
+        "id": "wshobson/agents/interaction-design"
+      }
+    ]
+  },
+  {
+    "query": "motion design",
+    "count": 20,
+    "top": [
+      {
+        "name": "hyperframes-animation",
+        "source": "heygen-com/hyperframes",
+        "installs": 1004747,
+        "id": "heygen-com/hyperframes/hyperframes-animation"
+      },
+      {
+        "name": "hyperframes-creative",
+        "source": "heygen-com/hyperframes",
+        "installs": 916486,
+        "id": "heygen-com/hyperframes/hyperframes-creative"
+      },
+      {
+        "name": "high-end-visual-design",
+        "source": "leonxlnx/taste-skill",
+        "installs": 458828,
+        "id": "leonxlnx/taste-skill/high-end-visual-design"
+      }
+    ]
+  },
+  {
+    "query": "product design research",
+    "count": 20,
+    "top": [
+      {
+        "name": "firecrawl-workflows",
+        "source": "firecrawl/firecrawl-workflows",
+        "installs": 32630,
+        "id": "firecrawl/firecrawl-workflows/firecrawl-workflows"
+      },
+      {
+        "name": "write-feature-docs",
+        "source": "warpdotdev/common-skills",
+        "installs": 19141,
+        "id": "warpdotdev/common-skills/write-feature-docs"
+      },
+      {
+        "name": "mom-test",
+        "source": "wondelai/skills",
+        "installs": 5590,
+        "id": "wondelai/skills/mom-test"
+      }
+    ]
+  },
+  {
+    "query": "visual testing",
+    "count": 20,
+    "top": [
+      {
+        "name": "playwright-best-practices",
+        "source": "currents-dev/playwright-best-practices-skill",
+        "installs": 98463,
+        "id": "currents-dev/playwright-best-practices-skill/playwright-best-practices"
+      },
+      {
+        "name": "critique",
+        "source": "pbakaus/impeccable",
+        "installs": 82636,
+        "id": "pbakaus/impeccable/critique"
+      },
+      {
+        "name": "browser-testing-with-devtools",
+        "source": "addyosmani/agent-skills",
+        "installs": 58430,
+        "id": "addyosmani/agent-skills/browser-testing-with-devtools"
+      }
+    ]
+  },
+  {
+    "query": "react ui",
+    "count": 20,
+    "top": [
+      {
+        "name": "ios-design",
+        "source": "uizze.sh",
+        "installs": 414429,
+        "id": "uizze.sh/ios-design"
+      },
+      {
+        "name": "vercel-react-view-transitions",
+        "source": "vercel-labs/agent-skills",
+        "installs": 167078,
+        "id": "vercel-labs/agent-skills/vercel-react-view-transitions"
+      },
+      {
+        "name": "web-artifacts-builder",
+        "source": "anthropics/skills",
+        "installs": 112535,
+        "id": "anthropics/skills/web-artifacts-builder"
+      }
+    ]
+  }
+]

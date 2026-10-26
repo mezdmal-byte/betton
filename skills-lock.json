@@ -89,6 +89,39 @@
       "computedHash": "ba5e5539b093e3a558cd20ce8704e2fda9c97ea09807194920595e475a9b0710",
       "license": "project",
       "normalization": "utf8-lf"
+    },
+    "apple-design": {
+      "sourceCommit": "2d228630ba1446365f614a108cb8252f1feda202",
+      "upstreamPath": "skills/apple-design",
+      "normalization": "utf8-lf",
+      "sourceType": "github",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "77bb63b7043bb93aca2ff4ab040c249484eef35682bb6ff7163433c31d30adc7",
+      "source": "emilkowalski/skills",
+      "license": "MIT",
+      "skillPath": ".agents/skills/apple-design/SKILL.md"
+    },
+    "find-skills": {
+      "sourceCommit": "a80e4c9d12d607631249d4d7d059f835d4b2f13a",
+      "upstreamPath": "skills/find-skills",
+      "normalization": "utf8-lf",
+      "sourceType": "github",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "c00eeea0e13e74fe4a9d84ba0a8542205a1b736d65f13134fe1a6647eb14976f",
+      "source": "vercel-labs/skills",
+      "license": "MIT",
+      "skillPath": ".agents/skills/find-skills/SKILL.md"
+    },
+    "ui-ux-pro-max": {
+      "sourceCommit": "d14efff8ed1faa4187f004f79926f428c8074ec7",
+      "upstreamPath": ".claude/skills/ui-ux-pro-max",
+      "normalization": "utf8-lf",
+      "sourceType": "github",
+      "hashKind": "skill-entry-sha256",
+      "computedHash": "ea087c341bfb5b23195c7302027268ede86da802554c18a5c4896a6017b439f9",
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "license": "MIT",
+      "skillPath": ".agents/skills/ui-ux-pro-max/SKILL.md"
     }
   }
 }
