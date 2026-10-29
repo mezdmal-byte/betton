@@ -1,5 +1,7 @@
 import { Button } from '../components/Button/Button'
 import styles from './SystemStateScreen.module.css'
+import {useVisualV1} from '../visualV1/VisualV1Context'
+import {SystemV1} from '../visualV1/SystemV1'
 
 export type SystemStateKind =
   | 'loading'
@@ -46,7 +48,8 @@ type StateContent = {
   presentation?: 'standard' | 'skeleton' | 'toast' | 'sheet' | 'modal'
 }
 
-export function SystemStateScreen({
+export function SystemStateScreen(props:SystemStateScreenProps){const visual=useVisualV1();return visual&&['network','offline','retry','auth','auth-expired'].includes(props.kind)?<SystemV1 {...props}/>:<LegacySystemStateScreen {...props}/>}
+function LegacySystemStateScreen({
   kind,
   onRetry,
   onCancel,

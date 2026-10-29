@@ -8,6 +8,8 @@ import { useT } from "../i18n";
 import { formatInteger, formatTonFull } from "../lib/format";
 import type { MarketFixture } from "../types/market";
 import styles from "./PublicProfileScreen.module.css";
+import {useVisualV1} from '../visualV1/VisualV1Context';
+import {PublicProfileV1} from '../visualV1/PublicProfileV1';
 
 export type PublicProfileView = {
   displayName: string;
@@ -34,7 +36,8 @@ export type PublicProfileScreenProps = {
 
 type CreatorView = "summary" | "markets" | "stats";
 
-export function PublicProfileScreen({
+export function PublicProfileScreen(props:PublicProfileScreenProps){return useVisualV1()?<PublicProfileV1 {...props}/>:<LegacyPublicProfileScreen {...props}/>}
+function LegacyPublicProfileScreen({
   profile,
   markets = [],
   viewState = "ready",

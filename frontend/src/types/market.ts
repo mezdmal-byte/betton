@@ -35,6 +35,8 @@ export type MarketFixture = {
   creator: CreatorFixture
   creatorId?: number
   volumeTon: number
+  activeOffersNano?: string
+  offersCount?: number
   participants: number
   status: MarketStatus
   resolvedSide?: OutcomeSide

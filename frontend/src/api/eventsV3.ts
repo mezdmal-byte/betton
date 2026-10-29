@@ -23,7 +23,8 @@ export type CreateEventBody = {
   primary_source?: EventSource | null;
   backup_source?: EventSource | null;
   close_at: string;
-  ends_at: string;
+  ends_at: string | null;
+  timing_version?: "start-v1";
   guarantor_id?: number | null;
 };
 
@@ -227,4 +228,46 @@ export async function createEvent(body: CreateEventBody, requestId = newRequestI
     jsonBody: { ...body, request_id: requestId },
   });
   return data;
+}
+
+/** The accepted V1 form uses start/cutoff plus an estimated end for guarantors only.
+ * The legacy builder/validator remain unchanged for the retained old interface. */
+export function normalizeVisualV1Draft(draft: EventDraft): EventDraft {
+  const criteria = [draft.criterionA.trim(), draft.criterionB.trim()];
+  return {
+    ...draft,
+    rules: draft.eventType === "private" ? draft.rules : criteria.filter(Boolean).join("\n"),
+    method: draft.eventType === "private"
+      ? "Создатель определяет результат по согласованным критериям события."
+      : draft.sourceName.trim()
+        ? `${draft.sourceName.trim()}${draft.sourceUrl.trim() ? ": " + draft.sourceUrl.trim() : ""}`
+        : "Результат определяется по согласованным критериям события.",
+    unverifiable: "Отмена и возврат ставок по общим правилам платформы",
+  };
+}
+
+export function validateVisualV1EventStep(draft: EventDraft, step: CreationStep, now = Date.now()): DraftErrors {
+  const normalized = normalizeVisualV1Draft(draft);
+  // Reuse the legacy bounds and URL validation without inventing an end time.
+  const errors = validateEventStep({ ...normalized, endsAt: draft.eventType === "guarantor" ? draft.endsAt : draft.closeAt }, step, now);
+  if (step === "conditions" || step === "review") {
+    if (!draft.criterionA.trim()) errors.criterionA = "Опишите, как определить первый исход";
+    if (!draft.criterionB.trim()) errors.criterionB = "Опишите, как определить второй исход";
+    if (errors.closeAt) errors.closeAt = draft.closeAt ? "Выберите время начала в будущем" : "Укажите дату и время начала события";
+  }
+  return errors;
+}
+
+export function buildVisualV1EventBody(draft: EventDraft): CreateEventBody {
+  const normalized = normalizeVisualV1Draft(draft);
+  const body = buildEventBody({ ...normalized, endsAt: draft.eventType === "guarantor" ? draft.endsAt : draft.closeAt });
+  return {
+    ...body,
+    criteria: [draft.criterionA.trim(), draft.criterionB.trim()],
+    ends_at: draft.eventType === "guarantor" ? body.ends_at : null,
+    timing_version: "start-v1",
+    ...(draft.eventType === "guarantor" && draft.sourceUrl.trim()
+      ? { primary_source: { name: draft.sourceName.trim(), url: draft.sourceUrl.trim() } }
+      : {}),
+  };
 }

@@ -65,7 +65,10 @@ class EventInput(BaseModel):
     primary_source: Source | None = None
     backup_source: Source | None = None
     close_at: datetime
-    ends_at: datetime
+    ends_at: datetime | None = None
+    # New creation UI: close_at is the event start/betting cutoff. Only a
+    # guarantor event has an estimated end; existing clients keep their contract.
+    timing_version: Literal["start-v1"] | None = None
     guarantor_id: int | None = Field(default=None, gt=0)
 
     @model_validator(mode="after")
@@ -91,10 +94,16 @@ class EventInput(BaseModel):
             not value.strip() or len(value) > 4000 for value in self.criteria
         ):
             raise ValueError("Укажите критерии обоих исходов")
-        if (self.check_future and ms.as_utc(self.close_at) <= ms.utcnow()) or ms.as_utc(
-            self.ends_at
-        ) < ms.as_utc(self.close_at):
+        if self.ends_at is None and (self.event_type == "guarantor" or self.timing_version is None):
+            raise ValueError("Укажите предполагаемое завершение события")
+        if self.timing_version == "start-v1" and self.event_type != "guarantor" and self.ends_at is not None:
+            raise ValueError("Предполагаемое завершение задаётся только для события с гарантом")
+        if (self.check_future and ms.as_utc(self.close_at) <= ms.utcnow()) or (
+            self.ends_at is not None and ms.as_utc(self.ends_at) < ms.as_utc(self.close_at)
+        ):
             raise ValueError("Проверьте окончание приёма ставок и завершение события")
+        if self.timing_version == "start-v1" and not self.unverifiable.strip():
+            self.unverifiable = "Отмена и возврат ставок по общим правилам платформы"
         if self.event_type == "public" and (
             not self.category
             or not self.primary_source
@@ -156,8 +165,12 @@ class EventCreateInput(EventInput):
 
 def event_payload(req: EventCreateInput) -> dict:
     body = req.model_dump(mode="json", exclude={"request_id"})
+    # Preserve hashes for already-persisted requests from the old UI.
+    if req.timing_version is None:
+        body.pop("timing_version", None)
     for field in ("close_at", "ends_at"):
-        body[field] = ms.as_utc(getattr(req, field)).isoformat()
+        value = getattr(req, field)
+        body[field] = ms.as_utc(value).isoformat() if value is not None else None
     return body
 
 
@@ -217,7 +230,10 @@ def create_event(
         config = EventConfigV3(
             market_id=market.id,
             event_type=req.event_type,
-            ends_at=ms._naive_utc(req.ends_at),
+            # This non-null legacy column is a compatibility anchor, not a
+            # claimed end time. The versioned terms expose ends_at=None and
+            # creator_decision uses the actual start for start-v1 private events.
+            ends_at=ms._naive_utc(req.ends_at or req.close_at),
             terms=body,
             revision=1,
             moderator_edited=False,
@@ -340,7 +356,7 @@ def edit_pending(
         market.category, market.close_at = event.category, ms._naive_utc(event.close_at)
         config.terms, config.ends_at = (
             event.model_dump(mode="json"),
-            ms._naive_utc(event.ends_at),
+            ms._naive_utc(event.ends_at or event.close_at),
         )
         config.revision += 1
         config.moderator_edited = True
@@ -388,7 +404,7 @@ def approve_original(
         market.category, market.close_at = event.category, ms._naive_utc(event.close_at)
         config.terms, config.ends_at = (
             event.model_dump(mode="json"),
-            ms._naive_utc(event.ends_at),
+            ms._naive_utc(event.ends_at or event.close_at),
         )
         config.revision += 1
         config.moderator_edited = False
@@ -448,7 +464,12 @@ def creator_decision(
             raise HTTPException(
                 403, "Результат определяет создатель этого частного события"
             )
-        if config.ends_at > gs.now():
+        decision_available_at = (
+            market.close_at
+            if config.terms.get("timing_version") == "start-v1"
+            else config.ends_at
+        )
+        if decision_available_at > gs.now():
             raise HTTPException(409, "Событие ещё не завершилось")
         if market.status in (MarketStatus.resolved, MarketStatus.cancelled):
             raise HTTPException(409, "Результат уже определён")

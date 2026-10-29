@@ -81,6 +81,8 @@ class MarketActivityOut(BaseModel):
     volume_nano: int = 0
     fills: int = 0
     unique_participants: int = 0
+    active_offers_nano: str = "0"
+    offers_count: int = 0
 
 
 class AccountOut(BaseModel):

@@ -12,10 +12,12 @@ export function ConnectedNotificationsScreen({
   userId,
   onOpen,
   onNavChange,
+  onBack,
 }: {
   userId?: number;
   onOpen: (marketId: number) => void;
   onNavChange?: (id: NavId) => void;
+  onBack?: () => void;
 }) {
   const queryClient = useQueryClient();
   const query = useQuery({
@@ -56,6 +58,7 @@ export function ConnectedNotificationsScreen({
   };
   return (
     <NotificationsScreen
+      onBack={onBack}
       items={items}
       listState={
         !userId

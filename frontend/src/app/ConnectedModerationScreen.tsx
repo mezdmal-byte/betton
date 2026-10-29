@@ -3,13 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { errorDetail } from '../api/errors';
 import { approveMarket, listModerationQueue, rejectMarket } from '../api/moderation';
 import { eventV3Action, getEventRevisions, getEventTerms, type EventTermsV3 } from '../api/eventGovernanceV3';
-import { buildEventBody, validateEventStep, type DraftErrors, type EventDraft } from '../api/eventsV3';
+import { type DraftErrors, type EventDraft } from '../api/eventsV3';
 import type { MarketOut } from '../api/types';
 import { queryKeys } from '../api/query';
 import { Button } from '../components/Button/Button';
 import { TextField } from '../components/TextField/TextField';
 import { syncTelegramBackButton } from '../telegram/webapp';
-import { moderationDraft, moderationChanges, publicReviewRows } from './moderationV3';
+import { moderationDraft, moderationChanges, publicReviewRows, buildModerationBody, validateModerationStep } from './moderationV3';
 import styles from './ModerationWorkflow.module.css';
 export type ConnectedModerationScreenProps = {
     enabled: boolean;
@@ -54,7 +54,7 @@ function ModerationReview({ market, onBack, onDone }: {
             if (kind === 'save') {
                 if (!editBase || !draft)
                     throw new Error('Обновите заявку перед сохранением');
-                await eventV3Action(market.id, 'moderation', { expected_revision: editBase.revision, event: buildEventBody(draft) }, 'PUT');
+                await eventV3Action(market.id, 'moderation', { expected_revision: editBase.revision, event: buildModerationBody(draft, editBase) }, 'PUT');
             }
             else if (kind === 'approve') {
                 if (terms.data) {
@@ -93,7 +93,7 @@ function ModerationReview({ market, onBack, onDone }: {
     const compareDraft = () => {
         if (!draft)
             return;
-        const nextErrors = { ...validateEventStep(draft, 'question'), ...validateEventStep(draft, 'conditions') };
+        const nextErrors = { ...validateModerationStep(draft, 'question', editBase), ...validateModerationStep(draft, 'conditions', editBase) };
         setErrors(nextErrors);
         if (!Object.keys(nextErrors).length)
             setView('compare');
@@ -104,7 +104,7 @@ function ModerationReview({ market, onBack, onDone }: {
     const current = terms.data;
     const creatorLabel = market.creator?.telegram_username ? '@' + market.creator.telegram_username.replace(/^@/, '') : market.creator?.display_name || '#' + (current?.creator_id ?? market.creator_id);
     const title = { review: 'Проверка заявки', edit: 'Редактирование', compare: 'Изменения заявки', original: 'Первоначальная версия', reject: 'Отклонить заявку', approve: 'Одобрение и публикация' }[view];
-    const footer = !current && terms.isPending ? undefined : view === 'edit' ? <Button fullWidth onClick={compareDraft}>Сравнить изменения</Button> : view === 'compare' && draft && editBase ? <Button fullWidth loading={action.isPending} disabled={moderationChanges(editBase, buildEventBody(draft)).length === 0} onClick={() => action.mutate('save')}>Зафиксировать правки</Button> : view === 'review' ? <Button fullWidth disabled={action.isPending} onClick={() => { setPublishRevision(current?.revision ?? null); setView('approve'); }}>{current?.moderator_edited ? 'Одобрить и опубликовать' : 'Одобрить без изменений'}</Button> : view === 'approve' ? <Button fullWidth loading={action.isPending} onClick={() => action.mutate('approve')}>Подтвердить публикацию</Button> : view === 'reject' ? <Button fullWidth disabled={!reason.trim()} loading={action.isPending} onClick={() => action.mutate('reject')}>Отклонить заявку</Button> : undefined;
+    const footer = !current && terms.isPending ? undefined : view === 'edit' ? <Button fullWidth onClick={compareDraft}>Сравнить изменения</Button> : view === 'compare' && draft && editBase ? <Button fullWidth loading={action.isPending} disabled={moderationChanges(editBase, buildModerationBody(draft, editBase)).length === 0} onClick={() => action.mutate('save')}>Зафиксировать правки</Button> : view === 'review' ? <Button fullWidth disabled={action.isPending} onClick={() => { setPublishRevision(current?.revision ?? null); setView('approve'); }}>{current?.moderator_edited ? 'Одобрить и опубликовать' : 'Одобрить без изменений'}</Button> : view === 'approve' ? <Button fullWidth loading={action.isPending} onClick={() => action.mutate('approve')}>Подтвердить публикацию</Button> : view === 'reject' ? <Button fullWidth disabled={!reason.trim()} loading={action.isPending} onClick={() => action.mutate('reject')}>Отклонить заявку</Button> : undefined;
     return <Shell title={title} context={`Модератор · #${market.id} · До публикации`} onBack={back} footer={!terms.isError ? footer : undefined}>
     {terms.isPending ? <p role="status">Загружаем условия…</p> : terms.isError ? <><p role="alert">{errorDetail(terms.error)}</p><Button fullWidth onClick={() => { void terms.refetch(); }}>Повторить</Button></> : <>
       {saved ? <p role="status" className={styles.notice}>{saved}</p> : null}
@@ -114,9 +114,9 @@ function ModerationReview({ market, onBack, onDone }: {
         {current ? <ReviewRows terms={current} onEdit={beginEdit}/> : <><section className={styles.row}><span>Название события</span><p>{market.question}</p></section><section className={styles.row}><span>Описание и исходы</span><p>{market.description}</p><p>{market.outcomes.join(' / ')}</p></section><p className={styles.notice}>Прежний формат заявки: структурированное редактирование недоступно. Можно одобрить исходную заявку или отклонить её.</p></>}
         {current ? <><Button variant="secondary" fullWidth onClick={beginEdit}>Редактировать заявку</Button><Button variant="secondary" fullWidth onClick={() => { setDraft(null); setView('compare'); }}>Сравнить редакции</Button></> : null}
         <Button variant="secondary" fullWidth onClick={() => setView('reject')}>Отклонить</Button>
-      </> : view === 'edit' && draft ? <><p className={styles.secondary}>Создатель: {creatorLabel}</p><ModerationFields draft={draft} errors={errors} onValidate={(key) => { const checked = { ...validateEventStep(draft, 'question'), ...validateEventStep(draft, 'conditions') }; setErrors((previous) => ({ ...previous, [key]: checked[key] })); }} onChange={(key, value) => { setDraft((previous) => previous ? { ...previous, [key]: value } : null); setErrors((previous) => ({ ...previous, [key]: undefined })); }}/></> : view === 'compare' ? <>
+      </> : view === 'edit' && draft ? <><p className={styles.secondary}>Создатель: {creatorLabel}</p><ModerationFields startOnly={editBase?.timing_version === 'start-v1'} draft={draft} errors={errors} onValidate={(key) => { const checked = { ...validateModerationStep(draft, 'question', editBase), ...validateModerationStep(draft, 'conditions', editBase) }; setErrors((previous) => ({ ...previous, [key]: checked[key] })); }} onChange={(key, value) => { setDraft((previous) => previous ? { ...previous, [key]: value } : null); setErrors((previous) => ({ ...previous, [key]: undefined })); }}/></> : view === 'compare' ? <>
         <p className={styles.secondary}>{draft ? `Редакция ${editBase?.revision} → ${Number(editBase?.revision) + 1} · До публикации` : `Первоначальная → редакция ${current?.revision}`}</p>
-        {draft && editBase ? <ChangeRows before={editBase} after={buildEventBody(draft)}/> : revisions.isPending ? <p role="status">Загружаем историю…</p> : revisions.isError ? <><p role="alert">{errorDetail(revisions.error)}</p><Button fullWidth onClick={() => { void revisions.refetch(); }}>Повторить</Button></> : original && current ? <ChangeRows before={original} after={current}/> : <p>Первоначальная версия не найдена.</p>}
+        {draft && editBase ? <ChangeRows before={editBase} after={buildModerationBody(draft, editBase)}/> : revisions.isPending ? <p role="status">Загружаем историю…</p> : revisions.isError ? <><p role="alert">{errorDetail(revisions.error)}</p><Button fullWidth onClick={() => { void revisions.refetch(); }}>Повторить</Button></> : original && current ? <ChangeRows before={original} after={current}/> : <p>Первоначальная версия не найдена.</p>}
         <section className={styles.row}><span>Запись изменений</span>{revisions.data?.map((row) => <p key={row.id}>Редакция {row.revision} · {row.kind === 'created' ? 'создатель' : row.kind === 'moderation_edit' ? 'модератор' : row.kind} · {new Date(row.created_at).toLocaleString('ru-RU', { timeZone: 'UTC' })} UTC</p>)}</section>
         <Button variant="secondary" fullWidth disabled={!original} onClick={() => setView('original')}>Посмотреть первоначальную версию</Button>
         <Button variant="secondary" fullWidth onClick={() => { if (!draft)
@@ -138,7 +138,8 @@ function ChangeRows({ before, after }: {
     before: Parameters<typeof moderationChanges>[0];
     after: Parameters<typeof moderationChanges>[1];
 }) { const changes = moderationChanges(before, after); return changes.length ? <>{changes.map((row) => <section className={styles.row} key={row.label}><span>{row.label} · изменено</span><p>Было: {row.before || 'Не указано'}<br />Стало: {row.after || 'Не указано'}</p></section>)}</> : <p>Без изменений.</p>; }
-export function ModerationFields({ draft, errors, onChange, onValidate }: {
+export function ModerationFields({ draft, errors, onChange, onValidate, startOnly = false }: {
+    startOnly?: boolean;
     draft: EventDraft;
     errors: DraftErrors;
     onChange: (key: keyof EventDraft, value: string) => void;
@@ -150,7 +151,7 @@ export function ModerationFields({ draft, errors, onChange, onValidate }: {
     <label className={styles.select}>Категория<select value={draft.category} onChange={(event) => onChange('category', event.target.value)}>{[['sport', 'Спорт'], ['esports', 'Киберспорт'], ['politics', 'Политика'], ['crypto', 'Крипто'], ['unique', 'Другое']].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     {field('description', 'Описание · необязательно', true)}<h2>Правила и критерии</h2>{field('rules', 'Подробные условия', true)}{field('criterionA', 'Когда наступает первый исход', true)}{field('criterionB', 'Когда наступает второй исход', true)}{field('method', 'Как будет определён результат', true)}{field('unverifiable', 'Если результат нельзя определить', true)}
     <h2>Источники проверки</h2>{field('sourceName', 'Основной источник · обязательно')}{field('sourceUrl', 'Ссылка на основной источник · обязательно', false, 'url')}{field('backupName', 'Резервный источник · необязательно')}{field('backupUrl', 'Ссылка на резервный источник · необязательно', false, 'url')}
-    <h2>Сроки · UTC</h2>{field('closeAt', 'Приём ставок до', false, 'datetime-local')}{field('endsAt', 'Предполагаемое завершение события', false, 'datetime-local')}
+    <h2>Сроки · UTC</h2>{field('closeAt', startOnly ? 'Дата и время начала' : 'Приём ставок до', false, 'datetime-local')}{!startOnly ? field('endsAt', 'Предполагаемое завершение события', false, 'datetime-local') : null}
   </>;
 }
 function Shell({ title, context, onBack, footer, children }: {

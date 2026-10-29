@@ -98,6 +98,20 @@ def market_activity_map(db: Session, market_ids: list[int]) -> dict[int, MarketA
     )
     unique_by_market = {int(market_id): _as_int(count) for market_id, count in unique_rows}
 
+    # Read persisted own-stake reserves, not prospective counterparty money.
+    # Expired/closed markets do not expose stale open rows as tradable offers.
+    active_rows = (
+        db.query(P2POrder.market_id, func.sum(P2POrder.remaining), func.count(P2POrder.id))
+        .join(Market, Market.id == P2POrder.market_id)
+        .filter(
+            P2POrder.market_id.in_(ids), P2POrder.status == "open", P2POrder.remaining > 0,
+            Market.mechanism == "p2p", Market.status == MarketStatus.open,
+            Market.close_at > legacy._naive_utc(legacy.utcnow()),
+        )
+        .group_by(P2POrder.market_id).all()
+    )
+    active_by_market = {int(mid): (int(total), int(count)) for mid, total, count in active_rows}
+
     for mid in ids:
         volume_nano = volume_by_market.get(mid, 0)
         result[mid] = MarketActivityOut(
@@ -105,6 +119,8 @@ def market_activity_map(db: Session, market_ids: list[int]) -> dict[int, MarketA
             volume_nano=volume_nano,
             fills=fills_by_market.get(mid, 0),
             unique_participants=unique_by_market.get(mid, 0),
+            active_offers_nano=str(active_by_market.get(mid, (0, 0))[0]),
+            offers_count=active_by_market.get(mid, (0, 0))[1],
         )
     return result
 

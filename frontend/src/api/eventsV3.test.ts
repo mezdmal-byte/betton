@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildEventBody,
+  buildVisualV1EventBody,
+  validateVisualV1EventStep,
   createEvent,
   EMPTY_EVENT_DRAFT,
   isHttpSource,
@@ -170,4 +172,21 @@ it("creates through the real UX v3 endpoint and propagates backend failure", asy
   await expect(createEvent(buildEventBody(validPublic()))).rejects.toThrow(
     "Основной источник недоступен",
   );
+});
+
+describe("approved start/cutoff protocol", () => {
+  it("sends no end time for private events and retains the legacy builder", () => {
+    const draft = { ...validPrivate(), criterionA: "Победил Алексей", criterionB: "Победила Мария", endsAt: "" };
+    expect(validateVisualV1EventStep(draft, "conditions", now)).toEqual({});
+    expect(buildVisualV1EventBody(draft)).toMatchObject({ timing_version: "start-v1", close_at: "2030-01-02T18:00:00.000Z", ends_at: null });
+    expect(buildEventBody(validPrivate()).ends_at).toBe("2030-01-02T20:00:00.000Z");
+    expect(validateEventStep(draft, "conditions", now).endsAt).toBeTruthy();
+  });
+  it("keeps estimated end required only for guarantor events", () => {
+    const draft = { ...validPublic(), eventType: "guarantor" as const, guarantorId: 42 };
+    expect(validateVisualV1EventStep({ ...draft, endsAt: "" }, "conditions", now).endsAt).toBeTruthy();
+    expect(validateVisualV1EventStep({ ...draft, endsAt: "2030-01-02T17:00" }, "conditions", now).endsAt).toBeTruthy();
+    expect(buildVisualV1EventBody(draft)).toMatchObject({ timing_version: "start-v1", ends_at: "2030-01-02T20:00:00.000Z", guarantor_id: 42 });
+    expect(buildVisualV1EventBody({ ...validPublic(), endsAt: "" }).ends_at).toBeNull();
+  });
 });

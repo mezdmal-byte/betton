@@ -7,6 +7,8 @@ import bellIcon from "../../assets/navigation-bell.svg";
 import profileIcon from "../../assets/navigation-profile.svg";
 import { NotificationBadgeContext } from "./NotificationBadgeContext";
 import styles from "./BottomNavigation.module.css";
+import { useVisualV1 } from '../../visualV1/VisualV1Context';
+import { NavigationV1 } from '../../visualV1/NavigationV1';
 
 export type NavId =
   | "markets"
@@ -20,6 +22,9 @@ export type BottomNavigationProps = {
 };
 
 export function BottomNavigation({ active, onChange }: BottomNavigationProps) {
+  return useVisualV1() ? <NavigationV1 active={active} onChange={onChange}/> : <LegacyBottomNavigation active={active} onChange={onChange}/>;
+}
+function LegacyBottomNavigation({ active, onChange }: BottomNavigationProps) {
   const t = useT();
   const unreadCount = Math.max(0, useContext(NotificationBadgeContext));
   const items = [

@@ -3,6 +3,10 @@ export type VisibilityId = 'public' | 'unlisted' | 'private'
 export type PortfolioTab = 'positions' | 'orders' | 'history'
 
 export type PositionFixture = {
+  category?: string
+  outcomeNames?: string[]
+  marketStatus?: string
+  visibility?: string
   id: string
   marketId: number
   question: string
@@ -13,6 +17,8 @@ export type PositionFixture = {
 }
 
 export type OrderFixture = {
+  category?: string
+  outcomeNames?: string[]
   id: string
   marketId: number
   question: string

@@ -182,6 +182,8 @@ export function mapMarketOut(dto: MarketOut, now: Date = new Date(), locale: Loc
     creator: mapCreator(dto.creator),
     creatorId: dto.creator?.id ?? dto.creator_id,
     volumeTon,
+    activeOffersNano: dto.activity?.active_offers_nano,
+    offersCount: dto.activity?.offers_count,
     participants: dto.activity?.unique_participants ?? 0,
     status,
     resolvedSide: mapResolvedSide(dto),
@@ -407,6 +409,10 @@ export function mapPositions(dto: PositionOut): PositionFixture[] {
     if (staked <= 0) continue
     const payout = Number(shares[i] || 0)
     rows.push({
+      category: mapApiCategoryToLabel(dto.market.category, 'ru'),
+      outcomeNames: names,
+      marketStatus: dto.market.status,
+      visibility: dto.market.visibility,
       id: `${dto.market_id}-${i}`,
       marketId: dto.market_id,
       question: dto.market?.question || `Событие #${dto.market_id}`,

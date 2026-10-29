@@ -24,6 +24,8 @@ import type {
   SettlementFixture,
 } from "../types/account";
 import styles from "./PortfolioScreen.module.css";
+import { useVisualV1 } from '../visualV1/VisualV1Context';
+import { PortfolioV1 } from '../visualV1/PortfolioV1';
 
 export type PortfolioView = "overview" | PortfolioTab | "settled" | "creator";
 
@@ -51,7 +53,10 @@ export type PortfolioScreenProps = {
   actionError?: string | null;
 };
 
-export function PortfolioScreen({
+export function PortfolioScreen(props: PortfolioScreenProps) {
+  return useVisualV1() ? <PortfolioV1 {...props}/> : <LegacyPortfolioScreen {...props}/>;
+}
+function LegacyPortfolioScreen({
   account = accountUser,
   tab,
   initialView,

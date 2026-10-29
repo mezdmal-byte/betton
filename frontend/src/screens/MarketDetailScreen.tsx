@@ -21,6 +21,8 @@ import type {
   RecentTrade,
 } from "../types/market";
 import styles from "./MarketDetailScreen.module.css";
+import { useVisualV1 } from '../visualV1/VisualV1Context';
+import { EventV1 } from '../visualV1/EventV1';
 
 export type MarketDetailViewState =
   | "ready"
@@ -81,7 +83,11 @@ export type MarketDetailScreenProps = {
   extra?: ReactNode;
 };
 
-export function MarketDetailScreen({
+export function MarketDetailScreen(props: MarketDetailScreenProps) {
+  return useVisualV1() ? <EventV1 {...props}/> : <LegacyMarketDetailScreen {...props}/>;
+}
+
+function LegacyMarketDetailScreen({
   market = marketYesNo,
   selectedSide = "a",
   chartSeriesA = chartSpartakA,

@@ -5,6 +5,8 @@ import { syncTelegramBackButton } from '../telegram/webapp'
 import { EventTypeInfo, type EventType } from './EventTypeInfo'
 import { OnboardingArtImage as Art } from './OnboardingAssets'
 import styles from './OnboardingScreen.module.css'
+import { useVisualV1 } from '../visualV1/VisualV1Context'
+import { OnboardingV1 } from '../visualV1/OnboardingV1'
 
 export type OnboardingState = 'ready' | 'splash' | 'loading' | 'auth-required' | 'auth-error'
 export type OnboardingScreenProps = {
@@ -47,7 +49,10 @@ const copy = {
 }
 type Copy = typeof copy.ru
 
-export function OnboardingScreen({ onContinue, onSkip, state = 'ready', initialStep = 0, onRetry }: OnboardingScreenProps) {
+export function OnboardingScreen(props: OnboardingScreenProps) {
+  return useVisualV1() && (!props.state || props.state === 'ready') ? <OnboardingV1 {...props}/> : <LegacyOnboardingScreen {...props}/>
+}
+function LegacyOnboardingScreen({ onContinue, onSkip, state = 'ready', initialStep = 0, onRetry }: OnboardingScreenProps) {
   const { locale } = useI18n()
   const c = copy[locale]
   const [step, setStep] = useState(Math.max(0, Math.min(initialStep, 4)))

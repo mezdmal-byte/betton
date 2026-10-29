@@ -9,6 +9,8 @@ export async function getFeedStats(): Promise<{active_offers_nano: string; scope
 }
 
 export type FeedQuery = {
+  offers?: 'any' | 'available' | 'empty'
+  closeBefore?: string
   sort?: string
   category?: string
   q?: string
@@ -25,6 +27,8 @@ export function buildMarketsQuery(input: FeedQuery): string {
   if (status) params.set('status', status)
   const q = (input.q ?? '').trim()
   if (q) params.set('q', q)
+  if (input.offers && input.offers !== 'any') params.set('offers', input.offers)
+  if (input.closeBefore) params.set('close_before', input.closeBefore)
   params.set('sort', mapUiSortToApi(input.sort ?? 'new'))
   const limit = input.limit ?? FEED_PAGE_SIZE
   params.set('limit', String(limit))

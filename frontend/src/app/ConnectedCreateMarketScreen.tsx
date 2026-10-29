@@ -1,7 +1,8 @@
 import { pendingEventIntent, submitEventIntent } from "../api/eventCreationIntent";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { buildEventBody, type EventDraft } from "../api/eventsV3";
+import { buildEventBody, buildVisualV1EventBody, type EventDraft } from "../api/eventsV3";
+import { useVisualV1 } from "../visualV1/VisualV1Context";
 import { errorDetail } from "../api/errors";
 import { guarantors } from "../api/guarantors";
 import { rememberShareToken } from "../api/share";
@@ -28,7 +29,9 @@ export function ConnectedCreateMarketScreen({
   onCreated,
   userId,
   enabled,
+  onNavChange,
 }: ConnectedCreateMarketScreenProps) {
+  const visualV1 = useVisualV1();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const submittedType = useRef<EventType | null>(null);
@@ -42,7 +45,7 @@ export function ConnectedCreateMarketScreen({
     mutationFn: (draft: EventDraft | undefined) => {
       if (!userId) throw new Error("Откройте приложение через Telegram.");
       submittedType.current = draft?.eventType ?? pendingEventIntent(userId)?.body.event_type ?? null;
-      return submitEventIntent(userId, draft ? buildEventBody(draft) : undefined);
+      return submitEventIntent(userId, draft ? (visualV1 ? buildVisualV1EventBody(draft) : buildEventBody(draft)) : undefined);
     },
     retry: false,
     onSuccess: (market) => {
@@ -74,6 +77,7 @@ export function ConnectedCreateMarketScreen({
     <CreateEventWizard
       key={userId ?? "guest"}
       userId={userId}
+      onNavChange={onNavChange}
       onBack={onBack}
       onSubmit={(draft) => {
         if (!mutation.isPending) {

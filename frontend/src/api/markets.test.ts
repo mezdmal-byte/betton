@@ -31,6 +31,12 @@ describe('markets query string', () => {
     expect(closing.get('sort')).toBe('closing')
     expect(closing.get('category')).toBe('unique')
     expect(closing.get('q')).toBe('зенит')
+
+    const filtered = new URLSearchParams(buildMarketsQuery({ offers: 'available', closeBefore: '2026-10-30T12:00:00Z', offset: 20 }))
+    expect(filtered.get('offers')).toBe('available')
+    expect(filtered.get('close_before')).toBe('2026-10-30T12:00:00Z')
+    expect(filtered.get('offset')).toBe('20')
+    expect(new URLSearchParams(buildMarketsQuery({ offers: 'any' })).has('offers')).toBe(false)
   })
 })
 

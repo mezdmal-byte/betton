@@ -42,13 +42,13 @@
 }
 
 .secondary {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  border-color: var(--color-border-subtle);
+  background: var(--color-secondary-background, var(--color-surface));
+  color: var(--color-secondary-text, var(--color-text-primary));
+  border-color: var(--color-secondary-border, var(--color-border-subtle));
 }
 
 .secondary:hover:not(:disabled) {
-  background: var(--color-surface-muted);
+  background: var(--color-secondary-hover, var(--color-surface-muted));
 }
 
 .ghost {

@@ -7,6 +7,8 @@ import { useT } from '../i18n'
 import { formatInteger, formatTonFull } from '../lib/format'
 import type { MarketFixture, MarketStatus } from '../types/market'
 import styles from './MyEventsScreen.module.css'
+import { useVisualV1 } from '../visualV1/VisualV1Context'
+import { MyEventsV1 } from '../visualV1/MyEventsV1'
 
 export type MyEventsViewState = 'ready' | 'loading' | 'error' | 'unauthenticated'
 type MarketFilter = 'all' | 'open' | 'done'
@@ -29,6 +31,7 @@ export function MyEventsScreen({
   onRetry,
   onNavChange,
 }: MyEventsScreenProps) {
+  const visualV1 = useVisualV1()
   const t = useT()
   const [filter, setFilter] = useState<MarketFilter>('all')
   const [selectedMarket, setSelectedMarket] = useState<MarketFixture | null>(null)
@@ -41,6 +44,7 @@ export function MyEventsScreen({
       }),
     [filter, markets],
   )
+  if (visualV1) return <MyEventsV1 markets={markets} viewState={viewState} errorMessage={errorMessage} onOpenMarket={onOpenMarket} onRetry={onRetry} onNavChange={onNavChange}/>
 
   return (
     <div className={styles.screen}>

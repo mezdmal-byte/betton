@@ -24,6 +24,8 @@ export type MarketActivityDto = {
   volume_nano?: number
   fills?: number
   unique_participants?: number
+  active_offers_nano?: string
+  offers_count?: number
 }
 
 export type MarketOut = {
@@ -90,6 +92,8 @@ export type OrderbookOut = {
 }
 
 export type MarketsQuery = {
+  offers?: 'any' | 'available' | 'empty'
+  closeBefore?: string
   category?: string
   status?: MarketStatusDto | null
   q?: string
