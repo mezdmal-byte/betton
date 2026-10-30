@@ -38,7 +38,7 @@ import { WalletScreen } from '../screens/WalletScreen'
 import { currentRoute, goBack, pushRoute, resetToTab, routesForTabMemory, showTelegramBackButton, type Route, type WalletTab } from './navigation'
 import { useAccount, useAuthExpired, useSession } from './session'
 import styles from './ConnectedApp.module.css'
-import { VisualV1ActionsProvider } from '../visualV1/VisualV1Context'
+import { VisualV1ActionsProvider, useVisualV1 } from '../visualV1/VisualV1Context'
 
 const GUEST_ACCOUNT: AccountFixture = { displayName: 'Гость', handle: 'telegram', initials: '?', availableTon: 0, inPositionsTon: 0, inOrdersTon: 0, creatorIncomeTon: 0, eventsCreated: null, createdVolumeTon: null, isAdmin: false }
 
@@ -48,6 +48,7 @@ function previousDetailPane(pane: MarketDetailPane): MarketDetailPane {
 }
 
 export function ConnectedApp() {
+  const visualV1 = useVisualV1()
   const [hasInitData, setHasInitData] = useState(() => hasTelegramInitData())
   const [stack, setStack] = useState<Route[]>([{ name: 'markets' }])
   const activeTabRef = useRef<NavId>('markets')
@@ -116,7 +117,9 @@ export function ConnectedApp() {
   useEffect(
     () => {
       // These screens own their internal step-by-step Back behavior.
-      if (route.name === 'create' || showOnboarding) return
+      // WalletV1 owns Telegram Back, including closing its network dialog before navigating.
+      // Keep the shared handler for the legacy wallet, which has no own Telegram Back listener.
+      if (route.name === 'create' || showOnboarding || (route.name === 'wallet' && visualV1)) return
       return syncTelegramBackButton(showTelegramBackButton(route), () => {
         if (route.name === 'detail' && detailPane !== 'chart') {
           setDetailPane(previousDetailPane(detailPane))
@@ -126,7 +129,7 @@ export function ConnectedApp() {
         setStack(goBack)
       })
     },
-    [detailPane, route, showOnboarding],
+    [detailPane, route, showOnboarding, visualV1],
   )
 
   const account = accountQuery.data ?? null
