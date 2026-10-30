@@ -316,7 +316,7 @@ try {
     $script:ProjectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     Set-Location -LiteralPath $script:ProjectDir
 
-    $TargetBranch = "feature/figma-full-implementation"
+    $TargetBranch = if ([string]::IsNullOrWhiteSpace($env:BETTON_TARGET_BRANCH)) { "feature/figma-full-implementation" } else { $env:BETTON_TARGET_BRANCH.Trim() }
     $Port = 8000
     $EnvFile = Join-Path $script:ProjectDir ".env"
     $Python = Join-Path $script:ProjectDir ".venv\Scripts\python.exe"
