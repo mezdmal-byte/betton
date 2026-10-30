@@ -17,6 +17,7 @@ const portfolio: Route = { name: 'portfolio' }
 const profile: Route = { name: 'profile' }
 const profileSettings: Route = { name: 'profile-settings' }
 const notifications: Route = { name: 'notifications' }
+const walletHome: Route = { name: 'wallet' }
 const walletDeposit: Route = { name: 'wallet', tab: 'deposit' }
 const walletWithdraw: Route = { name: 'wallet', tab: 'withdraw' }
 const publicProfile: Route = { name: 'public-profile', userId: 7 }
@@ -59,6 +60,19 @@ describe('navigation stack', () => {
     expect(currentRoute(goBack(historyFlow))).toEqual(profile)
     expect(showTelegramBackButton(history)).toBe(true)
     expect(showTelegramBackButton(portfolio)).toBe(false)
+  })
+
+  it('opens wallet overview from profile and returns there after visiting deposit/withdraw', () => {
+    const profileFlow = pushRoute([profile], walletHome)
+    expect(currentRoute(profileFlow)).toEqual(walletHome)
+    expect(showTelegramBackButton(walletHome)).toBe(true)
+    const depositFlow = pushRoute(profileFlow, walletDeposit)
+    expect(depositFlow).toEqual([profile, walletHome, walletDeposit])
+    expect(currentRoute(goBack(depositFlow))).toEqual(walletHome)
+    const withdrawFlow = pushRoute(depositFlow, walletWithdraw)
+    expect(withdrawFlow).toEqual([profile, walletHome, walletWithdraw])
+    expect(currentRoute(goBack(withdrawFlow))).toEqual(walletHome)
+    expect(currentRoute(goBack(goBack(withdrawFlow)))).toEqual(profile)
   })
 
   it('resets to a top-level tab without leftover secondary screens', () => {
