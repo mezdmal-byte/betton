@@ -73,3 +73,36 @@ test('offline unresolved intent is checked after reload, then explicitly retried
   const result=await (await page.request.get(`/users/${userId}/orders/by-request/${requestId}`,{headers})).json()
   expect(result.amount).toBe(10);expect(result.request_id).toBe(requestId)
 })
+
+
+test('informational Wallet V1 stays read-only and returns to its actual parent',async({page})=>{
+  await open(page)
+  await page.getByRole('navigation',{name:'Основная навигация'}).getByRole('button',{name:'Профиль'}).click()
+  await page.getByRole('navigation',{name:'Профиль'}).getByRole('button',{name:'Кошелёк'}).click()
+  await expect(page.getByRole('heading',{name:'Кошелёк'})).toBeVisible()
+  await expect(page.getByText('Кошелёк пока не подключён. Не отправляйте средства.')).toBeVisible()
+  await expect(page.getByText('Адрес',{exact:true})).toBeVisible()
+  await expect(page.getByText('Недоступен',{exact:true})).toBeVisible()
+
+  // The network selector is informational and must not start any transaction.
+  await page.getByRole('button',{name:/^Сеть/}).click()
+  await expect(page.getByRole('dialog',{name:'Сеть'})).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog',{name:'Сеть'})).not.toBeVisible()
+  await expect(page.getByRole('heading',{name:'Кошелёк'})).toBeVisible()
+
+  await page.getByRole('button',{name:'Пополнить',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Пополнение'})).toBeVisible()
+  await expect(page.getByText('Пополнение пока недоступно. Не отправляйте средства.')).toBeVisible()
+  await page.getByRole('button',{name:'Назад',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Кошелёк'})).toBeVisible()
+
+  await page.getByRole('button',{name:'Вывести',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Вывод'})).toBeVisible()
+  await expect(page.getByText('Вывод пока недоступен. Операция не создана.')).toBeVisible()
+  await page.getByRole('button',{name:'Вернуться',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Кошелёк'})).toBeVisible()
+
+  await page.getByRole('button',{name:'Подключить позже',exact:true}).click()
+  await expect(page.locator('[data-figma-frame="819:61952"]')).toBeVisible()
+})
