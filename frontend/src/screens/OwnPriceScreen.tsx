@@ -23,6 +23,8 @@ import type {
 } from "../types/market";
 import styles from "./OwnPriceScreen.module.css";
 import type { GuarantorTradeCosts } from "../api/types";
+import { useVisualV1 } from '../visualV1/VisualV1Context';
+import { OwnPriceV1 } from '../visualV1/OwnPriceV1';
 
 export type OwnPriceScreenProps = {
   market?: MarketFixture;
@@ -68,7 +70,11 @@ export type OwnPriceScreenProps = {
   onRetryTrades?: () => void;
 };
 
-export function OwnPriceScreen({
+export function OwnPriceScreen(props: OwnPriceScreenProps) {
+  return useVisualV1() ? <OwnPriceV1 {...props}/> : <LegacyOwnPriceScreen {...props}/>;
+}
+
+function LegacyOwnPriceScreen({
   market = marketYesNo,
   onBack,
   onNavChange,

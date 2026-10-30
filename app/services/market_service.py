@@ -550,6 +550,8 @@ def list_markets_page(
     sort: str | None = None,
     limit: int | None = None,
     offset: int = 0,
+    offers: str | None = None,
+    close_before: datetime | None = None,
 ) -> tuple[list[Market], int]:
     from app.services import discovery
 
@@ -562,6 +564,16 @@ def list_markets_page(
         query = query.filter(Market.visibility == "public")
     if category:
         query = query.filter(Market.category == _normalize_category(category))
+    if close_before is not None:
+        query = query.filter(Market.close_at <= _naive_utc(close_before))
+    if offers in ("available", "empty"):
+        from app.models import P2POrder
+        live_order = db.query(P2POrder.id).filter(
+            P2POrder.market_id == Market.id, P2POrder.status == "open", P2POrder.remaining > 0,
+            Market.mechanism == "p2p", Market.status == MarketStatus.open,
+            Market.close_at > _naive_utc(utcnow()),
+        ).exists()
+        query = query.filter(live_order if offers == "available" else ~live_order)
     needle = (q or "").strip()
     sqlite_python_search = False
     lowered_needle = ""

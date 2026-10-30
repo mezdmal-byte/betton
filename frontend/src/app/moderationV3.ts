@@ -1,5 +1,5 @@
-import { EMPTY_EVENT_DRAFT, type CreateEventBody, type EventDraft } from '../api/eventsV3';
-const utcInput = (value: string) => new Date(value).toISOString().slice(0, 16);
+import { EMPTY_EVENT_DRAFT, buildEventBody, validateEventStep, type CreateEventBody, type EventDraft, type CreationStep } from '../api/eventsV3';
+const utcInput = (value: string | null) => value ? new Date(value).toISOString().slice(0, 16) : "";
 export function moderationDraft(terms: CreateEventBody): EventDraft {
     return { ...EMPTY_EVENT_DRAFT, eventType: 'public', question: terms.question, outcomeA: terms.outcomes[0], outcomeB: terms.outcomes[1], category: terms.category ?? 'unique', description: terms.description, rules: terms.rules, criterionA: terms.criteria?.[0] ?? '', criterionB: terms.criteria?.[1] ?? '', method: terms.resolution_method, unverifiable: terms.unverifiable ?? '', sourceName: terms.primary_source?.name ?? '', sourceUrl: terms.primary_source?.url ?? '', backupName: terms.backup_source?.name ?? '', backupUrl: terms.backup_source?.url ?? '', closeAt: utcInput(terms.close_at), endsAt: utcInput(terms.ends_at) };
 }
@@ -10,7 +10,7 @@ export function publicReviewRows(terms: CreateEventBody) {
         { label: 'Описание', value: terms.description || 'Не указано' },
         { label: 'Правила и критерии', value: `${terms.rules}\nПервый исход: ${terms.criteria?.[0] ?? 'Не указано'}\nВторой исход: ${terms.criteria?.[1] ?? 'Не указано'}\nСпособ проверки: ${terms.resolution_method}` },
         { label: 'Источники', value: `Основной: ${terms.primary_source?.name ?? 'Не указан'}\n${terms.primary_source?.url ?? ''}${terms.backup_source ? `\nРезервный: ${terms.backup_source.name}\n${terms.backup_source.url}` : '\nРезервный: не указан'}` },
-        { label: 'Сроки · UTC', value: `Приём ставок до ${utcInput(terms.close_at).replace('T', ', ')}\nЗавершение события: ${utcInput(terms.ends_at).replace('T', ', ')}` },
+        { label: 'Сроки · UTC', value: `${terms.timing_version === 'start-v1' ? 'Начало события · приём ставок закрывается' : 'Приём ставок до'} ${utcInput(terms.close_at).replace('T', ', ')}${terms.ends_at ? `\nЗавершение события: ${utcInput(terms.ends_at).replace('T', ', ')}` : ''}` },
         { label: 'Если проверить результат невозможно', value: terms.unverifiable || 'Не указано' },
     ];
 }
@@ -20,4 +20,15 @@ export function moderationChanges(before: CreateEventBody, after: CreateEventBod
     ];
     const oldRows = rows(before);
     return rows(after).flatMap(([label, value], index) => value === oldRows[index]?.[1] ? [] : [{ label: label!, before: oldRows[index]![1]!, after: value! }]);
+}
+
+/** Keep the original timing protocol when a moderator changes a pending event.
+ * Do not normalize/rewrite the moderator's rules or add a fictional end time. */
+export function buildModerationBody(draft: EventDraft, original: CreateEventBody): CreateEventBody {
+    if (original.timing_version !== 'start-v1') return buildEventBody(draft);
+    const body = buildEventBody({ ...draft, endsAt: draft.closeAt });
+    return { ...body, ends_at: null, timing_version: 'start-v1' };
+}
+export function validateModerationStep(draft: EventDraft, step: CreationStep, original?: CreateEventBody | null) {
+    return validateEventStep(original?.timing_version === 'start-v1' ? { ...draft, endsAt: draft.closeAt } : draft, step);
 }

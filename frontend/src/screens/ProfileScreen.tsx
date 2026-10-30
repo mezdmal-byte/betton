@@ -11,6 +11,9 @@ import { formatInteger, formatTonFull } from "../lib/format";
 import { useTheme } from "../theme/ThemeProvider";
 import type { AccountFixture } from "../types/account";
 import styles from "./ProfileScreen.module.css";
+import { useVisualV1 } from "../visualV1/VisualV1Context";
+import { ProfileV1 } from "../visualV1/ProfileV1";
+import { SettingsV1 } from '../visualV1/SettingsV1';
 
 const LANGS: Array<{ id: Locale; label: string }> = [
   { id: "ru", label: "RU" },
@@ -47,6 +50,9 @@ export function ProfileScreen({
   const t = i18n.t;
   const activeLocale = locale ?? i18n.locale;
   const theme = useTheme();
+  const visualV1 = useVisualV1();
+  if (visualV1 && view === "main") return <ProfileV1 account={account} accountState={accountState} onBack={onBack} onMenu={onMenu} onNavChange={onNavChange} onLogin={onLogin} />;
+  if (visualV1 && view === "settings") return <SettingsV1 onBack={onBack} onMenu={onMenu} onNavChange={onNavChange} onLocaleChange={onLocaleChange}/>;
 
   if (view === "settings") {
     return (

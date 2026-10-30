@@ -20,6 +20,8 @@ import {
 import { GuarantorCard, GuarantorDetails } from "./GuarantorReputation";
 import s from "./Guarantors.module.css";
 import { useClock } from "./useClock";
+import { useVisualV1 } from "../visualV1/VisualV1Context";
+import { GuarantorV1 } from "../visualV1/GuarantorV1";
 
 export function ConnectedGuarantors({
   userId,
@@ -34,6 +36,7 @@ export function ConnectedGuarantors({
   onOpen: (id: number) => void;
   onNavChange: (id: NavId) => void;
 }) {
+  const visualV1 = useVisualV1();
   const qc = useQueryClient();
   const clock = useClock(!!userId);
   const [bio, setBio] = useState("");
@@ -81,6 +84,8 @@ export function ConnectedGuarantors({
   const selected = list.data?.find((g) => g.user_id === selectedId)
     ?? applications.data?.find((g) => g.user_id === selectedId)
     ?? (mine.data?.user_id === selectedId ? mine.data : null);
+
+  if (visualV1) return <GuarantorV1 userId={userId} isAdmin={isAdmin} onBack={onBack} onOpen={onOpen} onNavChange={onNavChange} mine={mine.data} directory={list.data ?? []} cases={cases.data ?? []} applications={applications.data ?? []} loading={Boolean(userId) && mine.isPending} casesLoading={cases.isPending} directoryLoading={list.isPending} errors={[mine,list,cases,...(isAdmin ? [applications] : [])].filter(query => query.isError).map(query => ({ message: errorDetail(query.error), retry: () => { void query.refetch() } }))} mutationError={mutation.isError ? errorDetail(mutation.error) : undefined} pending={mutation.isPending} clock={clock} onSubmit={submit}/>;
 
   if (selected) {
     return (

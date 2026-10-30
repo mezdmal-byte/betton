@@ -26,3 +26,15 @@ build/
 /.admin-center.json
 /.venv-admin/
 /.admin-center-qa/
+
+# Local design retrieval, comparisons and generated QA captures.
+/.design-context/
+/.local-figma-event-*.tsx
+/frontend/qa-account-v1/
+/frontend/qa-feed-v1/
+/frontend/qa-visual-v1/
+/frontend/qa-trade-v1.html
+/frontend/qa-trade-v1.tsx
+/frontend/visual-v1-qa/
+
+/frontend/chat-v1-qa/

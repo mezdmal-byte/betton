@@ -415,6 +415,10 @@ describe('positions adapter', () => {
         amountTon: 100,
         avgOdds: 1.78,
         potentialPayoutTon: 178,
+        category: 'Спорт',
+        outcomeNames: ['Да', 'Нет'],
+        marketStatus: 'open',
+        visibility: undefined,
       },
     ])
   })

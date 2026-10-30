@@ -6,21 +6,28 @@ import type { MarketOut } from "../api/types";
 import { Button } from "../components/Button/Button";
 import type { NavId } from "../components/BottomNavigation/BottomNavigation";
 import styles from "./CreateMarketResult.module.css";
+import { useVisualV1 } from "../visualV1/VisualV1Context";
+import { CreateResultV1 } from "../visualV1/CreateResultV1";
 
-export function CreateMarketResult({
-  market,
-  shareLink,
-  onOpen,
-  onBack,
-  onToFeed,
-}: {
+export type CreateMarketResultProps = {
   market: MarketOut;
   shareLink: string;
   onOpen: () => void;
   onBack: () => void;
   onToFeed: () => void;
   onNavChange?: (id: NavId) => void;
-}) {
+};
+export function CreateMarketResult(props: CreateMarketResultProps) {
+  const visualV1 = useVisualV1();
+  return visualV1 ? <CreateResultV1 {...props} /> : <LegacyCreateMarketResult {...props} />;
+}
+function LegacyCreateMarketResult({
+  market,
+  shareLink,
+  onOpen,
+  onBack,
+  onToFeed,
+}: CreateMarketResultProps) {
   const { locale } = useI18n();
   const c = (source: string | undefined) => eventCopy(locale, source);
   const [sharing, setSharing] = useState(false);

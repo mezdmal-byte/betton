@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useT } from '../i18n'
 import styles from './HelpScreen.module.css'
+import {useVisualV1} from '../visualV1/VisualV1Context'
+import {HelpV1} from '../visualV1/HelpV1'
 
 type HelpTopic = {
   id: string
@@ -12,7 +14,8 @@ type HelpTopic = {
 
 export type HelpScreenProps = { onBack?: () => void; onReplayOnboarding?: () => void }
 
-export function HelpScreen({ onBack, onReplayOnboarding }: HelpScreenProps) {
+export function HelpScreen(props:HelpScreenProps){return useVisualV1()?<HelpV1 {...props}/>:<LegacyHelpScreen {...props}/>}
+function LegacyHelpScreen({ onBack, onReplayOnboarding }: HelpScreenProps) {
   const t = useT()
   const [topicId, setTopicId] = useState<string | null>(null)
 

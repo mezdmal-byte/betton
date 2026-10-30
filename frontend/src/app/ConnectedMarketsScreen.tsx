@@ -15,12 +15,16 @@ import { MarketsScreen } from '../screens/MarketsScreen'
 import overlayStyles from '../screens/QuickTradeScreen.module.css'
 import type { MarketFixture, OutcomeSide } from '../types/market'
 import { ConnectedQuickTradeSheet } from './ConnectedQuickTrade'
+import { useVisualV1 } from '../visualV1/VisualV1Context'
+import { FeedFiltersV1 } from '../visualV1/FeedFiltersV1'
 
 export type FeedViewState = {
   query: string
   sort: string
   category: string
   status: string
+  offers?: 'any' | 'available' | 'empty'
+  closeBefore?: string
 }
 
 export type ConnectedMarketsScreenProps = {
@@ -58,6 +62,7 @@ export function ConnectedMarketsScreen({
   chatUnreadReplies = 0,
   onChatClick,
 }: ConnectedMarketsScreenProps) {
+  const visualV1 = useVisualV1()
   const { locale } = useI18n()
   const [trade, setTrade] = useState<{ market: MarketFixture; side: OutcomeSide; amount: number } | null>(
     null,
@@ -87,12 +92,12 @@ export function ConnectedMarketsScreen({
   )
 
   const feed = useInfiniteQuery({
-    queryKey: queryKeys.markets({
+    queryKey: [...queryKeys.markets({
       sort: feedView.sort,
       category: feedView.category,
       q: debouncedQuery,
       status: feedView.status,
-    }),
+    }), feedView.offers ?? 'any', feedView.closeBefore ?? ''],
     queryFn: ({ pageParam }) =>
       listMarkets({
         sort: feedView.sort,
@@ -100,6 +105,8 @@ export function ConnectedMarketsScreen({
         q: debouncedQuery,
         status: mapUiStatusToApi(feedView.status) ?? null,
         offset: pageParam,
+        offers: feedView.offers,
+        closeBefore: feedView.closeBefore,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {
@@ -174,7 +181,9 @@ export function ConnectedMarketsScreen({
         filtersActive={
           feedView.status !== 'open' ||
           feedView.category !== 'all' ||
-          feedView.sort !== 'new'
+          feedView.sort !== 'new' ||
+          (feedView.offers != null && feedView.offers !== 'any') ||
+          Boolean(feedView.closeBefore)
         }
         onFiltersClick={() => setFiltersOpen(true)}
         onSelectMarket={onSelectMarket}
@@ -204,7 +213,15 @@ export function ConnectedMarketsScreen({
         chatUnreadReplies={chatUnreadReplies}
         onChatClick={onChatClick}
       />
-      <FilterSheet
+      {visualV1 ? <FeedFiltersV1
+        open={filtersOpen}
+        status={feedView.status}
+        category={feedView.category}
+        offers={feedView.offers}
+        closeBefore={feedView.closeBefore}
+        onClose={() => setFiltersOpen(false)}
+        onApply={(status, category, offers, closeBefore) => onFeedViewChange({ ...feedView, status, category, offers, closeBefore })}
+      /> : <FilterSheet
         open={filtersOpen}
         status={feedView.status}
         category={feedView.category}
@@ -213,7 +230,7 @@ export function ConnectedMarketsScreen({
         onApply={(status, category, sort) =>
           onFeedViewChange({ ...feedView, status, category, sort })
         }
-      />
+      />}
       {trade && sheetMarket ? (
         <div className={overlayStyles.overlay}>
           <ConnectedQuickTradeSheet

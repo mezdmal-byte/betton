@@ -8,17 +8,23 @@ import { formatTonFull } from "../lib/format";
 import { formatHistoryTime } from "../lib/time";
 import type { HistoryFixture } from "../types/account";
 import styles from "./ActivityScreen.module.css";
+import { useVisualV1 } from '../visualV1/VisualV1Context';
+import { ActivityV1 } from '../visualV1/PortfolioV1';
 
 type ActivityFilter = "all" | "trades" | "orders" | "settlement";
 
 export type ActivityScreenProps = {
+  onBack?: () => void;
   history: HistoryFixture[];
   listState?: "ready" | "loading" | "error";
   onRetry?: () => void;
   onNavChange?: (id: NavId) => void;
 };
 
-export function ActivityScreen({
+export function ActivityScreen(props: ActivityScreenProps) {
+  return useVisualV1() ? <ActivityV1 {...props}/> : <LegacyActivityScreen {...props}/>;
+}
+function LegacyActivityScreen({
   history,
   listState = "ready",
   onRetry,

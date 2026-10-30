@@ -13,6 +13,8 @@ import { feedMarkets } from '../fixtures/markets'
 import { useT } from '../i18n'
 import type { MarketFixture, OutcomeSide } from '../types/market'
 import styles from './MarketsScreen.module.css'
+import { useVisualV1 } from '../visualV1/VisualV1Context'
+import { FeedV1 } from '../visualV1/FeedV1'
 
 export type MarketsAccountState = 'ready' | 'loading' | 'unauthenticated'
 export type MarketsFeedState = 'ready' | 'loading' | 'empty' | 'error'
@@ -35,6 +37,7 @@ export type FeedCreator = {
 }
 
 export type MarketsScreenProps = {
+  selectedOutcomes?: Record<string, OutcomeSide>
   activeOffersNano?: string
   statsError?: boolean
   onRetryStats?: () => void
@@ -66,7 +69,12 @@ export type MarketsScreenProps = {
   onChatClick?: () => void
 }
 
-export function MarketsScreen({
+export function MarketsScreen(props: MarketsScreenProps) {
+  const visualV1 = useVisualV1()
+  return visualV1 ? <FeedV1 {...props} /> : <LegacyMarketsScreen {...props} />
+}
+
+function LegacyMarketsScreen({
   activeOffersNano,
   statsError = false,
   onRetryStats,

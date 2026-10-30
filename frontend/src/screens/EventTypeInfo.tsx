@@ -2,6 +2,8 @@ import { Button } from '../components/Button/Button'
 import { useI18n } from '../i18n'
 import { OnboardingArtImage as Art } from './OnboardingAssets'
 import styles from './EventTypeInfo.module.css'
+import { useVisualV1 } from '../visualV1/VisualV1Context'
+import { EventTypeInfoV1 } from '../visualV1/OnboardingV1'
 
 export type EventType = 'public' | 'private' | 'guarantor'
 export type EventTypeInfoProps = { kind: EventType; onClose: () => void }
@@ -34,6 +36,9 @@ const copy = {
 
 /** Shared by onboarding and event creation. Closing returns to the caller's selection. */
 export function EventTypeInfo({ kind, onClose }: EventTypeInfoProps) {
+  return useVisualV1() ? <EventTypeInfoV1 kind={kind} onClose={onClose}/> : <LegacyEventTypeInfo kind={kind} onClose={onClose}/>
+}
+function LegacyEventTypeInfo({ kind, onClose }: EventTypeInfoProps) {
   const { locale } = useI18n()
   const c = copy[locale]
   const content = c[kind]

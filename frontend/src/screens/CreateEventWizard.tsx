@@ -16,6 +16,8 @@ import { eventCopy } from "../api/eventsV3Copy";
 import { EventTypeInfo } from "./EventTypeInfo";
 import styles from "./CreateEventWizard.module.css";
 import { creationDraftKey, readCreationDraft, saveCreationDraft } from './creationDrafts';
+import { useVisualV1 } from '../visualV1/VisualV1Context';
+import { CreateV1Wizard, type CreateV1WizardProps } from '../visualV1/CreateV1Wizard';
 export { creationDraftKey } from './creationDrafts';
 
 const TYPES: { id: EventType; title: string; description: string }[] = [
@@ -69,7 +71,11 @@ type TextKey = Exclude<
   keyof EventDraft,
   "eventType" | "category" | "guarantorId"
 >;
-export function CreateEventWizard({
+export function CreateEventWizard(props: CreateV1WizardProps) {
+  const visualV1 = useVisualV1();
+  return visualV1 ? <CreateV1Wizard {...props} /> : <LegacyCreateEventWizard {...props} />;
+}
+function LegacyCreateEventWizard({
   userId,
   onBack,
   onSubmit,

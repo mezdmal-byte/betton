@@ -108,8 +108,12 @@ export function ConnectedPortfolioScreen({
     () =>
       (ordersQuery.data ?? [])
         .map(mapOpenOrder)
-        .filter((row): row is OrderFixture => row != null),
-    [ordersQuery.data],
+        .filter((row): row is OrderFixture => row != null)
+        .map(row => {
+          const market = positionsQuery.data?.find(position => position.market_id === row.marketId)?.market;
+          return market ? { ...row, category: positions.find(position => position.marketId === row.marketId)?.category, outcomeNames: market.outcomes } : row;
+        }),
+    [ordersQuery.data, positionsQuery.data, positions],
   );
   const history = useMemo(
     () => (historyQuery.data ?? []).map(mapTransaction),
@@ -160,6 +164,7 @@ export function ConnectedPortfolioScreen({
 
     return (
       <ActivityScreen
+        onBack={onBack}
         history={accountState === "unauthenticated" ? [] : history}
         listState={activityState}
         onNavChange={onNavChange}

@@ -22,6 +22,8 @@ import type {
 import styles from "./QuickTradeSheet.module.css";
 import type { GuarantorTradeCosts as GuarantorCosts } from "../../api/types";
 import { GuarantorTradeCosts } from "../GuarantorTradeCosts/GuarantorTradeCosts";
+import { useVisualV1 } from '../../visualV1/VisualV1Context';
+import { QuickTradeV1 } from '../../visualV1/QuickTradeV1';
 
 export type QuickTradeState =
   | "normal"
@@ -84,7 +86,11 @@ function quoteValue(value: number | null | undefined, suffix = ""): string {
   return value.toFixed(2) + suffix;
 }
 
-export function QuickTradeSheet({
+export function QuickTradeSheet(props: QuickTradeSheetProps) {
+  return useVisualV1() ? <QuickTradeV1 {...props}/> : <LegacyQuickTradeSheet {...props}/>;
+}
+
+function LegacyQuickTradeSheet({
   market,
   selectedSide,
   amount,

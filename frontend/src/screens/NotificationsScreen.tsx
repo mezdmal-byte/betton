@@ -8,6 +8,8 @@ import { Button } from "../components/Button/Button";
 import { ThemeToggle } from "../components/ThemeToggle/ThemeToggle";
 import { useT } from "../i18n";
 import styles from "./NotificationsScreen.module.css";
+import { useVisualV1 } from "../visualV1/VisualV1Context";
+import { NotificationsV1 } from "../visualV1/NotificationsV1";
 
 export type NotificationKind =
   | "partial-fill"
@@ -41,6 +43,7 @@ export type NotificationItem = {
 };
 
 export type NotificationsScreenProps = {
+  onBack?: () => void;
   items?: NotificationItem[];
   initialSelectedId?: string;
   onOpen?: (item: NotificationItem) => void;
@@ -202,6 +205,7 @@ export const notificationPreviewItems: NotificationItem[] = [
 ];
 
 export function NotificationsScreen({
+  onBack,
   items = [],
   initialSelectedId,
   onOpen,
@@ -212,6 +216,7 @@ export function NotificationsScreen({
   onRetry,
   errorMessage,
 }: NotificationsScreenProps) {
+  const visualV1 = useVisualV1();
   const t = useT();
   const [selected, setSelected] = useState<NotificationItem | null>(
     () => items.find((item) => item.id === initialSelectedId) ?? null,
@@ -220,6 +225,8 @@ export function NotificationsScreen({
   const visibleItems =
     filter === "unread" ? items.filter((item) => item.unread) : items;
   const unreadCount = items.filter((item) => item.unread).length;
+
+  if (visualV1) return <NotificationsV1 items={items} initialSelectedId={initialSelectedId} onBack={onBack} onOpen={onOpen} onAction={onAction} onNavChange={onNavChange} onRead={onRead} listState={listState} onRetry={onRetry} errorMessage={errorMessage} />;
 
   if (selected) {
     return (

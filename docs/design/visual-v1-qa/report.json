@@ -1,0 +1,518 @@
+{
+  "screens": 84,
+  "errors": [],
+  "checks": [
+    "no horizontal overflow",
+    "no broken static images",
+    "creator explicit confirmation",
+    "one creator request",
+    "no optimistic success on rejected request",
+    "legacy onboarding retained"
+  ],
+  "report": [
+    {
+      "name": "onboarding-1-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15062"
+    },
+    {
+      "name": "onboarding-2-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15111"
+    },
+    {
+      "name": "onboarding-3-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15154"
+    },
+    {
+      "name": "onboarding-4-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15200"
+    },
+    {
+      "name": "detail-public-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28104"
+    },
+    {
+      "name": "detail-private-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28151"
+    },
+    {
+      "name": "detail-guarantor-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28195"
+    },
+    {
+      "name": "portfolio-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45735"
+    },
+    {
+      "name": "history-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60718"
+    },
+    {
+      "name": "creator-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "978:28041"
+    },
+    {
+      "name": "create-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:58549"
+    },
+    {
+      "name": "help-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:61442"
+    },
+    {
+      "name": "public-profile-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "821:7883"
+    },
+    {
+      "name": "network-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8434"
+    },
+    {
+      "name": "auth-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8455"
+    },
+    {
+      "name": "expired-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8476"
+    },
+    {
+      "name": "notes-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60648"
+    },
+    {
+      "name": "profile-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:61952"
+    },
+    {
+      "name": "events-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60537"
+    },
+    {
+      "name": "guarantor-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60994"
+    },
+    {
+      "name": "register-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "829:11663"
+    },
+    {
+      "name": "feed-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45192"
+    },
+    {
+      "name": "drawer-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45192"
+    },
+    {
+      "name": "event-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "908:19752"
+    },
+    {
+      "name": "quick-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "908:20248"
+    },
+    {
+      "name": "own-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "915:32644"
+    },
+    {
+      "name": "onboarding-1-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15062"
+    },
+    {
+      "name": "onboarding-2-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15111"
+    },
+    {
+      "name": "onboarding-3-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15154"
+    },
+    {
+      "name": "onboarding-4-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15200"
+    },
+    {
+      "name": "detail-public-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28104"
+    },
+    {
+      "name": "detail-private-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28151"
+    },
+    {
+      "name": "detail-guarantor-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28195"
+    },
+    {
+      "name": "portfolio-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45735"
+    },
+    {
+      "name": "history-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60718"
+    },
+    {
+      "name": "creator-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "978:28041"
+    },
+    {
+      "name": "create-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:58549"
+    },
+    {
+      "name": "help-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:61442"
+    },
+    {
+      "name": "public-profile-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "821:7883"
+    },
+    {
+      "name": "network-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8434"
+    },
+    {
+      "name": "auth-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8455"
+    },
+    {
+      "name": "expired-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8476"
+    },
+    {
+      "name": "notes-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60648"
+    },
+    {
+      "name": "profile-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:61952"
+    },
+    {
+      "name": "events-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60537"
+    },
+    {
+      "name": "guarantor-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60994"
+    },
+    {
+      "name": "register-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "829:11663"
+    },
+    {
+      "name": "feed-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45192"
+    },
+    {
+      "name": "drawer-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45192"
+    },
+    {
+      "name": "event-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "908:19752"
+    },
+    {
+      "name": "quick-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "908:20248"
+    },
+    {
+      "name": "own-320",
+      "overflow": false,
+      "broken": [],
+      "frame": "915:32644"
+    },
+    {
+      "name": "onboarding-1-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15062"
+    },
+    {
+      "name": "onboarding-2-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15111"
+    },
+    {
+      "name": "onboarding-3-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15154"
+    },
+    {
+      "name": "onboarding-4-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "828:15200"
+    },
+    {
+      "name": "detail-public-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28104"
+    },
+    {
+      "name": "detail-private-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28151"
+    },
+    {
+      "name": "detail-guarantor-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "977:28195"
+    },
+    {
+      "name": "portfolio-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45735"
+    },
+    {
+      "name": "history-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60718"
+    },
+    {
+      "name": "creator-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "978:28041"
+    },
+    {
+      "name": "create-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:58549"
+    },
+    {
+      "name": "help-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:61442"
+    },
+    {
+      "name": "public-profile-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "821:7883"
+    },
+    {
+      "name": "network-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8434"
+    },
+    {
+      "name": "auth-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8455"
+    },
+    {
+      "name": "expired-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8476"
+    },
+    {
+      "name": "notes-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60648"
+    },
+    {
+      "name": "profile-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:61952"
+    },
+    {
+      "name": "events-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60537"
+    },
+    {
+      "name": "guarantor-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:60994"
+    },
+    {
+      "name": "register-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "829:11663"
+    },
+    {
+      "name": "feed-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45192"
+    },
+    {
+      "name": "drawer-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "819:45192"
+    },
+    {
+      "name": "event-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "908:19752"
+    },
+    {
+      "name": "quick-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "908:20248"
+    },
+    {
+      "name": "own-430",
+      "overflow": false,
+      "broken": [],
+      "frame": "915:32644"
+    },
+    {
+      "name": "help-p2p-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "822:8099"
+    },
+    {
+      "name": "public-stats-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "821:7916"
+    },
+    {
+      "name": "creator-review-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "978:28145"
+    },
+    {
+      "name": "creator-success-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "978:28171"
+    },
+    {
+      "name": "creator-failed-request-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "978:28145"
+    },
+    {
+      "name": "legacy-onboarding-390",
+      "overflow": false,
+      "broken": [],
+      "frame": "291:17"
+    }
+  ]
+}

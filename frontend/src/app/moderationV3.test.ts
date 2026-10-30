@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { buildEventBody, validateEventStep, type CreateEventBody } from '../api/eventsV3';
 import { ConnectedModerationScreen, ModerationFields, ModerationPublishConfirmation } from './ConnectedModerationScreen';
-import { moderationChanges, moderationDraft, publicReviewRows } from './moderationV3';
+import { moderationChanges, moderationDraft, publicReviewRows, buildModerationBody, validateModerationStep } from './moderationV3';
 const terms: CreateEventBody = {
     event_type: 'public', question: 'BTC выше выбранного уровня?', outcomes: ['Выше', 'Не выше'], category: 'crypto', description: '', rules: 'Сравнить цену на дату завершения', criteria: ['Строго выше', 'Равна или ниже'], resolution_method: 'Основной источник в 23:59 UTC', unverifiable: 'Отмена и возврат ставок', primary_source: { name: 'Источник', url: 'https://example.com/price' }, backup_source: null,
     close_at: '2099-12-31T23:00:00Z', ends_at: '2099-12-31T23:59:00Z',
@@ -73,5 +73,30 @@ describe('public event moderation v3', () => {
         expect(text).toContain('Отмена и возврат ставок');
         expect(text).not.toContain('75%');
         expect(text).not.toContain('0 TON');
+    });
+});
+
+describe('start/cutoff moderation compatibility', () => {
+    const startOnly: CreateEventBody = { ...terms, timing_version: 'start-v1', ends_at: null };
+    it('retains a null end and the timing protocol through comparison and save', () => {
+        const draft = moderationDraft(startOnly);
+        expect(draft.endsAt).toBe('');
+        expect(validateModerationStep(draft, 'conditions', startOnly)).toEqual({});
+        const body = buildModerationBody({ ...draft, question: 'Уточнённый вопрос события?' }, startOnly);
+        expect(body.timing_version).toBe('start-v1');
+        expect(body.ends_at).toBeNull();
+        expect(body.rules).toBe(startOnly.rules);
+        expect(moderationChanges(startOnly, body).map(row => row.label)).toEqual(['Название']);
+        expect(publicReviewRows(startOnly).map(row => row.value).join('\n')).not.toContain('Завершение события:');
+    });
+    it('does not render a fictitious end-time control for the new protocol', () => {
+        const html = renderToStaticMarkup(createElement(ModerationFields, { startOnly: true, draft: moderationDraft(startOnly), errors: {}, onChange: () => undefined }));
+        expect(html).toContain('Дата и время начала');
+        expect(html).not.toContain('mod-endsAt');
+    });
+    it('keeps legacy end validation and round-trip behavior', () => {
+        const draft = moderationDraft(terms);
+        expect(buildModerationBody(draft, terms)).toEqual(buildEventBody(draft));
+        expect(validateModerationStep({ ...draft, endsAt: '' }, 'conditions', terms).endsAt).toBeTruthy();
     });
 });

@@ -38,6 +38,7 @@ import { WalletScreen } from '../screens/WalletScreen'
 import { currentRoute, goBack, pushRoute, resetToTab, routesForTabMemory, showTelegramBackButton, type Route, type WalletTab } from './navigation'
 import { useAccount, useAuthExpired, useSession } from './session'
 import styles from './ConnectedApp.module.css'
+import { VisualV1ActionsProvider } from '../visualV1/VisualV1Context'
 
 const GUEST_ACCOUNT: AccountFixture = { displayName: 'Гость', handle: 'telegram', initials: '?', availableTon: 0, inPositionsTon: 0, inOrdersTon: 0, creatorIncomeTon: 0, eventsCreated: null, createdVolumeTon: null, isAdmin: false }
 
@@ -218,13 +219,14 @@ export function ConnectedApp() {
     : undefined
 
   return (
+    <VisualV1ActionsProvider value={{activeMyEvents: route.name === 'my-markets', onOpenNotifications: () => push({name:'notifications'}), onOpenMyEvents: () => push({name:'my-markets'}), onOpenProfile: openProfile, onOpenHelp: () => push({name:'help'}), onOpenSettings: () => push({name:'profile-settings'}), onOpenGuarantors: () => push({name:'guarantors'}), onOpenHistory: () => push({name:'history'})}}>
     <NotificationBadgeContext.Provider value={notificationsQuery.data?.filter(notice => !notice.read).length ?? 0}>
     <div className={styles.root} ref={rootRef}>
       {route.name === 'markets' ? <ConnectedMarketsScreen account={account} accountState={accountState} personalized={hasInitData} userId={session.user?.id} availableTon={availableTon} feedView={feedView} onFeedViewChange={setFeedView} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={openMarket} onCreatorClick={(market) => openCreator(market.creator.id ?? market.creatorId)} onTopCreatorClick={openCreator} onOwnPrice={(marketId, side) => push({ name: 'own-price', marketId, side })} chatUnreadReplies={chatUnread.lobby} onChatClick={session.user ? () => push({ name: 'chat-lobby' }) : undefined} /> : null}
       {route.name === 'create' ? <ConnectedCreateMarketScreen userId={session.user?.id} isAdmin={isAdmin} enabled={accountState === 'ready'} onBack={() => goTab('markets')} onNavChange={goTab} onCreated={(market) => { tabStacksRef.current.create = [{ name: 'create' }]; setStack([{ name: 'create-result', market }]) }} /> : null}
       {route.name === 'create-result' ? <CreateMarketResult market={route.market} shareLink={marketShareUrl({ shareToken: route.market.share_token, botUsername, webapp })} onOpen={() => { if (route.market.share_token) rememberShareToken(route.market.id, route.market.share_token); if (route.market.status === 'pending' || route.market.status === 'rejected') push({ name: 'my-markets' }); else push({ name: 'detail', marketId: route.market.id }) }} onBack={back} onToFeed={() => goTab('markets')} onNavChange={goTab} /> : null}
       <GuarantorAlerts userId={session.user?.id} paused={route.name === 'create' || (hasPendingMoneyIntent && (route.name === 'quick-trade' || route.name === 'own-price'))} onOpen={(marketId) => push({ name: 'detail', marketId })} />
-      {route.name === 'notifications' ? <ConnectedNotificationsScreen userId={session.user?.id} onOpen={(marketId) => push({ name: 'detail', marketId })} onNavChange={goTab} /> : null}
+      {route.name === 'notifications' ? <ConnectedNotificationsScreen userId={session.user?.id} onBack={back} onOpen={(marketId) => push({ name: 'detail', marketId })} onNavChange={goTab} /> : null}
       {route.name === 'portfolio' ? <ConnectedPortfolioScreen userId={session.user?.id} mappedAccount={mappedAccount} accountState={accountState} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={(marketId) => push({ name: 'detail', marketId })} onDeposit={() => push({ name: 'wallet', tab: 'deposit' })} onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })} /> : null}
       {route.name === 'profile' ? <ConnectedProfileScreen account={mappedAccount ?? GUEST_ACCOUNT} accountState={accountState === 'ready' ? 'ready' : 'unauthenticated'} userId={session.user?.id} onBack={back} onNavChange={goTab} onLogin={openTelegramLogin} onMenu={(id) => { if (id === 'guarantors') push({ name: 'guarantors' }); else if (id === 'events') push({ name: 'my-markets' }); else if (id === 'moderation' && isAdmin) push({ name: 'moderation' }); else if (id === 'settings') push({ name: 'profile-settings' }); else if (id === 'help') push({ name: 'help' }); else if (id === 'history') push({ name: 'history' }); else if (id === 'public' && session.user?.id) openCreator(session.user.id) }} /> : null}
       {route.name === 'guarantors' ? <ConnectedGuarantors userId={session.user?.id} isAdmin={isAdmin} onBack={back} onOpen={(marketId) => push({ name: 'detail', marketId })} onNavChange={goTab} /> : null}
@@ -242,5 +244,6 @@ export function ConnectedApp() {
       {route.name === 'own-price' ? <ConnectedOwnPriceScreen marketId={route.marketId} initialSide={route.side} availableTon={availableTon} userId={session.user?.id} onBack={back} onNavChange={goTab} onQuickTrade={(side) => switchTradeRoute({ name: 'quick-trade', marketId: route.marketId, side })} /> : null}
     </div>
     </NotificationBadgeContext.Provider>
+    </VisualV1ActionsProvider>
   )
 }

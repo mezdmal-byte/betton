@@ -1,6 +1,7 @@
 from app.webhook_security import require_webhook_secret, proxy_headers
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import Literal
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -528,12 +529,15 @@ def list_markets_endpoint(
     sort: str | None = None,
     limit: int | None = None,
     offset: int = 0,
+    offers: Literal["any", "available", "empty"] | None = None,
+    close_before: datetime | None = None,
     db: Session = Depends(get_db),
 ):
     cat = (category or "").strip() or None
     query = (q or "").strip() or None
     rows, total = market_service.list_markets_page(
-        db, category=cat, status=status, q=query, sort=sort, limit=limit, offset=offset
+        db, category=cat, status=status, q=query, sort=sort, limit=limit, offset=offset,
+        offers=offers, close_before=close_before,
     )
     response.headers["X-Total-Count"] = str(total)
     return _markets_to_out(db, rows)

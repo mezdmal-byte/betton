@@ -1,22 +1,27 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { errorDetail } from '../api/errors';
+import { isApiError } from '../api/client';
 import { approveMarket, listModerationQueue, rejectMarket } from '../api/moderation';
 import { eventV3Action, getEventRevisions, getEventTerms, type EventTermsV3 } from '../api/eventGovernanceV3';
-import { buildEventBody, validateEventStep, type DraftErrors, type EventDraft } from '../api/eventsV3';
+import { type DraftErrors, type EventDraft } from '../api/eventsV3';
 import type { MarketOut } from '../api/types';
 import { queryKeys } from '../api/query';
 import { Button } from '../components/Button/Button';
 import { TextField } from '../components/TextField/TextField';
 import { syncTelegramBackButton } from '../telegram/webapp';
-import { moderationDraft, moderationChanges, publicReviewRows } from './moderationV3';
+import { moderationDraft, moderationChanges, publicReviewRows, buildModerationBody, validateModerationStep } from './moderationV3';
 import styles from './ModerationWorkflow.module.css';
+import { useVisualV1 } from '../visualV1/VisualV1Context';
+import { ModerationShellV1, ModerationQueueV1, ModerationReviewRowsV1, ModerationChangesV1, ModerationPublishV1, ModerationConflictV1 } from '../visualV1/ModerationV1';
+import v1 from '../visualV1/ModerationV1.module.css';
 export type ConnectedModerationScreenProps = {
     enabled: boolean;
     onBack: () => void;
 };
 type View = 'review' | 'edit' | 'compare' | 'original' | 'reject' | 'approve';
 export function ConnectedModerationScreen({ enabled, onBack }: ConnectedModerationScreenProps) {
+    const visualV1 = useVisualV1();
     const queue = useQuery({ queryKey: queryKeys.moderation, queryFn: listModerationQueue, enabled });
     const [selected, setSelected] = useState<MarketOut | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -24,6 +29,7 @@ export function ConnectedModerationScreen({ enabled, onBack }: ConnectedModerati
         return <Shell title="Доступ запрещён" onBack={onBack}><p>Для просмотра заявок нужна роль администратора.</p></Shell>;
     if (selected)
         return <ModerationReview market={selected} onBack={() => setSelected(null)} onDone={(message) => { setSuccess(message); setSelected(null); }}/>;
+    if (visualV1) return <ModerationQueueV1 markets={queue.data ?? []} loading={queue.isPending} error={queue.isError ? errorDetail(queue.error) : undefined} success={success} onBack={onBack} onRetry={() => { void queue.refetch(); }} onSelect={(market) => { setSuccess(null); setSelected(market); }} onDismiss={() => setSuccess(null)} />;
     return <Shell title="Модерация событий" onBack={onBack} context="Заявки до публикации">
     {success ? <p role="status" className={styles.notice}>{success}</p> : null}
     {queue.isPending ? <p role="status">Загружаем заявки…</p> : queue.isError ? <><p role="alert">{errorDetail(queue.error)}</p><Button fullWidth onClick={() => { void queue.refetch(); }}>Повторить</Button></> : queue.data?.length ? queue.data.map((market) => <button key={market.id} type="button" className={styles.queueRow} onClick={() => { setSuccess(null); setSelected(market); }}><small>Событие #{market.id}</small><strong>{market.question}</strong><span>Проверить заявку →</span></button>) : <p>Новых заявок на модерацию нет.</p>}
@@ -34,6 +40,8 @@ function ModerationReview({ market, onBack, onDone }: {
     onBack: () => void;
     onDone: (message: string) => void;
 }) {
+    const visualV1 = useVisualV1();
+    const skin = visualV1 ? v1 : styles;
     const client = useQueryClient();
     const terms = useQuery({ queryKey: ['event-terms-v3', market.id], queryFn: () => getEventTerms(market.id) });
     const revisions = useQuery({ queryKey: ['event-revisions-v3', market.id], queryFn: () => getEventRevisions(market.id), enabled: Boolean(terms.data) });
@@ -54,7 +62,7 @@ function ModerationReview({ market, onBack, onDone }: {
             if (kind === 'save') {
                 if (!editBase || !draft)
                     throw new Error('Обновите заявку перед сохранением');
-                await eventV3Action(market.id, 'moderation', { expected_revision: editBase.revision, event: buildEventBody(draft) }, 'PUT');
+                await eventV3Action(market.id, 'moderation', { expected_revision: editBase.revision, event: buildModerationBody(draft, editBase) }, 'PUT');
             }
             else if (kind === 'approve') {
                 if (terms.data) {
@@ -93,7 +101,7 @@ function ModerationReview({ market, onBack, onDone }: {
     const compareDraft = () => {
         if (!draft)
             return;
-        const nextErrors = { ...validateEventStep(draft, 'question'), ...validateEventStep(draft, 'conditions') };
+        const nextErrors = { ...validateModerationStep(draft, 'question', editBase), ...validateModerationStep(draft, 'conditions', editBase) };
         setErrors(nextErrors);
         if (!Object.keys(nextErrors).length)
             setView('compare');
@@ -103,27 +111,28 @@ function ModerationReview({ market, onBack, onDone }: {
     const original = revisions.data?.find((row) => row.kind === 'created')?.snapshot;
     const current = terms.data;
     const creatorLabel = market.creator?.telegram_username ? '@' + market.creator.telegram_username.replace(/^@/, '') : market.creator?.display_name || '#' + (current?.creator_id ?? market.creator_id);
-    const title = { review: 'Проверка заявки', edit: 'Редактирование', compare: 'Изменения заявки', original: 'Первоначальная версия', reject: 'Отклонить заявку', approve: 'Одобрение и публикация' }[view];
-    const footer = !current && terms.isPending ? undefined : view === 'edit' ? <Button fullWidth onClick={compareDraft}>Сравнить изменения</Button> : view === 'compare' && draft && editBase ? <Button fullWidth loading={action.isPending} disabled={moderationChanges(editBase, buildEventBody(draft)).length === 0} onClick={() => action.mutate('save')}>Зафиксировать правки</Button> : view === 'review' ? <Button fullWidth disabled={action.isPending} onClick={() => { setPublishRevision(current?.revision ?? null); setView('approve'); }}>{current?.moderator_edited ? 'Одобрить и опубликовать' : 'Одобрить без изменений'}</Button> : view === 'approve' ? <Button fullWidth loading={action.isPending} onClick={() => action.mutate('approve')}>Подтвердить публикацию</Button> : view === 'reject' ? <Button fullWidth disabled={!reason.trim()} loading={action.isPending} onClick={() => action.mutate('reject')}>Отклонить заявку</Button> : undefined;
-    return <Shell title={title} context={`Модератор · #${market.id} · До публикации`} onBack={back} footer={!terms.isError ? footer : undefined}>
+    if (visualV1 && view === 'approve' && action.isError && isApiError(action.error) && action.error.status === 409) return <ModerationConflictV1 onBack={onBack} onCompare={() => { void refresh().then(() => { action.reset(); setDraft(null); setPublishRevision(null); setView('compare'); }); }} />;
+    const title = { review: 'Проверка заявки', edit: 'Редактирование', compare: 'Изменения заявки', original: 'Первоначальная версия', reject: 'Отклонить заявку', approve: visualV1 ? 'Одобрение заявки' : 'Одобрение и публикация' }[view];
+    const footer = !current && terms.isPending ? undefined : view === 'edit' ? <Button fullWidth onClick={compareDraft}>Сравнить изменения</Button> : view === 'compare' && draft && editBase ? <Button fullWidth loading={action.isPending} disabled={moderationChanges(editBase, buildModerationBody(draft, editBase)).length === 0} onClick={() => action.mutate('save')}>Зафиксировать правки</Button> : view === 'review' ? <Button fullWidth disabled={action.isPending} onClick={() => { setPublishRevision(current?.revision ?? null); setView('approve'); }}>{current?.moderator_edited ? 'Одобрить и опубликовать' : 'Одобрить без изменений'}</Button> : view === 'approve' ? <Button fullWidth loading={action.isPending} onClick={() => action.mutate('approve')}>{visualV1 ? 'Одобрить и опубликовать' : 'Подтвердить публикацию'}</Button> : view === 'reject' ? <Button fullWidth disabled={!reason.trim()} loading={action.isPending} onClick={() => action.mutate('reject')}>Отклонить заявку</Button> : undefined;
+    return <Shell title={title} context={visualV1 ? (view === 'approve' ? undefined : `BTN-${market.id} · До публикации`) : `Модератор · #${market.id} · До публикации`} onBack={back} footer={!terms.isError && footer ? visualV1 ? <>{footer}{view === 'review' ? <Button variant="secondary" fullWidth disabled={action.isPending} onClick={() => setView('reject')}>Отклонить</Button> : view === 'approve' || view === 'reject' ? <Button variant="secondary" fullWidth disabled={action.isPending} onClick={back}>Вернуться к проверке</Button> : null}</> : footer : undefined}>
     {terms.isPending ? <p role="status">Загружаем условия…</p> : terms.isError ? <><p role="alert">{errorDetail(terms.error)}</p><Button fullWidth onClick={() => { void terms.refetch(); }}>Повторить</Button></> : <>
-      {saved ? <p role="status" className={styles.notice}>{saved}</p> : null}
-      {action.isError ? <p role="alert" className={styles.error}>{errorDetail(action.error)} <button type="button" className={styles.link} onClick={() => { void refresh(); action.reset(); }}>Обновить данные</button></p> : null}
+      {saved ? <p role="status" className={skin.notice}>{saved}</p> : null}
+      {action.isError ? <p role="alert" className={skin.error}>{errorDetail(action.error)} <button type="button" className={skin.link} onClick={() => { void refresh(); action.reset(); }}>Обновить данные</button></p> : null}
       {view === 'review' ? <>
-        <section className={styles.row}><span>Первоначальный создатель</span><p>{creatorLabel} · авторство и вознаграждение сохраняются.</p></section>
-        {current ? <ReviewRows terms={current} onEdit={beginEdit}/> : <><section className={styles.row}><span>Название события</span><p>{market.question}</p></section><section className={styles.row}><span>Описание и исходы</span><p>{market.description}</p><p>{market.outcomes.join(' / ')}</p></section><p className={styles.notice}>Прежний формат заявки: структурированное редактирование недоступно. Можно одобрить исходную заявку или отклонить её.</p></>}
-        {current ? <><Button variant="secondary" fullWidth onClick={beginEdit}>Редактировать заявку</Button><Button variant="secondary" fullWidth onClick={() => { setDraft(null); setView('compare'); }}>Сравнить редакции</Button></> : null}
-        <Button variant="secondary" fullWidth onClick={() => setView('reject')}>Отклонить</Button>
-      </> : view === 'edit' && draft ? <><p className={styles.secondary}>Создатель: {creatorLabel}</p><ModerationFields draft={draft} errors={errors} onValidate={(key) => { const checked = { ...validateEventStep(draft, 'question'), ...validateEventStep(draft, 'conditions') }; setErrors((previous) => ({ ...previous, [key]: checked[key] })); }} onChange={(key, value) => { setDraft((previous) => previous ? { ...previous, [key]: value } : null); setErrors((previous) => ({ ...previous, [key]: undefined })); }}/></> : view === 'compare' ? <>
-        <p className={styles.secondary}>{draft ? `Редакция ${editBase?.revision} → ${Number(editBase?.revision) + 1} · До публикации` : `Первоначальная → редакция ${current?.revision}`}</p>
-        {draft && editBase ? <ChangeRows before={editBase} after={buildEventBody(draft)}/> : revisions.isPending ? <p role="status">Загружаем историю…</p> : revisions.isError ? <><p role="alert">{errorDetail(revisions.error)}</p><Button fullWidth onClick={() => { void revisions.refetch(); }}>Повторить</Button></> : original && current ? <ChangeRows before={original} after={current}/> : <p>Первоначальная версия не найдена.</p>}
-        <section className={styles.row}><span>Запись изменений</span>{revisions.data?.map((row) => <p key={row.id}>Редакция {row.revision} · {row.kind === 'created' ? 'создатель' : row.kind === 'moderation_edit' ? 'модератор' : row.kind} · {new Date(row.created_at).toLocaleString('ru-RU', { timeZone: 'UTC' })} UTC</p>)}</section>
+        <section className={`${skin.row} ${visualV1 ? v1.creatorRow : ''}`}><span>{visualV1 ? 'Создатель' : 'Первоначальный создатель'}</span><p>{creatorLabel} · {visualV1 ? 'Авторство сохраняется' : 'авторство и вознаграждение сохраняются.'}</p></section>
+        {current ? <ReviewRows terms={current} onEdit={beginEdit}/> : <><section className={skin.row}><span>Название события</span><p>{market.question}</p></section><section className={skin.row}><span>Описание и исходы</span><p>{market.description}</p><p>{market.outcomes.join(' / ')}</p></section><p className={skin.notice}>Прежний формат заявки: структурированное редактирование недоступно. Можно одобрить исходную заявку или отклонить её.</p></>}
+        {current ? <><div className={visualV1 ? v1.reviewLinks : undefined}><Button variant={visualV1 ? 'link' : 'secondary'} fullWidth onClick={beginEdit}>{visualV1 ? 'Редактировать заявку →' : 'Редактировать заявку'}</Button><Button variant={visualV1 ? 'link' : 'secondary'} fullWidth onClick={() => { setDraft(null); setView('compare'); }}>{visualV1 ? 'Сравнить редакции →' : 'Сравнить редакции'}</Button></div></> : null}
+        {!visualV1 ? <Button variant="secondary" fullWidth onClick={() => setView('reject')}>Отклонить</Button> : null}
+      </> : view === 'edit' && draft ? <><p className={skin.secondary}>Создатель: {creatorLabel}</p><ModerationFields startOnly={editBase?.timing_version === 'start-v1'} draft={draft} errors={errors} onValidate={(key) => { const checked = { ...validateModerationStep(draft, 'question', editBase), ...validateModerationStep(draft, 'conditions', editBase) }; setErrors((previous) => ({ ...previous, [key]: checked[key] })); }} onChange={(key, value) => { setDraft((previous) => previous ? { ...previous, [key]: value } : null); setErrors((previous) => ({ ...previous, [key]: undefined })); }}/></> : view === 'compare' ? <>
+        <p className={skin.secondary}>{draft ? `Редакция ${editBase?.revision} → ${Number(editBase?.revision) + 1} · До публикации` : `Первоначальная → редакция ${current?.revision}`}</p>
+        {draft && editBase ? <ChangeRows before={editBase} after={buildModerationBody(draft, editBase)}/> : revisions.isPending ? <p role="status">Загружаем историю…</p> : revisions.isError ? <><p role="alert">{errorDetail(revisions.error)}</p><Button fullWidth onClick={() => { void revisions.refetch(); }}>Повторить</Button></> : original && current ? <ChangeRows before={original} after={current}/> : <p>Первоначальная версия не найдена.</p>}
+        <section className={skin.row}><span>Запись изменений</span>{revisions.data?.map((row) => <p key={row.id}>Редакция {row.revision} · {row.kind === 'created' ? 'создатель' : row.kind === 'moderation_edit' ? 'модератор' : row.kind} · {new Date(row.created_at).toLocaleString('ru-RU', { timeZone: 'UTC' })} UTC</p>)}</section>
         <Button variant="secondary" fullWidth disabled={!original} onClick={() => setView('original')}>Посмотреть первоначальную версию</Button>
         <Button variant="secondary" fullWidth onClick={() => { if (!draft)
                 beginEdit();
             else
                 setView('edit'); }}>Продолжить редактирование</Button>
-      </> : view === 'original' ? original ? <ReviewRows terms={original}/> : <p>Первоначальная версия недоступна.</p> : view === 'reject' ? <><p>Причина будет видна создателю события.</p><TextField label="Причина отклонения" value={reason} onChange={setReason} multiline maxLength={1000} disabled={action.isPending}/></> : view === 'approve' ? <ModerationPublishConfirmation marketId={market.id} question={current?.question ?? market.question} edited={Boolean(current?.moderator_edited)} /> : null}
+      </> : view === 'original' ? original ? <ReviewRows terms={original}/> : <p>Первоначальная версия недоступна.</p> : view === 'reject' ? <><p>Причина будет видна создателю события.</p><TextField className={visualV1 ? v1.field : undefined} label="Причина отклонения" value={reason} onChange={setReason} multiline maxLength={1000} disabled={action.isPending}/></> : view === 'approve' ? visualV1 ? <ModerationPublishV1 question={current?.question ?? market.question} outcomes={current?.outcomes ?? market.outcomes} creatorLabel={creatorLabel} edited={Boolean(current?.moderator_edited)} /> : <ModerationPublishConfirmation marketId={market.id} question={current?.question ?? market.question} edited={Boolean(current?.moderator_edited)} /> : null}
     </>}
   </Shell>;
 }
@@ -133,24 +142,33 @@ export function ModerationPublishConfirmation({ marketId, question, edited }: { 
 function ReviewRows({ terms, onEdit }: {
     terms: Parameters<typeof publicReviewRows>[0];
     onEdit?: () => void;
-}) { return <>{publicReviewRows(terms).map(({ label, value }) => <section className={styles.row} key={label}>{onEdit ? <button type="button" className={styles.link} onClick={onEdit}>{label} · Изменить →</button> : <span>{label}</span>}<p>{value}</p></section>)}</>; }
+}) { const visualV1 = useVisualV1(); if (visualV1) return <ModerationReviewRowsV1 terms={terms} onEdit={onEdit}/>; return <>{publicReviewRows(terms).map(({ label, value }) => <section className={styles.row} key={label}>{onEdit ? <button type="button" className={styles.link} onClick={onEdit}>{label} · Изменить →</button> : <span>{label}</span>}<p>{value}</p></section>)}</>; }
 function ChangeRows({ before, after }: {
     before: Parameters<typeof moderationChanges>[0];
     after: Parameters<typeof moderationChanges>[1];
-}) { const changes = moderationChanges(before, after); return changes.length ? <>{changes.map((row) => <section className={styles.row} key={row.label}><span>{row.label} · изменено</span><p>Было: {row.before || 'Не указано'}<br />Стало: {row.after || 'Не указано'}</p></section>)}</> : <p>Без изменений.</p>; }
-export function ModerationFields({ draft, errors, onChange, onValidate }: {
+}) { const visualV1 = useVisualV1(); if (visualV1) return <ModerationChangesV1 before={before} after={after}/>; const changes = moderationChanges(before, after); return changes.length ? <>{changes.map((row) => <section className={styles.row} key={row.label}><span>{row.label} · изменено</span><p>Было: {row.before || 'Не указано'}<br />Стало: {row.after || 'Не указано'}</p></section>)}</> : <p>Без изменений.</p>; }
+export function ModerationFields({ draft, errors, onChange, onValidate, startOnly = false }: {
+    startOnly?: boolean;
     draft: EventDraft;
     errors: DraftErrors;
     onChange: (key: keyof EventDraft, value: string) => void;
     onValidate?: (key: keyof EventDraft) => void;
 }) {
-    const field = (key: keyof EventDraft, label: string, multiline = false, type = 'text') => <TextField key={key} id={`mod-${key}`} className={styles.field} label={label} value={String(draft[key] ?? '')} onChange={(value) => onChange(key, value)} onBlur={() => onValidate?.(key)} multiline={multiline} rows={multiline ? 2 : undefined} type={type} aria-invalid={Boolean(errors[key])} hint={errors[key]}/>;
+    const visualV1 = useVisualV1();
+    const skin = visualV1 ? v1 : styles;
+    const field = (key: keyof EventDraft, label: string, multiline = false, type = 'text') => <TextField key={key} id={`mod-${key}`} className={skin.field} label={label} value={String(draft[key] ?? '')} onChange={(value) => onChange(key, value)} onBlur={() => onValidate?.(key)} multiline={multiline} rows={multiline ? 2 : undefined} type={type} aria-invalid={Boolean(errors[key])} hint={errors[key]}/>;
+    if (visualV1) return <>
+      <section className={v1.editGroup}>{field('question', 'Вопрос', true)}{field('outcomeA', 'Исход 1')}{field('outcomeB', 'Исход 2')}<label className={v1.select}>Категория<select value={draft.category} onChange={event => onChange('category',event.target.value)}>{[['sport','Спорт'],['esports','Киберспорт'],['politics','Политика'],['crypto','Крипто'],['unique','Другое']].map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label></section>
+      <section className={v1.editGroup}><h2>Источники</h2>{field('sourceName','Название основного источника')}{field('sourceUrl','Ссылка на основной источник',false,'url')}{field('backupName','Резервный источник · необязательно')}{field('backupUrl','Ссылка на резервный источник · необязательно',false,'url')}</section>
+      <section className={v1.editGroup}><h2>Правила и критерии</h2>{field('rules','Подробные условия',true)}{field('criterionA','Критерий первого исхода',true)}{field('criterionB','Критерий второго исхода',true)}{field('method','Как определяется результат',true)}{field('unverifiable','Если результат нельзя определить',true)}{field('description','Описание · необязательно',true)}</section>
+      <section className={v1.editGroup}><h2>Сроки · UTC</h2>{field('closeAt',startOnly?'Начало события':'Приём ставок до',false,'datetime-local')}{!startOnly?field('endsAt','Предполагаемое завершение',false,'datetime-local'):null}</section>
+    </>;
     return <>
     {field('question', 'Название события', true)}{field('outcomeA', 'Первый исход')}{field('outcomeB', 'Второй исход')}
     <label className={styles.select}>Категория<select value={draft.category} onChange={(event) => onChange('category', event.target.value)}>{[['sport', 'Спорт'], ['esports', 'Киберспорт'], ['politics', 'Политика'], ['crypto', 'Крипто'], ['unique', 'Другое']].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     {field('description', 'Описание · необязательно', true)}<h2>Правила и критерии</h2>{field('rules', 'Подробные условия', true)}{field('criterionA', 'Когда наступает первый исход', true)}{field('criterionB', 'Когда наступает второй исход', true)}{field('method', 'Как будет определён результат', true)}{field('unverifiable', 'Если результат нельзя определить', true)}
     <h2>Источники проверки</h2>{field('sourceName', 'Основной источник · обязательно')}{field('sourceUrl', 'Ссылка на основной источник · обязательно', false, 'url')}{field('backupName', 'Резервный источник · необязательно')}{field('backupUrl', 'Ссылка на резервный источник · необязательно', false, 'url')}
-    <h2>Сроки · UTC</h2>{field('closeAt', 'Приём ставок до', false, 'datetime-local')}{field('endsAt', 'Предполагаемое завершение события', false, 'datetime-local')}
+    <h2>Сроки · UTC</h2>{field('closeAt', startOnly ? 'Дата и время начала' : 'Приём ставок до', false, 'datetime-local')}{!startOnly ? field('endsAt', 'Предполагаемое завершение события', false, 'datetime-local') : null}
   </>;
 }
 function Shell({ title, context, onBack, footer, children }: {
@@ -159,4 +177,4 @@ function Shell({ title, context, onBack, footer, children }: {
     onBack: () => void;
     footer?: ReactNode;
     children: ReactNode;
-}) { return <div className={styles.screen}><header className={styles.header}><div className={styles.navigation}><button type="button" onClick={onBack}>← Назад</button><span>BetTON</span></div><h1>{title}</h1>{context ? <p>{context}</p> : null}</header><main className={styles.body}>{children}</main>{footer ? <footer className={styles.footer}>{footer}</footer> : null}</div>; }
+}) { const visualV1 = useVisualV1(); if (visualV1) return <ModerationShellV1 title={title} context={context} onBack={onBack} footer={footer} frame={title === 'Проверка заявки' ? '819:61311' : title === 'Редактирование' ? '822:8777' : title === 'Изменения заявки' ? '819:61385' : title === 'Одобрение заявки' ? '819:61901' : title === 'Отклонить заявку' ? '819:61928' : undefined}>{children}</ModerationShellV1>; return <div className={styles.screen}><header className={styles.header}><div className={styles.navigation}><button type="button" onClick={onBack}>← Назад</button><span>BetTON</span></div><h1>{title}</h1>{context ? <p>{context}</p> : null}</header><main className={styles.body}>{children}</main>{footer ? <footer className={styles.footer}>{footer}</footer> : null}</div>; }
