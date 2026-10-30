@@ -14,7 +14,7 @@ export function OwnPriceV1(p:OwnPriceScreenProps){
  useEffect(()=>setConfirming(false),[selectedSide,odds,amount])
  const selected=selectedSide==='a'?market.outcomeA:market.outcomeB
  const ready=p.previewMode!=='backend'||(p.matchedTon!=null&&p.restTon!=null)
- const valid=amount>0&&odds>1&&odds<=10000&&ready&&!p.disabled&&!submitting&&p.guarantorCosts?.can_place!==false
+ const valid=Number.isFinite(amount)&&amount>0&&(p.availableTon==null||amount<=p.availableTon)&&Number.isFinite(odds)&&odds>1&&odds<=10000&&ready&&!p.disabled&&!submitting&&p.guarantorCosts?.can_place!==false
  const hasRemainder=order?.status==='open'&&order.remainingTon>0
  const close=()=>{if(submitting||p.cancellingOrder)return;if(cancel){setCancel(false);return}if(confirming){setConfirming(false);return}onBack?.()}
  const context=<p className={s.context}>{selected.label} · {market.question}{market.creator.handle==='betton_preview'?' · Демо':''}</p>
