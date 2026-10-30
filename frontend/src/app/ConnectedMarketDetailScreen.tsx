@@ -1,3 +1,5 @@
+import {getChatMessages} from '../api/chat'
+import {useVisualV1} from '../visualV1/VisualV1Context'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import {
@@ -62,6 +64,7 @@ export function ConnectedMarketDetailScreen({
   botUsername,
   webapp,
 }: ConnectedMarketDetailScreenProps) {
+  const visualV1 = useVisualV1()
   const t = useT()
   const { locale } = useI18n()
   const [side, setSide] = useState<OutcomeSide>('a')
@@ -88,6 +91,12 @@ export function ConnectedMarketDetailScreen({
     },
   })
 
+  const discussionPreview = useQuery({
+    queryKey: [...queryKeys.marketChat(marketId), shareToken, 'preview'],
+    queryFn: () => getChatMessages({kind:'market',marketId},{limit:3},shareToken),
+    enabled: visualV1 && Boolean(userId) && marketQuery.isSuccess,
+    staleTime: 15000,
+  })
   const privateWithUser = !!userId && marketQuery.data?.visibility === 'unlisted'
   const privateCase = useQuery({ queryKey: ['guarantor-case', marketId], queryFn: () => getCase(marketId), enabled: privateWithUser })
   const p2p = marketQuery.data?.mechanism === 'p2p'
@@ -174,6 +183,9 @@ export function ConnectedMarketDetailScreen({
         viewState={viewState}
         actionsDisabled={actionsOff}
         showInternalBack={showInternalBack}
+        discussionMessages={discussionPreview.data?.items}
+        discussionState={!userId?'unavailable':discussionPreview.isError?'error':discussionPreview.isPending?'loading':'ready'}
+        onRetryDiscussion={()=>{void discussionPreview.refetch()}}
         discussionUnreadReplies={discussionUnreadReplies}
         onDiscussion={onDiscussion}
         onBack={onBack}

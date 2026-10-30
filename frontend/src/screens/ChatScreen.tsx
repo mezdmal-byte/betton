@@ -2,6 +2,8 @@ import { MessageCircle, Paperclip, Reply, Send, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChatMessageOut } from '../api/types'
 import styles from './ChatScreen.module.css'
+import { useVisualV1 } from '../visualV1/VisualV1Context'
+import { ChatV1 } from '../visualV1/ChatV1'
 
 export type ChatAttachableMarket = { id: number; question: string }
 
@@ -24,9 +26,20 @@ export type ChatScreenProps = {
   onSend: (input: { text: string; replyToId?: number; attachedMarketId?: number }) => void
   onDelete: (messageId: number) => void
   onOpenMarket?: (marketId: number) => void
+  marketId?: number
+  shareValue?: string
+  onShare?: () => Promise<boolean>
+  sendError?: string
+  deleteError?: string
+  deletingMessageId?: number
+  onSendConfirmed?: (input: { text: string; replyToId?: number; attachedMarketId?: number }) => Promise<unknown>
 }
 
-export function ChatScreen({
+export function ChatScreen(props: ChatScreenProps) {
+  return useVisualV1() ? <ChatV1 {...props}/> : <LegacyChatScreen {...props}/>
+}
+
+function LegacyChatScreen({
   title,
   subtitle,
   messages,

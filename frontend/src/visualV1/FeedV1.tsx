@@ -1,3 +1,4 @@
+import wordmark from '../assets/visual-v1/wordmark.svg'
 import { useContext, useEffect, useRef, useState } from 'react'
 import type { MarketsScreenProps } from '../screens/MarketsScreen'
 import type { MarketFixture, OutcomeSide } from '../types/market'
@@ -81,7 +82,7 @@ export function FeedV1({ markets = [], selectedOutcomes, query = '', sort = 'new
   return <div className={s.screen} data-figma-frame="819:45192">
     <header className={s.header}>
       <button type="button" ref={menuButton} aria-label="Меню" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><FeedAsset name="f79f3"/></button>
-      <strong className={s.brand}>Bet<em>TON</em></strong>
+      <strong className={s.brand}><img src={wordmark} width={101} height={32} alt="BetTON"/></strong>
       <button type="button" aria-label="Профиль" onClick={onProfileClick ?? a.onOpenProfile}><FeedAsset name="ce1b6"/></button>
       <button type="button" className={s.notifications} aria-label={`Уведомления${unread ? ` · ${unread}` : ''}`} onClick={a.onOpenNotifications}><FeedAsset name="c0f44" size={21}/>{unread ? <span className={s.dot}/> : null}</button>
     </header>
@@ -105,7 +106,7 @@ export function FeedV1({ markets = [], selectedOutcomes, query = '', sort = 'new
     <BottomNavigation active="markets" onChange={onNavChange}/>
 
     {menuOpen ? <div className={s.menuBackdrop} onClick={() => setMenuOpen(false)}><nav className={s.drawer} role="dialog" aria-modal="true" aria-label="Меню BetTON" data-figma-frame="819:46154" onClick={e => e.stopPropagation()}>
-      <div className={s.drawerHeading}><strong className={s.brand}>Bet<em>TON</em></strong><button type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)}>×</button></div>
+      <div className={s.drawerHeading}><strong className={s.brand}><img src={wordmark} width={101} height={32} alt="BetTON"/></strong><button type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)}>×</button></div>
       <button type="button" className={s.drawerProfile} onClick={() => closeMenu(onProfileClick ?? a.onOpenProfile)}><span className={s.avatar}>{headerUser?.photoUrl ? <img src={headerUser.photoUrl} alt=""/> : headerUser?.initials ?? '?'}</span><span><strong>{headerUser?.displayName ?? 'Гость'}</strong><small>{headerUser?.handle ? '@' + headerUser.handle.replace(/^@/,'') : 'Откройте через Telegram'}</small></span><FeedAsset name="f9c02" size={16}/></button>
       <button type="button" className={s.drawerBalance} onClick={() => closeMenu(onProfileClick ?? a.onOpenProfile)}><FeedAsset name="ba2bd" size={20}/><span><small>Баланс</small><strong>{headerUser ? formatTonFull(headerUser.availableTon) : '—'}</strong></span></button>
       {drawerRow('Главная','1b500',()=>onNavChange?.('markets'),true)}

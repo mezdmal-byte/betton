@@ -9,7 +9,8 @@ import {
 } from '../api/chat'
 import { getMarket, listMarkets } from '../api/markets'
 import { queryKeys } from '../api/query'
-import { shareTokenFor } from '../api/share'
+import { shareTokenFor, copyShareLink, marketShareUrl } from '../api/share'
+import { errorDetail } from '../api/errors'
 import { ChatScreen } from '../screens/ChatScreen'
 
 export type ConnectedChatScreenProps = {
@@ -132,8 +133,15 @@ export function ConnectedChatScreen({
       onLoadOlder={() => { void chat.fetchNextPage() }}
       onRetry={() => { void chat.refetch() }}
       onSend={(input) => sendMutation.mutate(input)}
+      onSendConfirmed={(input) => sendMutation.mutateAsync(input)}
+      sendError={sendMutation.isError ? errorDetail(sendMutation.error) : undefined}
+      deleteError={deleteMutation.isError ? errorDetail(deleteMutation.error) : undefined}
+      deletingMessageId={deleteMutation.isPending ? deleteMutation.variables : undefined}
       onDelete={(messageId) => deleteMutation.mutate(messageId)}
       onOpenMarket={onOpenMarket}
+      marketId={marketId ?? undefined}
+      shareValue={marketShareUrl({shareToken:marketQuery.data?.share_token ?? shareToken})}
+      onShare={marketQuery.data?.share_token || shareToken ? () => copyShareLink(marketShareUrl({shareToken:marketQuery.data?.share_token ?? shareToken})) : undefined}
     />
   )
 }

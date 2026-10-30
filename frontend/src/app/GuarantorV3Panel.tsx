@@ -11,8 +11,13 @@ import { IntegrationUnavailableScreen } from './IntegrationUnavailableScreen'
 import { GuarantorFundingDetails, GuarantorRewardDetails, GuarantorRewardModeField, rewardTariffText } from './GuarantorRewardDetails'
 import { GuarantorCancellationForm } from './GuarantorCancellationForm'
 import s from './GovernanceV3.module.css'
+import {useVisualV1} from '../visualV1/VisualV1Context'
+import {ConnectedGuarantorWorkflowV1} from '../visualV1/GuarantorWorkflowV1'
 
 export function GuarantorV3Panel({event,userId}: {event:GuarantorCase;userId:number}) {
+  return useVisualV1()?<ConnectedGuarantorWorkflowV1 event={event} userId={userId}/>:<LegacyGuarantorV3Panel event={event} userId={userId}/>
+}
+function LegacyGuarantorV3Panel({event,userId}: {event:GuarantorCase;userId:number}) {
   const qc=useQueryClient(),mid=event.market_id
   const [view,setView]=useState<'summary'|'chat'|'reward'|'edit'|'decision'|'profile'|'cancel'|'cancel-confirm'>('summary')
   const [unavailable,setUnavailable]=useState(false)

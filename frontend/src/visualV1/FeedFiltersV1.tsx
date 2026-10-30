@@ -1,3 +1,4 @@
+import wordmark from '../assets/visual-v1/wordmark.svg'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '../components/Button/Button'
 import { syncTelegramBackButton } from '../telegram/webapp'
@@ -40,7 +41,7 @@ export function FeedFiltersV1({ open, status, category, offers = 'any', closeBef
     return <button type="button" className={s.row} onClick={action} aria-pressed={checked}><span className={s.icon}><FeedAsset name={icon} size={22}/></span><span className={s.copy}><strong>{label}</strong>{value ? <small>{value}</small> : null}</span>{checked ? <span className={s.selected} aria-hidden="true">✓</span> : <FeedAsset name="0de93" size={16}/>}</button>
   }
   return <section className={s.screen} role="dialog" aria-modal="true" aria-label={title} data-figma-frame={frame}>
-    <header className={s.header}><button type="button" aria-label="Назад" onClick={back}><FeedAsset name="f259b" size={20}/></button><strong className={s.brand}>Bet<em>TON</em></strong><span/></header>
+    <header className={s.header}><button type="button" aria-label="Назад" onClick={back}><FeedAsset name="f259b" size={20}/></button><strong className={s.brand}><img src={wordmark} width={101} height={32} alt="BetTON"/></strong><span/></header>
     <main className={s.body}><div className={s.heading}><h1>{title}</h1>{panel === 'main' ? <p>Уточните список событий</p> : panel === 'category' ? <p>Выберите события по интересам</p> : null}</div>
       <div className={s.list}>
         {panel === 'main' ? <>{row('Категория', '15236', () => setPanel('category'), draftCategory === 'all' ? 'Все' : categoryLabels[draftCategory])}{row('Предложения', 'e08e7', () => setPanel('offers'), offerLabels[draftOffers])}{row('Приём ставок до', '08b5d', () => setCalendarOpen(true), draftDate ? new Intl.DateTimeFormat('ru-RU', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' }).format(new Date(draftDate)) + ' · UTC' : 'Любая дата')}{/* Existing status filter is retained as an additional row using the approved row component. */}{row('Статус события', '15236', () => setPanel('status'), statusLabels[draftStatus] ?? statusLabels.all)}</> : null}

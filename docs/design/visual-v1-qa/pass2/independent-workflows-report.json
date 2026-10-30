@@ -1,0 +1,39 @@
+{
+  "checks": [
+    "Active creator and unrelated viewer cannot decide",
+    "Unrelated review viewer has no negotiation controls",
+    "Stale decision-check revision blocks final write",
+    "Invitation footer Figma y728 corrected",
+    "Language legacy choice Escape restores focus without persisting",
+    "320/430 wallet and settings no overflow/no invented wallet balance"
+  ],
+  "metrics": {
+    "invitationFooter": {
+      "y": 728,
+      "height": 116,
+      "paddingBottom": "16px"
+    },
+    "languageStorageBeforeCancel": {},
+    "badges": [
+      {
+        "x": 28,
+        "y": 201,
+        "width": 334,
+        "height": 22
+      },
+      {
+        "x": 28,
+        "y": 315,
+        "width": 334,
+        "height": 22
+      },
+      {
+        "x": 28,
+        "y": 429,
+        "width": 334,
+        "height": 22
+      }
+    ]
+  },
+  "errors": []
+}

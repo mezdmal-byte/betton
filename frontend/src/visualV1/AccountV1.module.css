@@ -28,3 +28,5 @@
 .iconButton{position:relative}.iconButton .dot{position:absolute;top:2px;right:-1px;width:4px;height:4px}
 .screen button:focus-visible,.screen input:focus-visible,.screen textarea:focus-visible{outline:2px solid #ff6b00;outline-offset:3px}.screen button:active:not(:disabled){transform:translateY(1px)}
 @media(prefers-reduced-motion:reduce){.screen button:active{transform:none}}
+
+img.brand{display:block;width:101px;height:32px;flex:none}

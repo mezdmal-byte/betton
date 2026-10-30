@@ -28,6 +28,7 @@ try {
   for(const mode of ['event','quick','own']){await open('trade/index.html?mode='+mode);await capture(`${mode}-${width}`)}
  }
  await page.setViewportSize({width:390,height:844})
+ for(const state of ['ready','loading','error']){await open('trade/index.html?mode=event&discussion='+state);await page.getByRole('button',{name:'Обсуждение',exact:true}).click();await capture('discussion-'+state+'-390');if(state==='ready'){assert.equal(await page.getByText('Проверим официальный результат.',{exact:true}).count(),1);assert.equal(await page.getByText('Скрытый текст',{exact:true}).count(),0)}if(state==='error'){await page.getByRole('button',{name:'Повторить загрузку обсуждения',exact:true}).click();assert.equal(await page.locator('[data-submit-count]').getAttribute('data-submit-count'),'1')}}
  await open('index.html?screen=help')
  await page.getByRole('button',{name:'Как заключаются ставки',exact:true}).click()
  await capture('help-p2p-390')

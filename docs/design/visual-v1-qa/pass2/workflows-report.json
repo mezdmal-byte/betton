@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "checks": [
+    "stale revision blocked",
+    "explicit final decision",
+    "server failure retains reason",
+    "theme Escape focus restoration",
+    "wallet network callback",
+    "no invented on-chain balance"
+  ],
+  "captures": [
+    "decision",
+    "decision-check",
+    "guarantor-320-invitation",
+    "guarantor-320-terms",
+    "guarantor-320-active",
+    "guarantor-320-invite",
+    "guarantor-390-invitation",
+    "guarantor-390-terms",
+    "guarantor-390-active",
+    "guarantor-390-invite",
+    "guarantor-430-invitation",
+    "guarantor-430-terms",
+    "guarantor-430-active",
+    "guarantor-430-invite",
+    "settings-320",
+    "settings-390",
+    "settings-430",
+    "deposit-320",
+    "deposit-390",
+    "deposit-430",
+    "withdraw-320",
+    "withdraw-390",
+    "withdraw-430"
+  ],
+  "errors": []
+}

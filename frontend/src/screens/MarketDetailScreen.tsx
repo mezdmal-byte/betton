@@ -64,6 +64,9 @@ export type MarketDetailScreenProps = {
   actionsDisabled?: boolean;
   showInternalBack?: boolean;
   discussionUnreadReplies?: number;
+  discussionMessages?: import('../api/types').ChatMessageOut[];
+  discussionState?: 'ready' | 'loading' | 'error' | 'unavailable';
+  onRetryDiscussion?: () => void;
   onDiscussion?: () => void;
   onBack?: () => void;
   onSelectSide?: (side: OutcomeSide) => void;

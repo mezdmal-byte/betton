@@ -1,0 +1,26 @@
+{
+  "badges": [
+    {
+      "x": 28,
+      "y": 201,
+      "width": 87,
+      "height": 22,
+      "alignSelf": "flex-start"
+    },
+    {
+      "x": 28,
+      "y": 315,
+      "width": 87,
+      "height": 22,
+      "alignSelf": "flex-start"
+    },
+    {
+      "x": 28,
+      "y": 429,
+      "width": 87,
+      "height": 22,
+      "alignSelf": "flex-start"
+    }
+  ],
+  "passed": true
+}

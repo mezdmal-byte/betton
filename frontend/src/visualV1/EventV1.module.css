@@ -3,3 +3,5 @@
 .outcomes .selected strong{color:#ff6b00}
 
 .outcomes i img{width:10px;height:10px}
+
+.discussionPreview{display:flex;flex-direction:column;gap:12px;min-width:0}.discussionPreview article{display:flex;flex-direction:column;gap:4px}.discussionPreview strong{font-size:12px;line-height:17px;font-weight:600}.discussionPreview p{margin:0;font-size:13px;line-height:19px;white-space:pre-wrap;overflow-wrap:anywhere;color:#566176}

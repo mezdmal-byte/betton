@@ -9,6 +9,8 @@ import { Tabs } from '../components/Tabs/Tabs'
 import { TextField } from '../components/TextField/TextField'
 import { formatTonFull } from '../lib/format'
 import styles from './WalletScreen.module.css'
+import {useVisualV1} from '../visualV1/VisualV1Context'
+import {WalletV1} from '../visualV1/WalletV1'
 
 export type WalletTab = 'deposit' | 'withdraw'
 export type WalletNetwork = 'ton' | 'solana'
@@ -23,7 +25,8 @@ export type WalletScreenProps = {
   onNetworkChange?: (network: WalletNetwork) => void
 }
 
-export function WalletScreen({
+export function WalletScreen(props:WalletScreenProps){return useVisualV1()?<WalletV1 {...props}/>:<LegacyWalletScreen {...props}/>}
+function LegacyWalletScreen({
   account,
   tab = 'deposit',
   network = 'ton',
