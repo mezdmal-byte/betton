@@ -21,7 +21,7 @@ export type Route =
   | { name: 'my-markets' }
   | { name: 'public-profile'; userId: number }
   | { name: 'help' }
-  | { name: 'wallet'; tab: WalletTab }
+  | { name: 'wallet'; tab?: WalletTab }
   | { name: 'history' }
   | { name: 'chat-lobby' }
   | { name: 'chat-market'; marketId: number }
@@ -52,6 +52,8 @@ export function pushRoute(stack: Route[], next: Route): Route[] {
   const current = stack[stack.length - 1]
   if (current && sameRoute(current, next)) return stack
   if (current?.name === 'wallet' && next.name === 'wallet') {
+    // Keep the informational wallet overview in history so Back from deposit/withdraw returns to it.
+    if (current.tab === undefined && next.tab !== undefined) return [...stack, next]
     return [...stack.slice(0, -1), next]
   }
   return [...stack, next]

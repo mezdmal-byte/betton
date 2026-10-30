@@ -38,7 +38,7 @@ import { WalletScreen } from '../screens/WalletScreen'
 import { currentRoute, goBack, pushRoute, resetToTab, routesForTabMemory, showTelegramBackButton, type Route, type WalletTab } from './navigation'
 import { useAccount, useAuthExpired, useSession } from './session'
 import styles from './ConnectedApp.module.css'
-import { VisualV1ActionsProvider } from '../visualV1/VisualV1Context'
+import { VisualV1ActionsProvider, useVisualV1 } from '../visualV1/VisualV1Context'
 
 const GUEST_ACCOUNT: AccountFixture = { displayName: 'Гость', handle: 'telegram', initials: '?', availableTon: 0, inPositionsTon: 0, inOrdersTon: 0, creatorIncomeTon: 0, eventsCreated: null, createdVolumeTon: null, isAdmin: false }
 
@@ -48,6 +48,7 @@ function previousDetailPane(pane: MarketDetailPane): MarketDetailPane {
 }
 
 export function ConnectedApp() {
+  const visualV1 = useVisualV1()
   const [hasInitData, setHasInitData] = useState(() => hasTelegramInitData())
   const [stack, setStack] = useState<Route[]>([{ name: 'markets' }])
   const activeTabRef = useRef<NavId>('markets')
@@ -116,7 +117,9 @@ export function ConnectedApp() {
   useEffect(
     () => {
       // These screens own their internal step-by-step Back behavior.
-      if (route.name === 'create' || showOnboarding) return
+      // WalletV1 owns Telegram Back, including closing its network dialog before navigating.
+      // Keep the shared handler for the legacy wallet, which has no own Telegram Back listener.
+      if (route.name === 'create' || showOnboarding || (route.name === 'wallet' && visualV1)) return
       return syncTelegramBackButton(showTelegramBackButton(route), () => {
         if (route.name === 'detail' && detailPane !== 'chart') {
           setDetailPane(previousDetailPane(detailPane))
@@ -126,7 +129,7 @@ export function ConnectedApp() {
         setStack(goBack)
       })
     },
-    [detailPane, route, showOnboarding],
+    [detailPane, route, showOnboarding, visualV1],
   )
 
   const account = accountQuery.data ?? null
@@ -225,10 +228,10 @@ export function ConnectedApp() {
       {route.name === 'markets' ? <ConnectedMarketsScreen account={account} accountState={accountState} personalized={hasInitData} userId={session.user?.id} availableTon={availableTon} feedView={feedView} onFeedViewChange={setFeedView} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={openMarket} onCreatorClick={(market) => openCreator(market.creator.id ?? market.creatorId)} onTopCreatorClick={openCreator} onOwnPrice={(marketId, side) => push({ name: 'own-price', marketId, side })} chatUnreadReplies={chatUnread.lobby} onChatClick={session.user ? () => push({ name: 'chat-lobby' }) : undefined} /> : null}
       {route.name === 'create' ? <ConnectedCreateMarketScreen userId={session.user?.id} isAdmin={isAdmin} enabled={accountState === 'ready'} onBack={() => goTab('markets')} onNavChange={goTab} onCreated={(market) => { tabStacksRef.current.create = [{ name: 'create' }]; setStack([{ name: 'create-result', market }]) }} /> : null}
       {route.name === 'create-result' ? <CreateMarketResult market={route.market} shareLink={marketShareUrl({ shareToken: route.market.share_token, botUsername, webapp })} onOpen={() => { if (route.market.share_token) rememberShareToken(route.market.id, route.market.share_token); if (route.market.status === 'pending' || route.market.status === 'rejected') push({ name: 'my-markets' }); else push({ name: 'detail', marketId: route.market.id }) }} onBack={back} onToFeed={() => goTab('markets')} onNavChange={goTab} /> : null}
-      <GuarantorAlerts userId={session.user?.id} paused={route.name === 'create' || (hasPendingMoneyIntent && (route.name === 'quick-trade' || route.name === 'own-price'))} onOpen={(marketId) => push({ name: 'detail', marketId })} />
+      <GuarantorAlerts userId={session.user?.id} paused={route.name === 'create' || route.name === 'wallet' || (hasPendingMoneyIntent && (route.name === 'quick-trade' || route.name === 'own-price'))} onOpen={(marketId) => push({ name: 'detail', marketId })} />
       {route.name === 'notifications' ? <ConnectedNotificationsScreen userId={session.user?.id} onBack={back} onOpen={(marketId) => push({ name: 'detail', marketId })} onNavChange={goTab} /> : null}
       {route.name === 'portfolio' ? <ConnectedPortfolioScreen userId={session.user?.id} mappedAccount={mappedAccount} accountState={accountState} onNavChange={goTab} onProfileClick={openProfile} onSelectMarket={(marketId) => push({ name: 'detail', marketId })} onDeposit={() => push({ name: 'wallet', tab: 'deposit' })} onWithdraw={() => push({ name: 'wallet', tab: 'withdraw' })} /> : null}
-      {route.name === 'profile' ? <ConnectedProfileScreen account={mappedAccount ?? GUEST_ACCOUNT} accountState={accountState === 'ready' ? 'ready' : 'unauthenticated'} userId={session.user?.id} onBack={back} onNavChange={goTab} onLogin={openTelegramLogin} onMenu={(id) => { if (id === 'guarantors') push({ name: 'guarantors' }); else if (id === 'events') push({ name: 'my-markets' }); else if (id === 'moderation' && isAdmin) push({ name: 'moderation' }); else if (id === 'settings') push({ name: 'profile-settings' }); else if (id === 'help') push({ name: 'help' }); else if (id === 'history') push({ name: 'history' }); else if (id === 'public' && session.user?.id) openCreator(session.user.id) }} /> : null}
+      {route.name === 'profile' ? <ConnectedProfileScreen account={mappedAccount ?? GUEST_ACCOUNT} accountState={accountState === 'ready' ? 'ready' : 'unauthenticated'} userId={session.user?.id} onBack={back} onNavChange={goTab} onLogin={openTelegramLogin} onMenu={(id) => { if (id === 'guarantors') push({ name: 'guarantors' }); else if (id === 'events') push({ name: 'my-markets' }); else if (id === 'wallet') push({ name: 'wallet' }); else if (id === 'moderation' && isAdmin) push({ name: 'moderation' }); else if (id === 'settings') push({ name: 'profile-settings' }); else if (id === 'help') push({ name: 'help' }); else if (id === 'history') push({ name: 'history' }); else if (id === 'public' && session.user?.id) openCreator(session.user.id) }} /> : null}
       {route.name === 'guarantors' ? <ConnectedGuarantors userId={session.user?.id} isAdmin={isAdmin} onBack={back} onOpen={(marketId) => push({ name: 'detail', marketId })} onNavChange={goTab} /> : null}
       {route.name === 'profile-settings' ? <ConnectedProfileScreen account={mappedAccount ?? GUEST_ACCOUNT} accountState={accountState === 'ready' ? 'ready' : 'unauthenticated'} userId={session.user?.id} onBack={back} onNavChange={goTab} view="settings" onMenu={() => undefined} /> : null}
       {route.name === 'my-markets' ? <ConnectedMyMarketsScreen userId={session.user?.id} onBack={back} onNavChange={goTab} onOpenMarket={(marketId) => push({ name: 'detail', marketId })} /> : null}
