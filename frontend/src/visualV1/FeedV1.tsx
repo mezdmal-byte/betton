@@ -7,10 +7,9 @@ import { NotificationBadgeContext } from '../components/BottomNavigation/Notific
 import { SearchField } from '../components/SearchField/SearchField'
 import { Button } from '../components/Button/Button'
 import { formatOdds, formatTonFull } from '../lib/format'
-import { closeTelegramWebApp } from '../telegram/webapp'
-import { useI18n } from '../i18n'
 import { useVisualV1Actions } from './VisualV1Context'
 import s from './FeedV1.module.css'
+import { DrawerV1 } from './DrawerV1'
 
 const images = import.meta.glob('../assets/visual-v1/feed/*.svg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>
 export function FeedAsset({ name, size = 24 }: { name: string; size?: number }) {
@@ -40,7 +39,6 @@ function readFavorites(): string[] {
 
 export function FeedV1({ markets = [], selectedOutcomes, query = '', sort = 'new', category = 'all', filtersOpen = false, filtersActive = false, onQueryChange, onSortChange, onCategoryChange, onFiltersClick, onSelectOutcome, onSelectMarket, onNavChange, onProfileClick, headerUser, feedState = 'ready', onRetry, hasMore, loadingMore, onLoadMore, activeOffersNano, statsError, onRetryStats, onChatClick, chatUnreadReplies = 0 }: MarketsScreenProps) {
   const a = useVisualV1Actions()
-  const { locale } = useI18n()
   const unread = useContext(NotificationBadgeContext)
   const [internalQuery, setInternalQuery] = useState(query)
   const [internalSort, setInternalSort] = useState(sort)
@@ -50,7 +48,6 @@ export function FeedV1({ markets = [], selectedOutcomes, query = '', sort = 'new
   const [searchOpen, setSearchOpen] = useState(Boolean(query))
   const [favorites, setFavorites] = useState(readFavorites)
   const [favoriteOnly, setFavoriteOnly] = useState(false)
-  const [metricsOpen, setMetricsOpen] = useState(false)
   const [selected, setSelected] = useState<Record<string, OutcomeSide>>({})
   const menuButton = useRef<HTMLButtonElement>(null)
   const sortControl = useRef<HTMLDivElement>(null)
@@ -74,11 +71,20 @@ export function FeedV1({ markets = [], selectedOutcomes, query = '', sort = 'new
     try { localStorage.setItem('betton.favorites.v1', JSON.stringify(next)) } catch { /* Optional local preference. */ }
     return next
   })
-  const closeMenu = (action?: () => void) => { setMenuOpen(false); action?.() }
+  useEffect(() => {
+    // The drawer on Profile can route back to Feed with a requested view.
+    let intent: string | null = null
+    try {
+      intent = window.sessionStorage.getItem('betton.v1.drawer.intent')
+      window.sessionStorage.removeItem('betton.v1.drawer.intent')
+    } catch { /* optional */ }
+    if (intent === 'favorites') setFavoriteOnly(true)
+    if (intent === 'search') setSearchOpen(true)
+    if (intent === 'categories') onFiltersClick?.()
+    // Read only once after the Feed mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  function drawerRow(label: string, icon: string, action?: () => void, accent = false, value?: string) {
-    return <button type="button" className={`${s.drawerRow} ${accent ? s.drawerAccent : ''}`} onClick={() => closeMenu(action)}><FeedAsset name={icon} size={18}/><span>{label}</span>{value ? <small>{value}</small> : null}{!accent ? <FeedAsset name="03b6c" size={14}/> : null}</button>
-  }
   return <div className={s.screen} data-figma-frame="819:45192">
     <header className={s.header}>
       <button type="button" ref={menuButton} aria-label="Меню" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><FeedAsset name="f79f3"/></button>
@@ -105,24 +111,21 @@ export function FeedV1({ markets = [], selectedOutcomes, query = '', sort = 'new
     </main>
     <BottomNavigation active="markets" onChange={onNavChange}/>
 
-    {menuOpen ? <div className={s.menuBackdrop} onClick={() => setMenuOpen(false)}><nav className={s.drawer} role="dialog" aria-modal="true" aria-label="Меню BetTON" data-figma-frame="819:46154" onClick={e => e.stopPropagation()}>
-      <div className={s.drawerHeading}><strong className={s.brand}><img src={wordmark} width={101} height={32} alt="BetTON"/></strong><button type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)}>×</button></div>
-      <button type="button" className={s.drawerProfile} onClick={() => closeMenu(onProfileClick ?? a.onOpenProfile)}><span className={s.avatar}>{headerUser?.photoUrl ? <img src={headerUser.photoUrl} alt=""/> : headerUser?.initials ?? '?'}</span><span><strong>{headerUser?.displayName ?? 'Гость'}</strong><small>{headerUser?.handle ? '@' + headerUser.handle.replace(/^@/,'') : 'Откройте через Telegram'}</small></span><FeedAsset name="f9c02" size={16}/></button>
-      <button type="button" className={s.drawerBalance} onClick={() => closeMenu(onProfileClick ?? a.onOpenProfile)}><FeedAsset name="ba2bd" size={20}/><span><small>Баланс</small><strong>{headerUser ? formatTonFull(headerUser.availableTon) : '—'}</strong></span></button>
-      {drawerRow('Главная','1b500',()=>onNavChange?.('markets'),true)}
-      {drawerRow('Все категории','d8f74',onFiltersClick)}
-      <button type="button" className={s.drawerRow} onClick={() => closeMenu(()=>setSearchOpen(true))}><span className={s.searchGlyph} aria-hidden="true">⌕</span><span>Поиск событий</span><FeedAsset name="03b6c" size={14}/></button>
-      {drawerRow('Избранное','79e2e',()=>setFavoriteOnly(!favoriteOnly))}
-      {drawerRow('Мои события','5d5ed',a.onOpenMyEvents)}
-      {drawerRow('Черновики','7e237',()=>onNavChange?.('create'))}
-      {drawerRow('История','878ef',a.onOpenHistory)}
-      <hr/>{drawerRow('Как это работает','0e2ff',a.onOpenHelp)}{drawerRow('Правила и безопасность','a7b33',a.onOpenHelp)}{drawerRow('Поддержка','d8328',a.onOpenHelp)}
-      <hr/>{drawerRow('Настройки','02d42',a.onOpenSettings)}
-      <hr/>{drawerRow('Тема','5ad7e',a.onOpenSettings,false,'Светлая')}{drawerRow('Язык','cc62e',a.onOpenSettings,false,locale === 'ru' ? 'Русский' : locale === 'en' ? 'English' : '中文')}
-      <hr/>{drawerRow('Выйти','7d986',closeTelegramWebApp,true)}
-      {onChatClick ? <button type="button" className={s.drawerRow} onClick={() => closeMenu(onChatClick)}>Лобби BetTON{chatUnreadReplies ? ` · ${chatUnreadReplies}` : ''}</button> : null}
-      <button type="button" className={s.drawerMetric} onClick={() => setMetricsOpen(!metricsOpen)}>В предложениях · {statsError ? '—' : formatOffersNano(activeOffersNano)}</button>{metricsOpen ? <p className={s.drawerNote}>Сумма открытых предложений в публичных событиях. Уже заключённые ставки сюда не входят.{statsError ? <button type="button" onClick={onRetryStats}>Повторить загрузку</button> : null}</p> : null}
-    </nav></div> : null}
+    {menuOpen ? <DrawerV1
+      user={headerUser}
+      onClose={() => setMenuOpen(false)}
+      onMarkets={() => onNavChange?.('markets')}
+      onCreate={() => onNavChange?.('create')}
+      onProfile={onProfileClick ?? a.onOpenProfile}
+      onCategories={onFiltersClick}
+      onSearch={() => setSearchOpen(true)}
+      onFavorites={() => setFavoriteOnly(value => !value)}
+      onChat={onChatClick}
+      chatUnread={chatUnreadReplies}
+      offersDisplay={formatOffersNano(activeOffersNano)}
+      statsError={statsError}
+      onRetryStats={onRetryStats}
+    /> : null}
   </div>
 }
 
