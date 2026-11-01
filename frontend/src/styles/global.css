@@ -11,7 +11,6 @@ body,
 }
 
 body {
-  touch-action: pan-y;
   background: var(--color-canvas);
   color: var(--color-text-primary);
   font-family: var(--font-family);
