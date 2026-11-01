@@ -11,3 +11,7 @@
 @media(max-width:350px){.body{padding-top:28px}.body h1{font-size:28px;line-height:34px}.description{font-size:13px;line-height:20px}.header{padding-left:20px;padding-right:20px}.footer{padding-left:20px;padding-right:20px}.detailIntro h1{font-size:23px}}
 
 .detailIntro h1,.detailIntro p{position:relative;z-index:1}.conditions p{white-space:pre-line}.final{display:block;text-align:left;padding:14px 18px;font-size:13px;line-height:19px;border-radius:13px}.period{display:block;position:relative;border-radius:0}.period p{position:absolute;left:16px;top:30px;font-size:10px;line-height:15px;color:#101722}.period p:first-child{top:6px;font-size:12px;line-height:18px;font-weight:500}
+
+/* Compact Telegram WebView: keep the title and illustration visible above the fixed action. */
+@media(max-height:750px){.header{height:54px;padding:14px 20px 0}.body{padding:14px 20px 12px;gap:12px}.body h1{font-size:26px;line-height:31px}.description{font-size:13px;line-height:19px}.footer{padding:0 20px max(14px,var(--tg-bottom,0px));gap:7px}.dots{height:20px}.next{min-height:46px;font-size:14px}}
+@media(max-height:600px){.header{height:47px;padding-top:10px}.body{padding-top:8px;padding-bottom:8px;gap:8px}.body h1{font-size:23px;line-height:28px}.description{font-size:12px;line-height:17px}.footer{gap:4px}.next{min-height:42px}.dots{height:16px}}
