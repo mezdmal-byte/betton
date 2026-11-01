@@ -30,3 +30,6 @@
 @media(prefers-reduced-motion:reduce){.screen button:active{transform:none}}
 
 img.brand{display:block;width:101px;height:32px;flex:none}
+
+/* Compact profile on short Telegram WebView windows. */
+@media(max-height:700px){.body{padding:8px 12px 16px;gap:9px}.identity{min-height:52px;gap:10px}.avatar{width:52px;height:52px}.identity strong{font-size:17px;line-height:22px}.panel{padding:11px;gap:8px}.balance{font-size:23px;line-height:28px}.walletActions button{min-height:48px}.statistics{gap:5px}.statistics strong{font-size:15px;line-height:20px}.menuRow{min-height:48px;padding:9px 12px}}
