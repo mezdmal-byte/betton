@@ -5,9 +5,13 @@ body,
   height: var(--tg-viewport-stable-height, 100%);
   min-height: 100%;
   overflow: hidden;
+  overflow-x: clip;
+  max-width: 100%;
+  overscroll-behavior-x: none;
 }
 
 body {
+  touch-action: pan-y;
   background: var(--color-canvas);
   color: var(--color-text-primary);
   font-family: var(--font-family);
