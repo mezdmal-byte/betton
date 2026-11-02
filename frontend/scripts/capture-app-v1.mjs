@@ -66,13 +66,13 @@ async function ready(page){await page.evaluate(()=>document.fonts.ready);await p
 async function capture(page,name,kind){
  await ready(page)
  const audit=await page.evaluate(()=>{
-  const root=document.querySelector('[data-visual="v1"]'),surface=root?.firstElementChild,feed=document.querySelector('[data-figma-frame="819:45192"]')
+  const root=document.querySelector('[data-visual="v1"]'),surface=root?.firstElementChild,feed=document.querySelector('[data-figma-frame="819:45192"]'),event=document.querySelector('[data-figma-frame="908:19752"]')
   const bounds=e=>{const b=e?.getBoundingClientRect();return b?{x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom}:null}
-  const main=feed?.querySelector('main'),nav=feed?.querySelector('nav[aria-label="Основная навигация"]'),cards=[...feed?.querySelectorAll('article')||[]]
+  const main=(feed??event)?.querySelector('main'),nav=feed?.querySelector('nav[aria-label="Основная навигация"]')??event?.querySelector('section[aria-label="Быстрая ставка"]'),cards=[...feed?.querySelectorAll('article')||[]]
   const area=main?.getBoundingClientRect()
   const cardBounds=cards.map(bounds)
   const equivalent=area?cardBounds.reduce((sum,b)=>sum+Math.max(0,Math.min(area.bottom,b.bottom)-Math.max(area.top,b.y))/b.height,0):null
-  return {overflow:document.documentElement.scrollWidth>innerWidth+1,broken:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.getAttribute('src')),root:bounds(root),surface:bounds(surface),header:bounds(feed?.querySelector('header')),scroll:bounds(main),nav:bounds(nav),cardBounds,visibleCardEquivalent:equivalent,fullCards:area?cardBounds.filter(b=>b.y>=area.top-1&&b.bottom<=area.bottom+1).length:null,footer:bounds(document.querySelector('[data-figma-frame] footer')),fullscreen:document.documentElement.getAttribute('data-betton-fullscreen'),compact:document.documentElement.getAttribute('data-betton-compact')}
+  return {overflow:document.documentElement.scrollWidth>innerWidth+1,broken:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.getAttribute('src')),root:bounds(root),surface:bounds(surface),header:bounds((feed??event)?.querySelector('header')),scroll:bounds(main),nav:bounds(nav),cardBounds,visibleCardEquivalent:feed?equivalent:null,fullCards:feed&&area?cardBounds.filter(b=>b.y>=area.top-1&&b.bottom<=area.bottom+1).length:null,footer:bounds(document.querySelector('[data-figma-frame] footer')),fullscreen:document.documentElement.getAttribute('data-betton-fullscreen'),compact:document.documentElement.getAttribute('data-betton-compact')}
  })
  await page.screenshot({path:path.join(output,name+'.png')})
  report.screens.push({name,kind,viewport:page.viewportSize(),...audit})
@@ -160,6 +160,11 @@ try{
   if(!trapped)report.errors.push(mode+': focus escaped drawer')
   await page.keyboard.press('Escape')
   await page.getByRole('dialog',{name:'Меню BetTON'}).waitFor({state:'hidden'})
+  await page.getByRole('button',{name:'Team Liquid — Team Spirit',exact:true}).click()
+  await page.getByText('Исполненных сделок за этот период нет',{exact:true}).waitFor()
+  await capture(page,`event-fullscreen-${mode}`,'event-fullscreen')
+  await page.locator('[data-figma-frame="908:19752"] main').evaluate(el=>el.scrollTop=el.scrollHeight)
+  await capture(page,`event-fullscreen-scrolled-${mode}`,'event-fullscreen-scroll')
   await context.close()
  }
 } catch(error){report.errors.push(error.stack||String(error))}

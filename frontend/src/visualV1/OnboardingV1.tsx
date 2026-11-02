@@ -76,7 +76,13 @@ function Matching() {
     <div className={s.offer}><SourceArt name="offer" className={s.offerAvatar}/><div className={s.offerCopy}><b>Ваше предложение</b><strong>Спартак</strong><dl><div><dt>Сумма</dt><dd>100 TON</dd></div><div><dt>Коэффициент</dt><dd>1,85×</dd></div></dl></div></div>
     <ArrowDown className={s.flowArrow} size={22} aria-hidden="true"/>
     <div className={s.process}><RefreshCw size={23} aria-hidden="true"/><b>Встречное<br/>предложение</b></div>
-    <div className={s.branches}><div><ArrowDown size={20} aria-hidden="true"/><section className={s.found}><b><CircleCheck size={22} aria-hidden="true"/>Есть</b><SourceArt name="handshake" className={s.branchArt}/><span>Ставка<br/>заключена</span></section></div><div><ArrowDown size={20} aria-hidden="true"/><section className={s.waiting}><b><Clock3 size={22} aria-hidden="true"/>Пока нет</b><SourceArt name="waiting" className={s.branchArt}/><span>Предложение<br/>ожидает</span></section></div></div>
+    <div className={s.branches}>
+      <svg className={s.branchWires} viewBox="0 0 350 44" preserveAspectRatio="none" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M99 2H97Q83.5 2 83.5 16V40m-5-5 5 5 5-5" stroke="#04976a"/>
+        <path d="M251 2H253Q266.5 2 266.5 16V40m-5-5 5 5 5-5" stroke="#ff6b00"/>
+      </svg>
+      <div><section className={s.found}><b><CircleCheck size={22} aria-hidden="true"/>Есть</b><SourceArt name="handshake" className={s.branchArt}/><span>Ставка<br/>заключена</span></section></div><div><section className={s.waiting}><b><Clock3 size={22} aria-hidden="true"/>Пока нет</b><SourceArt name="waiting" className={s.branchArt}/><span>Предложение<br/>ожидает</span></section></div>
+    </div>
     <Note>Свой коэффициент позволяет разместить предложение на ваших условиях.</Note>
   </section>
 }
