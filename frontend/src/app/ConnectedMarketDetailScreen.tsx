@@ -201,6 +201,8 @@ export function ConnectedMarketDetailScreen({
         viewState={viewState}
         actionsDisabled={actionsOff}
         showInternalBack={showInternalBack}
+        guarantorContent={visualV1&&userId&&privateWithUser?<GuarantorPanel marketId={marketId} userId={userId} isAdmin={isAdmin}/>:undefined}
+        tradeBlockedReason={visualV1&&privateCase.data&&privateCase.data.state!=='active'?(caseLabels[privateCase.data.state]??'Условия пари ещё не подтверждены'):undefined}
         discussionContent={visualV1&&userId?<ConnectedChatScreen embedded scope={{kind:'market',marketId}} currentUserId={userId} isAdmin={isAdmin} onBack={onBack} onOpenMarket={id=>{if(id===marketId)setPane('chart');else onOpenMarket?.(id)}}/>:undefined}
         discussionMessages={discussionPreview.data?.items}
         discussionState={!userId?'unavailable':discussionPreview.isError?'error':discussionPreview.isPending?'loading':'ready'}
@@ -241,7 +243,7 @@ export function ConnectedMarketDetailScreen({
         banner={
           <>
             {marketQuery.data ? <EventTermsV3Panel marketId={marketId} userId={userId} status={marketQuery.data.status} /> : null}
-            {userId && marketQuery.data?.visibility === 'unlisted' ? <GuarantorPanel marketId={marketId} userId={userId} isAdmin={isAdmin} /> : null}
+            {!visualV1 && userId && marketQuery.data?.visibility === 'unlisted' ? <GuarantorPanel marketId={marketId} userId={userId} isAdmin={isAdmin} /> : null}
             {!userId && !lmsr ? <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage> : null}
             {shareMessage ? <StatusMessage title={shareMessage} /> : null}
             {lmsr ? (

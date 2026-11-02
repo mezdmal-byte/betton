@@ -65,6 +65,8 @@ export type MarketDetailScreenProps = {
   actionsDisabled?: boolean;
   showInternalBack?: boolean;
   discussionUnreadReplies?: number;
+  guarantorContent?: ReactNode
+  tradeBlockedReason?: string
   discussionContent?: ReactNode
   discussionMessages?: import('../api/types').ChatMessageOut[];
   discussionState?: 'ready' | 'loading' | 'error' | 'unavailable';
