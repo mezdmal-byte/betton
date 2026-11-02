@@ -91,10 +91,10 @@ export function ConnectedOwnPriceScreen({
   const debouncedOdds = useDebouncedValue(odds, 200)
 
   useEffect(() => {
-    if (initializedOdds.current || !market) return
+    if (initializedOdds.current || !market || (marketQuery.data?.mechanism==='p2p'&&!bookQuery.isSuccess)) return
     const current = side === 'a' ? market.outcomeA.odds : market.outcomeB.odds
     if (current) { setOdds(current); initializedOdds.current = true }
-  }, [market, side])
+  }, [market, side, marketQuery.data?.mechanism, bookQuery.isSuccess])
 
   const previewQuery = useQuery({
     queryKey: queryKeys.orderPreview({

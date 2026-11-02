@@ -20,7 +20,7 @@ function Art({ name, className }: { name: string; className?: string }) {
 }
 type IllustrationName='handshake'|'waiting'|'public'|'private'|'guarantor'|'terms'|'result'|'reward'|'spartak'|'zenit'
 function SourceArt({name,className=''}:{name:IllustrationName;className?:string}){
- if(name==='spartak')return <span aria-hidden="true" className={`${s.sourceArt} ${className}`} style={{backgroundImage:`url(${spartakLogo})`,backgroundSize:'160% auto',backgroundPosition:'center 40%'}}/>
+ if(name==='spartak')return <span aria-hidden="true" data-source-art="spartak" className={`${s.sourceArt} ${className}`} style={{backgroundImage:`url(${spartakLogo})`,backgroundSize:'160% auto',backgroundPosition:'center 40%'}}/>
  if(name==='zenit')return <img aria-hidden="true" alt="" src={zenitLogo} className={className} draggable={false}/>
  const tiles={handshake:0,waiting:1,public:2,private:3,guarantor:4,terms:5,result:6,reward:7}
  const tile=tiles[name]

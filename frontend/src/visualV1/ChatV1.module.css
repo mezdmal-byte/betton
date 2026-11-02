@@ -8,3 +8,5 @@
 .embedded{height:auto;max-height:none;min-height:220px;background:transparent}.embedded .scroll{flex:none;overflow:visible;padding:0 0 12px}.embedded .footer{position:sticky;bottom:0;z-index:1;border:1px solid #e4e9f0;border-radius:14px}.embedded .composer{padding:8px;min-height:60px}.embedded .card{padding:14px}.embedded .failure{margin:8px}.embedded .note{padding:8px}
 
 .previewHeading{display:flex;align-items:center;justify-content:space-between;gap:8px}.previewHeading button{background:none;border:0;color:#ff6b00;min-height:40px;font:600 12px/18px var(--font-family)}
+
+.composeRow{height:auto;min-height:44px;align-items:flex-end}.composeRow textarea{min-height:24px;line-height:22px;overflow-y:auto}.composeRow:focus-within{border-color:#ff6b00}

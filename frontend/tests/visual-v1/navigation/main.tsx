@@ -17,6 +17,7 @@ import '../../../src/styles/global.css'
 // Explicit QA fixtures reproduce approved frame 819:45192; never used by ConnectedApp.
 const base: MarketFixture = { id:'1',category:'Dota 2 · ESL One · Плей-офф',categoryKey:'esports',timeLeft:'',question:'Team Liquid — Team Spirit',creator:{handle:'creator',displayName:'Автор',initials:'А'},volumeTon:48620,activeOffersNano:'12435000000000',offersCount:28,participants:12,status:'open',outcomeA:{label:'Team Liquid',odds:1.74,liquidityTon:100},outcomeB:{label:'Team Spirit',odds:2.10,liquidityTon:100},description:'',resolution:'',closeLabel:'Сегодня, 23:00' }
 const fixtures: MarketFixture[] = [base,{...base,id:'2',category:'Футбол · Лига чемпионов УЕФА',categoryKey:'sport',question:'Реал Мадрид — Бавария',closeLabel:'Завтра, 22:00',activeOffersNano:'9842000000000',offersCount:36,volumeTon:31266,outcomeA:{...base.outcomeA,label:'Реал Мадрид',odds:1.95},outcomeB:{...base.outcomeB,label:'Бавария',odds:1.87}},{...base,id:'3',category:'CS2 · BLAST Premier · Групповой этап',question:'NAVI — G2 Esports',closeLabel:'Сегодня, 20:30',activeOffersNano:'7618000000000',offersCount:22,volumeTon:26145,outcomeA:{...base.outcomeA,label:'NAVI',odds:2.05},outcomeB:{...base.outcomeB,label:'G2 Esports',odds:1.68}},{...base,id:'4',category:'Теннис · ATP',question:'Новак Джокович — Карлос Алькарас',outcomeA:{...base.outcomeA,label:'Новак Джокович',odds:2.14},outcomeB:{...base.outcomeB,label:'Карлос Алькарас',odds:1.62}}]
+fixtures.push(...fixtures.map((market,i)=>({...market,id:String(i+5),question:market.question+' · тестовый пример '+(i+5)})))
 function Qa() {
  const [view,setView]=useState<FeedViewState>({query:'',sort:'popular',category:'all',status:'open'})
  const [filters,setFilters]=useState(false),[action,setAction]=useState('')
@@ -38,7 +39,7 @@ function Variant({variant}:{variant:number}){
  return <div className="prototype-frame" data-navigation-variant={variant+1} ref={ref}><Qa/></div>
 }
 function Prototype(){
- const [variant,setVariant]=useState(()=>Math.max(0,Math.min(2,(Number(new URLSearchParams(location.search).get('v'))||1)-1)))
+ const [variant,setVariant]=useState(()=>(()=>{const n=Number(new URLSearchParams(location.search).get('v'));return [1,2,3].includes(n)?n-1:0})())
  const [replay,setReplay]=useState(0),picker=useRef<HTMLElement>(null),highlight=useRef<HTMLSpanElement>(null)
  const select=(i:number)=>{setVariant(i);setReplay(r=>r+1);const url=new URL(location.href);url.searchParams.set('v',String(i+1));history.replaceState(null,'',url)}
  useLayoutEffect(()=>{const update=()=>{const el=picker.current!.querySelector<HTMLElement>('[data-active]')!;highlight.current!.style.width=el.offsetWidth+'px';highlight.current!.style.transform=`translateX(${el.offsetLeft}px)`};update();window.addEventListener('resize',update);requestAnimationFrame(()=>requestAnimationFrame(()=>picker.current?.setAttribute('data-ready','')));return()=>window.removeEventListener('resize',update)},[variant])

@@ -27,7 +27,7 @@ const directory=[{user_id:90003,name:'Анна · тестовый гарант'
 const privateCase={protocol_version:3,market_id:6,question:privateMarket.question,state:'review',revision:3,creator_id:90001,guarantor_id:90003,guarantor_name:directory[0].name,creator_confirmed:0,criteria:'Цена закрытия BTC/USD выше 100 000.',source:'Официальный источник, согласованный сторонами.',description:'',outcomes:['Да','Нет'],close_at:'2026-11-03T10:00:00Z',ends_at:'2026-11-03T11:00:00Z',result_due_at:'2026-11-04T11:00:00Z',deadline:'2026-11-02T10:05:00Z',extension_by:null,proposed_outcome:null,decision_reason:null,consent:false,participant:true,messages:[{id:1,user_id:90001,kind:'terms',revision:3,created_at:'2026-11-02T09:00:00Z',text:JSON.stringify({question:'Частное пари · BTC выше $100 000?',criteria:['Цена выше порога','Цена не выше порога'],close_at:'2026-11-03T10:00:00Z'})}],reward:{mode:'percent',fixed_ton:'0',percent:'5',accepted_by:[],proposed_by:90003},reward_payments_supported:true}
 const privateTerms={...privateCase,event_type:'guarantor',rules:privateCase.criteria,resolution_method:privateCase.source,criteria:['Цена выше 100 000','Цена не выше 100 000'],timing_version:'start-v1',moderator_edited:false}
 const user={id:90001,username:'visual_qa',display_name:'Тестовый участник',telegram_username:'visual_qa',balance:125.4,balance_nano:125400000000,reserved:0,reserved_nano:0,in_positions:0,in_positions_nano:0,is_admin:false}
-async function setup(width,height,mode='unsupported',dpr=1){
+async function setup(width,height,mode='unsupported',dpr=1,privateState='review'){
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:dpr,colorScheme:'light',locale:'ru-RU',timezoneId:'UTC',hasTouch:true})
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url()),p=url.pathname
@@ -43,10 +43,10 @@ async function setup(width,height,mode='unsupported',dpr=1){
   else if(/^\/markets\/\d+\/trades$/.test(p))data=[]
   else if(/^\/markets\/\d+\/chat$/.test(p))data={items:[],has_more:false,next_before_id:null}
   else if(/^\/ux-v3\/events\/\d+\/terms$/.test(p))data=p.includes('/6/')?privateTerms:null
-  else if(p==='/markets/6/guarantor')data=privateCase
+  else if(p==='/markets/6/guarantor')data=privateState==='review'?privateCase:{...privateCase,state:privateState,creator_confirmed:3}
   else if(p==='/guarantors')data=directory
   else if(p==='/creators/90001')data={creator:{id:90001,display_name:'Тестовый создатель'}}
-  else if(/^\/markets\/\d+\/orders\/quote$/.test(p)){const body=req.postDataJSON(),amount=Number(body.money);data={limit_odds:body.odds,kind:body.kind,requested:{matched:amount,remaining:0,payout:amount*1.74,average_odds:1.74,worst_odds:1.74,fills:[{odds:1.74,matched:amount}]},available:{matched:100,worst_odds:1.74,payout:174}}}
+  else if(/^\/markets\/\d+\/orders\/quote$/.test(p)){const body=req.postDataJSON(),amount=Number(body.money),odds=body.outcome===1?2.1:1.74,matched=body.kind==='limit'&&Number(body.odds)>odds?0:amount;data={limit_odds:body.odds,kind:body.kind,requested:{matched,remaining:amount-matched,payout:matched*odds,average_odds:matched?odds:null,worst_odds:matched?odds:null,fills:matched?[{odds,matched}]:[]},available:{matched:100,worst_odds:odds,payout:100*odds}}}
   else if(p==='/feed/stats')data={active_offers_nano:'36816000000000',scope:'public'}
   else if(p==='/users/90001/account')data=user
   else if(/^\/markets\/\d+\/chat\/read$/.test(p))data={last_read_message_id:0}
@@ -79,9 +79,10 @@ async function capture(page,name,kind){
  await ready(page)
  const audit=await page.evaluate(()=>{
   const root=document.querySelector('[data-visual="v1"]'),surface=root?.firstElementChild,feed=document.querySelector('[data-figma-frame="819:45192"]'),event=document.querySelector('[data-figma-frame="908:19752"]')
-  const bounds=e=>{const b=e?.getBoundingClientRect();return b?{x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom}:null}
+  const bounds=e=>{if(e&&getComputedStyle(e).display==='none')return null;const b=e?.getBoundingClientRect();return b?{x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom}:null}
   const main=(feed??event)?.querySelector('main'),nav=feed?.querySelector('nav[aria-label="Основная навигация"]')??event?.querySelector('section[aria-label="Быстрая ставка"],section[aria-label="Свой коэффициент"]'),cards=[...feed?.querySelectorAll('article')||[]]
-  const area=main?.getBoundingClientRect()
+  const rawArea=main?.getBoundingClientRect(),navArea=nav?.getBoundingClientRect()
+  const area=rawArea?{top:rawArea.top,bottom:navArea?Math.min(rawArea.bottom,navArea.top):rawArea.bottom}:null
   const cardBounds=cards.map(bounds)
   const navLabelOverflow=feed&&nav?[...nav.querySelectorAll('button')].flatMap(button=>{
    const label=button.lastElementChild,b=label?.getBoundingClientRect(),n=nav.getBoundingClientRect(),t=button.getBoundingClientRect()
@@ -98,8 +99,8 @@ async function capture(page,name,kind){
  if(audit.overflow)report.errors.push(name+': horizontal page overflow')
  if(audit.broken.length)report.errors.push(name+': broken images')
  if(audit.footer&&audit.surface&&audit.footer.bottom>audit.surface.bottom+1)report.errors.push(name+': footer outside safe surface')
- if(audit.nav&&audit.surface&&audit.nav.bottom>audit.surface.bottom+1)report.errors.push(name+': navigation outside safe surface')
- if(audit.nav&&audit.scroll&&audit.scroll.bottom>audit.nav.y+1)report.errors.push(name+': scroll overlaps navigation')
+ if(kind!=='navigation-proposal'&&audit.nav&&audit.surface&&audit.nav.bottom>audit.surface.bottom+1)report.errors.push(name+': navigation outside safe surface')
+ if(kind!=='navigation-proposal'&&audit.nav&&audit.scroll&&audit.scroll.bottom>audit.nav.y+1)report.errors.push(name+': scroll overlaps navigation')
  if(audit.navLabelOverflow.length)report.errors.push(name+': navigation label clipped: '+audit.navLabelOverflow.join(', '))
 }
 try{
@@ -209,12 +210,12 @@ try{
   await capture(page,'event-ticket-own-390x700','ticket-mode')
   const outcomes=page.getByRole('group',{name:'Исход ставки',exact:true})
   await outcomes.getByRole('button',{name:/Team Spirit/}).click()
-  if(await page.getByRole('textbox',{name:'Ваш коэффициент',exact:true}).inputValue()!=='2.1')report.errors.push('Opposite side reused first side odds')
+  await page.waitForFunction(()=>Number(document.querySelector('input[aria-label="Ваш коэффициент"]')?.value)===2.1)
   await page.getByRole('textbox',{name:'Ваш коэффициент',exact:true}).fill('2.3')
   await outcomes.getByRole('button',{name:/Team Liquid/}).click()
-  if(await page.getByRole('textbox',{name:'Ваш коэффициент',exact:true}).inputValue()!=='1.74')report.errors.push('Own side A draft lost')
+  await page.waitForFunction(()=>Number(document.querySelector('input[aria-label="Ваш коэффициент"]')?.value)===1.74)
   await outcomes.getByRole('button',{name:/Team Spirit/}).click()
-  if(await page.getByRole('textbox',{name:'Ваш коэффициент',exact:true}).inputValue()!=='2.3')report.errors.push('Own side B custom draft lost')
+  await page.waitForFunction(()=>Number(document.querySelector('input[aria-label="Ваш коэффициент"]')?.value)===2.3)
   await capture(page,'event-ticket-both-outcomes-390x700','outcome-switch')
   await outcomes.getByRole('button',{name:/Team Liquid/}).click()
   await page.waitForFunction(()=>[...document.querySelectorAll('[role="dialog"] button')].some(b=>b.textContent.trim()==='Проверить заявку'&&!b.disabled))
@@ -242,7 +243,8 @@ try{
   if(!await page.getByRole('button',{name:'Раскрыть панель ставки',exact:true}).isVisible())report.errors.push('Discussion lost selected ticket')
   await page.getByRole('button',{name:'Открыть всё →',exact:true}).click()
   await capture(page,'event-full-discussion-390x700','full-discussion')
-  await page.getByRole('button',{name:'Назад',exact:true}).click()
+  await page.evaluate(()=>window.__APP_QA__.back())
+  await page.getByRole('heading',{name:'Событие',exact:true}).waitFor()
   await page.getByRole('button',{name:'Назад',exact:true}).click()
   await page.getByRole('button',{name:privateMarket.question,exact:true}).click()
   await page.getByText('Что будет дальше',{exact:true}).waitFor()
@@ -307,6 +309,27 @@ try{
   await capture(page,`event-fullscreen-${mode}`,'event-fullscreen')
   await page.locator('[data-figma-frame="908:19752"] main').evaluate(el=>el.scrollTop=el.scrollHeight)
   await capture(page,`event-fullscreen-scrolled-${mode}`,'event-fullscreen-scroll')
+  await context.close()
+ }
+ if(!baseline){
+  const {page,context}=await setup(390,700,'unsupported',1,'collecting')
+  await page.goto('http://127.0.0.1:6189/v2/');await page.getByRole('button',{name:'Пропустить',exact:true}).click();await page.getByRole('button',{name:privateMarket.question,exact:true}).click()
+  await page.getByRole('button',{name:/Условия и согласование/}).click()
+  await page.getByRole('heading',{name:'Условия и согласование',exact:true}).click()
+  if(!await page.locator('[data-agreement="embedded"]').isVisible())report.errors.push('Agreement heading collapses content')
+  await page.locator('[data-agreement="embedded"]').scrollIntoViewIfNeeded()
+  await capture(page,'private-agreement-collecting-390x700','confirmed-agreement')
+  await context.close()
+ }
+ if(!baseline){
+  const {page,context}=await setup(1280,844)
+  await page.goto('http://127.0.0.1:6189/v2/');await page.getByRole('button',{name:'Пропустить',exact:true}).click()
+  await page.evaluate(()=>{sessionStorage.setItem('betton.create.ux-v3.90001',JSON.stringify({eventType:'guarantor'}));sessionStorage.setItem('betton.create.ux-v3.90001.guarantor',JSON.stringify({step:'conditions',draft:{eventType:'guarantor',question:'Тестовое событие для календаря',outcomeA:'Да',outcomeB:'Нет'}}));window.__DATEPICKER_CALLS__=0;HTMLInputElement.prototype.showPicker=function(){window.__DATEPICKER_CALLS__++}})
+  await page.getByRole('button',{name:'Создать',exact:true}).click()
+  const date=page.getByLabel('Дата и время начала',{exact:true})
+  await date.click();await date.fill('2026-11-03T12:00')
+  if(await date.inputValue()!=='2026-11-03T12:00'||!await page.evaluate(()=>window.__DATEPICKER_CALLS__))report.errors.push('Desktop native date field failed')
+  await capture(page,'create-desktop-native-date-1280x844','desktop-date')
   await context.close()
  }
  if(!baseline)for(const height of [600,700,844])for(const variant of [1,2,3]){

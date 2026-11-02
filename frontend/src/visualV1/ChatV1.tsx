@@ -1,5 +1,5 @@
 import { Paperclip, Reply, Trash2, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ChatScreenProps } from '../screens/ChatScreen'
 import { Button } from '../components/Button/Button'
 import backIcon from '../assets/visual-v1/event/499a5.svg'
@@ -17,6 +17,7 @@ export function ChatV1({onOpenFullChat,embedded=false,title,subtitle,messages,cu
  useEffect(()=>{const viewport=window.visualViewport;const update=()=>screen.current?.style.setProperty('--chat-viewport-height',`${viewport?.height??window.innerHeight}px`);update();viewport?.addEventListener('resize',update);return()=>viewport?.removeEventListener('resize',update)},[])
  useEffect(()=>{setFavorite(isFavorite(marketId));setShareStatus(null)},[marketId])
  useEffect(()=>{if(!attachOpen&&actionsId==null)return;const close=(event:KeyboardEvent)=>{if(event.key==='Escape'){setAttachOpen(false);setActionsId(undefined);input.current?.focus()}};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[attachOpen,actionsId])
+ useLayoutEffect(()=>{const node=input.current;if(!node)return;node.style.height='auto';node.style.height=Math.min(112,Math.max(24,node.scrollHeight))+'px'},[draft])
  const Scroll = embedded ? 'div' : 'main'
  const busy=sending||sendingRef.current
  async function submit(){const text=draft.trim();if(!text||busy||!currentUserId)return;sendingRef.current=true;try{const body={text,replyToId,attachedMarketId:attachedId};if(onSendConfirmed)await onSendConfirmed(body);else onSend(body);if(mounted.current){setDraft('');setReply(undefined);setAttachedId(undefined);setAttachOpen(false);nearBottom.current=true}}catch{/* The connected mutation supplies its error; keep the draft and context. */}finally{sendingRef.current=false}}
