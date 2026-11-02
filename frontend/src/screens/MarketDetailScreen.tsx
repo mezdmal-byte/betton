@@ -45,6 +45,9 @@ export type TradeHistoryState =
   | "error";
 
 export type MarketDetailScreenProps = {
+  draftMode?: 'quick' | 'own'
+  draftOdds?: number
+  onSwitchQuickTrade?: () => void
   draftAmount?: number
   market?: MarketFixture;
   selectedSide?: OutcomeSide;

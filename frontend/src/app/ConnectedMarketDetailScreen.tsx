@@ -182,6 +182,9 @@ export function ConnectedMarketDetailScreen({
       <MarketDetailScreen
         market={market}
         draftAmount={tradeAmount}
+        draftMode={tradeMode}
+        draftOdds={ownOdds}
+        onSwitchQuickTrade={()=>{if(!actionsOff){setTradeMode('quick');setTradeOpen(true)}}}
         selectedSide={side}
         onSelectSide={setSide}
         chartSeriesA={displayChartA}
@@ -214,7 +217,7 @@ export function ConnectedMarketDetailScreen({
         onNavChange={onNavChange}
         onPlace={(selected) => {
           if (!market || actionsOff) return
-          if (visualV1) { setSide(selected ?? side); setTradeMode('quick'); setTradeOpen(true) }
+          if (visualV1) { setSide(selected ?? side); setTradeOpen(true) }
           else onQuickTrade(selected ?? side)
         }}
         onRetry={() => {

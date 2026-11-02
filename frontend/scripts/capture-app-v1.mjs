@@ -80,7 +80,7 @@ async function capture(page,name,kind){
  const audit=await page.evaluate(()=>{
   const root=document.querySelector('[data-visual="v1"]'),surface=root?.firstElementChild,feed=document.querySelector('[data-figma-frame="819:45192"]'),event=document.querySelector('[data-figma-frame="908:19752"]')
   const bounds=e=>{const b=e?.getBoundingClientRect();return b?{x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom}:null}
-  const main=(feed??event)?.querySelector('main'),nav=feed?.querySelector('nav[aria-label="Основная навигация"]')??event?.querySelector('section[aria-label="Быстрая ставка"]'),cards=[...feed?.querySelectorAll('article')||[]]
+  const main=(feed??event)?.querySelector('main'),nav=feed?.querySelector('nav[aria-label="Основная навигация"]')??event?.querySelector('section[aria-label="Быстрая ставка"],section[aria-label="Свой коэффициент"]'),cards=[...feed?.querySelectorAll('article')||[]]
   const area=main?.getBoundingClientRect()
   const cardBounds=cards.map(bounds)
   const navLabelOverflow=feed&&nav?[...nav.querySelectorAll('button')].flatMap(button=>{
@@ -207,6 +207,13 @@ try{
   await page.getByRole('button',{name:'Создать заявку',exact:true}).waitFor()
   await capture(page,'event-ticket-own-review-390x700','own-review-without-submit')
   await page.getByRole('button',{name:'Закрыть',exact:true}).click()
+  await page.getByRole('button',{name:'Свернуть панель ставки',exact:true}).click()
+  await page.getByRole('dialog',{name:'Свой коэффициент',exact:true}).waitFor({state:'hidden'})
+  await handle.click()
+  const restoredOwn=page.getByRole('dialog',{name:'Свой коэффициент',exact:true})
+  await restoredOwn.waitFor()
+  if(await restoredOwn.getByRole('textbox',{name:'Сумма, TON',exact:true}).inputValue()!=='25')report.errors.push('Own collapse lost amount')
+  if(await restoredOwn.getByRole('textbox',{name:'Ваш коэффициент',exact:true}).inputValue()!=='1.74')report.errors.push('Own collapse lost odds')
   await page.getByRole('button',{name:'Быстрая ставка',exact:true}).click()
   if(await page.getByRole('textbox',{name:'Сумма, TON',exact:true}).inputValue()!=='25')report.errors.push('Mode switch lost amount')
   await page.getByRole('button',{name:'Свернуть панель ставки',exact:true}).click()
