@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MarketsHeaderUser } from '../screens/MarketsScreen'
 import { formatTonFull } from '../lib/format'
 import { closeTelegramWebApp, syncTelegramBackButton } from '../telegram/webapp'
 import { useI18n } from '../i18n'
 import { useVisualV1Actions } from './VisualV1Context'
 import s from './DrawerV1.module.css'
+import { usePanelDrag } from './usePanelDrag'
 import wordmark from '../assets/visual-v1/wordmark.svg'
 
 const images = import.meta.glob('../assets/visual-v1/feed/*.svg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>
@@ -41,7 +42,7 @@ export function DrawerV1({
   const a = useVisualV1Actions()
   const { locale } = useI18n()
   const panel = useRef<HTMLElement>(null)
-  const gesture = useRef<{ x: number; y: number } | null>(null)
+  const drag = usePanelDrag('x', -1, onClose)
   const [metricsOpen, setMetricsOpen] = useState(false)
   const closeRef = useRef(onClose)
 
@@ -90,24 +91,10 @@ export function DrawerV1({
     </button>
   }
 
-  function onPointerDown(e: ReactPointerEvent<HTMLElement>) {
-    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return
-    gesture.current = { x: e.clientX, y: e.clientY }
-  }
-  function onPointerUp(e: ReactPointerEvent<HTMLElement>) {
-    const start = gesture.current
-    gesture.current = null
-    if (!start) return
-    const dx = e.clientX - start.x
-    const dy = e.clientY - start.y
-    if (dx < -65 && Math.abs(dx) > Math.abs(dy) * 1.5) { e.preventDefault(); onClose() }
-  }
-
   return <div className={s.backdrop} onClick={onClose}>
     <nav ref={panel} tabIndex={-1} className={s.drawer} role="dialog" aria-modal="true"
       aria-label="Меню BetTON" data-figma-frame="819:46154"
-      onClick={e => e.stopPropagation()} onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp} onPointerCancel={() => { gesture.current = null }}>
+      style={drag.style} {...drag.handlers} onClick={e => e.stopPropagation()}>
       <div className={s.heading}><img src={wordmark} alt="BetTON" width={101} height={32}/>
         <button type="button" aria-label="Закрыть меню" onClick={onClose}>×</button></div>
       <button type="button" className={s.profile} onClick={() => activate(onProfile ?? a.onOpenProfile)}>

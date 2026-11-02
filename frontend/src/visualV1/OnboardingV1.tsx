@@ -5,6 +5,8 @@ import type { OnboardingScreenProps } from '../screens/OnboardingScreen'
 import type { EventTypeInfoProps, EventType } from '../screens/EventTypeInfo'
 import { syncTelegramBackButton } from '../telegram/webapp'
 import wordmark from '../assets/visual-v1/wordmark.svg'
+import fans from '../assets/visual-v1/onboarding-fans-v2.webp'
+import roles from '../assets/visual-v1/onboarding-roles-v2.webp'
 import original from '../assets/visual-v1/onboarding-original.png'
 import football from '../assets/visual-v1/feed/category-football.svg'
 import s from './OnboardingV1.module.css'
@@ -66,14 +68,14 @@ function Match() {
   return (<><section className={s.match} aria-label="Пример встречной ставки">
     <div className={s.example}><img src={football} alt=""/>Пример события</div>
     <h2>Спартак — Зенит</h2><p className={s.caption}>Пример двух исходов</p>
-    <div className={s.matchScene}><SourceArt name="stadium" className={s.stadium}/><SourceArt name="redPlayer" className={s.player}/><b>VS</b><SourceArt name="bluePlayer" className={s.player}/></div>
+    <div className={s.matchScene}><img src={fans} className={s.fans} alt="" draggable={false}/><b>VS</b></div>
     <div className={s.outcomes}><div><SourceArt name="spartak" className={s.teamLogo}/><b>Спартак</b><strong>1,85</strong></div><div><SourceArt name="zenit" className={s.teamLogo}/><b>Зенит</b><strong>2,10</strong></div></div>
   </section><Note>Ставка заключается, когда есть встречное предложение.</Note></>
   )
 }
 function Matching() {
   return <section className={s.matching} aria-label="Как находится встречное предложение">
-    <div className={s.offer}><SourceArt name="offer" className={s.offerAvatar}/><div className={s.offerCopy}><b>Ваше предложение</b><strong>Спартак</strong><dl><div><dt>Сумма</dt><dd>100 TON</dd></div><div><dt>Коэффициент</dt><dd>1,85×</dd></div></dl></div></div>
+    <div className={s.offer}><img src={fans} className={s.offerAvatar} alt="" draggable={false}/><div className={s.offerCopy}><b>Ваше предложение</b><strong>Спартак</strong><dl><div><dt>Сумма</dt><dd>100 TON</dd></div><div><dt>Коэффициент</dt><dd>1,85×</dd></div></dl></div></div>
     <ArrowDown className={s.flowArrow} size={22} aria-hidden="true"/>
     <div className={s.process}><RefreshCw size={23} aria-hidden="true"/><b>Встречное<br/>предложение</b></div>
     <div className={s.branches}>
@@ -93,11 +95,8 @@ function Types({ onDetail }: { onDetail: (type: EventType) => void }) {
   </button>)}<Note>Создать событие можно бесплатно.</Note></section>
 }
 function Guarantor() {
-  return <section className={s.guarantor} aria-label="Роль гаранта"><div className={s.roles}>
-    <div><SourceArt name="creator"/><b>Создатель<br/>события</b></div><ArrowRight size={20} aria-hidden="true"/>
-    <div><SourceArt name="verifier"/><b>Гарант</b></div><ArrowRight size={20} aria-hidden="true"/>
-    <div><SourceArt name="participants"/><b>Участники<br/>события</b></div>
-  </div><div className={s.stages}>{(['terms', 'result', 'reward'] as const).map((name, i) => <div key={name}><SourceArt name={name} className={s.stageArt}/><span><b>{['Согласуйте условия', 'Подтвердите результат', 'Получите вознаграждение'][i]}</b><small>{['Правила и вознаграждение', 'После завершения события', 'За выполненную работу'][i]}</small></span></div>)}</div></section>
+  return <section className={s.guarantor} aria-label="Роль гаранта"><div className={s.roleIllustration}><img src={roles} alt="" draggable={false}/><ArrowRight size={18} aria-hidden="true"/><ArrowRight size={18} aria-hidden="true"/></div><div className={s.roleLabels}><b>Создатель<br/>события</b><b>Гарант</b><b>Участники<br/>события</b></div>
+  <div className={s.stages}>{(['terms', 'result', 'reward'] as const).map((name, i) => <div key={name}><SourceArt name={name} className={s.stageArt}/><span><b>{['Согласуйте условия', 'Подтвердите результат', 'Получите вознаграждение'][i]}</b><small>{['Правила и вознаграждение', 'После завершения события', 'За выполненную работу'][i]}</small></span></div>)}</div></section>
 }
 const detailData={
  public:{frame:'977:28104',halo:'6eb87',hero:'0cb60',caption:'Для всех после модерации',icons:['52e62','8b504','e47ae','de1e3'],rows:['После одобрения модерацией\nдоступно всем пользователям.','Модерация проверяет, можно ли\nоднозначно определить исход.','Способ проверки и источник\nуказаны в условиях события.','Результат определяется\nпо опубликованным условиям.']},

@@ -102,3 +102,7 @@
 }
 @font-face {font-family:'Betton Inter';src:url('../assets/visual-v1/fonts/Inter.woff2') format('woff2');font-style:normal;font-weight:100 900;font-display:swap}
 @font-face {font-family:'Betton Inter';src:url('../assets/visual-v1/fonts/Inter-Italic.woff2') format('woff2');font-style:italic;font-weight:100 900;font-display:swap}
+
+.viewport{overflow:hidden;isolation:isolate;overscroll-behavior:none}.root{overflow:hidden;max-width:100%;overscroll-behavior:none}
+
+@media(prefers-reduced-motion:reduce){.root{--panel-drag-duration:0ms}}

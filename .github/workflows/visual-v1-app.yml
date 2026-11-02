@@ -23,9 +23,9 @@ jobs:
         working-directory: frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
-      - name: Prepare pinned PR 34 baseline
+      - name: Prepare pinned PR 35 baseline
         run: |
-          git worktree add ../visual-v1-before df5be9e742b9c6766d6e1bf7bfe7d07e73f06ace
+          git worktree add ../visual-v1-before 6ecf6ebed96739c110cac48f3898e8a4b45c71d7
           ln -s "$GITHUB_WORKSPACE/frontend/node_modules" ../visual-v1-before/frontend/node_modules
       - name: Capture actual App before
         run: node frontend/scripts/capture-app-v1.mjs --root ../visual-v1-before --output qa-app-before --baseline

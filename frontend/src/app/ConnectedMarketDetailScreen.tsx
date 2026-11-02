@@ -1,7 +1,11 @@
+import { syncTelegramBackButton } from '../telegram/webapp'
+import { ConnectedOwnPriceScreen } from './ConnectedOwnPriceScreen'
+import { ConnectedQuickTradeSheet } from './ConnectedQuickTrade'
+import { QUICK_TRADE_INITIAL_AMOUNT } from '../lib/quickTrade'
 import {getChatMessages} from '../api/chat'
 import {useVisualV1} from '../visualV1/VisualV1Context'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   applyPersonalizedExecutableQuotes,
   mapMarketOut,
@@ -32,6 +36,7 @@ import type { NavId } from '../components/BottomNavigation/BottomNavigation'
 export type ConnectedMarketDetailScreenProps = {
   onNavChange?: (id: NavId) => void
   marketId: number
+  availableTon?: number
   onBack: () => void
   onOwnPrice: (side: OutcomeSide) => void
   onQuickTrade: (side: OutcomeSide) => void
@@ -50,6 +55,7 @@ export type ConnectedMarketDetailScreenProps = {
 export function ConnectedMarketDetailScreen({
   onNavChange,
   marketId,
+  availableTon = 0,
   onBack,
   onOwnPrice,
   onQuickTrade,
@@ -67,6 +73,13 @@ export function ConnectedMarketDetailScreen({
   const visualV1 = useVisualV1()
   const t = useT()
   const { locale } = useI18n()
+  const [tradeOpen, setTradeOpen] = useState(false)
+  const [tradeBusy, setTradeBusy] = useState(false)
+  const [tradeMode, setTradeMode] = useState<'quick'|'own'>('quick')
+  const [ownOdds, setOwnOdds] = useState<number | undefined>(undefined)
+  const retainOwnDraft = useCallback((draft: {side: OutcomeSide; amount: number; odds: number}) => { setSide(draft.side); setTradeAmount(draft.amount); setOwnOdds(draft.odds) }, [])
+  useEffect(() => tradeOpen ? syncTelegramBackButton(true, () => { if (!tradeBusy) setTradeOpen(false) }) : undefined, [tradeOpen, tradeBusy])
+  const [tradeAmount, setTradeAmount] = useState(QUICK_TRADE_INITIAL_AMOUNT)
   const [side, setSide] = useState<OutcomeSide>('a')
   const [localPane, setLocalPane] = useState<MarketDetailPane>('chart')
   const pane = controlledPane ?? localPane
@@ -162,8 +175,10 @@ export function ConnectedMarketDetailScreen({
 
   return (
     <div className={overlayStyles.root}>
+      <div style={{height:'100%'}} inert={visualV1&&tradeOpen} aria-hidden={visualV1&&tradeOpen?true:undefined}>
       <MarketDetailScreen
         market={market}
+        draftAmount={tradeAmount}
         selectedSide={side}
         onSelectSide={setSide}
         chartSeriesA={displayChartA}
@@ -189,11 +204,12 @@ export function ConnectedMarketDetailScreen({
         discussionUnreadReplies={discussionUnreadReplies}
         onDiscussion={onDiscussion}
         onBack={onBack}
-        onOwnPrice={() => onOwnPrice(side)}
+        onOwnPrice={() => { if (visualV1) { setTradeMode('own'); setTradeOpen(true) } else onOwnPrice(side) }}
         onNavChange={onNavChange}
         onPlace={(selected) => {
           if (!market || actionsOff) return
-          onQuickTrade(selected ?? side)
+          if (visualV1) { setSide(selected ?? side); setTradeMode('quick'); setTradeOpen(true) }
+          else onQuickTrade(selected ?? side)
         }}
         onRetry={() => {
           void marketQuery.refetch()
@@ -247,6 +263,15 @@ export function ConnectedMarketDetailScreen({
           </>
         }
       />
+      </div>
+      {visualV1 && tradeOpen && market ? <div className={overlayStyles.overlay} style={{background:'transparent'}}>
+        {tradeMode==='own'?<ConnectedOwnPriceScreen marketId={marketId} initialSide={side} initialAmount={tradeAmount} initialOdds={ownOdds} onDraftChange={retainOwnDraft} availableTon={availableTon} userId={userId} backdrop={false} onBusyChange={setTradeBusy} onBack={() => { if(!tradeBusy)setTradeOpen(false) }} onQuickTrade={next=>{if(!tradeBusy){setSide(next);setTradeMode('quick')}}} onNavChange={onNavChange}/>:<ConnectedQuickTradeSheet market={market} selectedSide={side} amount={tradeAmount}
+          availableTon={availableTon} userId={userId} backdrop={false} onBusyChange={setTradeBusy}
+          totalAvailableTon={(bookQuery.data?.available_to_me?.[side === 'a' ? 0 : 1] ?? []).reduce((sum, level) => sum + Number(level.available ?? 0), 0)}
+          quotesLoading={bookQuery.isPending} quotesError={bookQuery.isError}
+          onRetryQuotes={() => { void bookQuery.refetch() }} onSelectSide={setSide} onAmountChange={setTradeAmount}
+          onClose={() => { if(!tradeBusy)setTradeOpen(false) }} onOwnPrice={() => { if(!tradeBusy)setTradeMode('own') }} onNavChange={onNavChange}/>}
+      </div> : null}
     </div>
   )
 }

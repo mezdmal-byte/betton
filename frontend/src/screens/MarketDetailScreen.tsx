@@ -45,6 +45,7 @@ export type TradeHistoryState =
   | "error";
 
 export type MarketDetailScreenProps = {
+  draftAmount?: number
   market?: MarketFixture;
   selectedSide?: OutcomeSide;
   chartSeriesA?: ChartPoint[];

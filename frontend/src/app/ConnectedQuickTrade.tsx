@@ -36,6 +36,8 @@ import routeStyles from '../screens/QuickTradeScreen.module.css'
 import { invalidateAfterTrade } from './invalidate'
 
 type Props = {
+  backdrop?: boolean
+  onBusyChange?: (busy: boolean) => void
   market: MarketFixture
   selectedSide: OutcomeSide
   amount: number
@@ -53,6 +55,8 @@ type Props = {
 }
 
 export function ConnectedQuickTradeSheet({
+  backdrop,
+  onBusyChange,
   market,
   selectedSide,
   amount,
@@ -243,13 +247,15 @@ export function ConnectedQuickTradeSheet({
     },
   })
 
+  useEffect(() => { onBusyChange?.(mutation.isPending || hasPendingIntent) }, [mutation.isPending, hasPendingIntent, onBusyChange])
+
   if (hasPendingIntent && userId) return <OrderIntentRecovery key={userId} userId={userId} busy={mutation.isPending} onResolved={order => {
     invalidateAfterTrade(queryClient, {userId, marketId:order.market_id})
     if (order.market_id === marketId && order.kind === 'ioc') { setPlaceResult(classifyIocPlacement(order)); setState('success'); setErrorMessage(null) }
   }} />
 
   return (
-    <QuickTradeSheet
+    <QuickTradeSheet backdrop={backdrop}
       market={market}
       selectedSide={selectedSide}
       amount={amount}

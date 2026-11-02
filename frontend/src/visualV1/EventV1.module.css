@@ -7,3 +7,7 @@
 .discussionPreview{display:flex;flex-direction:column;gap:12px;min-width:0}.discussionPreview article{display:flex;flex-direction:column;gap:4px}.discussionPreview strong{font-size:12px;line-height:17px;font-weight:600}.discussionPreview p{margin:0;font-size:13px;line-height:19px;white-space:pre-wrap;overflow-wrap:anywhere;color:#566176}
 
 .ownPrice{align-self:center;min-height:32px;border:0;background:transparent;color:#ff6b00;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer}
+
+.screen{min-width:0;max-width:100%;min-height:0}.scroll{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y pinch-zoom}.ticket{position:relative;z-index:2}.handle{width:100%;height:22px;min-height:22px;display:grid;place-items:center;align-self:center;border:0;background:transparent;padding:0;touch-action:none;cursor:grab}.handle>span{width:34px;height:4px;border-radius:3px;background:#cad3df}.ticket{gap:6px;padding-top:0}.ticket:has(.handle:active){cursor:grabbing}
+
+.chartReadout{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #e2e8f0;background:#fff;border-radius:10px;font-size:10px;line-height:15px;margin-bottom:8px}.chartReadout span{color:#4b5871}.chartHint{font-size:9px;line-height:14px;color:#637089;margin:5px 0 0}
