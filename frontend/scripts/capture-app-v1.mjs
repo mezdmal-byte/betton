@@ -33,6 +33,10 @@ async function setup(width,height,mode='unsupported'){
   if(p==='/auth/telegram')data=user
   else if(p==='/health')data={status:'ok'}
   else if(p==='/markets')data=fixtures
+  else if(/^\/markets\/\d+$/.test(p))data=fixtures.find(m=>m.id===Number(p.split('/')[2]))
+  else if(/^\/markets\/\d+\/trades$/.test(p))data=[]
+  else if(/^\/markets\/\d+\/chat$/.test(p))data={items:[],has_more:false,next_before_id:null}
+  else if(/^\/ux-v3\/events\/\d+\/terms$/.test(p))data=null
   else if(p==='/feed/stats')data={active_offers_nano:'36816000000000',scope:'public'}
   else if(p==='/users/90001/account')data=user
   else if(p==='/guarantors/me')data=null
@@ -90,6 +94,7 @@ try{
     for(const [index,kind] of ['public','private','guarantor'].entries()){
      await page.getByRole('button',{name:/Подробнее/}).nth(index).click()
      await capture(page,`detail-${kind}-${width}x${height}`,'detail')
+     if(height<=600){await page.locator('[data-figma-frame] main').evaluate(el=>el.scrollTop=el.scrollHeight);await capture(page,`detail-${kind}-scrolled-${width}x${height}`,'detail-scroll')}
      await page.getByRole('button',{name:'Понятно',exact:true}).click()
      if(!baseline)await page.waitForFunction(kind=>document.activeElement?.getAttribute('data-event-type')===kind,kind)
     }
@@ -120,6 +125,24 @@ try{
    await capture(page,'keyboard-model-390x600','keyboard-model')
    if(await page.evaluate(()=>document.documentElement.style.getPropertyValue('--betton-viewport-height'))!=='350px')report.errors.push('Keyboard model did not reduce App height')
   }
+  await context.close()
+ }
+ for(const width of [320,390])for(const height of [600,844]){
+  const {page,context}=await setup(width,height)
+  await page.goto('http://127.0.0.1:6189/v2/')
+  await page.getByRole('button',{name:'Пропустить',exact:true}).click()
+  await page.getByRole('button',{name:'Team Liquid — Team Spirit',exact:true}).click()
+  await page.getByRole('heading',{name:'Событие',exact:true}).waitFor()
+  await page.getByText('Исполненных сделок за этот период нет',{exact:true}).waitFor()
+  for(const [pane,label] of [['chart','График'],['book','Предложения'],['info','Информация'],['discussion','Обсуждение']]){
+   await page.getByRole('button',{name:label,exact:true}).click()
+   if(pane==='discussion')await page.getByText('Сообщений пока нет.',{exact:true}).waitFor()
+   await capture(page,`event-${pane}-${width}x${height}`,'event')
+   await page.locator('[data-figma-frame="908:19752"] main').evaluate(el=>el.scrollTop=el.scrollHeight)
+   await capture(page,`event-${pane}-scrolled-${width}x${height}`,'event-scroll')
+  }
+  await page.getByRole('button',{name:'Назад',exact:true}).click()
+  await page.getByRole('button',{name:'Team Liquid — Team Spirit',exact:true}).waitFor()
   await context.close()
  }
  for(const mode of ['success','denied']){
