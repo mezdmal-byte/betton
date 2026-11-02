@@ -277,7 +277,7 @@ export function ConnectedMarketDetailScreen({
       />
       </div>
       {visualV1 && tradeOpen && market ? <div className={overlayStyles.overlay} style={{background:'transparent'}}>
-        {tradeMode==='own'?<ConnectedOwnPriceScreen marketId={marketId} initialSide={side} initialAmount={tradeAmount} initialOdds={ownDrafts[side]} onDraftChange={retainOwnDraft} availableTon={availableTon} userId={userId} backdrop={false} onBusyChange={setTradeBusy} onBack={() => { if(!tradeBusy)setTradeOpen(false) }} onQuickTrade={next=>{if(!tradeBusy){setSide(next);setTradeMode('quick')}}} onNavChange={onNavChange}/>:<ConnectedQuickTradeSheet market={market} selectedSide={side} amount={tradeAmount}
+        {tradeMode==='own'?<ConnectedOwnPriceScreen marketId={marketId} initialSide={side} initialAmount={tradeAmount} initialOdds={ownDrafts[side]} initialSideOdds={ownDrafts} onDraftChange={retainOwnDraft} availableTon={availableTon} userId={userId} backdrop={false} onBusyChange={setTradeBusy} onBack={() => { if(!tradeBusy)setTradeOpen(false) }} onQuickTrade={next=>{if(!tradeBusy){setSide(next);setTradeMode('quick')}}} onNavChange={onNavChange}/>:<ConnectedQuickTradeSheet market={market} selectedSide={side} amount={tradeAmount}
           availableTon={availableTon} userId={userId} backdrop={false} onBusyChange={setTradeBusy}
           totalAvailableTon={(bookQuery.data?.available_to_me?.[side === 'a' ? 0 : 1] ?? []).reduce((sum, level) => sum + Number(level.available ?? 0), 0)}
           quotesLoading={bookQuery.isPending} quotesError={bookQuery.isError}

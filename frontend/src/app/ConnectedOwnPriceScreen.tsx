@@ -24,6 +24,7 @@ export type ConnectedOwnPriceScreenProps = {
   marketId: number
   initialAmount?: number
   initialOdds?: number
+  initialSideOdds?: Partial<Record<OutcomeSide,number>>
   backdrop?: boolean
   onBusyChange?: (busy: boolean) => void
   onDraftChange?: (draft: {side: OutcomeSide; amount: number; odds: number}) => void
@@ -37,7 +38,7 @@ export type ConnectedOwnPriceScreenProps = {
 
 export function ConnectedOwnPriceScreen({
   marketId,
-  initialAmount = 100, initialOdds, backdrop, onBusyChange, onDraftChange,
+  initialAmount = 100, initialOdds, initialSideOdds, backdrop, onBusyChange, onDraftChange,
   initialSide = 'a',
   availableTon,
   userId,
@@ -54,12 +55,12 @@ export function ConnectedOwnPriceScreen({
   currentActor.current = userId
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const [side, setSide] = useState<OutcomeSide>(initialSide)
-  const [odds, setOdds] = useState(initialOdds ?? 1.9)
+  const [odds, setOdds] = useState(initialOdds ?? initialSideOdds?.[initialSide] ?? 1.9)
   const [amount, setAmount] = useState(initialAmount)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [placedOrder, setPlacedOrder] = useState<OrderOut | null>(null)
-  const initializedOdds = useRef(initialOdds != null)
-  const sideOdds = useRef<Partial<Record<OutcomeSide,number>>>(initialOdds==null?{}:{[initialSide]:initialOdds})
+  const initializedOdds = useRef(initialOdds != null || initialSideOdds?.[initialSide] != null)
+  const sideOdds = useRef<Partial<Record<OutcomeSide,number>>>({...initialSideOdds,...(initialOdds==null?{}:{[initialSide]:initialOdds})})
   const shareToken = shareTokenFor(marketId)
 
   const marketQuery = useQuery({
