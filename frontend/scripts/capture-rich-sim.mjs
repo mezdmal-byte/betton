@@ -59,11 +59,16 @@ try{
    if(!await handle.isEnabled())throw Error('Real consented collecting case is blocked in UI')
    await page.getByRole('button',{name:'Свой коэффициент',exact:true}).click()
    await page.getByRole('dialog',{name:'Свой коэффициент',exact:true}).waitFor()
+   const quoteResponse=page.waitForResponse(r=>{if(!new URL(r.url()).pathname.endsWith('/orders/quote')||r.request().method()!=='POST')return false;const body=r.request().postDataJSON();return Number(body.money)===10&&Number(body.odds)===2})
    await page.getByRole('textbox',{name:'Ваш коэффициент',exact:true}).fill('2')
    await page.getByRole('textbox',{name:'Сумма, TON',exact:true}).fill('10')
-   await page.locator('section[aria-label="Расходы на гаранта"]').waitFor()
+   const quote=await quoteResponse;if(quote.status()!==200)throw Error('Collecting quote failed')
+   const preview=(await quote.json()).requested
+   if(Number(preview.matched)!==0||Number(preview.remaining)!==10||preview.guarantor_costs?.can_place!==true)throw Error('Unexpected collecting limit preview')
+   report.collectingPreview={matched:preview.matched,remaining:preview.remaining,canPlace:preview.guarantor_costs.can_place,submitted:false}
+   await page.waitForFunction(()=>[...document.querySelectorAll('[role="dialog"] button')].some(b=>b.textContent.trim()==='Проверить заявку'&&!b.disabled))
    await page.screenshot({path:path.join(output,'guarantor-collecting-own-form.png')});report.screens.push('guarantor-collecting-own-form.png')
   }
  }
  if(report.errors.length)throw Error(JSON.stringify(report.errors))
-} catch(e){report.errors.push(String(e));process.exitCode=1;if(page)await page.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});await fs.writeFile(path.join(output,'server.log'),serverLog)}finally{child.kill();await browser.close();await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2))}
+} catch(e){report.errors.push(String(e));process.exitCode=1;if(page)await page.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});await fs.writeFile(path.join(output,'server.log'),serverLog)}finally{child.kill();await browser.close();await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report))}
