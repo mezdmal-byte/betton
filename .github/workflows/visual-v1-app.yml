@@ -37,6 +37,9 @@ jobs:
       - name: Verify guarantor workflows
         run: node scripts/verify-workflows-v1.mjs
         working-directory: frontend
+      - name: Verify chat send, reply, error and legacy behavior
+        run: node scripts/verify-chat-v1.mjs
+        working-directory: frontend
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -48,5 +51,6 @@ jobs:
             qa-app-after/report.json
             frontend/visual-v1-qa/
             frontend/qa-visual-v1/pass2/workflows/
+            frontend/chat-v1-qa/
           if-no-files-found: error
           retention-days: 14

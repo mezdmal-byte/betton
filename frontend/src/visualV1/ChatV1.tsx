@@ -17,12 +17,13 @@ export function ChatV1({embedded=false,title,subtitle,messages,currentUserId,isA
  useEffect(()=>{const viewport=window.visualViewport;const update=()=>screen.current?.style.setProperty('--chat-viewport-height',`${viewport?.height??window.innerHeight}px`);update();viewport?.addEventListener('resize',update);return()=>viewport?.removeEventListener('resize',update)},[])
  useEffect(()=>{setFavorite(isFavorite(marketId));setShareStatus(null)},[marketId])
  useEffect(()=>{if(!attachOpen&&actionsId==null)return;const close=(event:KeyboardEvent)=>{if(event.key==='Escape'){setAttachOpen(false);setActionsId(undefined);input.current?.focus()}};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[attachOpen,actionsId])
+ const Scroll = embedded ? 'div' : 'main'
  const busy=sending||sendingRef.current
  async function submit(){const text=draft.trim();if(!text||busy||!currentUserId)return;sendingRef.current=true;try{const body={text,replyToId,attachedMarketId:attachedId};if(onSendConfirmed)await onSendConfirmed(body);else onSend(body);if(mounted.current){setDraft('');setReply(undefined);setAttachedId(undefined);setAttachOpen(false);nearBottom.current=true}}catch{/* The connected mutation supplies its error; keep the draft and context. */}finally{sendingRef.current=false}}
  const toggleFavorite=()=>{if(marketId==null)return;try{const old=readFavorites(),next=old.includes(String(marketId))?old.filter(v=>v!==String(marketId)):[...old,String(marketId)];localStorage.setItem('betton.favorites.v1',JSON.stringify(next));setFavorite(next.includes(String(marketId)))}catch{/* Local preference may be unavailable. */}}
  return <div ref={screen} className={`${s.screen} ${embedded?s.embedded:''}`} data-embedded-chat={embedded||undefined} data-figma-frame={lobby?undefined:focused?'880:19586':'880:19116'}>
   {!embedded?<header className={s.header}>{showInternalBack?<button type="button" className={s.back} aria-label="Назад" onClick={onBack}><img src={backIcon} alt=""/></button>:null}<h1>{title}</h1>{onShare?<button type="button" className={s.headerAction} aria-label="Поделиться событием" onClick={()=>{void onShare().then(ok=>setShareStatus(ok?'copied':'failed'))}}><img src={shareIcon} alt=""/></button>:null}{marketId!=null?<button type="button" className={s.headerAction} aria-label={favorite?'Удалить из избранного':'В избранное'} aria-pressed={favorite} onClick={toggleFavorite}><img src={starIcon} alt=""/></button>:null}</header>:null}
-  <main className={s.scroll} ref={scroll} onScroll={event=>{const el=event.currentTarget;nearBottom.current=el.scrollHeight-el.scrollTop-el.clientHeight<90}}>
+  <Scroll className={s.scroll} ref={node=>{scroll.current=node}} onScroll={event=>{const el=event.currentTarget;nearBottom.current=el.scrollHeight-el.scrollTop-el.clientHeight<90}}>
    {shareStatus==='copied'?<p className={s.note} role="status">Ссылка скопирована</p>:shareStatus==='failed'?<div className={s.failure} role="alert">Не удалось скопировать ссылку.{shareValue?<input aria-label="Ссылка на событие" value={shareValue} readOnly onFocus={e=>e.currentTarget.select()}/>:null}</div>:null}
    {lobby?<p className={s.note}>Показываем последние 100 сообщений. Уведомляем только об ответах вам.</p>:hasMore?<button type="button" className={s.loadMore} onClick={onLoadOlder}>Показать более ранние сообщения</button>:null}
    <section className={s.card} aria-label={lobby?'Сообщения лобби':'Сообщения события'}>{subtitle&&!embedded?<h2>{subtitle}</h2>:null}
@@ -37,7 +38,7 @@ export function ChatV1({embedded=false,title,subtitle,messages,currentUserId,isA
      </div></article>})}
     {error&&messages.length?<button className={s.loadMore} type="button" onClick={onRetry}>Не удалось обновить сообщения. Повторить</button>:null}
    </section>{deleteError?<p className={s.failure} role="alert">{deleteError}</p>:null}
-  </main>
+  </Scroll>
   <footer className={s.footer}>
    {reply?<div className={s.composeContext}><span><b>Ответ:</b> {reply.author.display_name} · {reply.text}</span><button type="button" aria-label="Отменить ответ" onClick={()=>setReply(undefined)}><X size={16}/></button></div>:null}
    {attachment?<div className={s.composeContext}><span><b>Событие:</b> {attachment.question}</span><button type="button" aria-label="Убрать прикреплённое событие" onClick={()=>setAttachedId(undefined)}><X size={16}/></button></div>:null}

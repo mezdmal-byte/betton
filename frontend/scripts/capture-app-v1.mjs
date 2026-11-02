@@ -13,6 +13,7 @@ const server=await createServer({root:path.join(root,'frontend'),configFile:path
 await server.listen()
 const browser=await chromium.launch({headless:true})
 const report={source:execFileSync('git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8'}).trim(),actualApp:true,bridge:'synthetic Telegram host',data:'read-only deterministic API fixtures, no backend',baseline,screens:[],errors:[],requests:[]}
+let latestPage
 const fixtures=[
  ['Team Liquid — Team Spirit','esports','Team Liquid','Team Spirit',1.74,2.10,12435,28,48620],
  ['Реал Мадрид — Бавария','sport','Реал Мадрид','Бавария',1.95,1.87,9842,36,31266],
@@ -68,6 +69,7 @@ async function setup(width,height,mode='unsupported',dpr=1){
   window.__APP_QA__={host,emit,back:()=>{for(const f of [...back])f()},fullscreenRequests:0}
  },{height,mode})
  const page=await context.newPage()
+ latestPage=page
  page.on('pageerror',e=>report.errors.push(e.message))
  await page.clock.setFixedTime(new Date('2026-11-02T10:00:00Z'))
  return {page,context}
@@ -151,7 +153,7 @@ try{
   await page.getByText('Исполненных сделок за этот период нет',{exact:true}).waitFor()
   for(const [pane,label] of [['chart','График'],['book','Предложения'],['info','Информация'],['discussion','Обсуждение']]){
    await page.getByRole('button',{name:label,exact:true}).click()
-   if(pane==='discussion')await page.getByText('Сообщений пока нет.',{exact:true}).waitFor()
+   if(pane==='discussion')await page.getByText(/^Сообщений пока нет\./).waitFor()
    await capture(page,`event-${pane}-${width}x${height}`,'event')
    await page.locator('[data-figma-frame="908:19752"] main').evaluate(el=>el.scrollTop=el.scrollHeight)
    await capture(page,`event-${pane}-scrolled-${width}x${height}`,'event-scroll')
@@ -248,7 +250,7 @@ try{
   await capture(page,`event-fullscreen-scrolled-${mode}`,'event-fullscreen-scroll')
   await context.close()
  }
-} catch(error){report.errors.push(error.stack||String(error))}
+} catch(error){report.errors.push(error.stack||String(error));if(latestPage&&!latestPage.isClosed())await latestPage.screenshot({path:path.join(output,'failure-last-page.png')}).catch(()=>{})}
 finally{
  await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2))
  await browser.close();await server.close()
