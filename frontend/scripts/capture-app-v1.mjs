@@ -189,7 +189,7 @@ try{
   const touch=async(type,x,y)=>{await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x,y,id:1}]});await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))))}
   await touch('touchStart',230,190);await touch('touchMove',140,191)
   await capture(page,'drawer-drag-midway-390x700','native-chromium-touch')
-  await touch('touchMove',70,235);await touch('touchEnd',70,192)
+  await touch('touchMove',70,310);await touch('touchEnd',70,310)
   await page.getByRole('dialog',{name:'Меню BetTON'}).waitFor({state:'hidden'})
   await page.getByRole('button',{name:'Team Liquid — Team Spirit',exact:true}).click()
   await page.getByText('Исполненных сделок за этот период нет',{exact:true}).waitFor()
