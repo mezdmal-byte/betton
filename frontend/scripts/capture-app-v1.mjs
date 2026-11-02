@@ -43,7 +43,7 @@ async function setup(width,height,mode='unsupported',dpr=1,privateState='review'
   else if(/^\/markets\/\d+\/trades$/.test(p))data=[]
   else if(/^\/markets\/\d+\/chat$/.test(p))data={items:[],has_more:false,next_before_id:null}
   else if(/^\/ux-v3\/events\/\d+\/terms$/.test(p))data=p.includes('/6/')?privateTerms:null
-  else if(p==='/markets/6/guarantor')data=privateState==='review'?privateCase:{...privateCase,state:privateState,creator_confirmed:3}
+  else if(p==='/markets/6/guarantor')data=privateState==='review'?privateCase:{...privateCase,state:privateState,creator_confirmed:3,consent:true,reward:{...privateCase.reward,accepted_by:[90001,90003]}}
   else if(p==='/guarantors')data=directory
   else if(p==='/creators/90001')data={creator:{id:90001,display_name:'Тестовый создатель'}}
   else if(/^\/markets\/\d+\/orders\/quote$/.test(p)){const body=req.postDataJSON(),amount=Number(body.money),odds=body.outcome===1?2.1:1.74,matched=body.kind==='limit'&&Number(body.odds)>odds?0:amount;data={limit_odds:body.odds,kind:body.kind,requested:{matched,remaining:amount-matched,payout:matched*odds,average_odds:matched?odds:null,worst_odds:matched?odds:null,fills:matched?[{odds,matched}]:[]},available:{matched:100,worst_odds:odds,payout:100*odds}}}
@@ -320,6 +320,10 @@ try{
   if(!await page.locator('[data-agreement="embedded"]').isVisible())report.errors.push('Agreement heading collapses content')
   await page.locator('[data-agreement="embedded"]').scrollIntoViewIfNeeded()
   await capture(page,'private-agreement-collecting-390x700','confirmed-agreement')
+  const stake=page.getByRole('button',{name:'Раскрыть панель ставки',exact:true})
+  if(!await stake.isEnabled())report.errors.push('Consented collecting event cannot open stake')
+  await stake.click();await page.getByRole('dialog',{name:'Быстрая ставка',exact:true}).waitFor()
+  await capture(page,'private-collecting-stake-390x700','collecting-trading')
   await context.close()
  }
  if(!baseline){

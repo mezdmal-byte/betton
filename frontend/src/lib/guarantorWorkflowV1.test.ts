@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest'
 import type {GuarantorCase} from '../api/guarantors'
-import {guarantorWorkflowPolicy,isReviewedRevision,remainingWindowLabel} from './guarantorWorkflowV1'
+import {guarantorWorkflowPolicy,privateCaseCanTrade,isReviewedRevision,remainingWindowLabel} from './guarantorWorkflowV1'
 const now=Date.parse('2026-10-29T10:00:00Z')
 const event:GuarantorCase={market_id:1,question:'Матч',state:'review',revision:3,creator_id:1,guarantor_id:2,guarantor_name:'Анна',creator_confirmed:3,criteria:'Правила',source:'Протокол',description:'',outcomes:['Да','Нет'],close_at:'2026-10-29T11:00:00Z',ends_at:'2026-10-29T12:00:00Z',result_due_at:'2026-10-30T12:00:00Z',deadline:'2026-10-29T10:05:00Z',extension_by:null,proposed_outcome:null,decision_reason:null,consent:false,participant:false,messages:[]}
 describe('guarantor workflow boundaries',()=>{
@@ -22,4 +22,10 @@ describe('guarantor workflow boundaries',()=>{
  it('enables only the assigned guarantor from estimated end up to but excluding due time',()=>{const active={...event,state:'active',deadline:null};for(const [at,available] of [[Date.parse(event.ends_at!)-1,false],[Date.parse(event.ends_at!),true],[Date.parse(event.result_due_at)-1,true],[Date.parse(event.result_due_at),false]] as const){expect(guarantorWorkflowPolicy(active,2,at).canDecide).toBe(available);expect(guarantorWorkflowPolicy(active,1,at).canDecide).toBe(false)}})
  it('does not silently sign a replacement revision',()=>{expect(isReviewedRevision(3,3)).toBe(true);expect(isReviewedRevision(4,3)).toBe(false);expect(isReviewedRevision(3,null)).toBe(false)})
  it('rejects unknown time and keeps exact UTC timezone parsing',()=>{expect(guarantorWorkflowPolicy({...event,state:'active',ends_at:'invalid'},2,now).canDecide).toBe(false);expect(remainingWindowLabel('2026-10-29T11:24:00',now)).toBe('1 ч 24 мин')})
+})
+
+describe('private event trading UI follows collecting contract',()=>{
+ it.each(['collecting','active'])('permits consented participants in %s, but excludes the guarantor',state=>{expect(privateCaseCanTrade({...event,state,consent:true},1)).toBe(true);expect(privateCaseCanTrade({...event,state,consent:true},3)).toBe(true);expect(privateCaseCanTrade({...event,state,consent:true},2)).toBe(false)})
+ it.each(['invited','review','needs_guarantor','settled','cancelled','unknown'])('keeps %s blocked',state=>expect(privateCaseCanTrade({...event,state,consent:true},1)).toBe(false))
+ it('requires consent and authenticated user',()=>{expect(privateCaseCanTrade({...event,state:'collecting'},1)).toBe(false);expect(privateCaseCanTrade({...event,state:'collecting',consent:true})).toBe(false)})
 })

@@ -30,6 +30,20 @@ async def main():
             valid=await client.post('/ux-v3/events',json=payload)
             assert valid.status_code==200,valid.text
             assert valid.json()['id']>0
+            created=valid.json();mid=created['id']
+            async def action(who,name,revision):
+                r=await client.post(f'/markets/{mid}/guarantor',headers={'Authorization':'tma '+signed_init_data(who)},json={'action':name,'revision':revision})
+                assert r.status_code==200,r.text
+                return r.json()
+            await action('guarantor','acknowledge',1)
+            tariff=await client.post(f'/ux-v3/events/{mid}/reward',json={'expected_revision':1,'mode':'fixed','fixed_ton':'1','percent':'0'})
+            assert tariff.status_code==200,tariff.text
+            await action('creator','confirm',2)
+            collecting=await action('guarantor','accept',2)
+            assert collecting['state']=='collecting' and not collecting['funding']['secured'],collecting
+            consent=await action('creator','consent',2)
+            assert consent['consent']
+            core['qa_collecting']={'id':mid,'share_token':created['share_token']}
         result=await add_rich_scenarios(backend,core)
         assert result['rich_history_fills']>=100,result
         again=await add_rich_scenarios(backend,core)
@@ -43,7 +57,7 @@ async def main():
             assert len({f.price for f in fills})>=4
             assert db.query(DemoGuarantorActor).count()==6
         core.update(result);core['scenarios'].update(result['rich_scenarios']);marker.write_text(json.dumps(core,ensure_ascii=False,indent=2),encoding='utf-8')
-        report={'passed':True,'additional_markets':len(result['rich_scenarios']),'rich_executions':len(fills),'price_levels':len({f.price for f in fills}),'reconcile_verified':len(audits),'idempotent':True,'conserved':True,'existing_user_balances_unchanged':True,'automatic_guarantors':6,'guarantor_creation':True,'validation_error_localized':True}
+        report={'passed':True,'additional_markets':len(result['rich_scenarios']),'rich_executions':len(fills),'price_levels':len({f.price for f in fills}),'reconcile_verified':len(audits),'idempotent':True,'conserved':True,'existing_user_balances_unchanged':True,'automatic_guarantors':6,'guarantor_creation':True,'validation_error_localized':True,'agreed_collecting_with_consent':True}
         (state/'rich-report.json').write_text(json.dumps(report,indent=2))
         print(json.dumps(report));print('ISOLATED_SIM_STATE='+str(state))
 if __name__=='__main__':asyncio.run(main())

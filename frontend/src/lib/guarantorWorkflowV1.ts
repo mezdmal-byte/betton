@@ -29,3 +29,8 @@ export function guarantorWorkflowPolicy(event:GuarantorCase,userId:number,now:nu
 }
 export function remainingWindowLabel(value:string,now:number){const end=parseDate(value)?.getTime();if(end==null)return '—';const minutes=Math.max(0,Math.ceil((end-now)/60000));return minutes===0?'Срок истёк':minutes>=60?`${Math.floor(minutes/60)} ч ${minutes%60} мин`:`${minutes} мин`}
 export function isReviewedRevision(current:number,reviewed:number|null){return reviewed!=null&&current===reviewed}
+
+/** Mirrors the existing server's consent and collecting/active gate; never a quote or funding decision. */
+export function privateCaseCanTrade(event:GuarantorCase,userId?:number){
+ return Boolean(userId&&event.consent&&['collecting','active'].includes(event.state)&&event.guarantor_id!==userId)
+}

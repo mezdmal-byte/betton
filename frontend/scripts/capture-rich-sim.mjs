@@ -42,7 +42,7 @@ try{
   const file='chart-'+label.replaceAll(' ','-')+'.png';await page.screenshot({path:path.join(output,file)});report.screens.push(file)
  }
  await page.getByRole('button',{name:'Информация',exact:true}).click();await page.getByText('Как проверяется результат',{exact:true}).waitFor();await page.screenshot({path:path.join(output,'event-information.png')})
- const agreed=manifest.scenarios.guarantor_fixed
+ const agreed=manifest.qa_collecting??manifest.scenarios.guarantor_fixed
  if(agreed?.share_token){
   await page.goto('http://127.0.0.1:8877/sandbox/?actor=creator&share='+encodeURIComponent(agreed.share_token))
   await page.getByRole('heading',{name:'Событие',exact:true}).waitFor()
@@ -51,6 +51,13 @@ try{
    await page.getByRole('button',{name:label,exact:true}).click()
    await page.locator('[data-agreement="embedded"]').scrollIntoViewIfNeeded()
    const file='guarantor-'+({'Чат':'chat','Условия':'terms','История':'history'}[label])+'.png';await page.screenshot({path:path.join(output,file)});report.screens.push(file)
+  }
+  if(manifest.qa_collecting){
+   const handle=page.getByRole('button',{name:'Раскрыть панель ставки',exact:true})
+   if(!await handle.isEnabled())throw Error('Real consented collecting case is blocked in UI')
+   await page.getByRole('button',{name:'Свой коэффициент',exact:true}).click()
+   await page.getByRole('dialog',{name:'Свой коэффициент',exact:true}).waitFor()
+   await page.screenshot({path:path.join(output,'guarantor-collecting-own-form.png')});report.screens.push('guarantor-collecting-own-form.png')
   }
  }
  if(report.errors.length)throw Error(JSON.stringify(report.errors))
