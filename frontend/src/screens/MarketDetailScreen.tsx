@@ -45,6 +45,10 @@ export type TradeHistoryState =
   | "error";
 
 export type MarketDetailScreenProps = {
+  draftMode?: 'quick' | 'own'
+  draftOdds?: number
+  onSwitchQuickTrade?: () => void
+  draftAmount?: number
   market?: MarketFixture;
   selectedSide?: OutcomeSide;
   chartSeriesA?: ChartPoint[];
@@ -64,6 +68,9 @@ export type MarketDetailScreenProps = {
   actionsDisabled?: boolean;
   showInternalBack?: boolean;
   discussionUnreadReplies?: number;
+  guarantorContent?: ReactNode
+  tradeBlockedReason?: string
+  discussionContent?: ReactNode
   discussionMessages?: import('../api/types').ChatMessageOut[];
   discussionState?: 'ready' | 'loading' | 'error' | 'unavailable';
   onRetryDiscussion?: () => void;

@@ -41,6 +41,7 @@ export type QuickTradeFillLeg = {
 };
 
 export type QuickTradeSheetProps = {
+  backdrop?: boolean
   market: MarketFixture;
   selectedSide: OutcomeSide;
   amount: number;

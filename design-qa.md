@@ -71,3 +71,20 @@
 После проверенного SHA добавлены только документация и сохранённые доказательства; frontend-код не менялся.
 
 Нет merge/deploy, изменений settlement, production DB, webhook или основного Telegram-бота. Существующая SIM и legacy сохранены.
+
+
+## Продолжение PR #36 — EVENT / GUARANTOR, 02.11.2026
+
+Предыдущие разделы описывают PR #35. Новый пакет и источники — [handoff EVENT / GUARANTOR](docs/design/VISUAL_V1_EVENT_GUARANTOR_20261102.md). Проверенный frontend `dccf3193f1c9623f8931f85d4c31193a431f0636`, checkout merge `f94937844097486a6a8b335e0678a508da26aec3`; после проверенного кода — только docs и evidence.
+
+[Финальный Actions run](https://github.com/mezdmal-byte/betton/actions/runs/41486741392) успешен: 223 before + 274 after actual-App screenshots, errors=[]; 87 visual/legacy, 28 workflow и 11 chat screenshots. 215 unit tests + production build; browser recovery и PostgreSQL CI также успешны (ссылки в handoff).
+
+| Проверяемая область | Итог и доказательство |
+|---|---|
+| Люди и фон онбординга | Самостоятельные прозрачные assets; [до / после](docs/design/visual-v1-event-guarantor-20261102/onboarding-before-after.png) и [DPR 3](docs/design/visual-v1-event-guarantor-20261102/onboarding-retina-detail.png). Малые эмблемы/предметный растр не перегенерированы. |
+| Событие и панель | Настоящий App, все 16 размеров, живые Chromium touch-события; сохраняются сумма/режим/свой коэффициент. Исправлены новый клик после drag, скрытая выплата и пересечение секций. График zero/one/multiple points, оба исхода. |
+| Частное пари | Гарант/тариф/следующие шаги перед графиком, переговоры в том же полотне, отдельные подтверждения сохранены. [Сценарий](docs/design/visual-v1-event-guarantor-20261102/event-guarantor-overview.png). Согласование не помечается зелёным «Активно». |
+| Чат и legacy | Встроенный composer с выбранной ставкой; fixture send/reply/delete/error/guest/legacy checks прошли. Реальные сообщения никому не отправлялись. |
+| FEED | Поиск вместо верхнего дубля профиля. Нового прироста плотности нет: все 16 значений равны PR #35. |
+
+Общую приёмку нельзя считать полностью закрытой: настоящий Telegram iOS/Android, системная клавиатура/жесты, длинная история встроенного обсуждения и сложные роли/состояния через безопасную SIM ещё требуют проверки. App-тесты используют детерминированный API-перехватчик, а не живую SIM. Полная визуальная готовность EVENT не заявляется. Денежные контроллеры сохранены; backend/settlement/production DB/webhook/бот не менялись; merge/deploy не выполнялись.

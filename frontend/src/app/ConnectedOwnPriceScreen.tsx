@@ -22,6 +22,11 @@ import { invalidateAfterTrade } from './invalidate'
 
 export type ConnectedOwnPriceScreenProps = {
   marketId: number
+  initialAmount?: number
+  initialOdds?: number
+  backdrop?: boolean
+  onBusyChange?: (busy: boolean) => void
+  onDraftChange?: (draft: {side: OutcomeSide; amount: number; odds: number}) => void
   initialSide?: OutcomeSide
   availableTon: number
   userId?: number
@@ -32,6 +37,7 @@ export type ConnectedOwnPriceScreenProps = {
 
 export function ConnectedOwnPriceScreen({
   marketId,
+  initialAmount = 100, initialOdds, backdrop, onBusyChange, onDraftChange,
   initialSide = 'a',
   availableTon,
   userId,
@@ -48,11 +54,11 @@ export function ConnectedOwnPriceScreen({
   currentActor.current = userId
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const [side, setSide] = useState<OutcomeSide>(initialSide)
-  const [odds, setOdds] = useState(1.9)
-  const [amount, setAmount] = useState(100)
+  const [odds, setOdds] = useState(initialOdds ?? 1.9)
+  const [amount, setAmount] = useState(initialAmount)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [placedOrder, setPlacedOrder] = useState<OrderOut | null>(null)
-  const initializedOdds = useRef(false)
+  const initializedOdds = useRef(initialOdds != null)
   const shareToken = shareTokenFor(marketId)
 
   const marketQuery = useQuery({
@@ -152,6 +158,8 @@ export function ConnectedOwnPriceScreen({
     },
   })
 
+  useEffect(() => { onBusyChange?.(mutation.isPending || hasPendingIntent) }, [mutation.isPending, hasPendingIntent, onBusyChange])
+  useEffect(() => { onDraftChange?.({side,amount,odds}) }, [side,amount,odds,onDraftChange])
   if (hasPendingIntent && userId) return <OrderIntentRecovery key={userId} userId={userId} busy={mutation.isPending} onResolved={order => {
     invalidateAfterTrade(queryClient, {userId, marketId:order.market_id})
     if (order.market_id === marketId && order.kind === 'limit') { setPlacedOrder(order); setErrorMessage(null) }
@@ -160,7 +168,7 @@ export function ConnectedOwnPriceScreen({
   const forbidden = isApiError(marketQuery.error) && marketQuery.error.code === 'forbidden'
   if (marketQuery.isPending || !market || marketQuery.isError) {
     return (
-      <OwnPriceScreen
+      <OwnPriceScreen backdrop={backdrop}
         onBack={onBack}
         onQuickTrade={onQuickTrade}
         onNavChange={onNavChange}
@@ -192,7 +200,7 @@ export function ConnectedOwnPriceScreen({
   }
 
   return (
-    <OwnPriceScreen
+    <OwnPriceScreen backdrop={backdrop}
       market={market}
       onBack={onBack}
       onQuickTrade={onQuickTrade}

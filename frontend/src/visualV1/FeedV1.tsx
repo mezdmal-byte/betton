@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react'
 import wordmark from '../assets/visual-v1/wordmark.svg'
 import { useContext, useEffect, useRef, useState } from 'react'
 import type { MarketsScreenProps } from '../screens/MarketsScreen'
@@ -89,13 +90,13 @@ export function FeedV1({ markets = [], selectedOutcomes, query = '', sort = 'new
     <header className={s.header}>
       <button type="button" ref={menuButton} aria-label="Меню" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><FeedAsset name="f79f3"/></button>
       <strong className={s.brand}><img src={wordmark} width={101} height={32} alt="BetTON"/></strong>
-      <button type="button" aria-label="Профиль" onClick={onProfileClick ?? a.onOpenProfile}><FeedAsset name="ce1b6"/></button>
+      <button type="button" aria-label="Поиск событий" aria-expanded={searchOpen} onClick={() => setSearchOpen(value => !value)}><Search size={22} strokeWidth={1.7} aria-hidden="true"/></button>
       <button type="button" className={s.notifications} aria-label={`Уведомления${unread ? ` · ${unread}` : ''}`} onClick={a.onOpenNotifications}><FeedAsset name="c0f44" size={21}/>{unread ? <span className={s.dot}/> : null}</button>
     </header>
     <main className={s.scroll}>
       <div className={s.content}>
         <nav className={s.categories} aria-label="Категории событий">{[['all', 'Все'], ['esports', 'Киберспорт'], ['sport', 'Спорт']].map(([id, label]) => <button key={id} type="button" aria-current={categoryValue === id ? 'page' : undefined} onClick={() => setCategory(id!)}>{label}</button>)}<button type="button" className={s.allCategories} onClick={onFiltersClick}>Все категории<span className={s.down}><FeedAsset name="9ec65" size={8}/></span></button></nav>
-        {searchOpen ? <SearchField value={searchValue} onChange={setSearch} placeholder="Поиск событий"/> : null}
+        {searchOpen ? <SearchField autoFocus aria-label="Поиск событий" value={searchValue} onChange={setSearch} placeholder="Поиск событий"/> : null}
         <div className={s.controls} ref={sortControl}>
           <button type="button" className={s.sortButton} aria-haspopup="menu" aria-expanded={sortOpen} onClick={() => setSortOpen(!sortOpen)}><FeedAsset name="1dd35" size={17}/><span>{sortLabels[sortValue] ?? sortLabels.new}</span><span className={s.down}><FeedAsset name="9ec65" size={9}/></span></button>
           <button type="button" className={s.filtersButton} aria-pressed={filtersActive || filtersOpen} onClick={onFiltersClick}><FeedAsset name="0c2c1" size={14}/><span>Фильтры</span>{filtersActive ? <i className={s.dot}/> : null}</button>

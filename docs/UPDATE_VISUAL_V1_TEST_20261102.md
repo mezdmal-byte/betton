@@ -1,7 +1,7 @@
 # Обновить Visual V1 в существующей тестовой копии
 
-Кандидат: `fix/visual-v1-onboarding-qa-20261102`, draft PR #35 поверх PR #34.
-[Новый handoff и снимки Chromium](design/VISUAL_V1_QA_HANDOFF_20261102.md).
+Кандидат следующего прохода: `fix/event-guarantor-interactions-20261102`, draft PR #36 поверх PR #35 и PR #34.
+[Новый handoff EVENT / GUARANTOR](design/VISUAL_V1_EVENT_GUARANTOR_20261102.md); [предыдущий проход и снимки](design/VISUAL_V1_QA_HANDOFF_20261102.md).
 Это инструкция, **не утверждение, что Windows-копия уже обновлена**.
 Команды ниже не выполнялись на компьютере владельца. Chromium QA выполнен; приёмка живого Telegram на iOS/Android ещё не завершена.
 
@@ -89,7 +89,7 @@ Set-Location C:\Users\1\betton-v1-test
 $tracked = git status --porcelain --untracked-files=no
 if ($LASTEXITCODE -ne 0 -or $tracked) { throw 'Tracked changes exist; preserve and review them first' }
 
-git fetch origin fix/visual-v1-onboarding-qa-20261102
+git fetch origin fix/event-guarantor-interactions-20261102
 if ($LASTEXITCODE -ne 0) { throw 'Fetch failed' }
 $candidate = git rev-parse FETCH_HEAD
 if ($LASTEXITCODE -ne 0) { throw 'Candidate not resolved' }

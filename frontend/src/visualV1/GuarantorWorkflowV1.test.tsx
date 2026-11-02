@@ -38,3 +38,19 @@ describe('declining an ongoing agreement', () => {
     expect(buttonLabels(html)).toContain('Отказаться от приглашения')
   })
 })
+
+describe('embedded agreement preserves the event context',()=>{
+ it('shows the guarantor and next steps without turning negotiation into a modal',()=>{
+  const html=renderToStaticMarkup(<I18nProvider><GuarantorWorkflowV1 embedded initialOpen event={event} userId={1} clock={clock} onAction={async()=>undefined} onUpdate={async()=>undefined}/></I18nProvider>)
+  expect(html).toContain('data-agreement="embedded"')
+  expect(html).toContain('Что будет дальше')
+  expect(html).toContain('Тестовый гарант')
+  expect(html).toContain('Вознаграждение')
+  expect(html).not.toContain('aria-modal="true"')
+ })
+ it('keeps explicit confirmation as a separate modal in embedded mode',()=>{
+  const html=renderToStaticMarkup(<I18nProvider><GuarantorWorkflowV1 embedded initialOpen initialView="decline" event={event} userId={2} clock={clock} onAction={async()=>undefined} onUpdate={async()=>undefined}/></I18nProvider>)
+  expect(html).toContain('aria-modal="true"')
+  expect(html).toContain('Отказаться от приглашения')
+ })
+})

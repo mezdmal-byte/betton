@@ -27,6 +27,7 @@ import { useVisualV1 } from '../visualV1/VisualV1Context';
 import { OwnPriceV1 } from '../visualV1/OwnPriceV1';
 
 export type OwnPriceScreenProps = {
+  backdrop?: boolean
   market?: MarketFixture;
   onBack?: () => void;
   onNavChange?: (id: NavId) => void;

@@ -23,19 +23,25 @@ jobs:
         working-directory: frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
-      - name: Prepare pinned PR 34 baseline
+      - name: Prepare pinned PR 35 baseline
         run: |
-          git worktree add ../visual-v1-before df5be9e742b9c6766d6e1bf7bfe7d07e73f06ace
+          git worktree add ../visual-v1-before 6ecf6ebed96739c110cac48f3898e8a4b45c71d7
           ln -s "$GITHUB_WORKSPACE/frontend/node_modules" ../visual-v1-before/frontend/node_modules
       - name: Capture actual App before
         run: node frontend/scripts/capture-app-v1.mjs --root ../visual-v1-before --output qa-app-before --baseline
       - name: Capture actual App after and verify interactions
         run: node frontend/scripts/capture-app-v1.mjs --root . --output qa-app-after
       - name: Verify EVENT and legacy fixtures
+        if: ${{ !cancelled() }}
         run: node scripts/verify-visual-v1.mjs
         working-directory: frontend
       - name: Verify guarantor workflows
+        if: ${{ !cancelled() }}
         run: node scripts/verify-workflows-v1.mjs
+        working-directory: frontend
+      - name: Verify chat send, reply, error and legacy behavior
+        if: ${{ !cancelled() }}
+        run: node scripts/verify-chat-v1.mjs
         working-directory: frontend
       - uses: actions/upload-artifact@v4
         if: always()
@@ -48,5 +54,6 @@ jobs:
             qa-app-after/report.json
             frontend/visual-v1-qa/
             frontend/qa-visual-v1/pass2/workflows/
+            frontend/chat-v1-qa/
           if-no-files-found: error
           retention-days: 14

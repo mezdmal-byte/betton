@@ -23,7 +23,7 @@ export function EventTermsV3Panel({marketId,userId,status}: {marketId:number;use
   const decisionAvailableAt=event.timing_version==='start-v1'&&event.event_type==='private'?event.close_at:event.ends_at
   const ended=Boolean(decisionAvailableAt&&new Date(decisionAvailableAt).getTime()<=Date.now())
   return <section className={s.summary}>
-    <details><summary>Правила и сроки события</summary>
+    <p className={s.note}><strong>Начало · закрытие приёма ставок:</strong> {displayTime(event.close_at)}{event.ends_at?<> · <strong>Предполагаемое завершение:</strong> {displayTime(event.ends_at)}</>:null}</p><p>{event.resolution_method}</p><details><summary>Полные правила и критерии</summary>
       <p>{event.rules}</p><p>{event.resolution_method}</p>
       {event.criteria?.map((criterion,i)=><p key={i}>{event.outcomes[i]}: {criterion}</p>)}
       {event.unverifiable?<p>Если результат нельзя определить: {event.unverifiable}</p>:null}

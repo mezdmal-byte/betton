@@ -14,6 +14,7 @@ import { errorDetail } from '../api/errors'
 import { ChatScreen } from '../screens/ChatScreen'
 
 export type ConnectedChatScreenProps = {
+  embedded?: boolean
   scope: ChatScope
   currentUserId?: number
   isAdmin?: boolean
@@ -23,6 +24,7 @@ export type ConnectedChatScreenProps = {
 }
 
 export function ConnectedChatScreen({
+  embedded = false,
   scope,
   currentUserId,
   isAdmin = false,
@@ -114,6 +116,7 @@ export function ConnectedChatScreen({
 
   return (
     <ChatScreen
+      embedded={embedded}
       title={title}
       subtitle={subtitle}
       messages={messages}
