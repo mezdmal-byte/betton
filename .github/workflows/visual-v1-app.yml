@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'frontend/**'
+      - 'app/main.py'
+      - 'scripts/ux_v3_preview.py'
+      - 'scripts/rich_simulation_pack.py'
+      - 'scripts/verify_rich_simulation.py'
       - '.github/workflows/visual-v1-app.yml'
 permissions:
   contents: read

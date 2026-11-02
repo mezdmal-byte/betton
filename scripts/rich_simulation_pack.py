@@ -30,8 +30,9 @@ async def add_rich_scenarios(application, core):
             return response.json()
         async def event(key,title,category):
             marker=TAG+' '+key
+            human_description=('История встречных предложений с разными коэффициентами. Тестовые исполнения и условные средства.' if key=='rich_history' else 'Учебное событие: '+title.removeprefix('ТЕСТ · ')+' Используются только условные средства.')
             with SessionLocal() as db:
-                found=db.query(Market).filter(Market.description==marker).all()
+                found=db.query(Market).filter(Market.description.in_([marker,human_description])).all()
                 if len(found)>1:raise RuntimeError('Ambiguous rich scenario; no automatic cleanup permitted')
                 existing=found[0] if found else None
                 mid=existing.id if existing else None
@@ -41,7 +42,7 @@ async def add_rich_scenarios(application, core):
                 data=await request('POST','/ux-v3/events','creator',{
                     'request_id':str(uuid5(NAMESPACE,key)), 'event_type':'public',
                     'question':title,'outcomes':['Да','Нет'],'category':category,
-                    'description':marker,'rules':'ТЕСТ. Сравнить результат с опубликованным протоколом.',
+                    'description':human_description,'rules':'ТЕСТ. Сравнить результат с опубликованным протоколом.',
                     'criteria':['Условие подтверждено протоколом','Условие не подтверждено протоколом'],
                     'resolution_method':'Проверка тестового протокола',
                     'unverifiable':'Отмена и возврат по обычному механизму',
