@@ -15,7 +15,7 @@ export function guarantorWorkflowPolicy(event:GuarantorCase,userId:number,now:nu
  const decisionAvailable=event.state==='active'&&end!=null&&end<=now&&due!=null&&due>now
  return {creator,guarantor,party,timedOut,review,paid,
   canAcknowledge:guarantor&&event.state==='invited'&&!timedOut&&beforeStart,
-  canDecline:guarantor&&event.state==='invited'&&!timedOut,
+  canDecline:guarantor&&['invited','review'].includes(event.state)&&!timedOut&&beforeStart,
   canConfirm:creator&&review&&event.creator_confirmed!==event.revision,
   canAccept:guarantor&&review&&event.creator_confirmed===event.revision&&(!hasRewardProposal||creatorSignedReward)&&(!paid||event.reward_payments_supported===true),
   canEditTerms:creator&&review,

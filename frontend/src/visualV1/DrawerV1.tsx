@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import type { MarketsHeaderUser } from '../screens/MarketsScreen'
 import { formatTonFull } from '../lib/format'
-import { closeTelegramWebApp } from '../telegram/webapp'
+import { closeTelegramWebApp, syncTelegramBackButton } from '../telegram/webapp'
 import { useI18n } from '../i18n'
 import { useVisualV1Actions } from './VisualV1Context'
 import s from './DrawerV1.module.css'
@@ -43,15 +43,31 @@ export function DrawerV1({
   const panel = useRef<HTMLElement>(null)
   const gesture = useRef<{ x: number; y: number } | null>(null)
   const [metricsOpen, setMetricsOpen] = useState(false)
+  const closeRef = useRef(onClose)
 
+  useEffect(() => { closeRef.current = onClose }, [onClose])
+  useEffect(() => syncTelegramBackButton(true, () => closeRef.current()), [])
   useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose() }
+      if (e.key === 'Escape') { e.preventDefault(); closeRef.current() }
+      if (e.key !== 'Tab') return
+      const controls = panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]')
+      if (!controls?.length) return
+      const first = controls[0], last = controls[controls.length - 1]
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) {
+        e.preventDefault(); last.focus()
+      } else if (!e.shiftKey && (document.activeElement === last || document.activeElement === panel.current)) {
+        e.preventDefault(); first.focus()
+      }
     }
     window.addEventListener('keydown', onKey)
     panel.current?.focus({ preventScroll: true })
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true })
+    }
+  }, [])
 
   function activate(action?: () => void) {
     onClose()
@@ -84,7 +100,7 @@ export function DrawerV1({
     if (!start) return
     const dx = e.clientX - start.x
     const dy = e.clientY - start.y
-    if (dx < -65 && Math.abs(dx) > Math.abs(dy) * 1.5) onClose()
+    if (dx < -65 && Math.abs(dx) > Math.abs(dy) * 1.5) { e.preventDefault(); onClose() }
   }
 
   return <div className={s.backdrop} onClick={onClose}>
