@@ -87,11 +87,14 @@ async function capture(page,name,kind){
    const label=button.lastElementChild,b=label?.getBoundingClientRect(),n=nav.getBoundingClientRect(),t=button.getBoundingClientRect()
    return b&&(b.bottom>n.bottom+1||b.y<n.y-1||b.width>t.width+1)?[label.textContent]:[]
   }):[]
+  const eventBlocks=event&&main?[...main.children].filter(el=>getComputedStyle(el).display!=='none').map(bounds).filter(b=>b.height>0):[]
+  const eventOverlap=eventBlocks.some((b,i)=>i>0&&eventBlocks[i-1].bottom>b.y+1)
   const equivalent=area?cardBounds.reduce((sum,b)=>sum+Math.max(0,Math.min(area.bottom,b.bottom)-Math.max(area.top,b.y))/b.height,0):null
-  return {overflow:document.documentElement.scrollWidth>innerWidth+1,broken:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.getAttribute('src')),root:bounds(root),surface:bounds(surface),header:bounds((feed??event)?.querySelector('header')),scroll:bounds(main),nav:bounds(nav),navLabelOverflow,cardBounds,visibleCardEquivalent:feed?equivalent:null,fullCards:feed&&area?cardBounds.filter(b=>b.y>=area.top-1&&b.bottom<=area.bottom+1).length:null,footer:bounds(document.querySelector('[data-figma-frame] footer')),fullscreen:document.documentElement.getAttribute('data-betton-fullscreen'),compact:document.documentElement.getAttribute('data-betton-compact')}
+  return {eventOverlap,overflow:document.documentElement.scrollWidth>innerWidth+1,broken:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.getAttribute('src')),root:bounds(root),surface:bounds(surface),header:bounds((feed??event)?.querySelector('header')),scroll:bounds(main),nav:bounds(nav),navLabelOverflow,cardBounds,visibleCardEquivalent:feed?equivalent:null,fullCards:feed&&area?cardBounds.filter(b=>b.y>=area.top-1&&b.bottom<=area.bottom+1).length:null,footer:bounds(document.querySelector('[data-figma-frame] footer')),fullscreen:document.documentElement.getAttribute('data-betton-fullscreen'),compact:document.documentElement.getAttribute('data-betton-compact')}
  })
  await page.screenshot({path:path.join(output,name+'.png')})
  report.screens.push({name,kind,viewport:page.viewportSize(),...audit})
+ if(audit.eventOverlap)report.errors.push(name+': event blocks overlap vertically')
  if(audit.overflow)report.errors.push(name+': horizontal page overflow')
  if(audit.broken.length)report.errors.push(name+': broken images')
  if(audit.footer&&audit.surface&&audit.footer.bottom>audit.surface.bottom+1)report.errors.push(name+': footer outside safe surface')

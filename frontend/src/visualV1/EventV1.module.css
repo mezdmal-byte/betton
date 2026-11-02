@@ -15,3 +15,5 @@
 .screen:has([data-embedded-chat] textarea:focus) .ticketTitle,.screen:has([data-embedded-chat] textarea:focus) .ownPrice{display:none}.screen:has([data-embedded-chat] textarea:focus) .ticket{gap:3px;padding-bottom:8px}
 
 .blockedTicket{padding:12px 16px;gap:4px;min-height:64px}.blockedTicket strong{font-size:12px;line-height:17px}.blockedTicket p{margin:0;color:#637089;font-size:11px;line-height:16px}
+
+.scroll>*{flex-shrink:0}
