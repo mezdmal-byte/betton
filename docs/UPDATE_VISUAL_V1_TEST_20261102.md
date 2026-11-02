@@ -1,8 +1,9 @@
 # Обновить Visual V1 в существующей тестовой копии
 
-Кандидат: `fix/visual-v1-compact-fullscreen-20261102`, поверх PR #33.
+Кандидат: `fix/visual-v1-onboarding-qa-20261102`, draft PR #35 поверх PR #34.
+[Новый handoff и снимки Chromium](design/VISUAL_V1_QA_HANDOFF_20261102.md).
 Это инструкция, **не утверждение, что Windows-копия уже обновлена**.
-Команды ниже не выполнялись на компьютере владельца. Визуальная приёмка кандидата ещё не завершена.
+Команды ниже не выполнялись на компьютере владельца. Chromium QA выполнен; приёмка живого Telegram на iOS/Android ещё не завершена.
 
 ## Что сохранять
 
@@ -10,9 +11,9 @@
 сохраняются. Нельзя использовать `git clean`, `git reset --hard`, reset-simulation BAT,
 удалять active.json или очищать данные Telegram. Не применять migration/seed/replay.
 
-Этот пакет меняет frontend и документацию. Если ваша текущая копия содержит более старый
+Этот пакет меняет frontend, документацию, `design-qa.md` и отдельный screenshot-workflow GitHub Actions. Если ваша текущая копия содержит более старый
 backend, автоматическое переключение может захватить накопленные серверные изменения;
-поэтому ниже предусмотрена остановка при любом diff вне frontend/docs.
+поэтому ниже предусмотрена остановка при любом diff вне явно перечисленных frontend/docs/QA-файлов.
 
 ## Порядок
 
@@ -88,13 +89,13 @@ Set-Location C:\Users\1\betton-v1-test
 $tracked = git status --porcelain --untracked-files=no
 if ($LASTEXITCODE -ne 0 -or $tracked) { throw 'Tracked changes exist; preserve and review them first' }
 
-git fetch origin fix/visual-v1-compact-fullscreen-20261102
+git fetch origin fix/visual-v1-onboarding-qa-20261102
 if ($LASTEXITCODE -ne 0) { throw 'Fetch failed' }
 $candidate = git rev-parse FETCH_HEAD
 if ($LASTEXITCODE -ne 0) { throw 'Candidate not resolved' }
 $changed = git diff --name-only HEAD $candidate
 if ($LASTEXITCODE -ne 0) { throw 'Cannot compare revisions' }
-$outside = $changed | Where-Object { $_ -notmatch '^(frontend/|docs/)' }
+$outside = $changed | Where-Object { $_ -notmatch '^(frontend/|docs/|design-qa\.md$|\.github/workflows/visual-v1-app\.yml$)' }
 if ($outside) { throw 'The update includes backend or runtime changes relative to this copy; stop for review' }
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
