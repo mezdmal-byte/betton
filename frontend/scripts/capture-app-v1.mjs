@@ -71,8 +71,12 @@ async function capture(page,name,kind){
   const main=(feed??event)?.querySelector('main'),nav=feed?.querySelector('nav[aria-label="Основная навигация"]')??event?.querySelector('section[aria-label="Быстрая ставка"]'),cards=[...feed?.querySelectorAll('article')||[]]
   const area=main?.getBoundingClientRect()
   const cardBounds=cards.map(bounds)
+  const navLabelOverflow=feed&&nav?[...nav.querySelectorAll('button')].flatMap(button=>{
+   const label=button.lastElementChild,b=label?.getBoundingClientRect(),n=nav.getBoundingClientRect(),t=button.getBoundingClientRect()
+   return b&&(b.bottom>n.bottom+1||b.y<n.y-1||b.width>t.width+1)?[label.textContent]:[]
+  }):[]
   const equivalent=area?cardBounds.reduce((sum,b)=>sum+Math.max(0,Math.min(area.bottom,b.bottom)-Math.max(area.top,b.y))/b.height,0):null
-  return {overflow:document.documentElement.scrollWidth>innerWidth+1,broken:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.getAttribute('src')),root:bounds(root),surface:bounds(surface),header:bounds((feed??event)?.querySelector('header')),scroll:bounds(main),nav:bounds(nav),cardBounds,visibleCardEquivalent:feed?equivalent:null,fullCards:feed&&area?cardBounds.filter(b=>b.y>=area.top-1&&b.bottom<=area.bottom+1).length:null,footer:bounds(document.querySelector('[data-figma-frame] footer')),fullscreen:document.documentElement.getAttribute('data-betton-fullscreen'),compact:document.documentElement.getAttribute('data-betton-compact')}
+  return {overflow:document.documentElement.scrollWidth>innerWidth+1,broken:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.getAttribute('src')),root:bounds(root),surface:bounds(surface),header:bounds((feed??event)?.querySelector('header')),scroll:bounds(main),nav:bounds(nav),navLabelOverflow,cardBounds,visibleCardEquivalent:feed?equivalent:null,fullCards:feed&&area?cardBounds.filter(b=>b.y>=area.top-1&&b.bottom<=area.bottom+1).length:null,footer:bounds(document.querySelector('[data-figma-frame] footer')),fullscreen:document.documentElement.getAttribute('data-betton-fullscreen'),compact:document.documentElement.getAttribute('data-betton-compact')}
  })
  await page.screenshot({path:path.join(output,name+'.png')})
  report.screens.push({name,kind,viewport:page.viewportSize(),...audit})
@@ -81,6 +85,7 @@ async function capture(page,name,kind){
  if(audit.footer&&audit.surface&&audit.footer.bottom>audit.surface.bottom+1)report.errors.push(name+': footer outside safe surface')
  if(audit.nav&&audit.surface&&audit.nav.bottom>audit.surface.bottom+1)report.errors.push(name+': navigation outside safe surface')
  if(audit.nav&&audit.scroll&&audit.scroll.bottom>audit.nav.y+1)report.errors.push(name+': scroll overlaps navigation')
+ if(audit.navLabelOverflow.length)report.errors.push(name+': navigation label clipped: '+audit.navLabelOverflow.join(', '))
 }
 try{
  for(const width of [320,360,390,430])for(const height of [550,600,700,844]){
