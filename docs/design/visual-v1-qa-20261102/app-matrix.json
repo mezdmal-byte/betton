@@ -1,0 +1,178 @@
+{
+  "baseline": "df5be9e742b9c6766d6e1bf7bfe7d07e73f06ace",
+  "checkout": "5d7134ed08120434e10ef632de8df9085943ee07",
+  "actualApp": true,
+  "bridge": "synthetic Telegram host",
+  "data": "read-only deterministic API fixtures, no backend",
+  "beforeScreens": 221,
+  "afterScreens": 221,
+  "beforeErrors": [
+    "feed-320x550: navigation label clipped: Мои события",
+    "drawer-320x550: navigation label clipped: Мои события",
+    "feed-320x600: navigation label clipped: Мои события",
+    "drawer-320x600: navigation label clipped: Мои события"
+  ],
+  "errors": [],
+  "matrix": [
+    {
+      "width": 320,
+      "height": 550,
+      "before": 1.7474,
+      "after": 2.0741,
+      "gainPercent": 18.7,
+      "fullCards": 2,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 320,
+      "height": 600,
+      "before": 2,
+      "after": 2.3827,
+      "gainPercent": 19.1,
+      "fullCards": 2,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 320,
+      "height": 700,
+      "before": 2.388,
+      "after": 3,
+      "gainPercent": 25.6,
+      "fullCards": 3,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 320,
+      "height": 844,
+      "before": 3.1033,
+      "after": 3.1033,
+      "gainPercent": 0.0,
+      "fullCards": 3,
+      "header": 56,
+      "navigation": 80
+    },
+    {
+      "width": 360,
+      "height": 550,
+      "before": 1.7923,
+      "after": 2.0741,
+      "gainPercent": 15.7,
+      "fullCards": 2,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 360,
+      "height": 600,
+      "before": 2.0109,
+      "after": 2.3827,
+      "gainPercent": 18.5,
+      "fullCards": 2,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 360,
+      "height": 700,
+      "before": 2.4481,
+      "after": 3,
+      "gainPercent": 22.5,
+      "fullCards": 3,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 360,
+      "height": 844,
+      "before": 3.1701,
+      "after": 3.1701,
+      "gainPercent": 0.0,
+      "fullCards": 3,
+      "header": 56,
+      "navigation": 80
+    },
+    {
+      "width": 390,
+      "height": 550,
+      "before": 1.7923,
+      "after": 2.2252,
+      "gainPercent": 24.1,
+      "fullCards": 2,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 390,
+      "height": 600,
+      "before": 2.0109,
+      "after": 2.5563,
+      "gainPercent": 27.1,
+      "fullCards": 2,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 390,
+      "height": 700,
+      "before": 2.4481,
+      "after": 3.1656,
+      "gainPercent": 29.3,
+      "fullCards": 3,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "before": 3.1803,
+      "after": 3.1803,
+      "gainPercent": 0.0,
+      "fullCards": 3,
+      "header": 56,
+      "navigation": 80
+    },
+    {
+      "width": 430,
+      "height": 550,
+      "before": 1.9294,
+      "after": 2.2252,
+      "gainPercent": 15.3,
+      "fullCards": 2,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 430,
+      "height": 600,
+      "before": 2.1647,
+      "after": 2.5563,
+      "gainPercent": 18.1,
+      "fullCards": 2,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 430,
+      "height": 700,
+      "before": 2.6353,
+      "after": 3.1656,
+      "gainPercent": 20.1,
+      "fullCards": 3,
+      "header": 52,
+      "navigation": 64
+    },
+    {
+      "width": 430,
+      "height": 844,
+      "before": 3.4235,
+      "after": 3.4235,
+      "gainPercent": 0.0,
+      "fullCards": 3,
+      "header": 56,
+      "navigation": 80
+    }
+  ]
+}

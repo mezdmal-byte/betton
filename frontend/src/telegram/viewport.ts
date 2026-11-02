@@ -47,7 +47,7 @@ export function syncTelegramViewport(): () => void {
     setAttribute('data-betton-host', String(inHost))
     setAttribute('data-betton-fullscreen', String(inHost && Boolean(host?.isFullscreen)))
     setAttribute('data-betton-keyboard', String(keyboard))
-    setAttribute('data-betton-compact', String(height - verticalInsets < 700))
+    setAttribute('data-betton-compact', String(height - verticalInsets <= 700))
   }
 
   const subscribed: string[] = []
