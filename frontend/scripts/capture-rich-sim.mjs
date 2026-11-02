@@ -41,12 +41,14 @@ try{
   await page.locator('img').evaluateAll(async list=>Promise.all(list.map(img=>img.decode().catch(()=>{}))))
   const file='chart-'+label.replaceAll(' ','-')+'.png';await page.screenshot({path:path.join(output,file)});report.screens.push(file)
  }
- await page.getByRole('button',{name:'Информация',exact:true}).click();await page.getByText('Как проверяется результат',{exact:true}).waitFor();await page.screenshot({path:path.join(output,'event-information.png')})
+ await page.getByRole('button',{name:'Информация',exact:true}).click();await page.getByText('Как проверяется результат',{exact:true}).waitFor();await page.getByText('Как проверяется результат',{exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,'event-information.png')})
+ const rules=page.locator('summary').filter({hasText:'Полные правила и критерии'});await rules.click();await page.locator('[data-figma-frame="908:19752"] main').evaluate(el=>el.scrollTop=el.scrollHeight);await page.screenshot({path:path.join(output,'event-information-rules.png')});report.screens.push('event-information.png','event-information-rules.png')
  const agreed=manifest.qa_collecting??manifest.scenarios.guarantor_fixed
  if(agreed?.share_token){
   await page.goto('http://127.0.0.1:8877/sandbox/?actor=creator&share='+encodeURIComponent(agreed.share_token))
   await page.getByRole('heading',{name:'Событие',exact:true}).waitFor()
   await page.getByRole('button',{name:/Условия и согласование/}).click()
+  if(manifest.qa_collecting){await page.getByText('Условия согласованы',{exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,'guarantor-stage.png')});report.screens.push('guarantor-stage.png')}
   for(const label of ['Чат','Условия','История']){
    await page.getByRole('button',{name:label,exact:true}).click()
    await page.locator('[data-agreement="embedded"]').scrollIntoViewIfNeeded()
@@ -57,6 +59,9 @@ try{
    if(!await handle.isEnabled())throw Error('Real consented collecting case is blocked in UI')
    await page.getByRole('button',{name:'Свой коэффициент',exact:true}).click()
    await page.getByRole('dialog',{name:'Свой коэффициент',exact:true}).waitFor()
+   await page.getByRole('textbox',{name:'Ваш коэффициент',exact:true}).fill('2')
+   await page.getByRole('textbox',{name:'Сумма, TON',exact:true}).fill('10')
+   await page.locator('section[aria-label="Расходы на гаранта"]').waitFor()
    await page.screenshot({path:path.join(output,'guarantor-collecting-own-form.png')});report.screens.push('guarantor-collecting-own-form.png')
   }
  }
