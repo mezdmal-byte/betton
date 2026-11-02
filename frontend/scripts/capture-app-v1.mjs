@@ -340,6 +340,7 @@ try{
  if(!baseline)for(const height of [600,700,844])for(const variant of [1,2,3]){
   const {page,context}=await setup(390,height+80)
   await page.goto(`http://127.0.0.1:6189/v2/tests/visual-v1/navigation/index.html?v=${variant}`)
+  if(await page.locator('.proto-picker-item').evaluateAll(items=>items.some(el=>el.scrollHeight>el.clientHeight+1)))report.errors.push('Prototype picker labels clipped')
   await capture(page,`navigation-${variant}-initial-390x${height}`,'navigation-proposal')
   await page.locator('main').evaluate(el=>el.scrollTop=180)
   await page.waitForTimeout(220)

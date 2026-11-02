@@ -27,7 +27,7 @@ function Qa() {
  return <I18nProvider><VisualV1Provider enabled={!isLegacy}><VisualV1ActionsProvider value={{onOpenNotifications:()=>setAction('notifications'),onOpenProfile:()=>setAction('profile'),onOpenMyEvents:()=>setAction('events')}}><NotificationBadgeContext.Provider value={1}><div className={isLegacy?'':v1.root} style={{height:'100%',position:'relative'}} data-visual="v1" data-qa-view={JSON.stringify(view)} data-qa-action={action}><MarketsScreen markets={markets} selectedOutcomes={{'1':'a','2':'a','3':'b','4':'b'}} query={view.query} category={view.category} sort={view.sort} filtersOpen={filters} onFiltersClick={()=>setFilters(true)} onCategoryChange={category=>setView(old=>({...old,category}))} onSortChange={sort=>setView(old=>({...old,sort}))} onQueryChange={query=>setView(old=>({...old,query}))} onSelectMarket={market=>setAction('market:'+market.id)} onSelectOutcome={(market,side)=>setAction('trade:'+market.id+':'+side)} onNavChange={id=>setAction('nav:'+id)} onProfileClick={()=>setAction('profile')} activeOffersNano="100000000000"/>{!isLegacy?<FeedFiltersV1 open={filters} category={view.category} status={view.status} offers={view.offers} closeBefore={view.closeBefore} onClose={()=>setFilters(false)} onApply={(status,category,offers,closeBefore)=>setView(old=>({...old,status,category,offers,closeBefore}))}/>:null}</div></NotificationBadgeContext.Provider></VisualV1ActionsProvider></VisualV1Provider></I18nProvider>
 }
 
-const names=['Закреплённая','Шапка уходит','Фокус на ленте']
+const names=['Фикс.','Шапка','Фокус']
 function Variant({variant}:{variant:number}){
  const ref=useRef<HTMLDivElement>(null)
  useEffect(()=>{
