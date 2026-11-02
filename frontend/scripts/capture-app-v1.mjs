@@ -36,12 +36,13 @@ async function setup(width,height,mode='unsupported'){
   else if(p==='/feed/stats')data={active_offers_nano:'36816000000000',scope:'public'}
   else if(p==='/users/90001/account')data=user
   else if(p==='/guarantors/me')data=null
+  else if(p==='/guarantors/me/heartbeat')data={ok:true}
   else if(p==='/notifications'||p==='/creators/top'||p==='/guarantors'||p==='/guarantor-cases')data=[]
   else if(p.startsWith('/chat/'))data={count:0,unread:0,unread_replies:0}
   else if(/^\/markets\/\d+\/orderbook$/.test(p))data={sides:[[{odds:1.74,available:100}],[{odds:2.1,available:100}]],available_to_me:[[{odds:1.74,available:100}],[{odds:2.1,available:100}]],queued:[100,100]}
   else if(p==='/favicon.ico')return route.fulfill({status:204})
   else {report.errors.push('Unhandled fixture request: '+req.method()+' '+p);return route.fulfill({status:404,json:{detail:'QA fixture not defined'}})}
-  if(req.method()!=='GET'&&p!=='/auth/telegram'){report.errors.push('Unexpected write prevented: '+p);return route.abort()}
+  if(req.method()!=='GET'&&!['/auth/telegram','/guarantors/me/heartbeat'].includes(p)){report.errors.push('Unexpected write prevented: '+p);return route.abort()}
   return route.fulfill({json:data,headers:{'x-total-count':String(Array.isArray(data)?data.length:1)}})
  })
  await context.addInitScript(({height,mode})=>{
@@ -57,7 +58,7 @@ async function setup(width,height,mode='unsupported'){
  await page.clock.setFixedTime(new Date('2026-11-02T10:00:00Z'))
  return {page,context}
 }
-async function ready(page){await page.evaluate(()=>document.fonts.ready);await page.locator('[data-visual="v1"]').waitFor();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))))}
+async function ready(page){await page.evaluate(()=>document.fonts.ready);await page.locator('[data-source-art]').evaluateAll(async elements=>{const urls=[...new Set(elements.map(el=>getComputedStyle(el).backgroundImage.slice(4,-1).replace(/^[\"']|[\"']$/g,'')))];await Promise.all(urls.map(src=>{const image=new Image();image.src=src;return image.decode()}))});await page.locator('[data-visual="v1"]').waitFor();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))))}
 async function capture(page,name,kind){
  await ready(page)
  const audit=await page.evaluate(()=>{
@@ -73,6 +74,9 @@ async function capture(page,name,kind){
  report.screens.push({name,kind,viewport:page.viewportSize(),...audit})
  if(audit.overflow)report.errors.push(name+': horizontal page overflow')
  if(audit.broken.length)report.errors.push(name+': broken images')
+ if(audit.footer&&audit.surface&&audit.footer.bottom>audit.surface.bottom+1)report.errors.push(name+': footer outside safe surface')
+ if(audit.nav&&audit.surface&&audit.nav.bottom>audit.surface.bottom+1)report.errors.push(name+': navigation outside safe surface')
+ if(audit.nav&&audit.scroll&&audit.scroll.bottom>audit.nav.y+1)report.errors.push(name+': scroll overlaps navigation')
 }
 try{
  for(const width of [320,360,390,430])for(const height of [550,600,700,844]){
@@ -101,7 +105,7 @@ try{
    await capture(page,'feed-scrolled-390x600','feed-scroll')
    await page.getByRole('button',{name:'Меню',exact:true}).click()
    await page.getByRole('button',{name:'Поиск событий',exact:false}).click()
-   await page.getByRole('textbox').fill('Тест')
+   await page.getByRole('searchbox').fill('Тест')
    await page.evaluate(()=>{Object.defineProperty(window.visualViewport,'height',{configurable:true,get:()=>350});window.visualViewport.dispatchEvent(new Event('resize'))})
    await capture(page,'keyboard-model-390x600','keyboard-model')
   }

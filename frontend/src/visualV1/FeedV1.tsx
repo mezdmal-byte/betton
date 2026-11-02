@@ -94,7 +94,7 @@ export function FeedV1({ markets = [], selectedOutcomes, query = '', sort = 'new
     </header>
     <main className={s.scroll}>
       <div className={s.content}>
-        <nav className={s.categories} aria-label="Категории событий">{[['all', 'Все'], ['esports', 'Киберспорт'], ['sport', 'Спорт']].map(([id, label]) => <button key={id} type="button" aria-current={categoryValue === id ? 'page' : undefined} onClick={() => setCategory(id!)}>{label}</button>)}</nav>
+        <nav className={s.categories} aria-label="Категории событий">{[['all', 'Все'], ['esports', 'Киберспорт'], ['sport', 'Спорт']].map(([id, label]) => <button key={id} type="button" aria-current={categoryValue === id ? 'page' : undefined} onClick={() => setCategory(id!)}>{label}</button>)}<button type="button" className={s.allCategories} onClick={onFiltersClick}>Все категории<span className={s.down}><FeedAsset name="9ec65" size={8}/></span></button></nav>
         {searchOpen ? <SearchField value={searchValue} onChange={setSearch} placeholder="Поиск событий"/> : null}
         <div className={s.controls} ref={sortControl}>
           <button type="button" className={s.sortButton} aria-haspopup="menu" aria-expanded={sortOpen} onClick={() => setSortOpen(!sortOpen)}><FeedAsset name="1dd35" size={17}/><span>{sortLabels[sortValue] ?? sortLabels.new}</span><span className={s.down}><FeedAsset name="9ec65" size={9}/></span></button>
