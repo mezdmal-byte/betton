@@ -1,0 +1,44 @@
+name: Visual V1 actual App evidence
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/visual-v1-app.yml'
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Prepare pinned PR 34 baseline
+        run: |
+          git worktree add ../visual-v1-before df5be9e742b9c6766d6e1bf7bfe7d07e73f06ace
+          ln -s "$GITHUB_WORKSPACE/frontend/node_modules" ../visual-v1-before/frontend/node_modules
+      - name: Capture actual App before
+        run: node frontend/scripts/capture-app-v1.mjs --root ../visual-v1-before --output qa-app-before --baseline
+      - name: Capture actual App after and verify interactions
+        run: node frontend/scripts/capture-app-v1.mjs --root . --output qa-app-after
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: betton-app-v1-before-after
+          path: |
+            qa-app-before/*.png
+            qa-app-before/report.json
+            qa-app-after/*.png
+            qa-app-after/report.json
+          if-no-files-found: error
+          retention-days: 14
