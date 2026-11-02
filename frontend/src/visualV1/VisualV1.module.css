@@ -106,3 +106,5 @@
 .viewport{overflow:hidden;isolation:isolate;overscroll-behavior:none}.root{overflow:hidden;max-width:100%;overscroll-behavior:none}
 
 @media(prefers-reduced-motion:reduce){.root{--panel-drag-duration:0ms}}
+
+.root input:focus-visible,.root textarea:focus-visible{outline:none!important;box-shadow:none!important}.root label:focus-within{border-color:#ff6b00}.root [role=dialog][tabindex="-1"]:focus-visible{outline:none!important}.root input:focus,.root textarea:focus{border-color:#ff6b00}@media(pointer:coarse){.root input:not([type=checkbox]):not([type=radio]),.root textarea,.root select{font-size:var(--v1-field-size,16px)!important}}

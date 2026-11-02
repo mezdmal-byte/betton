@@ -2,7 +2,7 @@ import { completeOrderIntent, submitOrderIntent } from '../api/orderIntent'
 import { OrderIntentRecovery, useHasOrderIntent } from './OrderIntentRecovery'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { mapMarketOut, mapOrderBookLevels, mapOrderPreview, mapTradesToRecent, moneyForOrder } from '../api/adapters'
+import { applyPersonalizedExecutableQuotes, mapMarketOut, mapOrderBookLevels, mapOrderPreview, mapTradesToRecent, moneyForOrder } from '../api/adapters'
 import { isApiError } from '../api/client'
 import { errorDetail, isInsufficientBalanceError } from '../api/errors'
 import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
@@ -59,6 +59,7 @@ export function ConnectedOwnPriceScreen({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [placedOrder, setPlacedOrder] = useState<OrderOut | null>(null)
   const initializedOdds = useRef(initialOdds != null)
+  const sideOdds = useRef<Partial<Record<OutcomeSide,number>>>(initialOdds==null?{}:{[initialSide]:initialOdds})
   const shareToken = shareTokenFor(marketId)
 
   const marketQuery = useQuery({
@@ -81,7 +82,8 @@ export function ConnectedOwnPriceScreen({
     enabled: marketQuery.data?.mechanism === 'p2p',
   })
 
-  const market = marketQuery.data ? mapMarketOut(marketQuery.data, new Date(), locale) : undefined
+  const mappedMarket = marketQuery.data ? mapMarketOut(marketQuery.data, new Date(), locale) : undefined
+  const market = mappedMarket&&bookQuery.isSuccess?applyPersonalizedExecutableQuotes(mappedMarket,bookQuery.data):mappedMarket
   const tradable = Boolean(market && marketIsTradable(market))
   const outcome = side === 'a' ? 0 : 1
   const money = moneyForOrder(amount)
@@ -91,8 +93,7 @@ export function ConnectedOwnPriceScreen({
   useEffect(() => {
     if (initializedOdds.current || !market) return
     const current = side === 'a' ? market.outcomeA.odds : market.outcomeB.odds
-    if (current) setOdds(current)
-    initializedOdds.current = true
+    if (current) { setOdds(current); initializedOdds.current = true }
   }, [market, side])
 
   const previewQuery = useQuery({
@@ -179,10 +180,11 @@ export function ConnectedOwnPriceScreen({
   }
 
   const selectSide = (next: OutcomeSide) => {
+    sideOdds.current[side]=odds
     setSide(next)
     setErrorMessage(null)
     const nextOdds = next === 'a' ? market.outcomeA.odds : market.outcomeB.odds
-    if (nextOdds) setOdds(nextOdds)
+    setOdds(sideOdds.current[next]??nextOdds??0)
   }
 
   const changeOdds = (next: number) => {
@@ -191,7 +193,9 @@ export function ConnectedOwnPriceScreen({
       setOdds(0)
       return
     }
-    setOdds(Math.round(next * 100) / 100)
+    initializedOdds.current=true
+    sideOdds.current[side]=Math.round(next*100)/100
+    setOdds(sideOdds.current[side]!)
   }
 
   const changeAmount = (next: number) => {

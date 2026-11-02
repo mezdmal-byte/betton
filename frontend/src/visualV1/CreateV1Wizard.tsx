@@ -133,5 +133,5 @@ function formatDate(value: string) {
 }
 
 function DateControl({ name, label, value, onChange, disabled, invalid }: { name: string; label: string; value: string; onChange: (value: string) => void; disabled: boolean; invalid: boolean }) {
-  return <label className={s.date}><img alt="" src={calendarIcon} /><span>{formatDate(value)}</span><input id={'v1-event-' + name} className={s.nativeDate} aria-label={label} type="datetime-local" value={value} onChange={e => onChange(e.target.value)} disabled={disabled} required aria-invalid={invalid} /></label>
+  return <label className={s.date}><img alt="" src={calendarIcon} /><span>{formatDate(value)}</span><input id={'v1-event-' + name} className={s.nativeDate} aria-label={label} type="datetime-local" onClick={e=>{try{e.currentTarget.showPicker?.()}catch{/* Native input remains available. */}}} value={value} onChange={e => onChange(e.target.value)} disabled={disabled} required aria-invalid={invalid} /></label>
 }

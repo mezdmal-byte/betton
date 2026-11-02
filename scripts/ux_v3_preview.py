@@ -272,6 +272,10 @@ def create_preview(state_dir: Path | None = None, *, full_demo: bool = False):
             if full_demo:
                 from scripts.seed_demo_markets import seed_scenarios
                 result.update(await seed_scenarios(backend, result))
+                from scripts.rich_simulation_pack import add_rich_scenarios
+                rich = await add_rich_scenarios(backend, result)
+                result.update(rich)
+                result["scenarios"].update(rich["rich_scenarios"])
             marker_data.update(result, seeded=True, full_demo=full_demo)
             (state_dir / "ux-v3-sandbox.json").write_text(
                 json.dumps(marker_data, ensure_ascii=False, indent=2), encoding="utf-8"

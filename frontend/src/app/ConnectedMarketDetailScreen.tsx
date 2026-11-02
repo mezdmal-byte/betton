@@ -79,8 +79,8 @@ export function ConnectedMarketDetailScreen({
   const [tradeOpen, setTradeOpen] = useState(false)
   const [tradeBusy, setTradeBusy] = useState(false)
   const [tradeMode, setTradeMode] = useState<'quick'|'own'>('quick')
-  const [ownOdds, setOwnOdds] = useState<number | undefined>(undefined)
-  const retainOwnDraft = useCallback((draft: {side: OutcomeSide; amount: number; odds: number}) => { setSide(draft.side); setTradeAmount(draft.amount); setOwnOdds(draft.odds) }, [])
+  const [ownDrafts, setOwnDrafts] = useState<Partial<Record<OutcomeSide,number>>>({})
+  const retainOwnDraft = useCallback((draft: {side: OutcomeSide; amount: number; odds: number}) => { setSide(draft.side); setTradeAmount(draft.amount); setOwnDrafts(old=>({...old,[draft.side]:draft.odds})) }, [])
   useEffect(() => tradeOpen ? syncTelegramBackButton(true, () => { if (!tradeBusy) setTradeOpen(false) }) : undefined, [tradeOpen, tradeBusy])
   const [tradeAmount, setTradeAmount] = useState(QUICK_TRADE_INITIAL_AMOUNT)
   const [side, setSide] = useState<OutcomeSide>('a')
@@ -183,7 +183,7 @@ export function ConnectedMarketDetailScreen({
         market={market}
         draftAmount={tradeAmount}
         draftMode={tradeMode}
-        draftOdds={ownOdds}
+        draftOdds={ownDrafts[side]}
         onSwitchQuickTrade={()=>{if(!actionsOff){setTradeMode('quick');setTradeOpen(true)}}}
         selectedSide={side}
         onSelectSide={setSide}
@@ -204,9 +204,10 @@ export function ConnectedMarketDetailScreen({
         viewState={viewState}
         actionsDisabled={actionsOff}
         showInternalBack={showInternalBack}
+        eventTermsContent={visualV1&&marketQuery.data?<EventTermsV3Panel marketId={marketId} userId={userId} status={marketQuery.data.status}/>:undefined}
         guarantorContent={visualV1&&userId&&privateWithUser?<GuarantorPanel marketId={marketId} userId={userId} isAdmin={isAdmin}/>:undefined}
         tradeBlockedReason={visualV1&&privateCase.data&&privateCase.data.state!=='active'?(caseLabels[privateCase.data.state]??'Условия пари ещё не подтверждены'):undefined}
-        discussionContent={visualV1&&userId?<ConnectedChatScreen embedded scope={{kind:'market',marketId}} currentUserId={userId} isAdmin={isAdmin} onBack={onBack} onOpenMarket={id=>{if(id===marketId)setPane('chart');else onOpenMarket?.(id)}}/>:undefined}
+        discussionContent={visualV1&&userId?<ConnectedChatScreen embedded onOpenFullChat={onDiscussion} scope={{kind:'market',marketId}} currentUserId={userId} isAdmin={isAdmin} onBack={onBack} onOpenMarket={id=>{if(id===marketId)setPane('chart');else onOpenMarket?.(id)}}/>:undefined}
         discussionMessages={discussionPreview.data?.items}
         discussionState={!userId?'unavailable':discussionPreview.isError?'error':discussionPreview.isPending?'loading':'ready'}
         onRetryDiscussion={()=>{void discussionPreview.refetch()}}
@@ -245,7 +246,7 @@ export function ConnectedMarketDetailScreen({
         }}
         banner={
           <>
-            {marketQuery.data ? <EventTermsV3Panel marketId={marketId} userId={userId} status={marketQuery.data.status} /> : null}
+            {!visualV1&&marketQuery.data ? <EventTermsV3Panel marketId={marketId} userId={userId} status={marketQuery.data.status} /> : null}
             {!visualV1 && userId && marketQuery.data?.visibility === 'unlisted' ? <GuarantorPanel marketId={marketId} userId={userId} isAdmin={isAdmin} /> : null}
             {!userId && !lmsr ? <StatusMessage tone="warning" title={t('err.openInTg')}>{t('err.openInTgBody')}</StatusMessage> : null}
             {shareMessage ? <StatusMessage title={shareMessage} /> : null}
@@ -274,7 +275,7 @@ export function ConnectedMarketDetailScreen({
       />
       </div>
       {visualV1 && tradeOpen && market ? <div className={overlayStyles.overlay} style={{background:'transparent'}}>
-        {tradeMode==='own'?<ConnectedOwnPriceScreen marketId={marketId} initialSide={side} initialAmount={tradeAmount} initialOdds={ownOdds} onDraftChange={retainOwnDraft} availableTon={availableTon} userId={userId} backdrop={false} onBusyChange={setTradeBusy} onBack={() => { if(!tradeBusy)setTradeOpen(false) }} onQuickTrade={next=>{if(!tradeBusy){setSide(next);setTradeMode('quick')}}} onNavChange={onNavChange}/>:<ConnectedQuickTradeSheet market={market} selectedSide={side} amount={tradeAmount}
+        {tradeMode==='own'?<ConnectedOwnPriceScreen marketId={marketId} initialSide={side} initialAmount={tradeAmount} initialOdds={ownDrafts[side]} onDraftChange={retainOwnDraft} availableTon={availableTon} userId={userId} backdrop={false} onBusyChange={setTradeBusy} onBack={() => { if(!tradeBusy)setTradeOpen(false) }} onQuickTrade={next=>{if(!tradeBusy){setSide(next);setTradeMode('quick')}}} onNavChange={onNavChange}/>:<ConnectedQuickTradeSheet market={market} selectedSide={side} amount={tradeAmount}
           availableTon={availableTon} userId={userId} backdrop={false} onBusyChange={setTradeBusy}
           totalAvailableTon={(bookQuery.data?.available_to_me?.[side === 'a' ? 0 : 1] ?? []).reduce((sum, level) => sum + Number(level.available ?? 0), 0)}
           quotesLoading={bookQuery.isPending} quotesError={bookQuery.isError}

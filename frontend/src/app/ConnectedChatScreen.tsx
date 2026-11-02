@@ -14,6 +14,7 @@ import { errorDetail } from '../api/errors'
 import { ChatScreen } from '../screens/ChatScreen'
 
 export type ConnectedChatScreenProps = {
+  onOpenFullChat?: () => void
   embedded?: boolean
   scope: ChatScope
   currentUserId?: number
@@ -25,6 +26,7 @@ export type ConnectedChatScreenProps = {
 
 export function ConnectedChatScreen({
   embedded = false,
+  onOpenFullChat,
   scope,
   currentUserId,
   isAdmin = false,
@@ -38,12 +40,12 @@ export function ConnectedChatScreen({
   const chatKey = scope.kind === 'lobby' ? queryKeys.lobbyChat : queryKeys.marketChat(scope.marketId)
 
   const chat = useInfiniteQuery({
-    queryKey: [...chatKey, shareToken],
+    queryKey: [...chatKey, shareToken, embedded?'embedded':'full'],
     queryFn: ({ pageParam }) =>
       getChatMessages(
         scope,
         {
-          limit: scope.kind === 'lobby' ? 100 : 50,
+          limit: embedded?5:scope.kind === 'lobby'?100:50,
           beforeId: typeof pageParam === 'number' ? pageParam : null,
         },
         shareToken,
@@ -117,16 +119,17 @@ export function ConnectedChatScreen({
   return (
     <ChatScreen
       embedded={embedded}
+      onOpenFullChat={onOpenFullChat}
       title={title}
       subtitle={subtitle}
-      messages={messages}
+      messages={embedded?messages.slice(-5):messages}
       currentUserId={currentUserId}
       isAdmin={isAdmin}
       loading={chat.isPending}
       error={chat.isError}
       sending={sendMutation.isPending}
       lobby={scope.kind === 'lobby'}
-      hasMore={Boolean(chat.hasNextPage)}
+      hasMore={!embedded&&Boolean(chat.hasNextPage)}
       showInternalBack={showInternalBack}
       attachableMarkets={(attachableQuery.data?.items ?? []).map((market) => ({
         id: market.id,

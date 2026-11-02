@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowRight, ChevronRight, CircleCheck, Clock3, Info, RefreshCw } from 'lucide-react'
 import { Button } from '../components/Button/Button'
 import type { OnboardingScreenProps } from '../screens/OnboardingScreen'
@@ -6,8 +6,11 @@ import type { EventTypeInfoProps, EventType } from '../screens/EventTypeInfo'
 import { syncTelegramBackButton } from '../telegram/webapp'
 import wordmark from '../assets/visual-v1/wordmark.svg'
 import fans from '../assets/visual-v1/onboarding-fans-v2.webp'
+import stadiumScene from '../assets/visual-v1/onboarding-stadium-v3.webp'
+import iconSheet from '../assets/visual-v1/onboarding-icons-v3.webp'
 import roles from '../assets/visual-v1/onboarding-roles-v2.webp'
-import original from '../assets/visual-v1/onboarding-original.png'
+import spartakLogo from '../assets/visual-v1/spartak-official.png'
+import zenitLogo from '../assets/visual-v1/zenit-reference.svg'
 import football from '../assets/visual-v1/feed/category-football.svg'
 import s from './OnboardingV1.module.css'
 
@@ -15,20 +18,13 @@ const assets = import.meta.glob('../assets/visual-v1/onboarding/*.svg', { eager:
 function Art({ name, className }: { name: string; className?: string }) {
   return <img src={assets[`../assets/visual-v1/onboarding/${name}.svg`]} className={className} alt="" draggable={false}/>
 }
-// Measured illustration-only windows in the supplied 1704 × 923 original.
-// Source bytes are unchanged. No UI copy, cards, buttons or screen are flattened.
-const crops = {
-  stadium: [57, 425, 334, 15], redPlayer: [57, 441, 123, 132], bluePlayer: [270, 441, 122, 132],
-  spartak: [109, 582, 55, 29], zenit: [282, 580, 60, 31], offer: [514, 343, 74, 77],
-  handshake: [506, 613, 91, 68], waiting: [709, 610, 72, 70],
-  public: [901, 321, 83, 84], private: [901, 481, 83, 84], guarantor: [901, 641, 83, 84],
-  creator: [1303, 325, 95, 95], verifier: [1435, 325, 98, 96], participants: [1558, 325, 98, 96],
-  terms: [1317, 499, 63, 65], result: [1317, 597, 63, 65], reward: [1317, 699, 63, 65],
-} satisfies Record<string, [number, number, number, number]>
-function SourceArt({ name, className = '' }: { name: keyof typeof crops; className?: string }) {
-  const [x, y, width, height] = crops[name]
-  return <span aria-hidden="true" className={`${s.sourceArt} ${className}`} data-source-art={name}
-    style={{ aspectRatio: `${width}/${height}`, backgroundImage: `url(${original})`, backgroundSize: `${1704 / width * 100}% auto`, backgroundPosition: `${x / (1704 - width) * 100}% ${y / (923 - height) * 100}%` } as CSSProperties}/>
+type IllustrationName='handshake'|'waiting'|'public'|'private'|'guarantor'|'terms'|'result'|'reward'|'spartak'|'zenit'
+function SourceArt({name,className=''}:{name:IllustrationName;className?:string}){
+ if(name==='spartak')return <span aria-hidden="true" className={`${s.sourceArt} ${className}`} style={{backgroundImage:`url(${spartakLogo})`,backgroundSize:'160% auto',backgroundPosition:'center 40%'}}/>
+ if(name==='zenit')return <img aria-hidden="true" alt="" src={zenitLogo} className={className} draggable={false}/>
+ const tiles={handshake:0,waiting:1,public:2,private:3,guarantor:4,terms:5,result:6,reward:7}
+ const tile=tiles[name]
+ return <span aria-hidden="true" className={`${s.sourceArt} ${className}`} data-icon-art={name} style={{aspectRatio:'1',backgroundImage:`url(${iconSheet})`,backgroundSize:'400% 200%',backgroundPosition:`${(tile%4)*100/3}% ${tile<4?0:100}%`}}/>
 }
 const frames = ['828:15062', '828:15111', '828:15154', '828:15200']
 const titles = [['Что такое', 'BetTON'], ['Как это', 'работает'], ['Создавайте', 'свои события'], ['Станьте', 'гарантом']]
@@ -68,7 +64,7 @@ function Match() {
   return (<><section className={s.match} aria-label="Пример встречной ставки">
     <div className={s.example}><img src={football} alt=""/>Пример события</div>
     <h2>Спартак — Зенит</h2><p className={s.caption}>Пример двух исходов</p>
-    <div className={s.matchScene}><img src={fans} className={s.fans} alt="" draggable={false}/><b>VS</b></div>
+    <div className={s.matchScene}><img src={stadiumScene} width={2022} height={778} className={s.fans} alt="" draggable={false}/><b>VS</b></div>
     <div className={s.outcomes}><div><SourceArt name="spartak" className={s.teamLogo}/><b>Спартак</b><strong>1,85</strong></div><div><SourceArt name="zenit" className={s.teamLogo}/><b>Зенит</b><strong>2,10</strong></div></div>
   </section><Note>Ставка заключается, когда есть встречное предложение.</Note></>
   )
