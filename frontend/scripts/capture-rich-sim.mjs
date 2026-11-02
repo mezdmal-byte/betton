@@ -16,6 +16,7 @@ const browser=await chromium.launch(),report={realAPI:true,disposable:true,execu
 try{
  let up=false;for(let i=0;i<100;i++){try{const r=await fetch('http://127.0.0.1:8877/sandbox/session');if(r.ok){up=true;break}}catch{}await new Promise(r=>setTimeout(r,200))}if(!up)throw Error('SIM backend not ready: '+serverLog)
  page=await browser.newPage({viewport:{width:390,height:700},hasTouch:true,deviceScaleFactor:2})
+ page.setDefaultTimeout(15000)
  page.on('pageerror',e=>report.errors.push(e.message))
  await page.addInitScript(()=>{localStorage.setItem('betton.onboarding.v1','done');localStorage.setItem('betton.locale','ru');localStorage.setItem('betton.theme','light')})
  await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/notifications'&&r.request().method()==='GET'),page.goto('http://127.0.0.1:8877/sandbox/?actor=creator')])
@@ -24,9 +25,9 @@ try{
  // Dismiss accumulated fixture notifications with their real read endpoint, as a user would.
  for(let i=0;i<100;i++){
   const hide=page.getByRole('button',{name:'Скрыть',exact:true});if(!await hide.isVisible())break
-  const text=await page.locator('aside[aria-live="polite"]').textContent()
+  const id=await page.locator('aside[aria-live="polite"]').getAttribute('data-notice-id')
   await hide.click()
-  await page.waitForFunction(old=>document.querySelector('aside[aria-live="polite"]')?.textContent!==old,text)
+  await page.waitForFunction(old=>document.querySelector('aside[aria-live="polite"]')?.getAttribute('data-notice-id')!==old,id)
  }
  const card=page.getByRole('button',{name:manifest.rich_scenarios.rich_history.question,exact:true})
  // Use the app's native search to find this seeded market among the other scenarios.

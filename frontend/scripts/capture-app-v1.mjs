@@ -69,6 +69,7 @@ async function setup(width,height,mode='unsupported',dpr=1,privateState='review'
   window.__APP_QA__={host,emit,back:()=>{for(const f of [...back])f()},fullscreenRequests:0}
  },{height,mode})
  const page=await context.newPage()
+ page.setDefaultTimeout(15000)
  latestPage=page
  page.on('pageerror',e=>report.errors.push(e.message))
  await page.clock.setFixedTime(new Date('2026-11-02T10:00:00Z'))
@@ -334,7 +335,7 @@ try{
  }
  if(!baseline)for(const height of [600,700,844])for(const variant of [1,2,3]){
   const {page,context}=await setup(390,height+80)
-  await page.goto(`http://127.0.0.1:6189/tests/visual-v1/navigation/index.html?v=${variant}`)
+  await page.goto(`http://127.0.0.1:6189/v2/tests/visual-v1/navigation/index.html?v=${variant}`)
   await capture(page,`navigation-${variant}-initial-390x${height}`,'navigation-proposal')
   await page.locator('main').evaluate(el=>el.scrollTop=180)
   await page.waitForTimeout(220)
