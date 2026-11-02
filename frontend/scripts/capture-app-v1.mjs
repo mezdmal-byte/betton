@@ -86,10 +86,12 @@ try{
    await page.getByRole('heading',{level:1}).waitFor()
    await capture(page,`onboarding-${step+1}-${width}x${height}`,'onboarding')
    if(step===2){
+    if(height<=600){await page.locator('[data-onboarding-illustration]').evaluate(el=>{const main=el.closest('main');main.scrollTop=main.scrollHeight});await capture(page,`onboarding-3-scrolled-${width}x${height}`,'onboarding-scroll');await page.locator('[data-onboarding-illustration]').evaluate(el=>el.closest('main').scrollTop=0)}
     for(const [index,kind] of ['public','private','guarantor'].entries()){
      await page.getByRole('button',{name:/Подробнее/}).nth(index).click()
      await capture(page,`detail-${kind}-${width}x${height}`,'detail')
      await page.getByRole('button',{name:'Понятно',exact:true}).click()
+     if(!baseline)await page.waitForFunction(kind=>document.activeElement?.getAttribute('data-event-type')===kind,kind)
     }
    }
    await page.getByRole('button',{name:step===3?'Начать':'Далее',exact:false}).click()
@@ -101,6 +103,14 @@ try{
   await page.evaluate(()=>window.__APP_QA__.back())
   await page.getByRole('dialog',{name:'Меню BetTON'}).waitFor({state:'hidden'})
   if(width===390&&height===600){
+   await page.getByRole('button',{name:'Меню',exact:true}).click()
+   const drawer=page.getByRole('dialog',{name:'Меню BetTON'})
+   await drawer.evaluate(el=>el.scrollTop=el.scrollHeight)
+   await capture(page,'drawer-scrolled-390x600','drawer-scroll')
+   await drawer.evaluate(el=>el.scrollTop=0)
+   await drawer.dispatchEvent('pointerdown',{pointerType:'touch',pointerId:1,clientX:230,clientY:200})
+   await drawer.dispatchEvent('pointerup',{pointerType:'touch',pointerId:1,clientX:80,clientY:205})
+   await drawer.waitFor({state:'hidden'})
    await page.locator('[data-figma-frame="819:45192"] main').evaluate(el=>el.scrollTop=el.scrollHeight)
    await capture(page,'feed-scrolled-390x600','feed-scroll')
    await page.getByRole('button',{name:'Меню',exact:true}).click()
@@ -108,6 +118,7 @@ try{
    await page.getByRole('searchbox').fill('Тест')
    await page.evaluate(()=>{Object.defineProperty(window.visualViewport,'height',{configurable:true,get:()=>350});window.visualViewport.dispatchEvent(new Event('resize'))})
    await capture(page,'keyboard-model-390x600','keyboard-model')
+   if(await page.evaluate(()=>document.documentElement.style.getPropertyValue('--betton-viewport-height'))!=='350px')report.errors.push('Keyboard model did not reduce App height')
   }
   await context.close()
  }

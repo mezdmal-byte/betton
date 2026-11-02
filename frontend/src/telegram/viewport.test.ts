@@ -107,7 +107,7 @@ describe('V1 Telegram viewport', () => {
     const env = environment({ initData: 'host', viewportStableHeight: height, safeAreaInset: { top: 24, bottom: 20 }, contentSafeAreaInset: { top: 46 } })
     env.start()
     expect(env.properties.get('--betton-viewport-height')).toBe(`${height}px`)
-    expect(env.attributes.get('data-betton-compact')).toBe(String(height - 90 < 700))
+    expect(env.attributes.get('data-betton-compact')).toBe(String(height - 90 <= 700))
   })
 
   it('keeps host stable height during animations, but moves actions above an editing keyboard', () => {
@@ -124,6 +124,12 @@ describe('V1 Telegram viewport', () => {
     env.visualViewport.dispatchEvent(new Event('resize'))
     expect(env.properties.get('--betton-viewport-height')).toBe('844px')
     expect(env.attributes.get('data-betton-keyboard')).toBe('false')
+  })
+
+  it('uses compact chrome at exactly 700px of usable space', () => {
+    const env = environment({ initData: 'host', viewportStableHeight: 700 })
+    env.start()
+    expect(env.attributes.get('data-betton-compact')).toBe('true')
   })
 
   it('does not interpret pinch zoom as a keyboard', () => {
