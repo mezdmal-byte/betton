@@ -32,12 +32,15 @@ jobs:
       - name: Capture actual App after and verify interactions
         run: node frontend/scripts/capture-app-v1.mjs --root . --output qa-app-after
       - name: Verify EVENT and legacy fixtures
+        if: ${{ !cancelled() }}
         run: node scripts/verify-visual-v1.mjs
         working-directory: frontend
       - name: Verify guarantor workflows
+        if: ${{ !cancelled() }}
         run: node scripts/verify-workflows-v1.mjs
         working-directory: frontend
       - name: Verify chat send, reply, error and legacy behavior
+        if: ${{ !cancelled() }}
         run: node scripts/verify-chat-v1.mjs
         working-directory: frontend
       - uses: actions/upload-artifact@v4

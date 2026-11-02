@@ -15,8 +15,8 @@ export function usePanelDrag(axis: 'x' | 'y', direction: -1 | 1, onCommit?: () =
     style: { transform: `translate${axis.toUpperCase()}(${offset}px)`, transition: dragging ? 'none' : 'transform var(--panel-drag-duration, 180ms) ease-out' } as CSSProperties,
     handlers: {
       onPointerDown(e: PointerEvent<HTMLElement>) {
-        if (!callback.current || e.pointerType === 'mouse' || e.isPrimary === false) return
         suppressClick.current = false
+        if (!callback.current || e.pointerType === 'mouse' || e.isPrimary === false) return
         start.current = { x: e.clientX, y: e.clientY, id: e.pointerId }
       },
       onPointerMove(e: PointerEvent<HTMLElement>) {
@@ -44,8 +44,8 @@ export function usePanelDrag(axis: 'x' | 'y', direction: -1 | 1, onCommit?: () =
         } else reset()
       },
       onPointerCancel: reset,
-      onClickCapture(e: { preventDefault: () => void; stopPropagation: () => void }) {
-        if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false }
+      onClickCapture(e: { detail?: number; preventDefault: () => void; stopPropagation: () => void }) {
+        if (suppressClick.current && e.detail !== 0) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false }
       },
     },
   }
