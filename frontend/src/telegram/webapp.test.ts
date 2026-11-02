@@ -10,6 +10,13 @@ function stubWindow(value: Record<string, unknown>) {
 }
 
 describe('Telegram WebApp', () => {
+  it('still expands and configures swipes if one host method throws', () => {
+    const expand = vi.fn(), disableVerticalSwipes = vi.fn()
+    stubWindow({ Telegram: { WebApp: { ready: () => { throw new Error('host unavailable') }, expand, disableVerticalSwipes } } })
+    expect(() => bootTelegramWebApp()).not.toThrow()
+    expect(expand).toHaveBeenCalledOnce()
+    expect(disableVerticalSwipes).toHaveBeenCalledOnce()
+  })
   it('expands the Mini App and keeps vertical swipes inside the app', () => {
     const ready = vi.fn()
     const expand = vi.fn()

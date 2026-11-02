@@ -4,6 +4,17 @@ import {guarantorWorkflowPolicy,isReviewedRevision,remainingWindowLabel} from '.
 const now=Date.parse('2026-10-29T10:00:00Z')
 const event:GuarantorCase={market_id:1,question:'Матч',state:'review',revision:3,creator_id:1,guarantor_id:2,guarantor_name:'Анна',creator_confirmed:3,criteria:'Правила',source:'Протокол',description:'',outcomes:['Да','Нет'],close_at:'2026-10-29T11:00:00Z',ends_at:'2026-10-29T12:00:00Z',result_due_at:'2026-10-30T12:00:00Z',deadline:'2026-10-29T10:05:00Z',extension_by:null,proposed_outcome:null,decision_reason:null,consent:false,participant:false,messages:[]}
 describe('guarantor workflow boundaries',()=>{
+ it('lets only the assigned guarantor decline an invitation or ongoing review before expiry',()=>{
+  for(const state of ['invited','review']){
+   const current={...event,state}
+   expect(guarantorWorkflowPolicy(current,2,now).canDecline).toBe(true)
+   expect(guarantorWorkflowPolicy(current,1,now).canDecline).toBe(false)
+   expect(guarantorWorkflowPolicy(current,3,now).canDecline).toBe(false)
+   expect(guarantorWorkflowPolicy(current,2,Date.parse(event.deadline!)).canDecline).toBe(false)
+   expect(guarantorWorkflowPolicy({...current,deadline:null},2,Date.parse(event.close_at)).canDecline).toBe(false)
+  }
+  for(const state of ['collecting','active','settled','cancelled','needs_guarantor'])expect(guarantorWorkflowPolicy({...event,state},2,now).canDecline).toBe(false)
+ })
  it('does not grant party actions to a participant or unrelated viewer',()=>{for(const user of [3,4]){const p=guarantorWorkflowPolicy({...event,participant:true},user,now);expect([p.canAccept,p.canConfirm,p.canEditTerms,p.canNegotiateReward,p.canMessage,p.canDecide]).toEqual([false,false,false,false,false,false])}})
  it('free unnegotiated reward permits the existing accept contract, paid unsupported does not',()=>{expect(guarantorWorkflowPolicy(event,2,now).canAccept).toBe(true);expect(guarantorWorkflowPolicy({...event,reward:{mode:'percent',fixed_ton:'0',percent:'1',accepted_by:[1],proposed_by:1}},2,now).canAccept).toBe(false)})
  it('requires current creator confirmation and tariff signature',()=>{const paid={...event,reward_payments_supported:true,reward:{mode:'fixed' as const,fixed_ton:'1',percent:'0',accepted_by:[2],proposed_by:2}};expect(guarantorWorkflowPolicy(paid,2,now).canAccept).toBe(false);expect(guarantorWorkflowPolicy({...paid,reward:{...paid.reward,accepted_by:[1,2]}},2,now).canAccept).toBe(true);expect(guarantorWorkflowPolicy({...paid,creator_confirmed:2},2,now).canAccept).toBe(false)})
