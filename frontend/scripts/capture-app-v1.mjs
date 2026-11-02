@@ -48,6 +48,7 @@ async function setup(width,height,mode='unsupported',dpr=1){
   else if(/^\/markets\/\d+\/orders\/quote$/.test(p)){const body=req.postDataJSON(),amount=Number(body.money);data={limit_odds:body.odds,kind:body.kind,requested:{matched:amount,remaining:0,payout:amount*1.74,average_odds:1.74,worst_odds:1.74,fills:[{odds:1.74,matched:amount}]},available:{matched:100,worst_odds:1.74,payout:174}}}
   else if(p==='/feed/stats')data={active_offers_nano:'36816000000000',scope:'public'}
   else if(p==='/users/90001/account')data=user
+  else if(/^\/markets\/\d+\/chat\/read$/.test(p))data={last_read_message_id:0}
   else if(p==='/guarantors/me')data=null
   else if(p==='/guarantors/me/heartbeat')data={ok:true}
   else if(p==='/notifications'||p==='/creators/top'||p==='/guarantors'||p==='/guarantor-cases')data=[]
@@ -55,7 +56,7 @@ async function setup(width,height,mode='unsupported',dpr=1){
   else if(/^\/markets\/\d+\/orderbook$/.test(p))data={sides:[[{odds:1.74,available:100}],[{odds:2.1,available:100}]],available_to_me:[[{odds:1.74,available:100}],[{odds:2.1,available:100}]],queued:[100,100]}
   else if(p==='/favicon.ico')return route.fulfill({status:204})
   else {report.errors.push('Unhandled fixture request: '+req.method()+' '+p);return route.fulfill({status:404,json:{detail:'QA fixture not defined'}})}
-  if(req.method()!=='GET'&&!['/auth/telegram','/guarantors/me/heartbeat'].includes(p)&&!/^\/markets\/\d+\/orders\/quote$/.test(p)){report.errors.push('Unexpected write prevented: '+p);return route.abort()}
+  if(req.method()!=='GET'&&!['/auth/telegram','/guarantors/me/heartbeat'].includes(p)&&!/^\/markets\/\d+\/orders\/quote$/.test(p)&&!/^\/markets\/\d+\/chat\/read$/.test(p)){report.errors.push('Unexpected write prevented: '+p);return route.abort()}
   return route.fulfill({json:data,headers:{'x-total-count':String(Array.isArray(data)?data.length:1)}})
  })
  await context.addInitScript(({height,mode})=>{
@@ -133,7 +134,7 @@ try{
    await page.locator('[data-figma-frame="819:45192"] main').evaluate(el=>el.scrollTop=el.scrollHeight)
    await capture(page,'feed-scrolled-390x600','feed-scroll')
    await page.getByRole('button',{name:'Меню',exact:true}).click()
-   await page.getByRole('button',{name:'Поиск событий',exact:false}).click()
+   await page.getByRole('dialog',{name:'Меню BetTON'}).getByRole('button',{name:'Поиск событий',exact:false}).click()
    await page.getByRole('searchbox').fill('Тест')
    await page.evaluate(()=>{Object.defineProperty(window.visualViewport,'height',{configurable:true,get:()=>350});window.visualViewport.dispatchEvent(new Event('resize'))})
    await capture(page,'keyboard-model-390x600','keyboard-model')
@@ -202,6 +203,12 @@ try{
   await page.getByRole('button',{name:'Быстрая ставка',exact:true}).click()
   if(await page.getByRole('textbox',{name:'Сумма, TON',exact:true}).inputValue()!=='25')report.errors.push('Mode switch lost amount')
   await page.getByRole('button',{name:'Свернуть панель ставки',exact:true}).click()
+  await page.getByRole('button',{name:'Обсуждение',exact:true}).click()
+  const composer=page.getByRole('textbox',{name:'Написать сообщение',exact:true})
+  await composer.fill('Черновик обсуждения — не отправлять')
+  await capture(page,'event-discussion-composer-390x700','embedded-discussion')
+  await page.evaluate(()=>document.activeElement?.blur())
+  if(!await page.getByRole('button',{name:'Раскрыть панель ставки',exact:true}).isVisible())report.errors.push('Discussion lost selected ticket')
   await page.getByRole('button',{name:'Назад',exact:true}).click()
   await page.getByRole('button',{name:privateMarket.question,exact:true}).click()
   await page.getByText('Что будет дальше',{exact:true}).waitFor()

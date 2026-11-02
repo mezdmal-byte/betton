@@ -1,3 +1,4 @@
+import { ConnectedChatScreen } from './ConnectedChatScreen'
 import { syncTelegramBackButton } from '../telegram/webapp'
 import { ConnectedOwnPriceScreen } from './ConnectedOwnPriceScreen'
 import { ConnectedQuickTradeSheet } from './ConnectedQuickTrade'
@@ -198,6 +199,7 @@ export function ConnectedMarketDetailScreen({
         viewState={viewState}
         actionsDisabled={actionsOff}
         showInternalBack={showInternalBack}
+        discussionContent={visualV1&&userId?<ConnectedChatScreen embedded scope={{kind:'market',marketId}} currentUserId={userId} isAdmin={isAdmin} onBack={onBack} onOpenMarket={()=>setPane('chart')}/>:undefined}
         discussionMessages={discussionPreview.data?.items}
         discussionState={!userId?'unavailable':discussionPreview.isError?'error':discussionPreview.isPending?'loading':'ready'}
         onRetryDiscussion={()=>{void discussionPreview.refetch()}}
