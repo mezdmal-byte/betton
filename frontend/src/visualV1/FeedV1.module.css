@@ -23,16 +23,19 @@
 
 /* The same hierarchy with less chrome; no page or type scaling. */
 .categories .allCategories{margin-left:auto;display:flex;align-items:center;gap:5px;background:#fff;border:0;border-radius:14px;padding:3px 7px;font-size:11px;line-height:16px;white-space:nowrap;min-height:26px}
-:global(html[data-betton-compact=true]) .content{gap:8px;padding:0 12px 12px}
-:global(html[data-betton-compact=true]) .categories{height:30px;gap:12px}
-:global(html[data-betton-compact=true]) .controls{height:36px}
-:global(html[data-betton-compact=true]) .card{gap:4px;padding:8px;border-radius:11px}
-:global(html[data-betton-compact=true]) .cardCategory{min-height:14px;font-size:10px;line-height:14px}
-:global(html[data-betton-compact=true]) .cardTitle{font-size:14px;line-height:18px}
-:global(html[data-betton-compact=true]) .date{min-height:14px;font-size:10.5px;line-height:14px}
-:global(html[data-betton-compact=true]) .outcomes,:global(html[data-betton-compact=true]) .outcome,:global(html[data-betton-compact=true]) .outcomeSelected{min-height:46px}
-:global(html[data-betton-compact=true]) .outcome,:global(html[data-betton-compact=true]) .outcomeSelected{padding:4px 6px;gap:5px}
-:global(html[data-betton-compact=true]) .outcomeCopy strong{font-size:19px;line-height:22px}
-:global(html[data-betton-compact=true]) .metrics dt{font-size:9.5px;line-height:11px}
-:global(html[data-betton-compact=true]) .metrics dd{font-size:11px;line-height:14px}
-:global(html[data-betton-compact=true]) .metrics>div{gap:4px}
+.content{gap:8px;padding:0 12px 12px}
+.categories{height:30px;gap:12px}
+.controls{height:36px}
+.card{gap:4px;padding:8px;border-radius:11px}
+.cardCategory{min-height:14px;font-size:10px;line-height:14px}
+.cardTitle{font-size:14px;line-height:18px}
+.date{min-height:14px;font-size:10.5px;line-height:14px}
+.outcomes,.outcome,.outcomeSelected{min-height:46px}
+.outcome,.outcomeSelected{padding:4px 6px;gap:5px}
+.outcomeCopy strong{font-size:19px;line-height:22px}
+.metrics dt{font-size:9.5px;line-height:11px}
+.metrics dd{font-size:11px;line-height:14px}
+.metrics>div{gap:4px}
+
+/* A long feed stays compact even when the host reports a tall viewport. */
+.screen{--v1-feed-header-height:52px;--v1-feed-header-top:8px;--v1-nav-height:64px;--v1-nav-top:5px;--v1-nav-bottom:6px}

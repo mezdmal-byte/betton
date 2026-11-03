@@ -6,6 +6,7 @@ import { Button } from '../components/Button/Button'
 import { TextField } from '../components/TextField/TextField'
 import { displayTime } from '../api/guarantors'
 import s from './GovernanceV3.module.css'
+import v from './EventTermsV1.module.css'
 import { useVisualV1 } from '../visualV1/VisualV1Context'
 import { CreatorDecisionV1 } from '../visualV1/CreatorDecisionV1'
 
@@ -22,8 +23,8 @@ export function EventTermsV3Panel({marketId,userId,status}: {marketId:number;use
   const owner=userId===event.creator_id
   const decisionAvailableAt=event.timing_version==='start-v1'&&event.event_type==='private'?event.close_at:event.ends_at
   const ended=Boolean(decisionAvailableAt&&new Date(decisionAvailableAt).getTime()<=Date.now())
-  return <section className={s.summary}>
-    <p className={s.note}><strong>Начало · закрытие приёма ставок:</strong> {displayTime(event.close_at)}{event.ends_at?<> · <strong>Предполагаемое завершение:</strong> {displayTime(event.ends_at)}</>:null}</p><p>{event.resolution_method}</p><details><summary>Полные правила и критерии</summary>
+  return <section className={visualV1?v.terms:s.summary}>
+    {visualV1?<><dl className={v.timing}><div><dt>Начало · ставки закрываются</dt><dd>{displayTime(event.close_at)}</dd></div>{event.ends_at?<div><dt>Предполагаемое завершение</dt><dd>{displayTime(event.ends_at)}</dd></div>:null}</dl><div className={v.method}><h3>Как проверяется результат</h3><p>{event.resolution_method}</p></div><details><summary>Полные правила и критерии <span>Редакция {event.revision}</span></summary><p>{event.rules}</p><div className={v.criteria}>{event.criteria?.map((criterion,i)=><section key={i}><h4>{event.outcomes[i]}</h4><p>{criterion}</p></section>)}</div>{event.unverifiable?<p>Если результат нельзя определить: {event.unverifiable}</p>:null}{event.primary_source?<p>Основной источник: <a href={event.primary_source.url} target="_blank" rel="noreferrer">{event.primary_source.name}</a></p>:null}{event.backup_source?<p>Резервный источник: <a href={event.backup_source.url} target="_blank" rel="noreferrer">{event.backup_source.name}</a></p>:null}{!event.ends_at&&event.event_type==='private'?<p>После начала создатель определяет результат. Срок расчёта заранее не задан.</p>:null}</details></>:<><p className={s.note}><strong>Начало · закрытие приёма ставок:</strong> {displayTime(event.close_at)}{event.ends_at?<> · <strong>Предполагаемое завершение:</strong> {displayTime(event.ends_at)}</>:null}</p><p>{event.resolution_method}</p><details><summary>Полные правила и критерии</summary>
       <p>{event.rules}</p><p>{event.resolution_method}</p>
       {event.criteria?.map((criterion,i)=><p key={i}>{event.outcomes[i]}: {criterion}</p>)}
       {event.unverifiable?<p>Если результат нельзя определить: {event.unverifiable}</p>:null}
@@ -32,7 +33,7 @@ export function EventTermsV3Panel({marketId,userId,status}: {marketId:number;use
       <p>{event.timing_version==='start-v1'?'Начало события · приём ставок закрывается':'Приём ставок до'} {displayTime(event.close_at)}</p>
       {event.ends_at?<p>Предполагаемое завершение: {displayTime(event.ends_at)}</p>:event.event_type==='private'?<p>После начала события создатель определяет результат, когда примет решение. Срок расчёта заранее не задан.</p>:null}
       <p>Редакция {event.revision}</p>
-    </details>
+    </details></>}
     {event.event_type==='private'?<>
       <p>Результат определяет создатель события по этим правилам.</p>
       {!event.consent&&userId?<Button fullWidth disabled={mutation.isPending} onClick={()=>mutation.mutate({path:'consent',body:{revision:event.revision}})}>Принимаю условия и решение создателя</Button>:null}

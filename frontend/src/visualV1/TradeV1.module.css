@@ -8,3 +8,7 @@
 .transparent{background:transparent}
 
 .body{height:auto}.ownBody{height:auto}
+
+.outcomeChoices{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none}.outcomeChoices button{display:flex;align-items:center;gap:8px;min-width:0;min-height:72px;text-align:left;padding:10px;border:1px solid #dce3ed;border-radius:12px;background:#f7f9fc;color:#101722}.outcomeChoices button[aria-pressed=true]{background:#fff1e6;border-color:#ff6b00}.outcomeChoices span{flex:1;min-width:0}.outcomeChoices b{display:block;font-size:12px;line-height:17px;overflow-wrap:anywhere}.outcomeChoices strong{display:block;font-size:22px;line-height:28px;color:#ff6b00}.outcomeChoices i{width:16px;height:16px;background:#ff6b00;display:grid;place-items:center;border-radius:50%;flex:none}.outcomeChoices i img{width:9px;height:9px}.sheet{transition:transform 180ms cubic-bezier(.32,.72,0,1)}@starting-style{.sheet{transform:translateY(28px)}}
+
+.field input{--v1-field-size:22px}

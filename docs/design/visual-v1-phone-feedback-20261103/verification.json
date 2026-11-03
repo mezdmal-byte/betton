@@ -1,0 +1,1571 @@
+{
+  "head": "0a5827584a103f3ad7a6bcb34490681b9f31190c",
+  "checkout": "7b342508fc0ba6a5eb3ea7b5a4b3c2733c74dbc0",
+  "run": 41525336349,
+  "artifact": 13179093531,
+  "before": 223,
+  "after": 297,
+  "real_api": {
+    "realAPI": true,
+    "disposable": true,
+    "executions": 159,
+    "screens": [
+      "chart-1-ч.png",
+      "chart-24-ч.png",
+      "chart-Всё-время.png",
+      "event-information.png",
+      "event-information-rules.png",
+      "guarantor-stage.png",
+      "guarantor-chat.png",
+      "guarantor-terms.png",
+      "guarantor-history.png",
+      "guarantor-collecting-own-form.png"
+    ],
+    "errors": [],
+    "collectingPreview": {
+      "matched": 0,
+      "remaining": 10,
+      "canPlace": true,
+      "submitted": false
+    }
+  },
+  "feed": [
+    {
+      "name": "feed-320x550",
+      "kind": "feed",
+      "viewport": {
+        "width": 320,
+        "height": 550
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 550,
+        "bottom": 550
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 550,
+        "bottom": 550
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 434,
+        "bottom": 486
+      },
+      "nav": {
+        "x": 0,
+        "y": 486,
+        "width": 320,
+        "height": 64,
+        "bottom": 550
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 296,
+          "height": 162,
+          "bottom": 296
+        },
+        {
+          "x": 12,
+          "y": 304,
+          "width": 296,
+          "height": 162,
+          "bottom": 466
+        },
+        {
+          "x": 12,
+          "y": 474,
+          "width": 296,
+          "height": 162,
+          "bottom": 636
+        },
+        {
+          "x": 12,
+          "y": 644,
+          "width": 296,
+          "height": 175,
+          "bottom": 819
+        },
+        {
+          "x": 12,
+          "y": 827,
+          "width": 296,
+          "height": 193,
+          "bottom": 1020
+        },
+        {
+          "x": 12,
+          "y": 1028,
+          "width": 296,
+          "height": 162,
+          "bottom": 1190
+        }
+      ],
+      "visibleCardEquivalent": 2.074074074074074,
+      "fullCards": 2,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-320x600",
+      "kind": "feed",
+      "viewport": {
+        "width": 320,
+        "height": 600
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 600,
+        "bottom": 600
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 600,
+        "bottom": 600
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 484,
+        "bottom": 536
+      },
+      "nav": {
+        "x": 0,
+        "y": 536,
+        "width": 320,
+        "height": 64,
+        "bottom": 600
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 296,
+          "height": 162,
+          "bottom": 296
+        },
+        {
+          "x": 12,
+          "y": 304,
+          "width": 296,
+          "height": 162,
+          "bottom": 466
+        },
+        {
+          "x": 12,
+          "y": 474,
+          "width": 296,
+          "height": 162,
+          "bottom": 636
+        },
+        {
+          "x": 12,
+          "y": 644,
+          "width": 296,
+          "height": 175,
+          "bottom": 819
+        },
+        {
+          "x": 12,
+          "y": 827,
+          "width": 296,
+          "height": 193,
+          "bottom": 1020
+        },
+        {
+          "x": 12,
+          "y": 1028,
+          "width": 296,
+          "height": 162,
+          "bottom": 1190
+        }
+      ],
+      "visibleCardEquivalent": 2.382716049382716,
+      "fullCards": 2,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-320x700",
+      "kind": "feed",
+      "viewport": {
+        "width": 320,
+        "height": 700
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 700,
+        "bottom": 700
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 700,
+        "bottom": 700
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 584,
+        "bottom": 636
+      },
+      "nav": {
+        "x": 0,
+        "y": 636,
+        "width": 320,
+        "height": 64,
+        "bottom": 700
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 296,
+          "height": 162,
+          "bottom": 296
+        },
+        {
+          "x": 12,
+          "y": 304,
+          "width": 296,
+          "height": 162,
+          "bottom": 466
+        },
+        {
+          "x": 12,
+          "y": 474,
+          "width": 296,
+          "height": 162,
+          "bottom": 636
+        },
+        {
+          "x": 12,
+          "y": 644,
+          "width": 296,
+          "height": 175,
+          "bottom": 819
+        },
+        {
+          "x": 12,
+          "y": 827,
+          "width": 296,
+          "height": 193,
+          "bottom": 1020
+        },
+        {
+          "x": 12,
+          "y": 1028,
+          "width": 296,
+          "height": 162,
+          "bottom": 1190
+        }
+      ],
+      "visibleCardEquivalent": 3,
+      "fullCards": 3,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-320x844",
+      "kind": "feed",
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 844,
+        "bottom": 844
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 844,
+        "bottom": 844
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 728,
+        "bottom": 780
+      },
+      "nav": {
+        "x": 0,
+        "y": 780,
+        "width": 320,
+        "height": 64,
+        "bottom": 844
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 296,
+          "height": 162,
+          "bottom": 296
+        },
+        {
+          "x": 12,
+          "y": 304,
+          "width": 296,
+          "height": 162,
+          "bottom": 466
+        },
+        {
+          "x": 12,
+          "y": 474,
+          "width": 296,
+          "height": 162,
+          "bottom": 636
+        },
+        {
+          "x": 12,
+          "y": 644,
+          "width": 296,
+          "height": 175,
+          "bottom": 819
+        },
+        {
+          "x": 12,
+          "y": 827,
+          "width": 296,
+          "height": 193,
+          "bottom": 1020
+        },
+        {
+          "x": 12,
+          "y": 1028,
+          "width": 296,
+          "height": 162,
+          "bottom": 1190
+        }
+      ],
+      "visibleCardEquivalent": 3.777142857142857,
+      "fullCards": 3,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "false"
+    },
+    {
+      "name": "feed-360x550",
+      "kind": "feed",
+      "viewport": {
+        "width": 360,
+        "height": 550
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 550,
+        "bottom": 550
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 550,
+        "bottom": 550
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 434,
+        "bottom": 486
+      },
+      "nav": {
+        "x": 0,
+        "y": 486,
+        "width": 360,
+        "height": 64,
+        "bottom": 550
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 336,
+          "height": 162,
+          "bottom": 296
+        },
+        {
+          "x": 12,
+          "y": 304,
+          "width": 336,
+          "height": 162,
+          "bottom": 466
+        },
+        {
+          "x": 12,
+          "y": 474,
+          "width": 336,
+          "height": 162,
+          "bottom": 636
+        },
+        {
+          "x": 12,
+          "y": 644,
+          "width": 336,
+          "height": 175,
+          "bottom": 819
+        },
+        {
+          "x": 12,
+          "y": 827,
+          "width": 336,
+          "height": 193,
+          "bottom": 1020
+        },
+        {
+          "x": 12,
+          "y": 1028,
+          "width": 336,
+          "height": 162,
+          "bottom": 1190
+        }
+      ],
+      "visibleCardEquivalent": 2.074074074074074,
+      "fullCards": 2,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-360x600",
+      "kind": "feed",
+      "viewport": {
+        "width": 360,
+        "height": 600
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 600,
+        "bottom": 600
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 600,
+        "bottom": 600
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 484,
+        "bottom": 536
+      },
+      "nav": {
+        "x": 0,
+        "y": 536,
+        "width": 360,
+        "height": 64,
+        "bottom": 600
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 336,
+          "height": 162,
+          "bottom": 296
+        },
+        {
+          "x": 12,
+          "y": 304,
+          "width": 336,
+          "height": 162,
+          "bottom": 466
+        },
+        {
+          "x": 12,
+          "y": 474,
+          "width": 336,
+          "height": 162,
+          "bottom": 636
+        },
+        {
+          "x": 12,
+          "y": 644,
+          "width": 336,
+          "height": 175,
+          "bottom": 819
+        },
+        {
+          "x": 12,
+          "y": 827,
+          "width": 336,
+          "height": 193,
+          "bottom": 1020
+        },
+        {
+          "x": 12,
+          "y": 1028,
+          "width": 336,
+          "height": 162,
+          "bottom": 1190
+        }
+      ],
+      "visibleCardEquivalent": 2.382716049382716,
+      "fullCards": 2,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-360x700",
+      "kind": "feed",
+      "viewport": {
+        "width": 360,
+        "height": 700
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 700,
+        "bottom": 700
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 700,
+        "bottom": 700
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 584,
+        "bottom": 636
+      },
+      "nav": {
+        "x": 0,
+        "y": 636,
+        "width": 360,
+        "height": 64,
+        "bottom": 700
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 336,
+          "height": 162,
+          "bottom": 296
+        },
+        {
+          "x": 12,
+          "y": 304,
+          "width": 336,
+          "height": 162,
+          "bottom": 466
+        },
+        {
+          "x": 12,
+          "y": 474,
+          "width": 336,
+          "height": 162,
+          "bottom": 636
+        },
+        {
+          "x": 12,
+          "y": 644,
+          "width": 336,
+          "height": 175,
+          "bottom": 819
+        },
+        {
+          "x": 12,
+          "y": 827,
+          "width": 336,
+          "height": 193,
+          "bottom": 1020
+        },
+        {
+          "x": 12,
+          "y": 1028,
+          "width": 336,
+          "height": 162,
+          "bottom": 1190
+        }
+      ],
+      "visibleCardEquivalent": 3,
+      "fullCards": 3,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-360x844",
+      "kind": "feed",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 844,
+        "bottom": 844
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 844,
+        "bottom": 844
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 728,
+        "bottom": 780
+      },
+      "nav": {
+        "x": 0,
+        "y": 780,
+        "width": 360,
+        "height": 64,
+        "bottom": 844
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 336,
+          "height": 162,
+          "bottom": 296
+        },
+        {
+          "x": 12,
+          "y": 304,
+          "width": 336,
+          "height": 162,
+          "bottom": 466
+        },
+        {
+          "x": 12,
+          "y": 474,
+          "width": 336,
+          "height": 162,
+          "bottom": 636
+        },
+        {
+          "x": 12,
+          "y": 644,
+          "width": 336,
+          "height": 175,
+          "bottom": 819
+        },
+        {
+          "x": 12,
+          "y": 827,
+          "width": 336,
+          "height": 193,
+          "bottom": 1020
+        },
+        {
+          "x": 12,
+          "y": 1028,
+          "width": 336,
+          "height": 162,
+          "bottom": 1190
+        }
+      ],
+      "visibleCardEquivalent": 3.777142857142857,
+      "fullCards": 3,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "false"
+    },
+    {
+      "name": "feed-390x550",
+      "kind": "feed",
+      "viewport": {
+        "width": 390,
+        "height": 550
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 550,
+        "bottom": 550
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 550,
+        "bottom": 550
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 434,
+        "bottom": 486
+      },
+      "nav": {
+        "x": 0,
+        "y": 486,
+        "width": 390,
+        "height": 64,
+        "bottom": 550
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 366,
+          "height": 151,
+          "bottom": 285
+        },
+        {
+          "x": 12,
+          "y": 293,
+          "width": 366,
+          "height": 151,
+          "bottom": 444
+        },
+        {
+          "x": 12,
+          "y": 452,
+          "width": 366,
+          "height": 151,
+          "bottom": 603
+        },
+        {
+          "x": 12,
+          "y": 611,
+          "width": 366,
+          "height": 151,
+          "bottom": 762
+        },
+        {
+          "x": 12,
+          "y": 770,
+          "width": 366,
+          "height": 169,
+          "bottom": 939
+        },
+        {
+          "x": 12,
+          "y": 947,
+          "width": 366,
+          "height": 151,
+          "bottom": 1098
+        }
+      ],
+      "visibleCardEquivalent": 2.225165562913907,
+      "fullCards": 2,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-390x600",
+      "kind": "feed",
+      "viewport": {
+        "width": 390,
+        "height": 600
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 600,
+        "bottom": 600
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 600,
+        "bottom": 600
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 484,
+        "bottom": 536
+      },
+      "nav": {
+        "x": 0,
+        "y": 536,
+        "width": 390,
+        "height": 64,
+        "bottom": 600
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 366,
+          "height": 151,
+          "bottom": 285
+        },
+        {
+          "x": 12,
+          "y": 293,
+          "width": 366,
+          "height": 151,
+          "bottom": 444
+        },
+        {
+          "x": 12,
+          "y": 452,
+          "width": 366,
+          "height": 151,
+          "bottom": 603
+        },
+        {
+          "x": 12,
+          "y": 611,
+          "width": 366,
+          "height": 151,
+          "bottom": 762
+        },
+        {
+          "x": 12,
+          "y": 770,
+          "width": 366,
+          "height": 169,
+          "bottom": 939
+        },
+        {
+          "x": 12,
+          "y": 947,
+          "width": 366,
+          "height": 151,
+          "bottom": 1098
+        }
+      ],
+      "visibleCardEquivalent": 2.556291390728477,
+      "fullCards": 2,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-390x700",
+      "kind": "feed",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 700,
+        "bottom": 700
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 700,
+        "bottom": 700
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 584,
+        "bottom": 636
+      },
+      "nav": {
+        "x": 0,
+        "y": 636,
+        "width": 390,
+        "height": 64,
+        "bottom": 700
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 366,
+          "height": 151,
+          "bottom": 285
+        },
+        {
+          "x": 12,
+          "y": 293,
+          "width": 366,
+          "height": 151,
+          "bottom": 444
+        },
+        {
+          "x": 12,
+          "y": 452,
+          "width": 366,
+          "height": 151,
+          "bottom": 603
+        },
+        {
+          "x": 12,
+          "y": 611,
+          "width": 366,
+          "height": 151,
+          "bottom": 762
+        },
+        {
+          "x": 12,
+          "y": 770,
+          "width": 366,
+          "height": 169,
+          "bottom": 939
+        },
+        {
+          "x": 12,
+          "y": 947,
+          "width": 366,
+          "height": 151,
+          "bottom": 1098
+        }
+      ],
+      "visibleCardEquivalent": 3.165562913907285,
+      "fullCards": 3,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-390x844",
+      "kind": "feed",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "bottom": 844
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "bottom": 844
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 728,
+        "bottom": 780
+      },
+      "nav": {
+        "x": 0,
+        "y": 780,
+        "width": 390,
+        "height": 64,
+        "bottom": 844
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 366,
+          "height": 151,
+          "bottom": 285
+        },
+        {
+          "x": 12,
+          "y": 293,
+          "width": 366,
+          "height": 151,
+          "bottom": 444
+        },
+        {
+          "x": 12,
+          "y": 452,
+          "width": 366,
+          "height": 151,
+          "bottom": 603
+        },
+        {
+          "x": 12,
+          "y": 611,
+          "width": 366,
+          "height": 151,
+          "bottom": 762
+        },
+        {
+          "x": 12,
+          "y": 770,
+          "width": 366,
+          "height": 169,
+          "bottom": 939
+        },
+        {
+          "x": 12,
+          "y": 947,
+          "width": 366,
+          "height": 151,
+          "bottom": 1098
+        }
+      ],
+      "visibleCardEquivalent": 4.059171597633136,
+      "fullCards": 4,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "false"
+    },
+    {
+      "name": "feed-430x550",
+      "kind": "feed",
+      "viewport": {
+        "width": 430,
+        "height": 550
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 550,
+        "bottom": 550
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 550,
+        "bottom": 550
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 434,
+        "bottom": 486
+      },
+      "nav": {
+        "x": 0,
+        "y": 486,
+        "width": 430,
+        "height": 64,
+        "bottom": 550
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 406,
+          "height": 151,
+          "bottom": 285
+        },
+        {
+          "x": 12,
+          "y": 293,
+          "width": 406,
+          "height": 151,
+          "bottom": 444
+        },
+        {
+          "x": 12,
+          "y": 452,
+          "width": 406,
+          "height": 151,
+          "bottom": 603
+        },
+        {
+          "x": 12,
+          "y": 611,
+          "width": 406,
+          "height": 151,
+          "bottom": 762
+        },
+        {
+          "x": 12,
+          "y": 770,
+          "width": 406,
+          "height": 169,
+          "bottom": 939
+        },
+        {
+          "x": 12,
+          "y": 947,
+          "width": 406,
+          "height": 151,
+          "bottom": 1098
+        }
+      ],
+      "visibleCardEquivalent": 2.225165562913907,
+      "fullCards": 2,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-430x600",
+      "kind": "feed",
+      "viewport": {
+        "width": 430,
+        "height": 600
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 600,
+        "bottom": 600
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 600,
+        "bottom": 600
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 484,
+        "bottom": 536
+      },
+      "nav": {
+        "x": 0,
+        "y": 536,
+        "width": 430,
+        "height": 64,
+        "bottom": 600
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 406,
+          "height": 151,
+          "bottom": 285
+        },
+        {
+          "x": 12,
+          "y": 293,
+          "width": 406,
+          "height": 151,
+          "bottom": 444
+        },
+        {
+          "x": 12,
+          "y": 452,
+          "width": 406,
+          "height": 151,
+          "bottom": 603
+        },
+        {
+          "x": 12,
+          "y": 611,
+          "width": 406,
+          "height": 151,
+          "bottom": 762
+        },
+        {
+          "x": 12,
+          "y": 770,
+          "width": 406,
+          "height": 169,
+          "bottom": 939
+        },
+        {
+          "x": 12,
+          "y": 947,
+          "width": 406,
+          "height": 151,
+          "bottom": 1098
+        }
+      ],
+      "visibleCardEquivalent": 2.556291390728477,
+      "fullCards": 2,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-430x700",
+      "kind": "feed",
+      "viewport": {
+        "width": 430,
+        "height": 700
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 700,
+        "bottom": 700
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 700,
+        "bottom": 700
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 584,
+        "bottom": 636
+      },
+      "nav": {
+        "x": 0,
+        "y": 636,
+        "width": 430,
+        "height": 64,
+        "bottom": 700
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 406,
+          "height": 151,
+          "bottom": 285
+        },
+        {
+          "x": 12,
+          "y": 293,
+          "width": 406,
+          "height": 151,
+          "bottom": 444
+        },
+        {
+          "x": 12,
+          "y": 452,
+          "width": 406,
+          "height": 151,
+          "bottom": 603
+        },
+        {
+          "x": 12,
+          "y": 611,
+          "width": 406,
+          "height": 151,
+          "bottom": 762
+        },
+        {
+          "x": 12,
+          "y": 770,
+          "width": 406,
+          "height": 169,
+          "bottom": 939
+        },
+        {
+          "x": 12,
+          "y": 947,
+          "width": 406,
+          "height": 151,
+          "bottom": 1098
+        }
+      ],
+      "visibleCardEquivalent": 3.165562913907285,
+      "fullCards": 3,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "true"
+    },
+    {
+      "name": "feed-430x844",
+      "kind": "feed",
+      "viewport": {
+        "width": 430,
+        "height": 844
+      },
+      "eventOverlap": false,
+      "overflow": false,
+      "broken": [],
+      "root": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 844,
+        "bottom": 844
+      },
+      "surface": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 844,
+        "bottom": 844
+      },
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52,
+        "bottom": 52
+      },
+      "scroll": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 728,
+        "bottom": 780
+      },
+      "nav": {
+        "x": 0,
+        "y": 780,
+        "width": 430,
+        "height": 64,
+        "bottom": 844
+      },
+      "navLabelOverflow": [],
+      "cardBounds": [
+        {
+          "x": 12,
+          "y": 134,
+          "width": 406,
+          "height": 151,
+          "bottom": 285
+        },
+        {
+          "x": 12,
+          "y": 293,
+          "width": 406,
+          "height": 151,
+          "bottom": 444
+        },
+        {
+          "x": 12,
+          "y": 452,
+          "width": 406,
+          "height": 151,
+          "bottom": 603
+        },
+        {
+          "x": 12,
+          "y": 611,
+          "width": 406,
+          "height": 151,
+          "bottom": 762
+        },
+        {
+          "x": 12,
+          "y": 770,
+          "width": 406,
+          "height": 169,
+          "bottom": 939
+        },
+        {
+          "x": 12,
+          "y": 947,
+          "width": 406,
+          "height": 151,
+          "bottom": 1098
+        }
+      ],
+      "visibleCardEquivalent": 4.059171597633136,
+      "fullCards": 4,
+      "footer": null,
+      "fullscreen": "false",
+      "compact": "false"
+    }
+  ],
+  "errors": []
+}

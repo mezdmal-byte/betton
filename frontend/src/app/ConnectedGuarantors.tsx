@@ -380,7 +380,7 @@ export function GuarantorAlerts({
   // Keep heartbeat/query active and notifications unread while monetary recovery owns the screen.
   if (!userId || !item || paused) return null;
   return (
-    <aside className={s.alert} aria-live="polite">
+    <aside className={s.alert} aria-live="polite" data-notice-id={item.id}>
       <p>{item.text}</p>
       <div className={s.actions}>
         <Button

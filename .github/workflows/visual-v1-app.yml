@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'frontend/**'
+      - 'app/main.py'
+      - 'scripts/ux_v3_preview.py'
+      - 'scripts/rich_simulation_pack.py'
+      - 'scripts/verify_rich_simulation.py'
       - '.github/workflows/visual-v1-app.yml'
 permissions:
   contents: read
@@ -14,6 +18,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -23,13 +31,14 @@ jobs:
         working-directory: frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
-      - name: Prepare pinned PR 35 baseline
+      - name: Prepare pinned PR 36 baseline
         run: |
-          git worktree add ../visual-v1-before 6ecf6ebed96739c110cac48f3898e8a4b45c71d7
+          git worktree add ../visual-v1-before 47f6f4a010ae0ca6fb106d7ba7091dafae7b38cd
           ln -s "$GITHUB_WORKSPACE/frontend/node_modules" ../visual-v1-before/frontend/node_modules
       - name: Capture actual App before
         run: node frontend/scripts/capture-app-v1.mjs --root ../visual-v1-before --output qa-app-before --baseline
       - name: Capture actual App after and verify interactions
+        timeout-minutes: 5
         run: node frontend/scripts/capture-app-v1.mjs --root . --output qa-app-after
       - name: Verify EVENT and legacy fixtures
         if: ${{ !cancelled() }}
@@ -43,11 +52,23 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/verify-chat-v1.mjs
         working-directory: frontend
+      - name: Verify additive SIM creation, 100+ executions and money conservation
+        if: ${{ !cancelled() }}
+        run: python scripts/verify_rich_simulation.py > rich-sim-check.log 2>&1
+      - name: Build actual App for real API screenshots
+        if: ${{ !cancelled() }}
+        run: npm --prefix frontend run build
+      - name: Capture actual App against verified isolated SIM
+        timeout-minutes: 3
+        if: ${{ !cancelled() }}
+        run: node frontend/scripts/capture-rich-sim.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: betton-app-v1-before-after
           path: |
+            rich-sim-check.log
+            qa-rich-sim/
             qa-app-before/*.png
             qa-app-before/report.json
             qa-app-after/*.png

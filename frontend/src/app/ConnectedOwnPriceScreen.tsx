@@ -2,7 +2,7 @@ import { completeOrderIntent, submitOrderIntent } from '../api/orderIntent'
 import { OrderIntentRecovery, useHasOrderIntent } from './OrderIntentRecovery'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { mapMarketOut, mapOrderBookLevels, mapOrderPreview, mapTradesToRecent, moneyForOrder } from '../api/adapters'
+import { applyPersonalizedExecutableQuotes, mapMarketOut, mapOrderBookLevels, mapOrderPreview, mapTradesToRecent, moneyForOrder } from '../api/adapters'
 import { isApiError } from '../api/client'
 import { errorDetail, isInsufficientBalanceError } from '../api/errors'
 import { getMarket, getMarketTrades, getOrderbook } from '../api/markets'
@@ -24,6 +24,7 @@ export type ConnectedOwnPriceScreenProps = {
   marketId: number
   initialAmount?: number
   initialOdds?: number
+  initialSideOdds?: Partial<Record<OutcomeSide,number>>
   backdrop?: boolean
   onBusyChange?: (busy: boolean) => void
   onDraftChange?: (draft: {side: OutcomeSide; amount: number; odds: number}) => void
@@ -37,7 +38,7 @@ export type ConnectedOwnPriceScreenProps = {
 
 export function ConnectedOwnPriceScreen({
   marketId,
-  initialAmount = 100, initialOdds, backdrop, onBusyChange, onDraftChange,
+  initialAmount = 100, initialOdds, initialSideOdds, backdrop, onBusyChange, onDraftChange,
   initialSide = 'a',
   availableTon,
   userId,
@@ -54,11 +55,12 @@ export function ConnectedOwnPriceScreen({
   currentActor.current = userId
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const [side, setSide] = useState<OutcomeSide>(initialSide)
-  const [odds, setOdds] = useState(initialOdds ?? 1.9)
+  const [odds, setOdds] = useState(initialOdds ?? initialSideOdds?.[initialSide] ?? 1.9)
   const [amount, setAmount] = useState(initialAmount)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [placedOrder, setPlacedOrder] = useState<OrderOut | null>(null)
-  const initializedOdds = useRef(initialOdds != null)
+  const initializedOdds = useRef(initialOdds != null || initialSideOdds?.[initialSide] != null)
+  const sideOdds = useRef<Partial<Record<OutcomeSide,number>>>({...initialSideOdds,...(initialOdds==null?{}:{[initialSide]:initialOdds})})
   const shareToken = shareTokenFor(marketId)
 
   const marketQuery = useQuery({
@@ -81,7 +83,8 @@ export function ConnectedOwnPriceScreen({
     enabled: marketQuery.data?.mechanism === 'p2p',
   })
 
-  const market = marketQuery.data ? mapMarketOut(marketQuery.data, new Date(), locale) : undefined
+  const mappedMarket = marketQuery.data ? mapMarketOut(marketQuery.data, new Date(), locale) : undefined
+  const market = mappedMarket&&bookQuery.isSuccess?applyPersonalizedExecutableQuotes(mappedMarket,bookQuery.data):mappedMarket
   const tradable = Boolean(market && marketIsTradable(market))
   const outcome = side === 'a' ? 0 : 1
   const money = moneyForOrder(amount)
@@ -89,11 +92,10 @@ export function ConnectedOwnPriceScreen({
   const debouncedOdds = useDebouncedValue(odds, 200)
 
   useEffect(() => {
-    if (initializedOdds.current || !market) return
+    if (initializedOdds.current || !market || (marketQuery.data?.mechanism==='p2p'&&!bookQuery.isSuccess)) return
     const current = side === 'a' ? market.outcomeA.odds : market.outcomeB.odds
-    if (current) setOdds(current)
-    initializedOdds.current = true
-  }, [market, side])
+    if (current) { setOdds(current); initializedOdds.current = true }
+  }, [market, side, marketQuery.data?.mechanism, bookQuery.isSuccess])
 
   const previewQuery = useQuery({
     queryKey: queryKeys.orderPreview({
@@ -179,10 +181,11 @@ export function ConnectedOwnPriceScreen({
   }
 
   const selectSide = (next: OutcomeSide) => {
+    sideOdds.current[side]=odds
     setSide(next)
     setErrorMessage(null)
     const nextOdds = next === 'a' ? market.outcomeA.odds : market.outcomeB.odds
-    if (nextOdds) setOdds(nextOdds)
+    setOdds(sideOdds.current[next]??nextOdds??0)
   }
 
   const changeOdds = (next: number) => {
@@ -191,7 +194,9 @@ export function ConnectedOwnPriceScreen({
       setOdds(0)
       return
     }
-    setOdds(Math.round(next * 100) / 100)
+    initializedOdds.current=true
+    sideOdds.current[side]=Math.round(next*100)/100
+    setOdds(sideOdds.current[side]!)
   }
 
   const changeAmount = (next: number) => {

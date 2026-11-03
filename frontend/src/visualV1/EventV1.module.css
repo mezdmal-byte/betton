@@ -17,3 +17,7 @@
 .blockedTicket{padding:12px 16px;gap:4px;min-height:64px}.blockedTicket strong{font-size:12px;line-height:17px}.blockedTicket p{margin:0;color:#637089;font-size:11px;line-height:16px}
 
 .scroll>*{flex-shrink:0}
+
+.screen:has([data-embedded-chat] textarea:focus) .ticket{display:none}
+
+.ticket{touch-action:pan-x pinch-zoom}

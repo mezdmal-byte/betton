@@ -1,5 +1,5 @@
 import { Paperclip, Reply, Trash2, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ChatScreenProps } from '../screens/ChatScreen'
 import { Button } from '../components/Button/Button'
 import backIcon from '../assets/visual-v1/event/499a5.svg'
@@ -8,7 +8,7 @@ import starIcon from '../assets/visual-v1/event/64d77.svg'
 import sendIcon from '../assets/visual-v1/chat/send.svg'
 import s from './ChatV1.module.css'
 
-export function ChatV1({embedded=false,title,subtitle,messages,currentUserId,isAdmin=false,loading=false,error=false,sending=false,lobby=false,hasMore=false,attachableMarkets=[],showInternalBack=true,onBack,onLoadOlder,onRetry,onSend,onSendConfirmed,onDelete,onOpenMarket,marketId,onShare,shareValue,sendError,deleteError,deletingMessageId}:ChatScreenProps){
+export function ChatV1({onOpenFullChat,embedded=false,title,subtitle,messages,currentUserId,isAdmin=false,loading=false,error=false,sending=false,lobby=false,hasMore=false,attachableMarkets=[],showInternalBack=true,onBack,onLoadOlder,onRetry,onSend,onSendConfirmed,onDelete,onOpenMarket,marketId,onShare,shareValue,sendError,deleteError,deletingMessageId}:ChatScreenProps){
  const [draft,setDraft]=useState(''),[replyToId,setReply]=useState<number>(),[attachOpen,setAttachOpen]=useState(false),[attachedId,setAttachedId]=useState<number>(),[actionsId,setActionsId]=useState<number>(),[focused,setFocused]=useState(false),[shareStatus,setShareStatus]=useState<'copied'|'failed'|null>(null),[favorite,setFavorite]=useState(()=>isFavorite(marketId))
  const scroll=useRef<HTMLElement>(null),screen=useRef<HTMLDivElement>(null),input=useRef<HTMLTextAreaElement>(null),initialized=useRef(false),nearBottom=useRef(true),sendingRef=useRef(false),mounted=useRef(true)
  const latestId=messages.at(-1)?.id??0,reply=messages.find(m=>m.id===replyToId),attachment=attachableMarkets.find(m=>m.id===attachedId)
@@ -17,6 +17,7 @@ export function ChatV1({embedded=false,title,subtitle,messages,currentUserId,isA
  useEffect(()=>{const viewport=window.visualViewport;const update=()=>screen.current?.style.setProperty('--chat-viewport-height',`${viewport?.height??window.innerHeight}px`);update();viewport?.addEventListener('resize',update);return()=>viewport?.removeEventListener('resize',update)},[])
  useEffect(()=>{setFavorite(isFavorite(marketId));setShareStatus(null)},[marketId])
  useEffect(()=>{if(!attachOpen&&actionsId==null)return;const close=(event:KeyboardEvent)=>{if(event.key==='Escape'){setAttachOpen(false);setActionsId(undefined);input.current?.focus()}};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[attachOpen,actionsId])
+ useLayoutEffect(()=>{const node=input.current;if(!node)return;node.style.height='auto';node.style.height=Math.min(112,Math.max(24,node.scrollHeight))+'px'},[draft])
  const Scroll = embedded ? 'div' : 'main'
  const busy=sending||sendingRef.current
  async function submit(){const text=draft.trim();if(!text||busy||!currentUserId)return;sendingRef.current=true;try{const body={text,replyToId,attachedMarketId:attachedId};if(onSendConfirmed)await onSendConfirmed(body);else onSend(body);if(mounted.current){setDraft('');setReply(undefined);setAttachedId(undefined);setAttachOpen(false);nearBottom.current=true}}catch{/* The connected mutation supplies its error; keep the draft and context. */}finally{sendingRef.current=false}}
@@ -26,7 +27,7 @@ export function ChatV1({embedded=false,title,subtitle,messages,currentUserId,isA
   <Scroll className={s.scroll} ref={node=>{scroll.current=node}} onScroll={event=>{const el=event.currentTarget;nearBottom.current=el.scrollHeight-el.scrollTop-el.clientHeight<90}}>
    {shareStatus==='copied'?<p className={s.note} role="status">Ссылка скопирована</p>:shareStatus==='failed'?<div className={s.failure} role="alert">Не удалось скопировать ссылку.{shareValue?<input aria-label="Ссылка на событие" value={shareValue} readOnly onFocus={e=>e.currentTarget.select()}/>:null}</div>:null}
    {lobby?<p className={s.note}>Показываем последние 100 сообщений. Уведомляем только об ответах вам.</p>:hasMore?<button type="button" className={s.loadMore} onClick={onLoadOlder}>Показать более ранние сообщения</button>:null}
-   <section className={s.card} aria-label={lobby?'Сообщения лобби':'Сообщения события'}>{subtitle&&!embedded?<h2>{subtitle}</h2>:null}
+   <section className={s.card} aria-label={lobby?'Сообщения лобби':'Сообщения события'}>{embedded&&onOpenFullChat?<div className={s.previewHeading}><h2>Обсуждение</h2><button type="button" onClick={onOpenFullChat}>Открыть всё →</button></div>:null}{subtitle&&!embedded?<h2>{subtitle}</h2>:null}
     {loading&&!messages.length?<p className={s.state} role="status">Загружаем сообщения…</p>:error&&!messages.length?<div className={s.state} role="alert"><p>Не удалось загрузить сообщения.</p><Button variant="secondary" onClick={onRetry}>Повторить</Button></div>:!loading&&!error&&!messages.length?<p className={s.state}>Сообщений пока нет. Начните обсуждение первым.</p>:null}
     {messages.map(message=>{const own=message.author.id===currentUserId,canDelete=!message.deleted&&(own||isAdmin),active=actionsId===message.id;return <article className={s.message} key={message.id}>
      <span className={`${s.avatar} ${s['avatar'+((Math.abs(message.author.id-1))%3)]}`}>{message.author.photo_url?<img src={message.author.photo_url} alt=""/>:initials(message.author.display_name,own)}</span>

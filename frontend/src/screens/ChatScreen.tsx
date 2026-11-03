@@ -8,6 +8,7 @@ import { ChatV1 } from '../visualV1/ChatV1'
 export type ChatAttachableMarket = { id: number; question: string }
 
 export type ChatScreenProps = {
+  onOpenFullChat?: () => void
   embedded?: boolean
   title: string
   subtitle?: string

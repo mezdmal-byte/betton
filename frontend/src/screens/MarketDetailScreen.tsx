@@ -68,6 +68,8 @@ export type MarketDetailScreenProps = {
   actionsDisabled?: boolean;
   showInternalBack?: boolean;
   discussionUnreadReplies?: number;
+  eventStageLabel?: string
+  eventTermsContent?: ReactNode
   guarantorContent?: ReactNode
   tradeBlockedReason?: string
   discussionContent?: ReactNode
